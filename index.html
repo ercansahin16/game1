@@ -1075,7 +1075,7 @@
         updateAchievementsPreview();
     }
 
-    // LİDERLİK ÖNİZLEME (En iyi 5 göster)
+    // LİDERLİK ÖNİZLEME (En iyi 5 göster - NaN yok)
     async function loadLeaderboardPreview() {
         try {
             const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(5));
@@ -1083,11 +1083,18 @@
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
+                // SCORE kontrolü: string gelirse sayıya çevir, NaN ise 0 yap
                 let scoreVal = Number(data.score);
                 if (isNaN(scoreVal)) scoreVal = 0;
+                // USERNAME kontrolü: yoksa "İsimsiz" yaz
+                const username = (data.username && data.username.trim() !== '') ? data.username.trim() : 'İsimsiz';
+                // LEVEL kontrolü: yoksa veya NaN ise 1 yap
+                let levelVal = Number(data.level);
+                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
+
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                             <span style="font-weight:700;">${idx+1}.</span>
-                            <span>${data.username || 'İsimsiz'}</span>
+                            <span>${username}</span>
                             <span style="margin-left:auto; background:#ffe0b0; padding:2px 12px; border-radius:40px;">${scoreVal}</span>
                         </li>`;
             });
@@ -1435,15 +1442,15 @@
     }
 
     // ------------------------------------------------------------
-    // 8) LİDERLİK TABLOSU (TOP 10 - SAĞLAM)
+    // 8) LİDERLİK TABLOSU (TOP 10 - SAĞLAM, NaN YOK)
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
         try {
             await addDoc(collection(db, LEADERBOARD_COLLECTION), {
-                username: gameState.username,
-                score: Number(gameState.score),
-                level: gameState.currentLevel,
+                username: gameState.username.trim(),
+                score: Number(gameState.score), // sayıya çevir
+                level: Number(gameState.currentLevel), // sayıya çevir
                 timestamp: new Date()
             });
         } catch (e) {}
@@ -1456,13 +1463,20 @@
             let html = '<ol style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
+                // SCORE kontrolü
                 let scoreVal = Number(data.score);
                 if (isNaN(scoreVal)) scoreVal = 0;
+                // USERNAME kontrolü
+                const username = (data.username && data.username.trim() !== '') ? data.username.trim() : 'İsimsiz';
+                // LEVEL kontrolü
+                let levelVal = Number(data.level);
+                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
+
                 html += `<li style="padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px; display:flex; align-items:center;">
                             <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
-                            <i class="fas fa-user-circle"></i> ${data.username || 'İsimsiz'}
+                            <i class="fas fa-user-circle"></i> ${username}
                             <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
-                            <span style="margin-left:10px; color:#6b7280;">Seviye ${data.level || 1}</span>
+                            <span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
                         </li>`;
             });
             html += '</ol>';
