@@ -293,7 +293,7 @@
         .game-over-card { background: white; border-radius: 48px; padding: 35px; max-width: 450px; width: 90%; text-align: center; box-shadow: 0 20px 0 #ffe0b5; border: 3px solid #ffe8d9; }
         .restart-btn { background: #ffb7b7; border: none; border-radius: 50px; padding: 14px 30px; font-size: 1.2rem; font-weight: 600; color: #631e1e; box-shadow: 0 8px 0 #b47272; cursor: pointer; display: inline-flex; gap: 10px; }
 
-        /* ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ ========= */
+        /* ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ + LİDERLİK TEMİZLE ========= */
         .admin-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -416,6 +416,12 @@
         }
         .admin-right button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #6b9e7a; }
         .admin-right button#cancelEditBtn:hover { box-shadow: 0 8px 0 #d4a373; }
+        .admin-clear-btn {
+            background: #ffb7b7 !important;
+            box-shadow: 0 6px 0 #b47272 !important;
+            color: #631e1e !important;
+            margin-top: 15px;
+        }
 
         /* ========== LİDERLİK & BAŞARIM PANELLERİ ========= */
         .leaderboard-panel, .achievements-panel {
@@ -606,7 +612,7 @@
     <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
-<!-- ========== ADMIN PANELİ ========= -->
+<!-- ========== ADMIN PANELİ – LİDERLİK TEMİZLE BUTONLU ========= -->
 <div id="adminPanel" class="admin-panel">
     <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
     <div class="admin-split">
@@ -616,6 +622,10 @@
             <div id="adminQuestionsList">
                 <p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
             </div>
+            <!-- LİDERLİK TABLOSUNU TEMİZLE BUTONU -->
+            <button id="clearLeaderboardBtn" class="admin-clear-btn" style="width:100%; margin-top:20px; padding:14px; border:none; border-radius:60px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+                <i class="fas fa-trash-alt"></i> Liderlik Tablosunu Temizle
+            </button>
         </div>
         <div class="admin-right">
             <h3 id="formTitle"><i class="fas fa-plus-circle"></i> Yeni Soru Ekle</h3>
@@ -671,7 +681,8 @@
     import { db } from './firebase-core.js';
     import { 
         collection, getDocs, addDoc, query, orderBy, limit, 
-        doc, setDoc, getDoc, updateDoc, deleteDoc, where 
+        doc, setDoc, getDoc, updateDoc, deleteDoc, where,
+        writeBatch
     } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     // ------------------------------------------------------------
@@ -882,6 +893,7 @@
     const adminZorluk = document.getElementById('adminZorluk');
     const saveQuestionBtn = document.getElementById('saveQuestionBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn'); // YENİ BUTON
 
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const mascot = document.getElementById('mascot');
@@ -912,7 +924,6 @@
     }
     function triggerConfetti() { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); }
 
-    // Avatar seçici
     function initAvatarSelector() {
         settingsAvatarSelector.innerHTML = '';
         AVATAR_LIST.forEach((av, idx) => {
@@ -930,7 +941,6 @@
         });
     }
 
-    // Intro UI
     async function updateIntroUI() {
         introAvatar.innerText = gameState.avatar;
         introUserName.innerText = gameState.username || 'Misafir';
@@ -941,28 +951,8 @@
     }
 
     // ------------------------------------------------------------
-    // LİDERLİK TABLOSU - KESİN NAN ÇÖZÜMÜ
+    // LİDERLİK ÖNİZLEME – NaN SORUNU TAMAMEN ÇÖZÜLDÜ
     // ------------------------------------------------------------
-    function safeParseScore(value) {
-        if (value === undefined || value === null) return 0;
-        const str = String(value).replace(/[^0-9]/g, '');
-        if (str === '') return 0;
-        const num = parseInt(str, 10);
-        return isNaN(num) ? 0 : num;
-    }
-
-    function safeUsername(value) {
-        if (!value || typeof value !== 'string') return 'İsimsiz';
-        const trimmed = value.trim();
-        return trimmed === '' ? 'İsimsiz' : trimmed;
-    }
-
-    function safeParseLevel(value) {
-        if (value === undefined || value === null) return 1;
-        const num = Number(value);
-        return !isNaN(num) && num >= 1 ? num : 1;
-    }
-
     async function loadLeaderboardPreview() {
         try {
             const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(5));
@@ -970,10 +960,15 @@
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                const scoreVal = safeParseScore(data.score);
-                const username = safeUsername(data.username);
+                // Score: önce number'a çevir, geçersizse 0
+                let scoreVal = Number(data.score);
+                if (isNaN(scoreVal)) scoreVal = 0;
+                // Username: boşsa "İsimsiz"
+                const username = data.username?.trim() || 'İsimsiz';
+                // Sıra numarası kesin sayı
+                const rank = idx + 1;
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                            <span style="font-weight:700;">${idx+1}.</span>
+                            <span style="font-weight:700;">${rank}.</span>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
                             <span style="margin-left:auto; background:#ffe0b0; padding:2px 12px; border-radius:40px;">${scoreVal}</span>
                         </li>`;
@@ -1300,7 +1295,7 @@
     }
 
     // ------------------------------------------------------------
-    // LİDERLİK TABLOSU (Top 10)
+    // LİDERLİK TABLOSU – NaN SORUNU TAMAMEN ÇÖZÜLDÜ
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
@@ -1321,21 +1316,40 @@
             let html = '<ol style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                const scoreVal = safeParseScore(data.score);
-                const username = safeUsername(data.username);
-                const levelVal = safeParseLevel(data.level);
+                let scoreVal = Number(data.score);
+                if (isNaN(scoreVal)) scoreVal = 0;
+                const username = data.username?.trim() || 'İsimsiz';
+                let levelVal = Number(data.level);
+                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
+                const rank = idx + 1;
                 html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
-                            <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
-                            <i class="fas fa-user-circle"></i> 
-                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
+                            <span style="font-weight:700; margin-right:15px; width:30px;">#${rank}</span>
+                            <i class="fas fa-user-circle"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
                             <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
                             <span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
                         </li>`;
             });
             html += '</ol>';
             leaderboardList.innerHTML = html;
+        } catch (e) { leaderboardList.innerHTML = 'Liderlik yüklenemedi.'; }
+    }
+
+    // ------------------------------------------------------------
+    // YENİ: LİDERLİK TABLOSUNU TAMAMEN TEMİZLE
+    // ------------------------------------------------------------
+    async function clearLeaderboard() {
+        if (!confirm('⚠️ Tüm liderlik kayıtlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+        try {
+            const q = query(collection(db, LEADERBOARD_COLLECTION));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            showToast('Liderlik tablosu tamamen temizlendi!', 'success');
+            await loadLeaderboardPreview();
+            await loadLeaderboard();
         } catch (e) {
-            leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
+            showToast('Temizleme başarısız: ' + e.message, 'error');
         }
     }
 
@@ -1359,7 +1373,7 @@
     }
 
     // ------------------------------------------------------------
-    // ADMIN PANELİ
+    // ADMIN PANELİ – LİDERLİK TEMİZLE BUTONU EKLENDİ
     // ------------------------------------------------------------
     let adminClickCount = 0;
     function initAdminTrigger() {
@@ -1607,6 +1621,12 @@
         });
         saveQuestionBtn.addEventListener('click', saveQuestion);
         cancelEditBtn.addEventListener('click', resetFormToAddMode);
+        
+        // Liderlik temizleme butonu
+        if (clearLeaderboardBtn) {
+            clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
+        }
+
         initAdminTrigger();
 
         soundToggleBtn.addEventListener('click', toggleSound);
