@@ -6,7 +6,7 @@
     <title>Manevi Bilgi Oyunu 🌙</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
-    <!-- Font Awesome 6 (tüm ikonlar gelsin) -->
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Font: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -486,7 +486,7 @@
             .intro-stats { grid-template-columns: 1fr; }
             .intro-leaderboard-preview ul, .intro-achievements-preview ul { font-size: 0.8rem; }
             .intro-leaderboard-preview li, .intro-achievements-preview li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .leaderboard-btn span, .achievements-btn span, .settings-btn span, .exit-btn span { display: none; } /* Mobilde sadece ikon görünsün */
+            .leaderboard-btn span, .achievements-btn span, .settings-btn span, .exit-btn span { display: none; }
             .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn { padding: 8px 12px; }
         }
         @media (max-width: 600px) {
@@ -940,7 +940,29 @@
         updateAchievementsPreview();
     }
 
-    // LİDERLİK ÖNİZLEME – NaN SORUNU ÇÖZÜLDÜ
+    // ------------------------------------------------------------
+    // LİDERLİK TABLOSU - KESİN NAN ÇÖZÜMÜ
+    // ------------------------------------------------------------
+    function safeParseScore(value) {
+        if (value === undefined || value === null) return 0;
+        const str = String(value).replace(/[^0-9]/g, '');
+        if (str === '') return 0;
+        const num = parseInt(str, 10);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function safeUsername(value) {
+        if (!value || typeof value !== 'string') return 'İsimsiz';
+        const trimmed = value.trim();
+        return trimmed === '' ? 'İsimsiz' : trimmed;
+    }
+
+    function safeParseLevel(value) {
+        if (value === undefined || value === null) return 1;
+        const num = Number(value);
+        return !isNaN(num) && num >= 1 ? num : 1;
+    }
+
     async function loadLeaderboardPreview() {
         try {
             const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(5));
@@ -948,11 +970,8 @@
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                // Score: string gelirse parseInt ile sayıya çevir, geçersizse 0
-                let scoreVal = parseInt(data.score, 10);
-                if (isNaN(scoreVal)) scoreVal = 0;
-                // Username: yoksa "İsimsiz"
-                const username = data.username?.trim() || 'İsimsiz';
+                const scoreVal = safeParseScore(data.score);
+                const username = safeUsername(data.username);
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                             <span style="font-weight:700;">${idx+1}.</span>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
@@ -1281,7 +1300,7 @@
     }
 
     // ------------------------------------------------------------
-    // LİDERLİK TABLOSU (NaN SORUNU ÇÖZÜLDÜ)
+    // LİDERLİK TABLOSU (Top 10)
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
@@ -1302,21 +1321,22 @@
             let html = '<ol style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                let scoreVal = parseInt(data.score, 10);
-                if (isNaN(scoreVal)) scoreVal = 0;
-                const username = data.username?.trim() || 'İsimsiz';
-                let levelVal = parseInt(data.level, 10);
-                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
+                const scoreVal = safeParseScore(data.score);
+                const username = safeUsername(data.username);
+                const levelVal = safeParseLevel(data.level);
                 html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
                             <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
-                            <i class="fas fa-user-circle"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
+                            <i class="fas fa-user-circle"></i> 
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
                             <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
                             <span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
                         </li>`;
             });
             html += '</ol>';
             leaderboardList.innerHTML = html;
-        } catch (e) { leaderboardList.innerHTML = 'Liderlik yüklenemedi.'; }
+        } catch (e) {
+            leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
+        }
     }
 
     // ------------------------------------------------------------
