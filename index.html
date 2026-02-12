@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    <!-- howler.js (ses) -->
+    <!-- howler.js (sadece çalışan sesler için) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
     <style>
         /* ---------- RESET & DEĞİŞKENLER ---------- */
@@ -51,7 +51,7 @@
             color: var(--text-dark);
         }
 
-        /* ========== DARK MODE ========= */
+        /* ========== DARK MODE - TÜM YAZILAR BEYAZ ========= */
         body.dark-theme {
             background: linear-gradient(145deg, #0b1a2e, #04111f);
             color: #ffffff;
@@ -75,12 +75,37 @@
         body.dark-theme .timer,
         body.dark-theme .intro-settings-panel,
         body.dark-theme .avatar-option,
-        body.dark-theme .toast-message {
+        body.dark-theme .toast-message,
+        body.dark-theme .leaderboard-btn,
+        body.dark-theme .achievements-btn,
+        body.dark-theme .settings-btn,
+        body.dark-theme .exit-btn,
+        body.dark-theme .admin-left,
+        body.dark-theme .admin-right,
+        body.dark-theme .admin-question-item {
             background: rgba(15, 30, 45, 0.9) !important;
             backdrop-filter: blur(10px);
             border-color: #3a4a5a !important;
             color: #ffffff !important;
             box-shadow: 0 6px 0 #1a2a3a !important;
+        }
+        body.dark-theme .leaderboard-panel,
+        body.dark-theme .achievements-panel,
+        body.dark-theme .admin-panel {
+            background: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        body.dark-theme .leaderboard-panel h2,
+        body.dark-theme .achievements-panel h2,
+        body.dark-theme .admin-panel h2,
+        body.dark-theme .admin-left h3,
+        body.dark-theme .admin-right h3 {
+            color: #a78bfa !important;
+        }
+        body.dark-theme .leaderboard-panel li,
+        body.dark-theme .achievements-panel li {
+            background: #0f172a !important;
+            color: white !important;
         }
         body.dark-theme .option-btn.correct { background: #0f4c2b !important; border-color: #2e7d5e !important; }
         body.dark-theme .option-btn.wrong { background: #7a1f1f !important; border-color: #b33f3f !important; }
@@ -89,7 +114,11 @@
         body.dark-theme .score-box i,
         body.dark-theme .level-box i,
         body.dark-theme .user-stats i,
-        body.dark-theme .intro-user-stats i { color: #ffd966 !important; }
+        body.dark-theme .intro-user-stats i,
+        body.dark-theme .leaderboard-btn i,
+        body.dark-theme .achievements-btn i,
+        body.dark-theme .settings-btn i,
+        body.dark-theme .exit-btn i { color: #ffd966 !important; }
         body.dark-theme .intro-user-name,
         body.dark-theme .user-name,
         body.dark-theme .intro-user-stats,
@@ -98,9 +127,20 @@
         body.dark-theme .level-box span,
         body.dark-theme .question-text,
         body.dark-theme .option-btn span,
-        body.dark-theme .toast-message { color: #ffffff !important; }
+        body.dark-theme .toast-message,
+        body.dark-theme .leaderboard-btn span,
+        body.dark-theme .achievements-btn span,
+        body.dark-theme .settings-btn span,
+        body.dark-theme .exit-btn span,
+        body.dark-theme .admin-question-text,
+        body.dark-theme .admin-question-meta {
+            color: #ffffff !important;
+        }
         body.dark-theme .toast-success { background: #0f4c2b !important; }
         body.dark-theme .toast-info { background: #7a5c1f !important; }
+
+        /* ---------- TAM RESPONSIVE ---------- */
+        .container { width: 100%; max-width: 1000px; margin: 0 auto; }
 
         /* ---------- INTRO EKRANI (kısaltılmış, öncekiyle aynı) ---------- */
         .intro-overlay {
@@ -136,7 +176,7 @@
         .avatar-option { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #ffe0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; background: #fef9e0; transition: 0.1s; }
         .avatar-option.selected { border-color: #7c3aed; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(124,58,237,0.3); }
 
-        /* ---------- OYUN KONTEYNERİ (özet, öncekiyle aynı) ---------- */
+        /* ---------- OYUN KONTEYNERİ ---------- */
         .game-container { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: var(--border-radius-lg); padding: 30px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.5); width: 100%; max-width: 1000px; margin: 0 auto; transition: 0.3s; }
         .user-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; background: rgba(255,255,255,0.4); padding: 10px 20px; border-radius: 80px; flex-wrap: wrap; }
         .user-avatar { width: 60px; height: 60px; border-radius: 50%; background: #ffe6c7; display: flex; align-items: center; justify-content: center; font-size: 2rem; border: 3px solid white; box-shadow: 0 4px 0 #d4a373; }
@@ -146,7 +186,19 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         .score-box, .level-box { background: white; padding: 12px 25px; border-radius: 40px; box-shadow: 0 6px 0 #cbd5e0; border: 1px solid #cbd5e0; font-weight: 600; display: flex; align-items: center; gap: 10px; color: #2d3e50; font-size: 1.2rem; }
         .score-box i, .level-box i { color: #ff9f1c; font-size: 1.4rem; }
-        .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn { background: rgba(255,255,255,0.7); border: 2px solid #ffe0b0; border-radius: 40px; padding: 8px 18px; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #4a5a6a; transition: 0.1s; }
+        .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn {
+            background: rgba(255,255,255,0.7);
+            border: 2px solid #ffe0b0;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5a6a;
+            transition: 0.1s;
+        }
         .leaderboard-btn i, .achievements-btn i, .settings-btn i, .exit-btn i { font-size: 1.3rem; }
         .levels-wrapper { overflow-x: auto; margin-bottom: 25px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
         .levels-container { display: flex; gap: 12px; background: rgba(255,255,255,0.4); padding: 16px; border-radius: 60px; min-width: min-content; }
@@ -172,7 +224,7 @@
         .game-over-card { background: white; border-radius: 48px; padding: 35px; max-width: 450px; width: 90%; text-align: center; box-shadow: 0 20px 0 #ffe0b5; border: 3px solid #ffe8d9; }
         .restart-btn { background: #ffb7b7; border: none; border-radius: 50px; padding: 14px 30px; font-size: 1.2rem; font-weight: 600; color: #631e1e; box-shadow: 0 8px 0 #b47272; cursor: pointer; display: inline-flex; gap: 10px; }
 
-        /* ========== YENİ ADMIN PANELİ – 2 SÜTUNLU ========= */
+        /* ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ ========= */
         .admin-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -191,27 +243,34 @@
             transition: 0.2s;
         }
         .admin-panel.active { visibility: visible; opacity: 1; }
-        .admin-split {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 20px;
-        }
-        .admin-left {
+        .admin-split { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
+        .admin-left, .admin-right {
             background: #fef9e0;
             border-radius: var(--border-radius-md);
             padding: 20px;
             border: 2px solid #ffe0b0;
-            max-height: 500px;
-            overflow-y: auto;
         }
-        .admin-left h3 {
+        .admin-left { max-height: 500px; overflow-y: auto; }
+        .admin-left h3, .admin-right h3 {
             display: flex;
             align-items: center;
             gap: 10px;
             color: #7c3aed;
             margin-bottom: 15px;
             font-size: 1.3rem;
+        }
+        .level-info {
+            background: #ffe6c7;
+            border-radius: 20px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ffb08c;
+            font-size: 0.95rem;
+            color: #5e3e2e;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
         }
         .admin-question-item {
             background: white;
@@ -235,10 +294,7 @@
             word-break: break-word;
             flex: 1;
         }
-        .admin-question-actions {
-            display: flex;
-            gap: 8px;
-        }
+        .admin-question-actions { display: flex; gap: 8px; }
         .admin-question-actions button {
             background: none;
             border: none;
@@ -255,22 +311,7 @@
             font-size: 0.8rem;
             color: #6b7280;
         }
-        .admin-right {
-            background: #fef9e0;
-            border-radius: var(--border-radius-md);
-            padding: 20px;
-            border: 2px solid #ffe0b0;
-        }
-        .admin-right h3 {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #7c3aed;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-        .admin-right input,
-        .admin-right select {
+        .admin-right input, .admin-right select {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -307,7 +348,7 @@
         .admin-right button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #6b9e7a; }
         .admin-right button#cancelEditBtn:hover { box-shadow: 0 8px 0 #d4a373; }
 
-        /* LİDERLİK & BAŞARIM PANELLERİ (öncekiyle aynı) */
+        /* LİDERLİK & BAŞARIM PANELLERİ */
         .leaderboard-panel, .achievements-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -326,6 +367,14 @@
             transition: 0.2s;
         }
         .leaderboard-panel.active, .achievements-panel.active { visibility: visible; opacity: 1; }
+        .leaderboard-panel li, .achievements-panel li {
+            background: #fef9e0;
+            border-radius: 40px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
 
         /* MASKOT, SES BUTONU */
         .mascot { position: fixed; bottom: 15px; left: 15px; width: 80px; z-index: 999; cursor: pointer; }
@@ -359,7 +408,7 @@
 </head>
 <body>
 
-<!-- ========== INTRO EKRANI ========= (kısaltılmış, aynı) -->
+<!-- ========== INTRO EKRANI ========= -->
 <div id="introOverlay" class="intro-overlay">
     <div class="intro-card">
         <div class="intro-user-header">
@@ -445,13 +494,17 @@
     <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
-<!-- ========== YENİ ADMIN PANELİ – 2 SÜTUNLU, DÜZENLE/SİL ========= -->
+<!-- ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ ========= -->
 <div id="adminPanel" class="admin-panel">
     <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
     <div class="admin-split">
-        <!-- SOL SÜTUN: SORU LİSTESİ -->
+        <!-- SOL SÜTUN: SORU LİSTESİ + SEVİYE BİLGİSİ -->
         <div class="admin-left">
             <h3><i class="fas fa-list"></i> Mevcut Sorular</h3>
+            <!-- SEVİYE BİLGİSİ KARTI -->
+            <div id="adminLevelInfo" class="level-info">
+                <!-- JS ile doldurulacak -->
+            </div>
             <div id="adminQuestionsList">
                 <!-- Sorular JS ile doldurulacak -->
                 <p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
@@ -559,15 +612,68 @@
         { name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
     ];
 
-    // Ses efektleri
+    // ------------------------------------------------------------
+    // SES SİSTEMİ – CORS SORUNU YOK, WEB AUDIO BEEP
+    // ------------------------------------------------------------
     let soundEnabled = true;
+    // Howler ile çalışan sesler (CORS yok)
     const sounds = {
         correct: new Howl({ src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3'] }),
-        wrong: new Howl({ src: ['https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3'] }),
-        levelUp: new Howl({ src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3'] }),
-        gameOver: new Howl({ src: ['https://www.soundjay.com/misc/sounds/fail-buzzer-01.mp3'] }),
-        hint: new Howl({ src: ['https://www.soundjay.com/misc/sounds/page-flip-01.mp3'] })
+        levelUp: new Howl({ src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3'] })
     };
+
+    // Web Audio API ile beep (CORS'suz, her yerde çalışır)
+    function playBeep(type) {
+        if (!soundEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => createBeep(audioCtx, type));
+            } else {
+                createBeep(audioCtx, type);
+            }
+        } catch(e) { /* sessizce hata geç */ }
+    }
+
+    function createBeep(audioCtx, type) {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        switch(type) {
+            case 'wrong':
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+                break;
+            case 'gameOver':
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+                break;
+            case 'hint':
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+                break;
+        }
+    }
+
+    function playSound(soundName) {
+        if (!soundEnabled) return;
+        if (sounds[soundName]) {
+            sounds[soundName].play();
+        } else {
+            playBeep(soundName); // wrong, gameOver, hint
+        }
+    }
 
     // Oyun durumu (LocalStorage)
     let gameState = {
@@ -671,10 +777,11 @@
     const achievementsList = document.getElementById('achievementsList');
     const closeAchievementsBtn = document.getElementById('closeAchievementsBtn');
 
-    // ----- ADMIN PANELİ YENİ ELEMENTLER -----
+    // Admin Panel
     const adminPanel = document.getElementById('adminPanel');
     const closeAdminBtn = document.getElementById('closeAdminBtn');
     const adminQuestionsList = document.getElementById('adminQuestionsList');
+    const adminLevelInfo = document.getElementById('adminLevelInfo');
     const formTitle = document.getElementById('formTitle');
     const adminSoru = document.getElementById('adminSoru');
     const adminSecenek1 = document.getElementById('adminSecenek1');
@@ -687,14 +794,13 @@
     const saveQuestionBtn = document.getElementById('saveQuestionBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
 
-    // Düzenleme modunda hangi soru ID'si
     let editingQuestionId = null;
 
     // Ses, maskot, dark mode
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const mascot = document.getElementById('mascot');
     const speechBubble = document.getElementById('speechBubble');
-    const settingsBtn = document.getElementById('settingsBtn'); // tema
+    const settingsBtn = document.getElementById('settingsBtn');
 
     // ------------------------------------------------------------
     // 4) OYUN DEĞİŞKENLERİ
@@ -721,15 +827,17 @@
         setTimeout(() => toast.remove(), 2500);
     }
     function triggerConfetti() { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); }
-    function playSound(soundName) { if (soundEnabled && sounds[soundName]) sounds[soundName].play(); }
+
+    // Audio context kilidini aç
     function unlockAudio() {
-        Howler.autoUnlock = true;
-        Howler._autoUnlock();
-        const unlock = () => {
-            if (Howler.ctx && Howler.ctx.state === 'suspended') Howler.ctx.resume();
-            window.removeEventListener('click', unlock);
-        };
-        window.addEventListener('click', unlock, { once: true });
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+            const resume = () => {
+                audioCtx.resume();
+                document.removeEventListener('click', resume);
+            };
+            document.addEventListener('click', resume, { once: true });
+        }
     }
 
     // Avatar seçici
@@ -827,7 +935,7 @@
         gameContainer.style.display = 'block';
         loadLevelQuestions(gameState.currentLevel);
         renderLevelIndicators();
-        unlockAudio();
+        unlockAudio(); // Ses kilidini aç
     }
 
     function exitToIntro() {
@@ -1121,7 +1229,7 @@
                 let scoreVal = Number(data.score); if (isNaN(scoreVal)) scoreVal = 0;
                 const username = (data.username && data.username.trim() !== '') ? data.username.trim() : 'İsimsiz';
                 let levelVal = Number(data.level); if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
-                html += `<li style="padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px; display:flex; align-items:center;">
+                html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
                             <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
                             <i class="fas fa-user-circle"></i> ${username}
                             <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
@@ -1153,9 +1261,8 @@
     }
 
     // ------------------------------------------------------------
-    // 10) ADMIN PANELİ – YENİ: SORU LİSTELE, DÜZENLE, SİL
+    // 10) ADMIN PANELİ – DÜZENLE/SİL + SEVİYE BİLGİSİ
     // ------------------------------------------------------------
-    // Admin panelini aç (3 tıklama)
     let adminClickCount = 0;
     function initAdminTrigger() {
         if (gameAvatar) {
@@ -1165,8 +1272,8 @@
                     const pwd = prompt('Admin şifresi:');
                     if (pwd === ADMIN_PASSWORD) {
                         adminPanel.classList.add('active');
-                        await loadAdminQuestions(); // Soru listesini yükle
-                        // Formu temizle ve yeni soru moduna geç
+                        await loadAdminQuestions();
+                        await updateAdminLevelInfo(); // Seviye bilgisini güncelle
                         resetFormToAddMode();
                     }
                     adminClickCount = 0;
@@ -1174,6 +1281,17 @@
                 setTimeout(() => adminClickCount = 0, 3000);
             });
         }
+    }
+
+    // Admin panelinde seviye bilgisini güncelle
+    async function updateAdminLevelInfo() {
+        const totalQuestions = allQuestions.length;
+        const requiredForCurrentLevel = getQuestionCountForLevel(gameState.currentLevel);
+        adminLevelInfo.innerHTML = `
+            <span><i class="fas fa-crown"></i> Mevcut Seviye: <strong>${gameState.currentLevel}</strong></span>
+            <span><i class="fas fa-list-check"></i> Gereken Soru: <strong>${requiredForCurrentLevel}</strong> (${gameState.currentLevel} × 2)</span>
+            <span><i class="fas fa-database"></i> Toplam Soru: <strong>${totalQuestions}</strong></span>
+        `;
     }
 
     // Admin soru listesini yükle
@@ -1203,7 +1321,6 @@
             });
             adminQuestionsList.innerHTML = html || '<p style="color: #6b7280; text-align: center;">Henüz soru yok.</p>';
 
-            // Düzenle butonlarına tıklama
             document.querySelectorAll('.edit-question-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const questionItem = e.target.closest('.admin-question-item');
@@ -1212,7 +1329,6 @@
                 });
             });
 
-            // Sil butonlarına tıklama
             document.querySelectorAll('.delete-question-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const questionItem = e.target.closest('.admin-question-item');
@@ -1225,18 +1341,15 @@
 
         } catch (e) {
             adminQuestionsList.innerHTML = '<p style="color: red;">Sorular yüklenemedi.</p>';
-            console.error(e);
         }
     }
 
-    // Soru düzenleme modu
     async function editQuestion(questionId) {
         try {
             const docRef = doc(db, QUESTIONS_COLLECTION, questionId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                // Formu doldur
                 adminSoru.value = data.soru || '';
                 adminSecenek1.value = data.secenekler?.[0] || '';
                 adminSecenek2.value = data.secenekler?.[1] || '';
@@ -1246,7 +1359,6 @@
                 adminKategori.value = data.bolum || 'Kur\'an';
                 adminZorluk.value = data.zorluk || 1;
 
-                // Düzenleme moduna geç
                 editingQuestionId = questionId;
                 formTitle.innerHTML = '<i class="fas fa-edit"></i> Soruyu Düzenle';
                 saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Soruyu Güncelle';
@@ -1257,24 +1369,21 @@
         }
     }
 
-    // Silme işlemi
     async function deleteQuestion(questionId) {
         try {
             await deleteDoc(doc(db, QUESTIONS_COLLECTION, questionId));
             showToast('Soru silindi!', 'success');
-            await loadAdminQuestions(); // Listeyi yenile
-            // Eğer silinen soru düzenlemedeyse, formu sıfırla
+            await loadAdminQuestions();
+            await loadAllQuestions();
+            await updateAdminLevelInfo();
             if (editingQuestionId === questionId) {
                 resetFormToAddMode();
             }
-            // Oyun içi soruları yeniden yükle
-            await loadAllQuestions();
         } catch (e) {
             showToast('Soru silinemedi.', 'error');
         }
     }
 
-    // Formu sıfırla, yeni soru ekleme moduna dön
     function resetFormToAddMode() {
         adminSoru.value = '';
         adminSecenek1.value = '';
@@ -1290,7 +1399,6 @@
         cancelEditBtn.style.display = 'none';
     }
 
-    // Soru kaydetme / güncelleme
     async function saveQuestion() {
         const soru = adminSoru.value.trim();
         const sec1 = adminSecenek1.value.trim();
@@ -1316,20 +1424,16 @@
 
         try {
             if (editingQuestionId) {
-                // Güncelle
                 await updateDoc(doc(db, QUESTIONS_COLLECTION, editingQuestionId), questionData);
                 showToast('Soru güncellendi!', 'success');
             } else {
-                // Yeni ekle
                 await addDoc(collection(db, QUESTIONS_COLLECTION), questionData);
                 showToast('Soru eklendi!', 'success');
             }
-            // Formu sıfırla
             resetFormToAddMode();
-            // Listeyi yenile
             await loadAdminQuestions();
-            // Oyun içi soruları yeniden yükle
             await loadAllQuestions();
+            await updateAdminLevelInfo();
         } catch (e) {
             showToast('İşlem başarısız.', 'error');
         }
@@ -1419,7 +1523,7 @@
         achievementsBtn.addEventListener('click', () => { renderAchievements(); achievementsPanel.classList.add('active'); });
         closeAchievementsBtn.addEventListener('click', () => achievementsPanel.classList.remove('active'));
 
-        // Admin Panel - yeni
+        // Admin Panel
         closeAdminBtn.addEventListener('click', () => {
             adminPanel.classList.remove('active');
             resetFormToAddMode();
@@ -1427,7 +1531,6 @@
         saveQuestionBtn.addEventListener('click', saveQuestion);
         cancelEditBtn.addEventListener('click', resetFormToAddMode);
 
-        // Admin trigger (avatar 3 tıklama)
         initAdminTrigger();
 
         // Ses
