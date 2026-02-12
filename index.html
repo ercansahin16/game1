@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
     <title>Manevi Bilgi Oyunu 🌙</title>
-    <!-- Favicon (404 hatası yok) -->
+    <!-- Favicon (artık 404 yok) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
-    <!-- Font Awesome 6 -->
+    <!-- Font Awesome 6 (tüm ikonlar çalışır) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Google Font: Poppins (eğlenceli ve okunabilir) -->
+    <!-- Google Font: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
@@ -31,6 +31,8 @@
             --card-bg: rgba(255,255,255,0.8);
             --text-dark: #1f2937;
             --text-light: #f3f4f6;
+            --text-secondary: #6b7280;
+            --border-light: #e2e8f0;
             --shadow: 0 20px 40px rgba(0,0,0,0.05);
             --border-radius-lg: 48px;
             --border-radius-md: 24px;
@@ -46,22 +48,91 @@
             align-items: center;
             padding: 16px;
             transition: background 0.3s, color 0.2s;
+            color: var(--text-dark);
         }
 
-        /* DARK MODE */
+        /* ========== DARK MODE - TÜM YAZILAR BEYAZ ========= */
         body.dark-theme {
-            background: linear-gradient(145deg, #1e2a3a, #0f1a26);
-            color: #f0f0f0;
+            background: linear-gradient(145deg, #0b1a2e, #04111f);
+            color: #ffffff;
+        }
+        body.dark-theme .game-container,
+        body.dark-theme .intro-card,
+        body.dark-theme .leaderboard-panel,
+        body.dark-theme .achievements-panel,
+        body.dark-theme .admin-panel,
+        body.dark-theme .game-over-card,
+        body.dark-theme .question-card,
+        body.dark-theme .option-btn,
+        body.dark-theme .level-badge,
+        body.dark-theme .score-box,
+        body.dark-theme .level-box,
+        body.dark-theme .user-header,
+        body.dark-theme .intro-user-header,
+        body.dark-theme .hint-btn,
+        body.dark-theme .next-btn,
+        body.dark-theme .restart-btn,
+        body.dark-theme .timer,
+        body.dark-theme .intro-settings-panel,
+        body.dark-theme .avatar-option,
+        body.dark-theme .toast-message {
+            background: rgba(15, 30, 45, 0.9) !important;
+            backdrop-filter: blur(10px);
+            border-color: #3a4a5a !important;
+            color: #ffffff !important;
+            box-shadow: 0 6px 0 #1a2a3a !important;
+        }
+        body.dark-theme .option-btn.correct {
+            background: #0f4c2b !important;
+            border-color: #2e7d5e !important;
+            color: #fff !important;
+        }
+        body.dark-theme .option-btn.wrong {
+            background: #7a1f1f !important;
+            border-color: #b33f3f !important;
+            color: #fff !important;
+        }
+        body.dark-theme .level-badge.active {
+            background: #2c5f3a !important;
+            color: #fff !important;
+        }
+        body.dark-theme .level-badge.locked {
+            background: #3a3a3a !important;
+            color: #aaa !important;
+        }
+        body.dark-theme .score-box i,
+        body.dark-theme .level-box i,
+        body.dark-theme .user-stats i,
+        body.dark-theme .intro-user-stats i {
+            color: #ffd966 !important;
+        }
+        body.dark-theme .intro-user-name,
+        body.dark-theme .user-name,
+        body.dark-theme .intro-user-stats,
+        body.dark-theme .user-stats,
+        body.dark-theme .score-box span,
+        body.dark-theme .level-box span,
+        body.dark-theme .question-text,
+        body.dark-theme .option-btn span,
+        body.dark-theme .toast-message {
+            color: #ffffff !important;
+        }
+        body.dark-theme .toast-success {
+            background: #0f4c2b !important;
+            color: #fff !important;
+        }
+        body.dark-theme .toast-info {
+            background: #7a5c1f !important;
+            color: #fff !important;
+        }
+        body.dark-theme a, body.dark-theme button {
+            color: #fff;
         }
 
-        /* ---------- TAM RESPONSIVE YARDIMCI SINIFLAR ---------- */
-        .container {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        /* ---------- TAM RESPONSIVE ---------- */
+        .container { width: 100%; max-width: 1000px; margin: 0 auto; }
 
-        /* ---------- INTRO OVERLAY (ANA EKRAN) ---------- */
+        /* ---------- INTRO EKRANI (ANA DASHBOARD) ---------- */
         .intro-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -98,7 +169,6 @@
             gap: 24px;
         }
 
-        /* intro kullanıcı başlığı */
         .intro-user-header {
             display: flex;
             align-items: center;
@@ -148,7 +218,6 @@
         }
         .intro-settings:hover { transform: rotate(90deg); }
 
-        /* istatistik kartları (liderlik & başarımlar) */
         .intro-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -172,7 +241,6 @@
             font-size: 1.1rem;
         }
 
-        /* büyük oyna butonu */
         .intro-play-btn {
             background: #ffe69b;
             border: none;
@@ -196,7 +264,6 @@
             box-shadow: 0 16px 0 #d4a373;
         }
 
-        /* ayarlar paneli (gizli) */
         .intro-settings-panel {
             background: white;
             border-radius: var(--border-radius-md);
@@ -217,7 +284,6 @@
             margin-bottom: 15px;
         }
 
-        /* avatar seçici (ayarlar içinde) */
         .avatar-selector {
             display: flex;
             flex-wrap: wrap;
@@ -244,7 +310,7 @@
             box-shadow: 0 0 0 4px rgba(124,58,237,0.3);
         }
 
-        /* ---------- OYUN KONTEYNERİ (oyun içi) ---------- */
+        /* ---------- OYUN KONTEYNERİ ---------- */
         .game-container {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
@@ -258,7 +324,6 @@
             transition: 0.3s;
         }
 
-        /* kullanıcı başlığı (oyun içi) */
         .user-header {
             display: flex;
             align-items: center;
@@ -281,21 +346,10 @@
             border: 3px solid white;
             box-shadow: 0 4px 0 #d4a373;
         }
-        .user-info {
-            flex: 1;
-        }
-        .user-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-        .user-stats {
-            display: flex;
-            gap: 20px;
-            font-size: 0.9rem;
-            color: #6b7280;
-        }
+        .user-info { flex: 1; }
+        .user-name { font-weight: 700; font-size: 1.2rem; }
+        .user-stats { display: flex; gap: 20px; font-size: 0.9rem; color: #6b7280; }
 
-        /* skor ve seviye kutuları */
         .header {
             display: flex;
             justify-content: space-between;
@@ -317,8 +371,26 @@
             color: #2d3e50;
             font-size: 1.2rem;
         }
+        .score-box i, .level-box i { color: #ff9f1c; font-size: 1.4rem; }
 
-        /* seviye göstergeleri (kaydırılabilir) */
+        /* butonlar */
+        .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn {
+            background: rgba(255,255,255,0.7);
+            border: 2px solid #ffe0b0;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5a6a;
+            transition: 0.1s;
+        }
+        .leaderboard-btn i, .achievements-btn i, .settings-btn i, .exit-btn i {
+            font-size: 1.3rem;
+        }
+
         .levels-wrapper {
             overflow-x: auto;
             margin-bottom: 25px;
@@ -334,34 +406,20 @@
             min-width: min-content;
         }
         .level-badge {
-            width: 60px;
-            height: 60px;
+            width: 60px; height: 60px;
             border-radius: 50%;
             background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 700;
-            font-size: 1.4rem;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 700; font-size: 1.4rem;
             color: #2d3e50;
             box-shadow: 0 6px 0 #b0c4ce;
             border: 2px solid #ffe9e9;
             flex-shrink: 0;
         }
-        .level-badge.active {
-            background: #b5e6c3;
-            box-shadow: 0 6px 0 #6b9e7a;
-            color: #1e3a2f;
-        }
-        .level-badge.locked {
-            background: #e0e0e0;
-            box-shadow: 0 6px 0 #adadad;
-            color: #7e7e7e;
-            opacity: 0.7;
-        }
+        .level-badge.active { background: #b5e6c3; box-shadow: 0 6px 0 #6b9e7a; color: #1e3a2f; }
+        .level-badge.locked { background: #e0e0e0; box-shadow: 0 6px 0 #adadad; color: #7e7e7e; opacity: 0.7; }
         .level-badge.locked i { font-size: 1.6rem; }
 
-        /* soru kartı */
         .question-card {
             background: white;
             border-radius: 32px;
@@ -380,12 +438,9 @@
             word-break: break-word;
             padding-right: 70px;
         }
-
-        /* süre sayacı */
         .timer {
             position: absolute;
-            top: 20px;
-            right: 25px;
+            top: 20px; right: 25px;
             background: #ffe2cc;
             border-radius: 40px;
             padding: 8px 18px;
@@ -398,8 +453,6 @@
             box-shadow: 0 4px 0 #d48c6b;
             color: #5e3e2e;
         }
-
-        /* ipucu butonu */
         .hint-btn {
             background: #ffeaa5;
             border: none;
@@ -416,12 +469,8 @@
             cursor: pointer;
             transition: 0.1s;
         }
-        .hint-btn.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+        .hint-btn.disabled { opacity: 0.5; pointer-events: none; }
 
-        /* şıklar */
         .options-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -446,25 +495,10 @@
             word-break: break-word;
             text-align: left;
         }
-        .option-btn.correct {
-            background: #c8e6c9;
-            border-color: #81c784;
-            box-shadow: 0 6px 0 #519657;
-        }
-        .option-btn.wrong {
-            background: #ffcdd2;
-            border-color: #e57373;
-            box-shadow: 0 6px 0 #b71c1c;
-        }
-        .option-btn.eliminated {
-            opacity: 0.3;
-            pointer-events: none;
-            background: #ccc;
-            border-color: #999;
-            text-decoration: line-through;
-        }
+        .option-btn.correct { background: #c8e6c9; border-color: #81c784; box-shadow: 0 6px 0 #519657; }
+        .option-btn.wrong { background: #ffcdd2; border-color: #e57373; box-shadow: 0 6px 0 #b71c1c; }
+        .option-btn.eliminated { opacity: 0.3; pointer-events: none; background: #ccc; border-color: #999; text-decoration: line-through; }
 
-        /* ileri butonu */
         .next-btn {
             background: #b2d8d8;
             border: none;
@@ -483,17 +517,10 @@
             cursor: pointer;
             border: 2px solid #c0e0e0;
         }
-        .next-btn.active {
-            background: #ffe69b;
-            box-shadow: 0 8px 0 #d4a373;
-            color: #5e4b3c;
-        }
-        .next-btn.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
+        .next-btn.active { background: #ffe69b; box-shadow: 0 8px 0 #d4a373; color: #5e4b3c; }
+        .next-btn.disabled { opacity: 0.4; pointer-events: none; }
 
-        /* oyun bitti modal */
+        /* OYUN BİTTİ MODAL */
         .game-over-modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -532,7 +559,7 @@
             gap: 10px;
         }
 
-        /* liderlik & başarımlar panelleri */
+        /* LİDERLİK & BAŞARIM PANELLERİ */
         .leaderboard-panel, .achievements-panel, .admin-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -555,7 +582,7 @@
             opacity: 1;
         }
 
-        /* maskot */
+        /* MASKOT */
         .mascot {
             position: fixed;
             bottom: 15px;
@@ -579,7 +606,7 @@
         }
         .speech-bubble.active { display: block; }
 
-        /* ses butonu */
+        /* SES BUTONU */
         .sound-toggle {
             position: fixed;
             bottom: 15px;
@@ -599,48 +626,7 @@
             box-shadow: 0 6px 0 #d4a373;
         }
 
-        /* ---------- SÜPER RESPONSIVE ---------- */
-        @media (max-width: 768px) {
-            .game-container, .intro-card { padding: 20px; }
-            .question-text { font-size: 1.4rem; padding-right: 60px; }
-            .timer { padding: 6px 14px; font-size: 1rem; top: 15px; right: 15px; }
-            .option-btn { padding: 14px 10px; font-size: 1rem; }
-            .next-btn { padding: 14px 25px; font-size: 1.2rem; }
-            .level-badge { width: 55px; height: 55px; font-size: 1.3rem; }
-            .intro-stats { grid-template-columns: 1fr; }
-            .intro-avatar { width: 60px; height: 60px; font-size: 2rem; }
-        }
-
-        @media (max-width: 600px) {
-            .options-grid { grid-template-columns: 1fr; }
-            .question-text { font-size: 1.3rem; }
-            .header { flex-direction: column; align-items: stretch; }
-            .score-box, .level-box { width: 100%; justify-content: center; }
-            .user-header { flex-direction: column; text-align: center; }
-            .user-avatar { margin: 0 auto; }
-            .intro-user-header { flex-direction: column; text-align: center; }
-            .intro-avatar { margin: 0 auto; }
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 8px; }
-            .game-container, .intro-card { padding: 16px; }
-            .question-text { font-size: 1.2rem; padding-right: 0; margin-top: 50px; }
-            .timer { position: relative; top: 0; right: 0; margin-bottom: 15px; width: fit-content; }
-            .option-btn { padding: 14px 12px; font-size: 0.95rem; }
-            .next-btn { width: 100%; }
-            .level-badge { width: 50px; height: 50px; font-size: 1.2rem; }
-            .mascot { width: 70px; bottom: 10px; left: 10px; }
-            .sound-toggle { width: 50px; height: 50px; font-size: 1.4rem; bottom: 10px; right: 10px; }
-        }
-
-        @media (max-width: 360px) {
-            .question-text { font-size: 1.1rem; }
-            .option-btn { font-size: 0.85rem; }
-            .intro-play-btn { font-size: 1.4rem; }
-        }
-
-        /* toast mesajları */
+        /* TOAST MESAJLARI */
         .toast-message {
             position: fixed;
             top: 20px;
@@ -663,9 +649,44 @@
         }
         .toast-success { background: #d4edda; border-color: #a3d0b1; color: #0b5e42; }
         .toast-info { background: #fff3cd; border-color: #ffe69b; color: #856404; }
-        @keyframes slideDown {
-            from { top: -50px; opacity: 0; }
-            to { top: 20px; opacity: 1; }
+        @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
+
+        /* ---------- SÜPER RESPONSIVE ---------- */
+        @media (max-width: 768px) {
+            .game-container, .intro-card { padding: 20px; }
+            .question-text { font-size: 1.4rem; padding-right: 60px; }
+            .timer { padding: 6px 14px; font-size: 1rem; top: 15px; right: 15px; }
+            .option-btn { padding: 14px 10px; font-size: 1rem; }
+            .next-btn { padding: 14px 25px; font-size: 1.2rem; }
+            .level-badge { width: 55px; height: 55px; font-size: 1.3rem; }
+            .intro-stats { grid-template-columns: 1fr; }
+            .intro-avatar { width: 60px; height: 60px; font-size: 2rem; }
+        }
+        @media (max-width: 600px) {
+            .options-grid { grid-template-columns: 1fr; }
+            .question-text { font-size: 1.3rem; }
+            .header { flex-direction: column; align-items: stretch; }
+            .score-box, .level-box { width: 100%; justify-content: center; }
+            .user-header { flex-direction: column; text-align: center; }
+            .user-avatar { margin: 0 auto; }
+            .intro-user-header { flex-direction: column; text-align: center; }
+            .intro-avatar { margin: 0 auto; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 8px; }
+            .game-container, .intro-card { padding: 16px; }
+            .question-text { font-size: 1.2rem; padding-right: 0; margin-top: 50px; }
+            .timer { position: relative; top: 0; right: 0; margin-bottom: 15px; width: fit-content; }
+            .option-btn { padding: 14px 12px; font-size: 0.95rem; }
+            .next-btn { width: 100%; }
+            .level-badge { width: 50px; height: 50px; font-size: 1.2rem; }
+            .mascot { width: 70px; bottom: 10px; left: 10px; }
+            .sound-toggle { width: 50px; height: 50px; font-size: 1.4rem; bottom: 10px; right: 10px; }
+        }
+        @media (max-width: 360px) {
+            .question-text { font-size: 1.1rem; }
+            .option-btn { font-size: 0.85rem; }
+            .intro-play-btn { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -674,17 +695,18 @@
 <!-- ========== INTRO EKRANI (ANA DASHBOARD) ========= -->
 <div id="introOverlay" class="intro-overlay">
     <div class="intro-card">
-        <!-- Kullanıcı Bilgi Başlığı + Ayarlar Butonu -->
         <div class="intro-user-header">
             <div id="introAvatar" class="intro-avatar">🐻</div>
             <div class="intro-user-details">
                 <span id="introUserName" class="intro-user-name">Misafir</span>
-                <span id="introUserStats" class="intro-user-stats">Seviye <span id="introLevel">1</span> • Puan <span id="introScore">0</span></span>
+                <span id="introUserStats" class="intro-user-stats">
+                    <i class="fas fa-crown"></i> Seviye <span id="introLevel">1</span> 
+                    • <i class="fas fa-star"></i> Puan <span id="introScore">0</span>
+                </span>
             </div>
             <button id="introSettingsBtn" class="intro-settings"><i class="fas fa-cog"></i></button>
         </div>
 
-        <!-- İstatistik Kartları (Liderlik & Başarımlar) -->
         <div class="intro-stats">
             <div class="intro-leaderboard-preview">
                 <h4><i class="fas fa-ranking-star"></i> En İyiler</h4>
@@ -696,22 +718,19 @@
             </div>
         </div>
 
-        <!-- BÜYÜK OYNA BUTONU -->
         <button id="introStartGameBtn" class="intro-play-btn">
             <i class="fas fa-play-circle"></i> OYUNA BAŞLA
         </button>
 
-        <!-- AYARLAR PANELİ (gizli, avatar değiştirme, isim) -->
+        <!-- AYARLAR PANELİ (gizli) -->
         <div id="introSettingsPanel" class="intro-settings-panel" style="display: none;">
             <h4><i class="fas fa-user-edit"></i> Profil Ayarları</h4>
             <input type="text" id="settingsUsername" placeholder="Adın Soyadın" value="Misafir">
             <div style="font-weight: 600; margin-bottom: 10px;">Avatar Seç:</div>
-            <div id="settingsAvatarSelector" class="avatar-selector">
-                <!-- JS ile doldurulacak -->
-            </div>
+            <div id="settingsAvatarSelector" class="avatar-selector"></div>
             <div style="display: flex; gap: 15px; margin-top: 15px;">
-                <button id="saveSettingsBtn" class="restart-btn" style="background: #a5d6b7; box-shadow: 0 8px 0 #6b8c7e;">Kaydet</button>
-                <button id="closeSettingsBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 8px 0 #d4a373;">Kapat</button>
+                <button id="saveSettingsBtn" class="restart-btn" style="background: #a5d6b7; box-shadow: 0 8px 0 #6b8c7e; color: #1e3a2f;">Kaydet</button>
+                <button id="closeSettingsBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 8px 0 #d4a373; color: #5e4b3c;">Kapat</button>
             </div>
         </div>
     </div>
@@ -719,7 +738,7 @@
 
 <!-- ========== ANA OYUN KONTEYNERİ ========= -->
 <div id="gameContainer" class="game-container" style="display: none;">
-    <!-- Kullanıcı Başlığı (avatar, isim, puan, seviye) -->
+    <!-- Kullanıcı Başlığı -->
     <div class="user-header">
         <div id="gameAvatar" class="user-avatar">🐻</div>
         <div class="user-info">
@@ -731,15 +750,15 @@
         </div>
     </div>
 
-    <!-- Üst Panel: Skor, Seviye, Butonlar -->
+    <!-- Üst Panel -->
     <div class="header">
         <div class="score-box"><i class="fas fa-star"></i> <span id="scoreDisplay">0</span> Puan</div>
         <div class="level-box"><i class="fas fa-crown"></i> Seviye <span id="currentLevelDisplay">1</span></div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button id="leaderboardBtn" class="leaderboard-btn"><i class="fas fa-ranking-star"></i></button>
-            <button id="achievementsBtn" class="achievements-btn"><i class="fas fa-medal"></i></button>
-            <button id="settingsBtn" class="settings-btn"><i class="fas fa-cog"></i></button>
-            <button id="exitGameBtn" class="exit-btn"><i class="fas fa-sign-out-alt"></i></button>
+            <button id="leaderboardBtn" class="leaderboard-btn" title="Liderlik"><i class="fas fa-ranking-star"></i></button>
+            <button id="achievementsBtn" class="achievements-btn" title="Başarımlar"><i class="fas fa-medal"></i></button>
+            <button id="settingsBtn" class="settings-btn" title="Tema Değiştir"><i class="fas fa-moon"></i></button>
+            <button id="exitGameBtn" class="exit-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </div>
 
@@ -762,14 +781,14 @@
 <div id="leaderboardPanel" class="leaderboard-panel">
     <h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-ranking-star"></i> En İyiler</h2>
     <div id="leaderboardList" style="margin-bottom: 20px;">Yükleniyor...</div>
-    <button id="closeLeaderboardBtn" class="restart-btn" style="background: #ffe0b0;">Kapat</button>
+    <button id="closeLeaderboardBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c;">Kapat</button>
 </div>
 
 <!-- ========== BAŞARIM PANELİ ========= -->
 <div id="achievementsPanel" class="achievements-panel">
     <h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-medal"></i> Başarımlar</h2>
     <div id="achievementsList">Yükleniyor...</div>
-    <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; margin-top: 20px;">Kapat</button>
+    <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
 <!-- ========== ADMIN PANELİ (Soru Ekleme) ========= -->
@@ -816,7 +835,7 @@
     <i class="fas fa-volume-up"></i>
 </div>
 
-<!-- TOAST mesajları için container -->
+<!-- TOAST MESAJLARI KONTEYNERİ -->
 <div id="toastContainer"></div>
 
 <script type="module">
@@ -825,17 +844,18 @@
     // ------------------------------------------------------------
     import { db } from './firebase-core.js';
     import { 
-        collection, getDocs, addDoc, query, orderBy, limit, doc, setDoc, getDoc, updateDoc, deleteDoc, where 
+        collection, getDocs, addDoc, query, orderBy, limit, 
+        doc, setDoc, getDoc, updateDoc, deleteDoc, where 
     } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     // ------------------------------------------------------------
-    // 1) SABİTLER VE DEĞİŞKENLER
+    // 1) SABİTLER
     // ------------------------------------------------------------
     const QUESTIONS_COLLECTION = 'manevi_sorular';
     const LEADERBOARD_COLLECTION = 'leaderboard';
     const ADMIN_PASSWORD = 'admin123';
 
-    // Örnek sorular (ilk yükleme için)
+    // Örnek sorular
     const SAMPLE_QUESTIONS = [
         { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
         { bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha', 'Yasin', 'Rahman', 'Mülk'], dogru: 1, zorluk: 2 },
@@ -866,7 +886,7 @@
         { name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
     ];
 
-    // Ses efektleri (404 yok)
+    // Ses efektleri (kalıcı linkler)
     let soundEnabled = true;
     const sounds = {
         correct: new Howl({ src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3'] }),
@@ -906,7 +926,11 @@
                 const parsed = JSON.parse(saved);
                 gameState = { ...gameState, ...parsed };
                 if (!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
-                if (!gameState.achievements) gameState.achievements = { firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false, maxLevel5: false };
+                if (!gameState.achievements) {
+                    gameState.achievements = { firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false, maxLevel5: false };
+                }
+                // Eski oyunlardan kalan NaN score varsa düzelt
+                if (isNaN(gameState.score)) gameState.score = 0;
             } catch (e) {}
         }
     }
@@ -985,7 +1009,7 @@
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const mascot = document.getElementById('mascot');
     const speechBubble = document.getElementById('speechBubble');
-    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsBtn = document.getElementById('settingsBtn'); // tema değiştirme
 
     // ------------------------------------------------------------
     // 4) OYUN DEĞİŞKENLERİ
@@ -1015,7 +1039,7 @@
     function triggerConfetti() { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); }
     function playSound(soundName) { if (soundEnabled && sounds[soundName]) sounds[soundName].play(); }
 
-    // Avatar seçiciyi ayarlar paneline doldur
+    // Avatar seçiciyi doldur
     function initAvatarSelector() {
         settingsAvatarSelector.innerHTML = '';
         AVATAR_LIST.forEach((av, idx) => {
@@ -1033,15 +1057,13 @@
         });
     }
 
-    // Intro ekranını güncelle (kullanıcı bilgileri, liderlik, başarımlar)
+    // Intro ekranını güncelle
     async function updateIntroUI() {
         introAvatar.innerText = gameState.avatar;
         introUserName.innerText = gameState.username || 'Misafir';
         introLevel.innerText = gameState.currentLevel;
         introScore.innerText = gameState.score;
-        // Liderlik önizleme
         await loadLeaderboardPreview();
-        // Başarımlar önizleme (son 3 kazanılmış rozet)
         updateAchievementsPreview();
     }
 
@@ -1052,10 +1074,13 @@
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
+                // score sayıya çevir, NaN ise 0 yap
+                let scoreVal = Number(data.score);
+                if (isNaN(scoreVal)) scoreVal = 0;
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                             <span style="font-weight:700;">${idx+1}.</span>
-                            <span>${data.username}</span>
-                            <span style="margin-left:auto; background:#ffe0b0; padding:2px 12px; border-radius:40px;">${data.score}</span>
+                            <span>${data.username || 'İsimsiz'}</span>
+                            <span style="margin-left:auto; background:#ffe0b0; padding:2px 12px; border-radius:40px;">${scoreVal}</span>
                         </li>`;
             });
             html += '</ul>';
@@ -1081,7 +1106,7 @@
         introAchievementsList.innerHTML = html;
     }
 
-    // Kullanıcı bilgilerini oyun içinde güncelle
+    // Oyun içi başlık güncelleme
     function updateGameHeader() {
         gameAvatar.innerText = gameState.avatar;
         gameUserName.innerText = gameState.username;
@@ -1107,9 +1132,8 @@
         showToast('Profil güncellendi!', 'success');
     }
 
-    // Oyun başlatma (intro'dan)
+    // Oyunu başlat (intro'dan)
     function startGameFromIntro() {
-        // Eğer hiç kullanıcı adı yoksa misafir yap
         if (!gameState.username) {
             gameState.username = 'Misafir';
             gameState.avatar = AVATAR_LIST[0].icon;
@@ -1118,7 +1142,6 @@
         updateGameHeader();
         introOverlay.classList.add('hidden');
         gameContainer.style.display = 'block';
-        // Oyunu kaldığı yerden başlat
         loadLevelQuestions(gameState.currentLevel);
         renderLevelIndicators();
     }
@@ -1132,7 +1155,7 @@
     }
 
     // ------------------------------------------------------------
-    // 6) OYUN FONKSİYONLARI (seviye, soru, ipucu, süre, cevap...)
+    // 6) OYUN FONKSİYONLARI
     // ------------------------------------------------------------
     async function loadAllQuestions() {
         try {
@@ -1140,6 +1163,9 @@
             const snapshot = await getDocs(q);
             allQuestions = [];
             snapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
+            if (allQuestions.length === 0) {
+                allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
+            }
         } catch (e) {
             allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
         }
@@ -1195,7 +1221,6 @@
                         showToast('⏳ Süre doldu! Bir hakkın kaldı.', 'info');
                         firstAttempt = false;
                     } else {
-                        // ikinci denemede süre bitti -> oyun bitti
                         gameActive = false;
                         gameOverMessage.innerText = 'Süre doldu ve ikinci hakkını kullanamadın.';
                         gameOverModal.classList.add('active');
@@ -1222,6 +1247,7 @@
         });
         eliminatedOptions = eliminateThese;
         gameState.score -= 1;
+        if (gameState.score < 0) gameState.score = 0; // puan negatif olmasın
         gameState.hintUsedInThisLevel = true;
         hintBtn.classList.add('disabled');
         saveGameState();
@@ -1300,7 +1326,6 @@
             renderLevelIndicators();
             showToast(`🎯 Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} başladı.`, 'success');
             playSound('levelUp');
-            // Sosyal paylaşım
             showShareButtons(completedLevel);
             if (gameState.maxUnlockedLevel >= 5 && !gameState.achievements.maxLevel5) {
                 gameState.achievements.maxLevel5 = true;
@@ -1401,14 +1426,14 @@
     }
 
     // ------------------------------------------------------------
-    // 8) LİDERLİK
+    // 8) LİDERLİK TABLOSU (DÜZGÜN SIRALAMA, NAN YOK)
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
         try {
             await addDoc(collection(db, LEADERBOARD_COLLECTION), {
                 username: gameState.username,
-                score: gameState.score,
+                score: Number(gameState.score), // sayıya çevir
                 level: gameState.currentLevel,
                 timestamp: new Date()
             });
@@ -1422,10 +1447,12 @@
             let html = '<ol style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
+                let scoreVal = Number(data.score);
+                if (isNaN(scoreVal)) scoreVal = 0;
                 html += `<li style="padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px; display:flex; align-items:center;">
                             <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
-                            <i class="fas fa-user-circle"></i> ${data.username}
-                            <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${data.score} puan</span>
+                            <i class="fas fa-user-circle"></i> ${data.username || 'İsimsiz'}
+                            <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
                         </li>`;
             });
             html += '</ol>';
@@ -1453,11 +1480,10 @@
     }
 
     // ------------------------------------------------------------
-    // 10) ADMIN PANELİ
+    // 10) ADMIN PANELİ (3 tıklama)
     // ------------------------------------------------------------
     let adminClickCount = 0;
     function initAdmin() {
-        // Profil resmine 3 tıklama (oyun içi)
         if (gameAvatar) {
             gameAvatar.addEventListener('click', () => {
                 adminClickCount++;
@@ -1498,6 +1524,15 @@
     function toggleDarkMode() {
         document.body.classList.toggle('dark-theme');
         gameState.darkMode = document.body.classList.contains('dark-theme');
+        // ikon değiştir
+        const icon = settingsBtn.querySelector('i');
+        if (gameState.darkMode) {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
         saveGameState();
     }
 
@@ -1509,22 +1544,24 @@
         await seedQuestionsIfNeeded();
         await loadAllQuestions();
 
-        // Avatar seçiciyi hazırla
         initAvatarSelector();
         settingsUsername.value = gameState.username || 'Misafir';
 
-        // Dark mode uygula
-        if (gameState.darkMode) document.body.classList.add('dark-theme');
+        // Dark mode başlangıç
+        if (gameState.darkMode) {
+            document.body.classList.add('dark-theme');
+            settingsBtn.querySelector('i').classList.remove('fa-moon');
+            settingsBtn.querySelector('i').classList.add('fa-sun');
+        } else {
+            settingsBtn.querySelector('i').classList.add('fa-moon');
+        }
 
-        // Intro'yu güncelle
         await updateIntroUI();
 
-        // Eğer kullanıcı daha önce giriş yapmışsa intro açık kalır, elle başlatması gerek
-        // Butonlar
+        // Intro eventleri
         introStartBtn.addEventListener('click', startGameFromIntro);
         introSettingsBtn.addEventListener('click', () => {
             settingsUsername.value = gameState.username;
-            // Seçili avatarı işaretle
             document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => {
                 if (el.dataset.avatarIcon === gameState.avatar) el.classList.add('selected');
                 else el.classList.remove('selected');
@@ -1534,7 +1571,7 @@
         saveSettingsBtn.addEventListener('click', saveSettings);
         closeSettingsBtn.addEventListener('click', () => introSettingsPanel.style.display = 'none');
 
-        // Oyun içi olaylar
+        // Oyun içi
         nextBtn.addEventListener('click', onNext);
         hintBtn.addEventListener('click', useHint);
         restartGameBtn.addEventListener('click', restartLevelAfterGameOver);
@@ -1576,13 +1613,13 @@
 
         // Ses
         soundToggleBtn.addEventListener('click', toggleSound);
-        // Dark mode (ayarlar butonu oyun içi)
+        // Dark mode
         settingsBtn.addEventListener('click', toggleDarkMode);
 
         // Maskot
         mascot.addEventListener('click', () => mascotSpeak('Soruyu cevaplamaya ne dersin?'));
 
-        // Admin paneli için dinleyici
+        // Admin paneli
         initAdmin();
 
         // Puanı kaydet
