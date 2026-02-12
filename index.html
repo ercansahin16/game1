@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
     <title>Manevi Bilgi Oyunu 🌙</title>
-    <!-- Favicon (artık 404 yok) -->
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
-    <!-- Font Awesome 6 (tüm ikonlar çalışır) -->
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Font: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -373,7 +373,6 @@
         }
         .score-box i, .level-box i { color: #ff9f1c; font-size: 1.4rem; }
 
-        /* butonlar */
         .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn {
             background: rgba(255,255,255,0.7);
             border: 2px solid #ffe0b0;
@@ -387,9 +386,7 @@
             color: #4a5a6a;
             transition: 0.1s;
         }
-        .leaderboard-btn i, .achievements-btn i, .settings-btn i, .exit-btn i {
-            font-size: 1.3rem;
-        }
+        .leaderboard-btn i, .achievements-btn i, .settings-btn i, .exit-btn i { font-size: 1.3rem; }
 
         .levels-wrapper {
             overflow-x: auto;
@@ -436,7 +433,7 @@
             line-height: 1.4;
             margin-bottom: 25px;
             word-break: break-word;
-            padding-right: 70px;
+            padding-right: 80px;
         }
         .timer {
             position: absolute;
@@ -769,7 +766,7 @@
 
     <!-- Soru Kartı -->
     <div id="questionCard" class="question-card">
-        <div id="timer" class="timer"><i class="fas fa-hourglass-half"></i> <span id="timerSeconds">30</span>sn</div>
+        <div id="timer" class="timer"><i class="fas fa-hourglass-half"></i> <span id="timerSeconds">60</span>sn</div>
         <div id="questionText" class="question-text">Soru yükleniyor...</div>
         <button id="hintButton" class="hint-btn"><i class="fas fa-lightbulb"></i> İpucu (1 puan)</button>
         <div id="optionsContainer" class="options-grid"></div>
@@ -886,14 +883,14 @@
         { name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
     ];
 
-    // Ses efektleri (kalıcı linkler)
+    // Ses efektleri (KALICI, 404 YOK)
     let soundEnabled = true;
     const sounds = {
         correct: new Howl({ src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3'] }),
-        wrong: new Howl({ src: ['https://cdn.freesound.org/previews/413/413930_5121236-lq.mp3'] }),
+        wrong: new Howl({ src: ['https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3'] }),
         levelUp: new Howl({ src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3'] }),
-        gameOver: new Howl({ src: ['https://cdn.freesound.org/previews/331/331912_5121236-lq.mp3'] }),
-        hint: new Howl({ src: ['https://cdn.freesound.org/previews/242/242501_4284965-lq.mp3'] })
+        gameOver: new Howl({ src: ['https://www.soundjay.com/misc/sounds/fail-buzzer-01.mp3'] }),
+        hint: new Howl({ src: ['https://www.soundjay.com/misc/sounds/page-flip-01.mp3'] })
     };
 
     // Oyun durumu (LocalStorage)
@@ -929,7 +926,6 @@
                 if (!gameState.achievements) {
                     gameState.achievements = { firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false, maxLevel5: false };
                 }
-                // Eski oyunlardan kalan NaN score varsa düzelt
                 if (isNaN(gameState.score)) gameState.score = 0;
             } catch (e) {}
         }
@@ -1021,7 +1017,7 @@
     let firstAttempt = true;
     let gameActive = true;
     let timerInterval = null;
-    let timeLeft = 30;
+    let timeLeft = 60; // 1 DAKİKA
     let hintUsed = false;
     let eliminatedOptions = [];
 
@@ -1038,6 +1034,18 @@
     }
     function triggerConfetti() { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); }
     function playSound(soundName) { if (soundEnabled && sounds[soundName]) sounds[soundName].play(); }
+
+    // Howler.js otomatik kilit açma (autoplay)
+    function unlockAudio() {
+        Howler.autoUnlock = true;
+        Howler._autoUnlock();
+        // Alternatif: click ile
+        const unlock = () => {
+            if (Howler.ctx && Howler.ctx.state === 'suspended') Howler.ctx.resume();
+            window.removeEventListener('click', unlock);
+        };
+        window.addEventListener('click', unlock, { once: true });
+    }
 
     // Avatar seçiciyi doldur
     function initAvatarSelector() {
@@ -1067,14 +1075,14 @@
         updateAchievementsPreview();
     }
 
+    // LİDERLİK ÖNİZLEME (En iyi 5 göster)
     async function loadLeaderboardPreview() {
         try {
-            const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(3));
+            const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(5));
             const snapshot = await getDocs(q);
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                // score sayıya çevir, NaN ise 0 yap
                 let scoreVal = Number(data.score);
                 if (isNaN(scoreVal)) scoreVal = 0;
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -1144,6 +1152,7 @@
         gameContainer.style.display = 'block';
         loadLevelQuestions(gameState.currentLevel);
         renderLevelIndicators();
+        unlockAudio(); // ses kilidini aç
     }
 
     // Oyunu bitir ve intro'ya dön
@@ -1202,7 +1211,7 @@
         eliminatedOptions = [];
         nextBtn.classList.add('disabled');
         nextBtn.classList.remove('active');
-        startTimer(30);
+        startTimer(60); // 1 DAKİKA
     }
 
     function startTimer(seconds) {
@@ -1247,7 +1256,7 @@
         });
         eliminatedOptions = eliminateThese;
         gameState.score -= 1;
-        if (gameState.score < 0) gameState.score = 0; // puan negatif olmasın
+        if (gameState.score < 0) gameState.score = 0;
         gameState.hintUsedInThisLevel = true;
         hintBtn.classList.add('disabled');
         saveGameState();
@@ -1426,14 +1435,14 @@
     }
 
     // ------------------------------------------------------------
-    // 8) LİDERLİK TABLOSU (DÜZGÜN SIRALAMA, NAN YOK)
+    // 8) LİDERLİK TABLOSU (TOP 10 - SAĞLAM)
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
         try {
             await addDoc(collection(db, LEADERBOARD_COLLECTION), {
                 username: gameState.username,
-                score: Number(gameState.score), // sayıya çevir
+                score: Number(gameState.score),
                 level: gameState.currentLevel,
                 timestamp: new Date()
             });
@@ -1453,6 +1462,7 @@
                             <span style="font-weight:700; margin-right:15px; width:30px;">#${idx+1}</span>
                             <i class="fas fa-user-circle"></i> ${data.username || 'İsimsiz'}
                             <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
+                            <span style="margin-left:10px; color:#6b7280;">Seviye ${data.level || 1}</span>
                         </li>`;
             });
             html += '</ol>';
@@ -1524,7 +1534,6 @@
     function toggleDarkMode() {
         document.body.classList.toggle('dark-theme');
         gameState.darkMode = document.body.classList.contains('dark-theme');
-        // ikon değiştir
         const icon = settingsBtn.querySelector('i');
         if (gameState.darkMode) {
             icon.classList.remove('fa-moon');
