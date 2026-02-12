@@ -293,7 +293,7 @@
         .game-over-card { background: white; border-radius: 48px; padding: 35px; max-width: 450px; width: 90%; text-align: center; box-shadow: 0 20px 0 #ffe0b5; border: 3px solid #ffe8d9; }
         .restart-btn { background: #ffb7b7; border: none; border-radius: 50px; padding: 14px 30px; font-size: 1.2rem; font-weight: 600; color: #631e1e; box-shadow: 0 8px 0 #b47272; cursor: pointer; display: inline-flex; gap: 10px; }
 
-        /* ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ + LİDERLİK TEMİZLE ========= */
+        /* ========== ADMIN PANELİ – 2 SÜTUNLU + SEVİYE BİLGİSİ + TEMİZLE BUTONLARI ========= */
         .admin-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -421,7 +421,19 @@
             box-shadow: 0 6px 0 #b47272 !important;
             color: #631e1e !important;
             margin-top: 15px;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.1s;
         }
+        .admin-clear-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #b47272 !important; }
 
         /* ========== LİDERLİK & BAŞARIM PANELLERİ ========= */
         .leaderboard-panel, .achievements-panel {
@@ -612,7 +624,7 @@
     <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
-<!-- ========== ADMIN PANELİ – LİDERLİK TEMİZLE BUTONLU ========= -->
+<!-- ========== ADMIN PANELİ – SIFIRLAMA BUTONLARI EKLENDİ ========= -->
 <div id="adminPanel" class="admin-panel">
     <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
     <div class="admin-split">
@@ -623,8 +635,12 @@
                 <p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
             </div>
             <!-- LİDERLİK TABLOSUNU TEMİZLE BUTONU -->
-            <button id="clearLeaderboardBtn" class="admin-clear-btn" style="width:100%; margin-top:20px; padding:14px; border:none; border-radius:60px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <button id="clearLeaderboardBtn" class="admin-clear-btn">
                 <i class="fas fa-trash-alt"></i> Liderlik Tablosunu Temizle
+            </button>
+            <!-- TÜM KULLANICI VERİLERİNİ SIFIRLA BUTONU (LocalStorage + Liderlik) -->
+            <button id="resetAllUserDataBtn" class="admin-clear-btn" style="margin-top: 10px; background: #b34180 !important; box-shadow: 0 6px 0 #7a2d5a !important; color: white !important;">
+                <i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla
             </button>
         </div>
         <div class="admin-right">
@@ -691,6 +707,7 @@
     const QUESTIONS_COLLECTION = 'manevi_sorular';
     const LEADERBOARD_COLLECTION = 'leaderboard';
     const ADMIN_PASSWORD = 'admin123';
+    const STORAGE_KEY = 'maneviOyunSave';
 
     const SAMPLE_QUESTIONS = [
         { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
@@ -781,7 +798,7 @@
     }
 
     // ------------------------------------------------------------
-    // OYUN DURUMU (LOCALSTORAGE)
+    // OYUN DURUMU (LOCALSTORAGE) – 50 SEVİYE, YENİ ROZETLER
     // ------------------------------------------------------------
     let gameState = {
         maxUnlockedLevel: 1,
@@ -791,20 +808,31 @@
         earnedPointsForQuestion: {},
         hintUsedInThisLevel: false,
         achievements: {
+            // Temel rozetler
             firstCorrect: false,
             streak: 0,
             quranMaster: false,
             namazkar: false,
             peygamberSever: false,
-            maxLevel5: false
+            // Seviye rozetleri (her 5 seviyede bir)
+            level5: false,
+            level10: false,
+            level15: false,
+            level20: false,
+            level25: false,
+            level30: false,
+            level35: false,
+            level40: false,
+            level45: false,
+            level50: false
         },
+        recentAchievements: [], // Son kazanılan 3 rozet (array olarak)
         username: '',
         avatar: AVATAR_LIST[0].icon,
         avatarImg: AVATAR_LIST[0].img,
         darkMode: false
     };
 
-    const STORAGE_KEY = 'maneviOyunSave';
     function loadGameState() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -812,12 +840,52 @@
                 const parsed = JSON.parse(saved);
                 gameState = { ...gameState, ...parsed };
                 if (!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
-                if (!gameState.achievements) gameState.achievements = { firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false, maxLevel5: false };
+                if (!gameState.achievements) {
+                    gameState.achievements = {
+                        firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+                        level5: false, level10: false, level15: false, level20: false, level25: false,
+                        level30: false, level35: false, level40: false, level45: false, level50: false
+                    };
+                }
+                if (!gameState.recentAchievements) gameState.recentAchievements = [];
                 if (isNaN(gameState.score)) gameState.score = 0;
             } catch (e) {}
         }
     }
     function saveGameState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
+
+    // Rozet isimlendirmeleri (güzel isimler)
+    const ACHIEVEMENT_NAMES = {
+        firstCorrect: '🌟 İlk Doğru',
+        streak: '🔥 Seri Katili (10 doğru üst üste)',
+        quranMaster: '🧩 Kur\'an Ustası',
+        namazkar: '🕌 Namazkâr',
+        peygamberSever: '👑 Peygamber Sever',
+        level5: '🌱 Acemi Bilge',
+        level10: '🌿 Bilgelik Yolcusu',
+        level15: '🍃 İlim Çırağı',
+        level20: '🌳 Manevi Fidan',
+        level25: '📚 Hakikat Arayıcısı',
+        level30: '🕊️ Hikmet Taliplisi',
+        level35: '✨ İrfan Dostu',
+        level40: '🕌 Hakikat Yolcusu',
+        level45: '🌟 Marifet Sahibi',
+        level50: '👑 Manevi Alim'
+    };
+
+    // Rozet kazanma fonksiyonu
+    function unlockAchievement(achievementKey) {
+        if (!gameState.achievements[achievementKey]) {
+            gameState.achievements[achievementKey] = true;
+            // Son başarımlar listesine ekle (en fazla 3)
+            const achievementName = ACHIEVEMENT_NAMES[achievementKey];
+            gameState.recentAchievements.unshift(achievementName);
+            if (gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
+            saveGameState();
+            showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
+            triggerConfetti();
+        }
+    }
 
     // ------------------------------------------------------------
     // FIRESTORE ÖRNEK SORU YÜKLEME
@@ -893,7 +961,8 @@
     const adminZorluk = document.getElementById('adminZorluk');
     const saveQuestionBtn = document.getElementById('saveQuestionBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
-    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn'); // YENİ BUTON
+    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+    const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn'); // YENİ BUTON
 
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const mascot = document.getElementById('mascot');
@@ -951,7 +1020,7 @@
     }
 
     // ------------------------------------------------------------
-    // LİDERLİK ÖNİZLEME – NaN SORUNU TAMAMEN ÇÖZÜLDÜ
+    // LİDERLİK ÖNİZLEME (NaN ÇÖZÜLDÜ)
     // ------------------------------------------------------------
     async function loadLeaderboardPreview() {
         try {
@@ -960,12 +1029,9 @@
             let html = '<ul style="list-style:none; padding:0;">';
             snapshot.forEach((doc, idx) => {
                 const data = doc.data();
-                // Score: önce number'a çevir, geçersizse 0
                 let scoreVal = Number(data.score);
                 if (isNaN(scoreVal)) scoreVal = 0;
-                // Username: boşsa "İsimsiz"
                 const username = data.username?.trim() || 'İsimsiz';
-                // Sıra numarası kesin sayı
                 const rank = idx + 1;
                 html += `<li style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                             <span style="font-weight:700;">${rank}.</span>
@@ -980,20 +1046,18 @@
         }
     }
 
+    // ------------------------------------------------------------
+    // BAŞARIM ÖNİZLEME – SON 3 KAZANILAN ROZET
+    // ------------------------------------------------------------
     function updateAchievementsPreview() {
-        const a = gameState.achievements;
-        let earned = [];
-        if (a.firstCorrect) earned.push('🌟 İlk Doğru');
-        if (a.streak >= 5) earned.push('🔥 Seri Katili');
-        if (a.maxLevel5) earned.push('💯 Maksimum Seviye');
-        if (a.quranMaster) earned.push('🧩 Kur\'an Ustası');
-        if (a.namazkar) earned.push('🕌 Namazkâr');
-        if (a.peygamberSever) earned.push('👑 Peygamber Sever');
-        if (earned.length === 0) earned = ['Henüz başarım yok'];
         let html = '<ul style="list-style:none; padding:0;">';
-        earned.slice(0, 3).forEach(b => {
-            html += `<li style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-medal" style="color:#ffc107;"></i> ${b}</li>`;
-        });
+        if (gameState.recentAchievements && gameState.recentAchievements.length > 0) {
+            gameState.recentAchievements.slice(0, 3).forEach(b => {
+                html += `<li style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-medal" style="color:#ffc107;"></i> ${b}</li>`;
+            });
+        } else {
+            html += '<li style="color: #6b7280;">Henüz başarım yok</li>';
+        }
         html += '</ul>';
         introAchievementsList.innerHTML = html;
     }
@@ -1206,6 +1270,15 @@
             gameState.currentLevel = completedLevel + 1;
             gameState.currentQuestionIndexInLevel = 0;
             gameState.hintUsedInThisLevel = false;
+            
+            // Seviye rozeti kontrolü (her 5 seviyede bir)
+            if (completedLevel % 5 === 0) {
+                const levelKey = `level${completedLevel}`;
+                if (gameState.achievements[levelKey] === false) {
+                    unlockAchievement(levelKey);
+                }
+            }
+            
             saveGameState();
             loadLevelQuestions(gameState.currentLevel);
             currentLevelDisplay.innerText = gameState.currentLevel;
@@ -1214,11 +1287,6 @@
             showToast(`🎯 Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} başladı.`, 'success');
             playSound('levelUp');
             showShareButtons(completedLevel);
-            if (gameState.maxUnlockedLevel >= 5 && !gameState.achievements.maxLevel5) {
-                gameState.achievements.maxLevel5 = true;
-                saveGameState();
-                showToast('🏆 Başarım: Maksimum Seviye (5)', 'success');
-            }
         } else {
             loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
             saveGameState();
@@ -1263,39 +1331,72 @@
     }
 
     // ------------------------------------------------------------
-    // BAŞARIMLAR
+    // BAŞARIMLAR (DİĞER ROZETLER)
     // ------------------------------------------------------------
     function checkAchievements(action, questionId) {
+        // İlk doğru
         if (!gameState.achievements.firstCorrect && action === 'correct') {
-            gameState.achievements.firstCorrect = true;
-            showToast('🌟 Başarım: İlk Doğru!', 'success');
-            saveGameState();
+            unlockAchievement('firstCorrect');
         }
+        // Seri Katili (10 doğru üst üste)
         if (action === 'correct') {
             gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
-            if (gameState.achievements.streak === 5) {
-                showToast('🔥 Başarım: Seri Katili (5 doğru üst üste)!', 'success');
-                saveGameState();
+            if (gameState.achievements.streak === 10 && !gameState.achievements.streak10) {
+                // streak10 diye bir rozet yok, ACHIEVEMENT_NAMES'de streak var ama 5 doğru için. Biz 10 yapalım.
+                gameState.achievements.streak = 10;
+                unlockAchievement('streak'); // isim güncellenebilir, şimdilik aynı
             }
-        } else gameState.achievements.streak = 0;
+        } else {
+            gameState.achievements.streak = 0;
+        }
+        // Kategori rozetleri için ayrı kontrol eklenebilir (şimdilik manuel)
         saveGameState();
     }
 
+    // ------------------------------------------------------------
+    // BAŞARIM PANELİ – TÜM ROZETLERİ GÖSTER
+    // ------------------------------------------------------------
     function renderAchievements() {
         const a = gameState.achievements;
-        let html = `<ul style="list-style:none; padding:0;">
-            <li style="padding:12px; background:${a.firstCorrect ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-star" style="color:${a.firstCorrect ? '#ffc107' : '#6c757d'};"></i> İlk Doğru ${a.firstCorrect ? '✓' : '❌'}</li>
-            <li style="padding:12px; background:${(a.streak ||0) >=5 ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-fire" style="color:${(a.streak ||0) >=5 ? '#ff9800' : '#6c757d'};"></i> Seri Katili (5) ${(a.streak ||0) >=5 ? '✓' : '❌'}</li>
-            <li style="padding:12px; background:${a.quranMaster ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-book" style="color:${a.quranMaster ? '#28a745' : '#6c757d'};"></i> Kur'an Ustası ${a.quranMaster ? '✓' : '❌'}</li>
-            <li style="padding:12px; background:${a.namazkar ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-mosque" style="color:${a.namazkar ? '#28a745' : '#6c757d'};"></i> Namazkâr ${a.namazkar ? '✓' : '❌'}</li>
-            <li style="padding:12px; background:${a.peygamberSever ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-dove" style="color:${a.peygamberSever ? '#28a745' : '#6c757d'};"></i> Peygamber Sever ${a.peygamberSever ? '✓' : '❌'}</li>
-            <li style="padding:12px; background:${a.maxLevel5 ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;"><i class="fas fa-crown" style="color:${a.maxLevel5 ? '#ffc107' : '#6c757d'};"></i> Maksimum Seviye (5) ${a.maxLevel5 ? '✓' : '❌'}</li>
-        </ul>`;
+        let html = '<ul style="list-style:none; padding:0;">';
+        
+        // Temel rozetler
+        html += `<li style="padding:12px; background:${a.firstCorrect ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-star" style="color:${a.firstCorrect ? '#ffc107' : '#6c757d'};"></i> 🌟 İlk Doğru ${a.firstCorrect ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${(a.streak ||0) >=10 ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-fire" style="color:${(a.streak ||0) >=10 ? '#ff9800' : '#6c757d'};"></i> 🔥 Seri Katili (10) ${(a.streak ||0) >=10 ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.quranMaster ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-book" style="color:${a.quranMaster ? '#28a745' : '#6c757d'};"></i> 🧩 Kur'an Ustası ${a.quranMaster ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.namazkar ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-mosque" style="color:${a.namazkar ? '#28a745' : '#6c757d'};"></i> 🕌 Namazkâr ${a.namazkar ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.peygamberSever ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-dove" style="color:${a.peygamberSever ? '#28a745' : '#6c757d'};"></i> 👑 Peygamber Sever ${a.peygamberSever ? '✓' : '❌'}</li>`;
+        
+        // Seviye rozetleri (her 5 seviye)
+        const levelAchievements = [
+            { key: 'level5', name: '🌱 Acemi Bilge' },
+            { key: 'level10', name: '🌿 Bilgelik Yolcusu' },
+            { key: 'level15', name: '🍃 İlim Çırağı' },
+            { key: 'level20', name: '🌳 Manevi Fidan' },
+            { key: 'level25', name: '📚 Hakikat Arayıcısı' },
+            { key: 'level30', name: '🕊️ Hikmet Taliplisi' },
+            { key: 'level35', name: '✨ İrfan Dostu' },
+            { key: 'level40', name: '🕌 Hakikat Yolcusu' },
+            { key: 'level45', name: '🌟 Marifet Sahibi' },
+            { key: 'level50', name: '👑 Manevi Alim' }
+        ];
+        
+        levelAchievements.forEach(ach => {
+            html += `<li style="padding:12px; background:${a[ach.key] ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                        <i class="fas fa-crown" style="color:${a[ach.key] ? '#ffc107' : '#6c757d'};"></i> ${ach.name} ${a[ach.key] ? '✓' : '❌'}</li>`;
+        });
+        
+        html += '</ul>';
         achievementsList.innerHTML = html;
     }
 
     // ------------------------------------------------------------
-    // LİDERLİK TABLOSU – NaN SORUNU TAMAMEN ÇÖZÜLDÜ
+    // LİDERLİK TABLOSU (NaN SORUNU ÇÖZÜLDÜ)
     // ------------------------------------------------------------
     async function saveScoreToLeaderboard() {
         if (!gameState.username || gameState.username === 'Misafir') return;
@@ -1335,7 +1436,7 @@
     }
 
     // ------------------------------------------------------------
-    // YENİ: LİDERLİK TABLOSUNU TAMAMEN TEMİZLE
+    // LİDERLİK TABLOSUNU TEMİZLE
     // ------------------------------------------------------------
     async function clearLeaderboard() {
         if (!confirm('⚠️ Tüm liderlik kayıtlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
@@ -1350,6 +1451,60 @@
             await loadLeaderboard();
         } catch (e) {
             showToast('Temizleme başarısız: ' + e.message, 'error');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // TÜM KULLANICI VERİLERİNİ SIFIRLA (LocalStorage + Liderlik)
+    // ------------------------------------------------------------
+    async function resetAllUserData() {
+        if (!confirm('⚠️ TÜM KULLANICI VERİLERİNİ SIFIRLA? Bu işlem:\n- LocalStorage\'daki oyun ilerlemenizi siler\n- Firestore\'daki tüm liderlik kayıtlarını siler\n- Oyun başlangıç seviyesine döner\n\nDevam etmek istediğinize emin misiniz?')) return;
+        
+        try {
+            // 1. LocalStorage'ı temizle
+            localStorage.removeItem(STORAGE_KEY);
+            
+            // 2. Firestore liderlik tablosunu temizle
+            const q = query(collection(db, LEADERBOARD_COLLECTION));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            
+            // 3. GameState'i varsayılan değerlere döndür
+            gameState = {
+                maxUnlockedLevel: 1,
+                currentLevel: 1,
+                currentQuestionIndexInLevel: 0,
+                score: 0,
+                earnedPointsForQuestion: {},
+                hintUsedInThisLevel: false,
+                achievements: {
+                    firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+                    level5: false, level10: false, level15: false, level20: false, level25: false,
+                    level30: false, level35: false, level40: false, level45: false, level50: false
+                },
+                recentAchievements: [],
+                username: '',
+                avatar: AVATAR_LIST[0].icon,
+                avatarImg: AVATAR_LIST[0].img,
+                darkMode: false
+            };
+            saveGameState();
+            
+            // 4. UI'ı güncelle
+            await updateIntroUI();
+            await loadLeaderboard();
+            
+            showToast('Tüm kullanıcı verileri sıfırlandı!', 'success');
+            
+            // 5. Admin panelini kapat ve intro'ya dön
+            adminPanel.classList.remove('active');
+            introOverlay.classList.remove('hidden');
+            gameContainer.style.display = 'none';
+            
+        } catch (e) {
+            showToast('Sıfırlama başarısız: ' + e.message, 'error');
         }
     }
 
@@ -1373,7 +1528,7 @@
     }
 
     // ------------------------------------------------------------
-    // ADMIN PANELİ – LİDERLİK TEMİZLE BUTONU EKLENDİ
+    // ADMIN PANELİ – SORU YÖNETİMİ
     // ------------------------------------------------------------
     let adminClickCount = 0;
     function initAdminTrigger() {
@@ -1625,6 +1780,11 @@
         // Liderlik temizleme butonu
         if (clearLeaderboardBtn) {
             clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
+        }
+        
+        // Tüm kullanıcı verilerini sıfırlama butonu
+        if (resetAllUserDataBtn) {
+            resetAllUserDataBtn.addEventListener('click', resetAllUserData);
         }
 
         initAdminTrigger();
