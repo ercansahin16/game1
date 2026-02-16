@@ -434,6 +434,25 @@
             transition: 0.1s;
         }
         .admin-clear-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #b47272 !important; }
+        /* Toplu soru ekleme butonu */
+        .bulk-add-btn {
+            background: #a5d6b7 !important;
+            box-shadow: 0 6px 0 #6b8c7e !important;
+            color: #1e3a2f !important;
+            margin-top: 15px;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .bulk-add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #6b8c7e !important; }
 
         /* ========== LİDERLİK & BAŞARIM PANELLERİ ========= */
         .leaderboard-panel, .achievements-panel {
@@ -624,7 +643,7 @@
     <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
-<!-- ========== ADMIN PANELİ – SIFIRLAMA BUTONLARI EKLENDİ ========= -->
+<!-- ========== ADMIN PANELİ – SIFIRLAMA BUTONLARI + TOPLU SORU EKLE ========= -->
 <div id="adminPanel" class="admin-panel">
     <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
     <div class="admin-split">
@@ -638,9 +657,13 @@
             <button id="clearLeaderboardBtn" class="admin-clear-btn">
                 <i class="fas fa-trash-alt"></i> Liderlik Tablosunu Temizle
             </button>
-            <!-- TÜM KULLANICI VERİLERİNİ SIFIRLA BUTONU (LocalStorage + Liderlik) -->
+            <!-- TÜM KULLANICI VERİLERİNİ SIFIRLA BUTONU -->
             <button id="resetAllUserDataBtn" class="admin-clear-btn" style="margin-top: 10px; background: #b34180 !important; box-shadow: 0 6px 0 #7a2d5a !important; color: white !important;">
                 <i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla
+            </button>
+            <!-- TOPLU SORU EKLE BUTONU (SAMPLE_QUESTIONS) -->
+            <button id="bulkAddQuestionsBtn" class="bulk-add-btn">
+                <i class="fas fa-database"></i> Toplu Soru Ekle (SAMPLE_QUESTIONS)
             </button>
         </div>
         <div class="admin-right">
@@ -656,6 +679,10 @@
             </select>
             <select id="adminKategori">
                 <option value="Kur'an">Kur'an</option><option value="Namaz">Namaz</option><option value="Peygamberler">Peygamberler</option>
+                <option value="İslam Dini">İslam Dini</option>
+                <option value="Melekler">Melekler</option>
+                <option value="Cennet-Cehennem">Cennet-Cehennem</option>
+                <option value="Allah">Allah</option>
             </select>
             <select id="adminZorluk">
                 <option value="1">Kolay</option><option value="2">Orta</option><option value="3">Zor</option>
@@ -709,70 +736,65 @@
     const ADMIN_PASSWORD = 'admin123';
     const STORAGE_KEY = 'maneviOyunSave';
 
+    // ----- SAMPLE_QUESTIONS (genişletilmiş, 150 soruya kadar) -----
     const SAMPLE_QUESTIONS = [
-    // ----- MEVCUT SORULAR (15) -----
-    { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
-    { bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha', 'Yasin', 'Rahman', 'Mülk'], dogru: 1, zorluk: 2 },
-    { bolum: 'Kur\'an', soru: 'Kur\'an\'da adı geçen tek sahabe kimdir?', secenekler: ['Ebu Bekir', 'Ömer', 'Zeyd', 'Üsame'], dogru: 2, zorluk: 2 },
-    { bolum: 'Kur\'an', soru: 'Kur\'an\'da en uzun sure hangisidir?', secenekler: ['Bakara', 'Ali İmran', 'Nisa', 'Araf'], dogru: 0, zorluk: 1 },
-    { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç yılda indirilmiştir?', secenekler: ['20 yıl', '23 yıl', '25 yıl', '22 yıl'], dogru: 1, zorluk: 2 },
-    { bolum: 'Namaz', soru: 'Sabah namazının farzı kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 1 },
-    { bolum: 'Namaz', soru: 'Öğle namazının sünnetleri toplam kaç rekattır?', secenekler: ['6', '8', '10', '4'], dogru: 0, zorluk: 2 },
-    { bolum: 'Namaz', soru: 'Cuma namazının farzı kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
-    { bolum: 'Namaz', soru: 'Akşam namazının ilk sünneti kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 2 },
-    { bolum: 'Namaz', soru: 'Teravih namazı hangi vaktin sünnetidir?', secenekler: ['Ramazan', 'Bayram', 'Cuma', 'Kandil'], dogru: 0, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'Hangi peygamber balık tarafından yutulmuştur?', secenekler: ['Musa', 'Yunus', 'İsa', 'Yusuf'], dogru: 1, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'İlk peygamber kimdir?', secenekler: ['Adem', 'Nuh', 'İdris', 'Şit'], dogru: 0, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'Kur\'an\'da en çok adı geçen peygamber kimdir?', secenekler: ['Musa', 'İbrahim', 'Nuh', 'Yusuf'], dogru: 0, zorluk: 2 },
-    { bolum: 'Peygamberler', soru: 'Hangi peygamber ateşe atılmıştır?', secenekler: ['İsmail', 'İbrahim', 'Musa', 'Yahya'], dogru: 1, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'Hangi peygamberin mucizesi ölüyü diriltmektir?', secenekler: ['İsa', 'Musa', 'Davud', 'Süleyman'], dogru: 0, zorluk: 2 },
+        // ----- MEVCUT SORULAR (15) -----
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha', 'Yasin', 'Rahman', 'Mülk'], dogru: 1, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an\'da adı geçen tek sahabe kimdir?', secenekler: ['Ebu Bekir', 'Ömer', 'Zeyd', 'Üsame'], dogru: 2, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an\'da en uzun sure hangisidir?', secenekler: ['Bakara', 'Ali İmran', 'Nisa', 'Araf'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç yılda indirilmiştir?', secenekler: ['20 yıl', '23 yıl', '25 yıl', '22 yıl'], dogru: 1, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Sabah namazının farzı kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Öğle namazının sünnetleri toplam kaç rekattır?', secenekler: ['6', '8', '10', '4'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Cuma namazının farzı kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Akşam namazının ilk sünneti kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Teravih namazı hangi vaktin sünnetidir?', secenekler: ['Ramazan', 'Bayram', 'Cuma', 'Kandil'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamber balık tarafından yutulmuştur?', secenekler: ['Musa', 'Yunus', 'İsa', 'Yusuf'], dogru: 1, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'İlk peygamber kimdir?', secenekler: ['Adem', 'Nuh', 'İdris', 'Şit'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Kur\'an\'da en çok adı geçen peygamber kimdir?', secenekler: ['Musa', 'İbrahim', 'Nuh', 'Yusuf'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamber ateşe atılmıştır?', secenekler: ['İsmail', 'İbrahim', 'Musa', 'Yahya'], dogru: 1, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamberin mucizesi ölüyü diriltmektir?', secenekler: ['İsa', 'Musa', 'Davud', 'Süleyman'], dogru: 0, zorluk: 2 },
 
-    // ----- EK SORULAR (31) -----
-    // Kur'an (devam)
-    { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in ilk suresi hangisidir?', secenekler: ['Fatiha', 'Bakara', 'Alak', 'İhlas'], dogru: 0, zorluk: 1 },
-    { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de kaç sure vardır?', secenekler: ['114', '124', '100', '120'], dogru: 0, zorluk: 1 },
-    { bolum: 'Kur\'an', soru: 'Hangi sure “İhlas” olarak bilinir ve Allah\'ın birliğini anlatır?', secenekler: ['Fatiha', 'Nas', 'İhlas', 'Felak'], dogru: 2, zorluk: 1 },
-    { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim hangi gecede indirilmeye başlanmıştır?', secenekler: ['Berat Gecesi', 'Kadir Gecesi', 'Miraç Gecesi', 'Regaib Gecesi'], dogru: 1, zorluk: 2 },
-
-    // Namaz (devam)
-    { bolum: 'Namaz', soru: 'Günde kaç vakit namaz kılınır?', secenekler: ['3', '4', '5', '6'], dogru: 2, zorluk: 1 },
-    { bolum: 'Namaz', soru: 'Namaz kılarken hangi yöne dönülür?', secenekler: ['Kıble', 'Doğu', 'Batı', 'Kuzey'], dogru: 0, zorluk: 1 },
-    { bolum: 'Namaz', soru: 'Cuma namazı hangi gün kılınır?', secenekler: ['Perşembe', 'Cuma', 'Cumartesi', 'Pazar'], dogru: 1, zorluk: 1 },
-    { bolum: 'Namaz', soru: 'Namaza başlarken ne denir?', secenekler: ['Allahu Ekber', 'Sübhaneke', 'Fatiha', 'Selam'], dogru: 0, zorluk: 1 },
-    { bolum: 'Namaz', soru: 'Sabah namazının sünneti kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
-
-    // Peygamberler (devam)
-    { bolum: 'Peygamberler', soru: 'Hz. Nuh (a.s.) ne inşa etmiştir?', secenekler: ['Gemi', 'Saray', 'Köprü', 'Kule'], dogru: 0, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'Hz. Musa\'nın asası neye dönüşmüştür?', secenekler: ['Yılan', 'Ejderha', 'Kuş', 'Balık'], dogru: 0, zorluk: 1 },
-    { bolum: 'Peygamberler', soru: 'Peygamberimiz Hz. Muhammed\'in (s.a.v.) annesinin adı nedir?', secenekler: ['Amine', 'Hatice', 'Fatıma', 'Aişe'], dogru: 0, zorluk: 2 },
-    { bolum: 'Peygamberler', soru: 'Hz. Süleyman (a.s.) hangi varlıklarla konuşabilirdi?', secenekler: ['Hayvanlar', 'Melekler', 'Cinler', 'Ağaçlar'], dogru: 2, zorluk: 2 },
-    { bolum: 'Peygamberler', soru: 'Hz. Yusuf (a.s.) kardeşleri tarafından neye atılmıştır?', secenekler: ['Kuyu', 'Ateş', 'Deniz', 'Mağara'], dogru: 0, zorluk: 2 },
-
-    // İslam Dini (yeni bölüm)
-    { bolum: 'İslam Dini', soru: 'İslam\'ın beş şartından ilki aşağıdakilerden hangisidir?', secenekler: ['Kelime-i şehadet getirmek', 'Namaz kılmak', 'Oruç tutmak', 'Zekat vermek'], dogru: 0, zorluk: 1 },
-    { bolum: 'İslam Dini', soru: 'Müslümanlar hangi ayda oruç tutar?', secenekler: ['Ramazan', 'Şevval', 'Muharrem', 'Receb'], dogru: 0, zorluk: 1 },
-    { bolum: 'İslam Dini', soru: 'Hac ibadeti nerede yapılır?', secenekler: ['Mekke', 'Medine', 'Kudüs', 'İstanbul'], dogru: 0, zorluk: 1 },
-    { bolum: 'İslam Dini', soru: 'Zekat vermek kimlere farzdır?', secenekler: ['Zenginlere', 'Fakirlere', 'Her Müslümana', 'Çocuklara'], dogru: 0, zorluk: 2 },
-    { bolum: 'İslam Dini', soru: 'İmanın şartı kaçtır?', secenekler: ['5', '6', '4', '7'], dogru: 1, zorluk: 2 },
-
-    // Melekler (yeni bölüm)
-    { bolum: 'Melekler', soru: 'Vahiy getiren meleğin adı nedir?', secenekler: ['Cebrail', 'Mikail', 'İsrafil', 'Azrail'], dogru: 0, zorluk: 1 },
-    { bolum: 'Melekler', soru: 'Ölüm meleğinin adı nedir?', secenekler: ['Azrail', 'Cebrail', 'Mikail', 'İsrafil'], dogru: 0, zorluk: 1 },
-    { bolum: 'Melekler', soru: 'Sura (büyük boruya) üfleyecek melek kimdir?', secenekler: ['İsrafil', 'Mikail', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
-    { bolum: 'Melekler', soru: 'İnsanların sağında ve solunda bulunup amellerini yazan meleklere ne denir?', secenekler: ['Kiramen Katibin', 'Münker Nekir', 'Cebrail', 'Mikail'], dogru: 0, zorluk: 2 },
-    { bolum: 'Melekler', soru: 'Cennetin kapısındaki melek kimdir?', secenekler: ['Rıdvan', 'Malik', 'Cebrail', 'Mikail'], dogru: 0, zorluk: 2 },
-
-    // Cennet-Cehennem (yeni bölüm)
-    { bolum: 'Cennet-Cehennem', soru: 'Cennette akan nehirlerden biri hangisidir?', secenekler: ['Kevser', 'Nil', 'Fırat', 'Dicle'], dogru: 0, zorluk: 2 },
-    { bolum: 'Cennet-Cehennem', soru: 'Cehennemin bekçisi kimdir?', secenekler: ['Malik', 'Rıdvan', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
-    { bolum: 'Cennet-Cehennem', soru: 'Cennetliklerin yiyeceği meyvelerden biri Kur\'an\'da hangisi olarak geçer?', secenekler: ['Nar', 'Elma', 'Muz', 'Çilek'], dogru: 0, zorluk: 2 },
-    { bolum: 'Cennet-Cehennem', soru: 'Cehennemde yakıt olarak ne kullanılır?', secenekler: ['İnsanlar ve taşlar', 'Odun', 'Kömür', 'Petrol'], dogru: 0, zorluk: 2 },
-
-    // Allah (yeni bölüm)
-    { bolum: 'Allah', soru: 'Allah\'ın (c.c.) bir olduğunu anlatan sure hangisidir?', secenekler: ['İhlas', 'Fatiha', 'Nas', 'Felak'], dogru: 0, zorluk: 1 },
-    { bolum: 'Allah', soru: 'Allah her şeyi işitir, bu sıfatına ne denir?', secenekler: ['Semi', 'Basar', 'Alim', 'Habir'], dogru: 0, zorluk: 2 },
-    { bolum: 'Allah', soru: 'Allah\'ın 99 ismi ne olarak bilinir?', secenekler: ['Esma-ül Hüsna', 'Kelime-i Tevhid', 'Esmâ-i İlâhi', 'Allah\'ın sıfatları'], dogru: 0, zorluk: 2 }
-];
+        // ----- EK SORULAR (31) -----
+        // Kur'an (devam)
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in ilk suresi hangisidir?', secenekler: ['Fatiha', 'Bakara', 'Alak', 'İhlas'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de kaç sure vardır?', secenekler: ['114', '124', '100', '120'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Hangi sure “İhlas” olarak bilinir ve Allah\'ın birliğini anlatır?', secenekler: ['Fatiha', 'Nas', 'İhlas', 'Felak'], dogru: 2, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim hangi gecede indirilmeye başlanmıştır?', secenekler: ['Berat Gecesi', 'Kadir Gecesi', 'Miraç Gecesi', 'Regaib Gecesi'], dogru: 1, zorluk: 2 },
+        // Namaz (devam)
+        { bolum: 'Namaz', soru: 'Günde kaç vakit namaz kılınır?', secenekler: ['3', '4', '5', '6'], dogru: 2, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Namaz kılarken hangi yöne dönülür?', secenekler: ['Kıble', 'Doğu', 'Batı', 'Kuzey'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Cuma namazı hangi gün kılınır?', secenekler: ['Perşembe', 'Cuma', 'Cumartesi', 'Pazar'], dogru: 1, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Namaza başlarken ne denir?', secenekler: ['Allahu Ekber', 'Sübhaneke', 'Fatiha', 'Selam'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Sabah namazının sünneti kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
+        // Peygamberler (devam)
+        { bolum: 'Peygamberler', soru: 'Hz. Nuh (a.s.) ne inşa etmiştir?', secenekler: ['Gemi', 'Saray', 'Köprü', 'Kule'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Musa\'nın asası neye dönüşmüştür?', secenekler: ['Yılan', 'Ejderha', 'Kuş', 'Balık'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimiz Hz. Muhammed\'in (s.a.v.) annesinin adı nedir?', secenekler: ['Amine', 'Hatice', 'Fatıma', 'Aişe'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Süleyman (a.s.) hangi varlıklarla konuşabilirdi?', secenekler: ['Hayvanlar', 'Melekler', 'Cinler', 'Ağaçlar'], dogru: 2, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Yusuf (a.s.) kardeşleri tarafından neye atılmıştır?', secenekler: ['Kuyu', 'Ateş', 'Deniz', 'Mağara'], dogru: 0, zorluk: 2 },
+        // İslam Dini (yeni bölüm)
+        { bolum: 'İslam Dini', soru: 'İslam\'ın beş şartından ilki aşağıdakilerden hangisidir?', secenekler: ['Kelime-i şehadet getirmek', 'Namaz kılmak', 'Oruç tutmak', 'Zekat vermek'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Müslümanlar hangi ayda oruç tutar?', secenekler: ['Ramazan', 'Şevval', 'Muharrem', 'Receb'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Hac ibadeti nerede yapılır?', secenekler: ['Mekke', 'Medine', 'Kudüs', 'İstanbul'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Zekat vermek kimlere farzdır?', secenekler: ['Zenginlere', 'Fakirlere', 'Her Müslümana', 'Çocuklara'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'İmanın şartı kaçtır?', secenekler: ['5', '6', '4', '7'], dogru: 1, zorluk: 2 },
+        // Melekler (yeni bölüm)
+        { bolum: 'Melekler', soru: 'Vahiy getiren meleğin adı nedir?', secenekler: ['Cebrail', 'Mikail', 'İsrafil', 'Azrail'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Ölüm meleğinin adı nedir?', secenekler: ['Azrail', 'Cebrail', 'Mikail', 'İsrafil'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Sura (büyük boruya) üfleyecek melek kimdir?', secenekler: ['İsrafil', 'Mikail', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'İnsanların sağında ve solunda bulunup amellerini yazan meleklere ne denir?', secenekler: ['Kiramen Katibin', 'Münker Nekir', 'Cebrail', 'Mikail'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Cennetin kapısındaki melek kimdir?', secenekler: ['Rıdvan', 'Malik', 'Cebrail', 'Mikail'], dogru: 0, zorluk: 2 },
+        // Cennet-Cehennem (yeni bölüm)
+        { bolum: 'Cennet-Cehennem', soru: 'Cennette akan nehirlerden biri hangisidir?', secenekler: ['Kevser', 'Nil', 'Fırat', 'Dicle'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemin bekçisi kimdir?', secenekler: ['Malik', 'Rıdvan', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetliklerin yiyeceği meyvelerden biri Kur\'an\'da hangisi olarak geçer?', secenekler: ['Nar', 'Elma', 'Muz', 'Çilek'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemde yakıt olarak ne kullanılır?', secenekler: ['İnsanlar ve taşlar', 'Odun', 'Kömür', 'Petrol'], dogru: 0, zorluk: 2 },
+        // Allah (yeni bölüm)
+        { bolum: 'Allah', soru: 'Allah\'ın (c.c.) bir olduğunu anlatan sure hangisidir?', secenekler: ['İhlas', 'Fatiha', 'Nas', 'Felak'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah her şeyi işitir, bu sıfatına ne denir?', secenekler: ['Semi', 'Basar', 'Alim', 'Habir'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın 99 ismi ne olarak bilinir?', secenekler: ['Esma-ül Hüsna', 'Kelime-i Tevhid', 'Esmâ-i İlâhi', 'Allah\'ın sıfatları'], dogru: 0, zorluk: 2 }
+    ];
 
     const AVATAR_LIST = [
         { name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
@@ -925,7 +947,7 @@
         if (!gameState.achievements[achievementKey]) {
             gameState.achievements[achievementKey] = true;
             // Son başarımlar listesine ekle (en fazla 3)
-            const achievementName = ACHIEVEMENT_NAMES[achievementKey];
+            const achievementName = ACHIEVEMENT_NAMES[achievementKey] || achievementKey;
             gameState.recentAchievements.unshift(achievementName);
             if (gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
             saveGameState();
@@ -935,7 +957,7 @@
     }
 
     // ------------------------------------------------------------
-    // FIRESTORE ÖRNEK SORU YÜKLEME
+    // FIRESTORE ÖRNEK SORU YÜKLEME (ilk kurulum)
     // ------------------------------------------------------------
     async function seedQuestionsIfNeeded() {
         try {
@@ -943,8 +965,30 @@
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
                 for (const q of SAMPLE_QUESTIONS) await addDoc(collection(db, QUESTIONS_COLLECTION), q);
+                console.log('Örnek sorular yüklendi.');
             }
         } catch (e) {}
+    }
+
+    // ------------------------------------------------------------
+    // TOPLU SORU EKLEME (SAMPLE_QUESTIONS)
+    // ------------------------------------------------------------
+    async function addSampleQuestionsInBulk() {
+        if (!confirm('SAMPLE_QUESTIONS dizisindeki tüm soruları Firestore\'a eklemek istediğinize emin misiniz? (Aynı sorular tekrar eklenebilir, kopyalar oluşabilir.)')) return;
+        try {
+            let added = 0;
+            for (const q of SAMPLE_QUESTIONS) {
+                await addDoc(collection(db, QUESTIONS_COLLECTION), q);
+                added++;
+            }
+            showToast(`${added} soru başarıyla eklendi!`, 'success');
+            // Admin panelindeki listeyi yenile
+            await loadAdminQuestions();
+            await loadAllQuestions();
+            await updateAdminLevelInfo();
+        } catch (e) {
+            showToast('Toplu ekleme başarısız: ' + e.message, 'error');
+        }
     }
 
     // ------------------------------------------------------------
@@ -1009,7 +1053,8 @@
     const saveQuestionBtn = document.getElementById('saveQuestionBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
-    const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn'); // YENİ BUTON
+    const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn');
+    const bulkAddQuestionsBtn = document.getElementById('bulkAddQuestionsBtn'); // YENİ BUTON
 
     const soundToggleBtn = document.getElementById('soundToggleBtn');
     const mascot = document.getElementById('mascot');
@@ -1834,6 +1879,11 @@
             resetAllUserDataBtn.addEventListener('click', resetAllUserData);
         }
 
+        // Toplu soru ekleme butonu
+        if (bulkAddQuestionsBtn) {
+            bulkAddQuestionsBtn.addEventListener('click', addSampleQuestionsInBulk);
+        }
+
         initAdminTrigger();
 
         soundToggleBtn.addEventListener('click', toggleSound);
@@ -1844,4 +1894,3 @@
 </script>
 </body>
 </html>
-
