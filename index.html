@@ -6,13 +6,13 @@
     <title>Manevi Bilgi Oyunu 🌙</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
-    <!-- Font Awesome 6 -->
+    <!-- Font Awesome 6 (tüm ikonlar için) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Font: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    <!-- howler.js (sadece çalışan sesler için) -->
+    <!-- howler.js (ses) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
     <style>
         /* ---------- RESET & DEĞİŞKENLER ---------- */
@@ -65,7 +65,9 @@
         body.dark-theme .question-card,
         body.dark-theme .option-btn,
         body.dark-theme .level-badge,
-        body.dark-theme .user-header,
+        body.dark-theme .score-box,
+        body.dark-theme .level-box,
+        body.dark-theme .top-bar,
         body.dark-theme .intro-user-header,
         body.dark-theme .hint-btn,
         body.dark-theme .next-btn,
@@ -109,7 +111,9 @@
         body.dark-theme .option-btn.wrong { background: #7a1f1f !important; border-color: #b33f3f !important; }
         body.dark-theme .level-badge.active { background: #2c5f3a !important; }
         body.dark-theme .level-badge.locked { background: #3a3a3a !important; color: #aaa !important; }
-        body.dark-theme .user-header i,
+        body.dark-theme .score-box i,
+        body.dark-theme .level-box i,
+        body.dark-theme .top-bar i,
         body.dark-theme .intro-user-stats i,
         body.dark-theme .leaderboard-btn i,
         body.dark-theme .achievements-btn i,
@@ -132,7 +136,7 @@
         body.dark-theme .toast-success { background: #0f4c2b !important; }
         body.dark-theme .toast-info { background: #7a5c1f !important; }
 
-        /* ---------- INTRO EKRANI (öncekiyle aynı) ---------- */
+        /* ---------- INTRO EKRANI ---------- */
         .intro-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -270,7 +274,7 @@
         .avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #ffe0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: #fef9e0; transition: 0.1s; }
         .avatar-option.selected { border-color: #7c3aed; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(124,58,237,0.3); }
 
-        /* ---------- OYUN KONTEYNERİ – TEK SATIR ÜST PANEL ---------- */
+        /* ---------- OYUN KONTEYNERİ – YENİ ÜST PANEL ---------- */
         .game-container {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
@@ -284,55 +288,57 @@
             transition: 0.3s;
         }
 
-        .user-header {
+        /* TEK SATIR ÜST PANEL */
+        .top-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
             margin-bottom: 16px;
             background: rgba(255,255,255,0.4);
-            padding: 4px 12px;
-            border-radius: 40px;
+            padding: 6px 12px;
+            border-radius: 60px;
             border: 2px solid #ffe0b0;
             flex-wrap: wrap;
         }
 
-        .user-left {
+        .left-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             flex-shrink: 0;
         }
 
-        .user-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: #ffe6c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
-            border: 2px solid white;
-            box-shadow: 0 3px 0 #d4a373;
+        .user-avatar { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            background: #ffe6c7; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.8rem; 
+            border: 2px solid white; 
+            box-shadow: 0 3px 0 #d4a373; 
             flex-shrink: 0;
         }
 
-        .user-name {
-            font-weight: 700;
-            font-size: 1rem;
-            color: #2d3e50;
+        .user-name { 
+            font-weight: 700; 
+            font-size: 1rem; 
+            color: var(--text-dark); 
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 120px;
         }
 
-        .stats-group {
+        .right-group {
             display: flex;
             align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: auto;
         }
 
         .stat-box {
@@ -354,19 +360,12 @@
             font-size: 0.9rem;
         }
 
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-
         .action-btn {
             background: rgba(255,255,255,0.7);
             border: 2px solid #ffe0b0;
-            border-radius: 40px;
-            padding: 6px 10px;
-            font-size: 0.85rem;
+            border-radius: 30px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -380,6 +379,14 @@
             font-size: 0.9rem;
         }
 
+        /* Mobilde buton yazılarını gizle */
+        @media (max-width: 768px) {
+            .action-btn span {
+                display: none;
+            }
+        }
+
+        /* Diğer stiller aynen devam */
         .levels-wrapper {
             overflow-x: auto;
             margin-bottom: 20px;
@@ -388,22 +395,22 @@
         }
         .levels-container {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             background: rgba(255,255,255,0.4);
-            padding: 10px;
+            padding: 12px;
             border-radius: 60px;
             min-width: min-content;
         }
         .level-badge {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: white;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: #2d3e50;
             box-shadow: 0 5px 0 #b0c4ce;
             border: 2px solid #ffe9e9;
@@ -421,7 +428,7 @@
             opacity: 0.7;
         }
         .level-badge.locked i {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
         }
         .question-card {
             background: white;
@@ -586,7 +593,7 @@
             gap: 8px;
         }
 
-        /* ========== ADMIN PANELİ – YENİ İSTATİSTİK BİLGİLERİ ========= */
+        /* ========== ADMIN PANELİ – YENİ İSTATİSTİK ALANI ========= */
         .admin-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -621,18 +628,22 @@
             margin-bottom: 15px;
             font-size: 1.2rem;
         }
-        .stats-info {
+        .admin-stats {
             background: #ffe6c7;
             border-radius: 20px;
-            padding: 12px 15px;
+            padding: 12px;
             margin-bottom: 20px;
             border: 1px solid #ffb08c;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #5e3e2e;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .admin-stats p {
+            display: flex;
             justify-content: space-between;
-            align-items: center;
+            margin: 0;
         }
         .admin-question-item {
             background: white;
@@ -734,7 +745,7 @@
             margin-top: 12px;
         }
 
-        /* Liderlik ve başarım panelleri */
+        /* Liderlik, başarımlar panelleri */
         .leaderboard-panel, .achievements-panel {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -764,11 +775,13 @@
             font-size: 0.9rem;
         }
 
+        /* Maskot, ses butonu */
         .mascot { position: fixed; bottom: 15px; left: 15px; width: 70px; z-index: 999; cursor: pointer; }
         .speech-bubble { position: absolute; bottom: 80px; left: 10px; background: white; padding: 8px 12px; border-radius: 30px 30px 30px 5px; font-size: 0.85rem; max-width: 150px; box-shadow: 0 5px 0 #d4a373; border: 2px solid #ffe0b0; display: none; }
         .speech-bubble.active { display: block; }
         .sound-toggle { position: fixed; bottom: 15px; right: 15px; background: white; border: 2px solid #ffe0b0; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #7c3aed; cursor: pointer; z-index: 1000; box-shadow: 0 5px 0 #d4a373; }
 
+        /* Toast mesajları */
         .toast-message {
             position: fixed;
             top: 15px;
@@ -793,28 +806,35 @@
         .toast-info { background: #fff3cd; border-color: #ffe69b; color: #856404; }
         @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 15px; opacity: 1; } }
 
-        /* Responsive */
+        /* Responsive iyileştirmeler */
         @media (max-width: 768px) {
             .admin-split { grid-template-columns: 1fr; }
-            .user-header { padding: 4px 8px; }
-            .user-avatar { width: 32px; height: 32px; font-size: 1.4rem; }
-            .user-name { max-width: 80px; font-size: 0.9rem; }
-            .stat-box { padding: 3px 8px; font-size: 0.7rem; }
+            .admin-left { max-height: 300px; }
+            .game-container { padding: 15px; }
+            .question-text { font-size: 1.3rem; padding-right: 60px; }
+            .intro-stats { grid-template-columns: 1fr; }
+            .top-bar { padding: 5px 10px; }
+            .user-avatar { width: 35px; height: 35px; font-size: 1.6rem; }
+            .user-name { max-width: 100px; }
+            .stat-box { padding: 3px 8px; font-size: 0.75rem; }
             .stat-box i { font-size: 0.8rem; }
-            .action-btn { padding: 4px 8px; font-size: 0.75rem; }
-            .action-btn span { display: none; } /* mobilde sadece ikon göster */
-            .action-btn i { font-size: 1rem; }
+            .action-btn { padding: 3px 8px; font-size: 0.75rem; }
+            .action-btn i { font-size: 0.8rem; }
         }
         @media (max-width: 600px) {
             .options-grid { grid-template-columns: 1fr; }
+            .top-bar { flex-wrap: wrap; }
+            .right-group { margin-left: 0; width: 100%; justify-content: flex-end; }
         }
         @media (max-width: 480px) {
             body { padding: 8px; }
             .game-container { padding: 12px; }
-            .question-text { font-size: 1.2rem; margin-top: 40px; padding-right: 0; }
+            .question-text { font-size: 1.2rem; padding-right: 0; margin-top: 40px; }
             .timer { position: relative; top: 0; right: 0; margin-bottom: 10px; width: fit-content; }
             .next-btn { width: 100%; }
-            .level-badge { width: 40px; height: 40px; font-size: 1rem; }
+            .level-badge { width: 45px; height: 45px; font-size: 1.1rem; }
+            .mascot { width: 60px; bottom: 10px; left: 10px; }
+            .sound-toggle { width: 45px; height: 45px; font-size: 1.3rem; bottom: 10px; right: 10px; }
         }
     </style>
 </head>
@@ -836,7 +856,7 @@
         </div>
         <div class="intro-stats">
             <div class="intro-leaderboard-preview">
-                <h4><i class="fas fa-trophy"></i> En İyiler</h4>
+                <h4><i class="fas fa-trophy"></i> En İyi Performans</h4>
                 <div id="introLeaderboardList">Yükleniyor...</div>
             </div>
             <div class="intro-achievements-preview">
@@ -858,29 +878,30 @@
     </div>
 </div>
 
-<!-- ========== ANA OYUN KONTEYNERİ – TEK SATIR ÜST PANEL ========= -->
+<!-- ========== ANA OYUN KONTEYNERİ ========= -->
 <div id="gameContainer" class="game-container" style="display: none;">
-    <div class="user-header">
-        <div class="user-left">
+    <!-- TEK SATIR ÜST PANEL -->
+    <div class="top-bar">
+        <div class="left-group">
             <div id="gameAvatar" class="user-avatar">🐻</div>
             <div id="gameUserName" class="user-name">Misafir</div>
         </div>
-        <div class="stats-group">
+        <div class="right-group">
             <div class="stat-box"><i class="fas fa-star"></i> <span id="scoreDisplay">0</span></div>
             <div class="stat-box"><i class="fas fa-crown"></i> <span id="currentLevelDisplay">1</span></div>
-        </div>
-        <div class="action-buttons">
-            <button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-ranking-star"></i><span>Liderlik</span></button>
+            <button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-trophy"></i><span>Liderlik</span></button>
             <button id="achievementsBtn" class="action-btn" title="Başarımlar"><i class="fas fa-medal"></i><span>Başarımlar</span></button>
             <button id="settingsBtn" class="action-btn" title="Tema"><i class="fas fa-moon"></i><span>Tema</span></button>
-            <button id="exitGameBtn" class="action-btn" title="Çıkış"><i class="fas fa-sign-out-alt"></i><span>Çıkış</span></button>
+            <button id="exitGameBtn" class="action-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i><span>Çık</span></button>
         </div>
     </div>
 
+    <!-- Seviye göstergeleri -->
     <div class="levels-wrapper">
         <div id="levelIndicators" class="levels-container"></div>
     </div>
 
+    <!-- Soru kartı -->
     <div id="questionCard" class="question-card">
         <div id="timer" class="timer"><i class="fas fa-hourglass-half"></i> <span id="timerSeconds">60</span>sn</div>
         <div id="questionText" class="question-text">Soru yükleniyor...</div>
@@ -892,7 +913,7 @@
 
 <!-- ========== LİDERLİK PANELİ ========= -->
 <div id="leaderboardPanel" class="leaderboard-panel">
-    <h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-ranking-star"></i> En İyiler</h2>
+    <h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-trophy"></i> En İyi Performans</h2>
     <div id="leaderboardList" style="margin-bottom: 20px;">Yükleniyor...</div>
     <button id="closeLeaderboardBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c;">Kapat</button>
 </div>
@@ -904,15 +925,14 @@
     <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
 </div>
 
-<!-- ========== ADMIN PANELİ – YENİ İSTATİSTİKLER ========= -->
+<!-- ========== ADMIN PANELİ ========= -->
 <div id="adminPanel" class="admin-panel">
     <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
     <div class="admin-split">
         <div class="admin-left">
             <h3><i class="fas fa-list"></i> Mevcut Sorular</h3>
-            <div id="adminStatsInfo" class="stats-info">
+            <div id="adminStats" class="admin-stats">
                 <!-- JS ile doldurulacak -->
-                Toplam soru: 0 | Eklenen: 0 | Eklenmeyen: 0
             </div>
             <div id="adminQuestionsList">
                 <p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
@@ -990,7 +1010,7 @@
     } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     // ------------------------------------------------------------
-    // 1) SABİTLER
+    // SABİTLER
     // ------------------------------------------------------------
     const QUESTIONS_COLLECTION = 'manevi_sorular';
     const LEADERBOARD_COLLECTION = 'leaderboard';
@@ -998,7 +1018,193 @@
     const STORAGE_KEY = 'maneviOyunSave';
 
     // ----- 169 SORU (15 mevcut + 154 yeni) -----
-    const SAMPLE_QUESTIONS = [ /* ... tüm sorular ... */ ]; // (Uzunluktan kısaltıldı, kodda tam listeyi kullan)
+    const SAMPLE_QUESTIONS = [
+        // MEVCUT SORULAR (15)
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha', 'Yasin', 'Rahman', 'Mülk'], dogru: 1, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an\'da adı geçen tek sahabe kimdir?', secenekler: ['Ebu Bekir', 'Ömer', 'Zeyd', 'Üsame'], dogru: 2, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an\'da en uzun sure hangisidir?', secenekler: ['Bakara', 'Ali İmran', 'Nisa', 'Araf'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç yılda indirilmiştir?', secenekler: ['20 yıl', '23 yıl', '25 yıl', '22 yıl'], dogru: 1, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Sabah namazının farzı kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Öğle namazının sünnetleri toplam kaç rekattır?', secenekler: ['6', '8', '10', '4'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Cuma namazının farzı kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Akşam namazının ilk sünneti kaç rekattır?', secenekler: ['2', '3', '4', '1'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Teravih namazı hangi vaktin sünnetidir?', secenekler: ['Ramazan', 'Bayram', 'Cuma', 'Kandil'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamber balık tarafından yutulmuştur?', secenekler: ['Musa', 'Yunus', 'İsa', 'Yusuf'], dogru: 1, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'İlk peygamber kimdir?', secenekler: ['Adem', 'Nuh', 'İdris', 'Şit'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Kur\'an\'da en çok adı geçen peygamber kimdir?', secenekler: ['Musa', 'İbrahim', 'Nuh', 'Yusuf'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamber ateşe atılmıştır?', secenekler: ['İsmail', 'İbrahim', 'Musa', 'Yahya'], dogru: 1, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hangi peygamberin mucizesi ölüyü diriltmektir?', secenekler: ['İsa', 'Musa', 'Davud', 'Süleyman'], dogru: 0, zorluk: 2 },
+
+        // ----- KUR'AN (21 soru) -----
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in en kısa suresi hangisidir?', secenekler: ['Kevser', 'İhlas', 'Nas', 'Felak'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in son suresi hangisidir?', secenekler: ['Fatiha', 'Nas', 'Bakara', 'İhlas'], dogru: 1, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Fatiha suresinin diğer adı aşağıdakilerden hangisidir?', secenekler: ['Ümmül Kitap', 'Mülk', 'Yasin', 'Tebareke'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi surenin başında besmele iki kez bulunur?', secenekler: ['Neml', 'Bakara', 'Fatiha', 'Tevbe'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de en çok tekrarlanan ayet hangi surededir?', secenekler: ['Rahman', 'Bakara', 'Yasin', 'Mülk'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de adı geçen hayvanlardan biri aşağıdakilerden hangisidir?', secenekler: ['Fil', 'Aslan', 'Kaplan', 'Zürafa'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Mülk" olarak da bilinir?', secenekler: ['Tebareke', 'Yasin', 'Vakıa', 'Rahman'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Bakara" olarak bilinir?', secenekler: ['İnek', 'Arı', 'Örümcek', 'Karınca'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi surede Allah\'ın güzel isimleri (Esma-ül Hüsna) geçer?', secenekler: ['Haşr', 'İhlas', 'Fatiha', 'Bakara'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de kaç tane secde ayeti vardır?', secenekler: ['14', '10', '12', '15'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in ilk inen ayetleri hangi surenin başındadır?', secenekler: ['Alak', 'Fatiha', 'Müddessir', 'Kalem'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de en uzun ayet hangi surededir?', secenekler: ['Bakara', 'Ali İmran', 'Nisa', 'Maide'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Yasin" olarak bilinir?', secenekler: ['Ya-Sin', 'Ta-Ha', 'Sad', 'Kaf'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Rahman" olarak bilinir?', secenekler: ['Rahman', 'Meryem', 'Taha', 'Şuara'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Vakıa" olarak bilinir?', secenekler: ['Vakıa', 'Kıyamet', 'İnsan', 'Mürselat'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'in yaklaşık kaç sayfa olduğu söylenir?', secenekler: ['604', '500', '700', '400'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de adı geçen peygamberlerden hangisinin adı bir surede geçer?', secenekler: ['Yunus', 'Adem', 'İdris', 'Eyyub'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de "Kevser" suresi ne anlama gelir?', secenekler: ['Bolluk', 'Sabır', 'Şükür', 'Merhamet'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Fil" olayını anlatır?', secenekler: ['Fil', 'Kureyş', 'Maun', 'Kevser'], dogru: 0, zorluk: 1 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de "Leheb" suresi kimden bahseder?', secenekler: ['Ebu Leheb', 'Firavun', 'Karun', 'Nemrut'], dogru: 0, zorluk: 2 },
+        { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim\'de hangi sure "Nas" olarak bilinir ve insanlardan bahseder?', secenekler: ['Nas', 'Felak', 'İhlas', 'Fatiha'], dogru: 0, zorluk: 1 },
+
+        // ----- NAMAZ (20 soru) -----
+        { bolum: 'Namaz', soru: 'Namazın farzları toplam kaçtır?', secenekler: ['12', '10', '8', '6'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Namazda hangi sureyi okumak farzdır?', secenekler: ['Fatiha', 'İhlas', 'Kevser', 'Nas'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Sabah namazının farzında okunan sureler nasıl okunur?', secenekler: ['Sesli', 'Sessiz', 'Yüksek sesle', 'Fısıltıyla'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Öğle namazının farzı kaç rekattır?', secenekler: ['4', '3', '2', '5'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'İkindi namazının farzı kaç rekattır?', secenekler: ['4', '3', '2', '5'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Akşam namazının farzı kaç rekattır?', secenekler: ['3', '4', '2', '5'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Yatsı namazının farzı kaç rekattır?', secenekler: ['4', '3', '2', '5'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Vitir namazı hangi vaktin namazıdır ve kaç rekattır?', secenekler: ['Yatsı, 3', 'Sabah, 2', 'Akşam, 3', 'Cuma, 2'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Cuma namazının farzı kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Bayram namazı kaç rekattır?', secenekler: ['2', '4', '3', '1'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Cenaze namazında kaç tekbir alınır?', secenekler: ['4', '3', '2', '5'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Namazı bozan şeylerden biri aşağıdakilerden hangisidir?', secenekler: ['Gülmek', 'Uyumak', 'Esnemek', 'Öksürmek'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Abdestin farzı kaçtır?', secenekler: ['4', '3', '2', '5'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Gusül abdesti ne zaman alınır?', secenekler: ['Cünüplükten sonra', 'Namazdan önce', 'Yemekten sonra', 'Uykudan sonra'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Teyemmüm nasıl yapılır?', secenekler: ['Toprakla', 'Suyla', 'Taşla', 'Kumla'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Ezan ne için okunur?', secenekler: ['Namaz vaktini bildirmek', 'Cuma hutbesi için', 'Bayram için', 'Cenaze için'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Kamet ne için okunur?', secenekler: ['Namaz başlarken', 'Namaz bitince', 'Ezan arasında', 'Hutbe öncesi'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Namazda secde ederken vücudun kaç noktası yere değer?', secenekler: ['7', '5', '6', '8'], dogru: 0, zorluk: 2 },
+        { bolum: 'Namaz', soru: 'Namazda rüküda ne söylenir?', secenekler: ['Sübhanallahi ve bihamdihi', 'Sübhaneke', 'Allahu Ekber', 'Sübhana rabbiyel azim'], dogru: 3, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Namazda secdede ne söylenir?', secenekler: ['Sübhana rabbiyel a\'la', 'Semi allahü limen hamideh', 'Rabbenâ lekel hamd', 'Allahu Ekber'], dogru: 0, zorluk: 1 },
+        { bolum: 'Namaz', soru: 'Namazdan sonra selam verirken ne denir?', secenekler: ['Esselamu aleyküm ve rahmetullah', 'Allahu Ekber', 'Sübhanallah', 'Elhamdülillah'], dogru: 0, zorluk: 1 },
+
+        // ----- PEYGAMBERLER (25 soru) -----
+        { bolum: 'Peygamberler', soru: 'Hz. Adem\'in eşi kimdir?', secenekler: ['Havva', 'Hacer', 'Sare', 'Meryem'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. İdris (a.s.) hangi meslekle uğraşmıştır?', secenekler: ['Terzi', 'Marangoz', 'Demirci', 'Çoban'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Nuh\'un (a.s.) gemi yapmasının sebebi nedir?', secenekler: ['Tufan', 'Yangın', 'Deprem', 'Kuraklık'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Hud (a.s.) hangi kavme peygamber olarak gönderilmiştir?', secenekler: ['Ad', 'Semud', 'Medyen', 'Filistin'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Salih\'in (a.s.) mucizesi olan hayvan hangisidir?', secenekler: ['Deve', 'İnek', 'Koyun', 'At'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. İbrahim\'in (a.s.) oğulları kimlerdir?', secenekler: ['İsmail ve İshak', 'Yakub ve Yusuf', 'Musa ve Harun', 'Davud ve Süleyman'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Lut (a.s.) kavmi hangi kötülükten dolayı helak olmuştur?', secenekler: ['Eşcinsellik', 'Hırsızlık', 'Zulüm', 'Putperestlik'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. İsmail\'in (a.s.) annesi kimdir?', secenekler: ['Hacer', 'Sare', 'Rabia', 'Aişe'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. İshak\'ın (a.s.) babası kimdir?', secenekler: ['İbrahim', 'Yakub', 'İsmail', 'Adem'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Yakub\'un (a.s.) diğer adı nedir?', secenekler: ['İsrail', 'İbrahim', 'Yusuf', 'Bünyamin'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Yusuf\'un (a.s.) rüyasında ne görmüştü?', secenekler: ['Güneş, ay ve yıldızlar', 'İnekler', 'Koyunlar', 'Ağaçlar'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Eyyub (a.s.) hangi hastalığa sabretmiştir?', secenekler: ['Cilt hastalığı', 'Körlük', 'Felç', 'Ateş'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Şuayb (a.s.) hangi kavme gönderilmiştir?', secenekler: ['Medyen', 'Semud', 'Ad', 'Filistin'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Musa\'nın (a.s.) kardeşi kimdir?', secenekler: ['Harun', 'Yusuf', 'Yakub', 'İshak'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Harun (a.s.) da peygamber midir?', secenekler: ['Evet', 'Hayır', 'Bilinmez', 'Sadece vezir'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Davud\'un (a.s.) oğlu hangi peygamberdir?', secenekler: ['Süleyman', 'Yahya', 'İsa', 'Zekeriya'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Hz. Süleyman (a.s.) hangi varlıklarla konuşabilirdi?', secenekler: ['Kuşlar', 'Cinler', 'Hayvanlar', 'Hepsi'], dogru: 3, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Zekeriya (a.s.)\'nın oğlu hangi peygamberdir?', secenekler: ['Yahya', 'İsa', 'Musa', 'İlyas'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. Yahya (a.s.) nasıl şehit edilmiştir?', secenekler: ['Başı kesilerek', 'Ateşe atılarak', 'Asılarak', 'Taşlanarak'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Hz. İsa\'nın (a.s.) annesi kimdir?', secenekler: ['Meryem', 'Hatice', 'Fatıma', 'Aişe'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimiz Hz. Muhammed\'in (s.a.v.) babasının adı nedir?', secenekler: ['Abdullah', 'Abdülmuttalib', 'Ebu Talib', 'Hamza'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimizin (s.a.v.) dedesinin adı nedir?', secenekler: ['Abdülmuttalib', 'Haşim', 'Abdullah', 'Ebu Talib'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimizin (s.a.v.) süt annesi kimdir?', secenekler: ['Halime', 'Fatıma', 'Amine', 'Meryem'], dogru: 0, zorluk: 2 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimizin (s.a.v.) ilk eşi kimdir?', secenekler: ['Hatice', 'Aişe', 'Fatıma', 'Zeynep'], dogru: 0, zorluk: 1 },
+        { bolum: 'Peygamberler', soru: 'Peygamberimizin (s.a.v.) kaç çocuğu vardır? (genel kabul)', secenekler: ['7', '5', '4', '6'], dogru: 0, zorluk: 2 },
+
+        // ----- İSLAM DİNİ (25 soru) -----
+        { bolum: 'İslam Dini', soru: 'Kelime-i şehadetin Türkçe anlamı nedir?', secenekler: ['Allah\'tan başka ilah yoktur, Muhammed O\'nun elçisidir', 'Allah birdir', 'Muhammed Allah\'ın elçisidir', 'La ilahe illallah'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Oruç hangi ayda tutulur?', secenekler: ['Ramazan', 'Muharrem', 'Şaban', 'Receb'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Oruçlu iken aşağıdakilerden hangisi yapılmaz?', secenekler: ['Yemek yemek', 'Su içmek', 'Sigara içmek', 'Hepsi'], dogru: 3, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Fitre ne zaman verilir?', secenekler: ['Ramazan ayında', 'Kurban bayramında', 'Muharrem ayında', 'Her zaman'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Zekat oranı nedir?', secenekler: ['%2.5', '%10', '%5', '%20'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Hac ibadeti hangi ayda yapılır?', secenekler: ['Zilhicce', 'Ramazan', 'Muharrem', 'Şevval'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Umre ne demektir?', secenekler: ['Küçük hac', 'Büyük hac', 'Oruç', 'Sadaka'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Kurban kesmenin hükmü nedir?', secenekler: ['Vacip', 'Farz', 'Sünnet', 'Mübah'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Helal ne demektir?', secenekler: ['İzin verilen', 'Yasaklanan', 'Mekruh', 'Haramsız'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Haram ne demektir?', secenekler: ['Yasaklanan', 'İzin verilen', 'Sevap', 'Günah'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Günah işleyen bir kişi ne yapmalıdır?', secenekler: ['Tövbe etmeli', 'Namaz kılmalı', 'Oruç tutmalı', 'Sadaka vermeli'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Sevap nedir?', secenekler: ['Allah\'ın hoşnut olduğu işler', 'Günahlar', 'İbadetler', 'Dualar'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'İmanın şartları kaçtır?', secenekler: ['6', '5', '4', '7'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'İslam\'ın şartları kaçtır?', secenekler: ['5', '6', '4', '7'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Abdestte yıkanması farz olan organlar hangileridir?', secenekler: ['Yüz, eller, baş, ayaklar', 'Yüz, kollar, baş, ayaklar', 'Yüz, eller, dirsekler, ayaklar', 'Yüz, kollar, kulaklar, ayaklar'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Teyemmüm ne zaman yapılır?', secenekler: ['Su bulunamazsa', 'Su soğuksa', 'Hastayken', 'Yolculukta'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Camiye neden cami denir?', secenekler: ['Toplanma yeri', 'Namaz kılınan yer', 'Kıble', 'Mescit'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Minare ne işe yarar?', secenekler: ['Ezan okumak', 'Namaz kılmak', 'Hutbe okumak', 'Kur\'an okumak'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Hutbe nerede okunur?', secenekler: ['Cuma namazında', 'Bayram namazında', 'Cenaze namazında', 'Her namazda'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Mukabele nedir?', secenekler: ['Kur\'an\'ı karşılıklı okumak', 'Namaz kılmak', 'Oruç tutmak', 'Dua etmek'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'İftar ne demektir?', secenekler: ['Orucu açmak', 'Oruca başlamak', 'Yemek yemek', 'Su içmek'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Sahur ne demektir?', secenekler: ['Oruca niyetlenilen gece yemeği', 'Orucu açma vakti', 'Sabah namazı', 'Gece ibadeti'], dogru: 0, zorluk: 1 },
+        { bolum: 'İslam Dini', soru: 'Teravih namazı kaç rekattır?', secenekler: ['20', '8', '12', '36'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Vitir namazı kaç rekattır?', secenekler: ['3', '1', '5', '7'], dogru: 0, zorluk: 2 },
+        { bolum: 'İslam Dini', soru: 'Şehit kime denir?', secenekler: ['Allah yolunda ölene', 'Savaşta ölene', 'Aniden ölene', 'Hacca gidene'], dogru: 0, zorluk: 2 },
+
+        // ----- MELEKLER (20 soru) -----
+        { bolum: 'Melekler', soru: 'Melekler hangi maddeden yaratılmıştır?', secenekler: ['Nur', 'Ateş', 'Toprak', 'Su'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Melekler yer mi, içer mi?', secenekler: ['Yemez içmezler', 'Yerler içerler', 'Sadece su içerler', 'Sadece yerler'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Melekler günah işler mi?', secenekler: ['İşlemezler', 'İşleyebilirler', 'Bazen işlerler', 'Sadece büyük günah işlemezler'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Vahiy getiren melek hangisidir?', secenekler: ['Cebrail', 'Mikail', 'İsrafil', 'Azrail'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Rızık dağıtmakla görevli melek hangisidir?', secenekler: ['Mikail', 'Cebrail', 'İsrafil', 'Azrail'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Sura üfleyecek melek hangisidir?', secenekler: ['İsrafil', 'Mikail', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Can almakla görevli melek hangisidir?', secenekler: ['Azrail', 'Cebrail', 'Mikail', 'İsrafil'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'İnsanların sağ ve solunda bulunup amellerini yazan meleklere ne denir?', secenekler: ['Kiramen Katibin', 'Münker Nekir', 'Hafaza', 'Rıdvan'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Kabirde soru soracak melekler hangileridir?', secenekler: ['Münker ve Nekir', 'Cebrail ve Mikail', 'Kiramen Katibin', 'Rıdvan ve Malik'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Cennetin kapısındaki meleğin adı nedir?', secenekler: ['Rıdvan', 'Malik', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Cehennemin kapısındaki meleğin adı nedir?', secenekler: ['Malik', 'Rıdvan', 'Cebrail', 'Azrail'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Koruyucu meleklere ne denir?', secenekler: ['Hafaza', 'Kiramen Katibin', 'Münker Nekir', 'Zebani'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Melekler görülebilir mi?', secenekler: ['Normalde görülmezler', 'Her zaman görülürler', 'Bazı insanlar görebilir', 'Rüyada görülürler'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Meleklerin cinsiyeti var mıdır?', secenekler: ['Yoktur', 'Erkektir', 'Dişidir', 'Hem erkek hem dişi'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Şeytan melek midir?', secenekler: ['Hayır, cindir', 'Evet, melektir', 'Yarı melek', 'İnsandır'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'İblis neden kovuldu?', secenekler: ['Adem\'e secde etmediği için', 'Günah işlediği için', 'Kıskançlık yaptığı için', 'İsyan ettiği için'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Cennetteki hizmetçi meleklere ne denir?', secenekler: ['Gılman', 'Huriler', 'Rıdvan', 'Kiramen Katibin'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Cehennemdeki azap meleklerine ne denir?', secenekler: ['Zebaniler', 'Münker Nekir', 'Malik', 'Hafaza'], dogru: 0, zorluk: 2 },
+        { bolum: 'Melekler', soru: 'Her insanın yanında kaç tane amel yazıcı melek vardır?', secenekler: ['2', '1', '4', '3'], dogru: 0, zorluk: 1 },
+        { bolum: 'Melekler', soru: 'Meleklerin sayısını bilir miyiz?', secenekler: ['Sadece Allah bilir', 'Kur\'an\'da yazar', 'Peygamberimiz söylemiştir', 'Milyarlarca olduğu bilinir'], dogru: 0, zorluk: 2 },
+
+        // ----- CENNET-CEHENNEM (21 soru) -----
+        { bolum: 'Cennet-Cehennem', soru: 'Cennet kimler için yaratılmıştır?', secenekler: ['Müminler', 'Kafirler', 'Tüm insanlar', 'Melekler'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennem kimler için yaratılmıştır?', secenekler: ['Kafirler ve günahkarlar', 'Sadece kafirler', 'Sadece günahkarlar', 'Tüm insanlar'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetin kaç kapısı vardır?', secenekler: ['8', '7', '5', '10'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemin kaç kapısı vardır?', secenekler: ['7', '8', '6', '9'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetin en yüksek derecesine ne denir?', secenekler: ['Firdevs', 'Adn', 'Meva', 'Naîm'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetteki ırmaklardan biri aşağıdakilerden hangisidir?', secenekler: ['Kevser', 'Nil', 'Fırat', 'Dicle'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetteki meyvelerden biri Kur\'an\'da hangisi olarak geçer?', secenekler: ['Nar', 'Elma', 'Muz', 'Çilek'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennet ehli ne giyer?', secenekler: ['İpek', 'Pamuk', 'Yün', 'Keten'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennette hizmet eden gençlere ne denir?', secenekler: ['Gılman', 'Huriler', 'Rıdvan', 'Malik'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemde zakkum ağacının meyvesi neye benzetilir?', secenekler: ['Şeytan başına', 'Ateşe', 'Dikene', 'Katrana'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemliklere içirilecek kaynar suya ne denir?', secenekler: ['Hamim', 'Zakkum', 'Selsebil', 'Tesnim'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennet ve cehennem şu an var mıdır?', secenekler: ['Vardır', 'Kıyametten sonra yaratılacak', 'Sadece cennet var', 'Sadece cehennem var'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Sırat köprüsü nedir?', secenekler: ['Cennete geçiş köprüsü', 'Cehenneme giden yol', 'Amellerin tartıldığı yer', 'Cennette bir ırmak'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Mizan nedir?', secenekler: ['Amellerin tartıldığı terazi', 'Cennet kapısı', 'Cehennem kapısı', 'Sırat köprüsü'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Peygamberimizin cennetteki havuzunun adı nedir?', secenekler: ['Kevser', 'Selsebil', 'Tesnim', 'Rahmet'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetteki büyük ağacın adı nedir?', secenekler: ['Tuba', 'Zakkum', 'Sidre', 'Kevser'], dogru: 0, zorluk: 2 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennette köşkler var mı?', secenekler: ['Evet', 'Hayır', 'Sadece bazıları için', 'Sadece peygamberler için'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemdeki azap çeşitlerinden biri nedir?', secenekler: ['Kaynar su', 'Soğuk', 'Açlık', 'Susuzluk'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetliklerin yüzleri nasıl olacak?', secenekler: ['Parlak ve nurlu', 'Kararmış', 'Sararmış', 'Kıpkırmızı'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cehennemliklerin yüzleri nasıl olacak?', secenekler: ['Kararmış', 'Parlak', 'Nurlu', 'Güzel'], dogru: 0, zorluk: 1 },
+        { bolum: 'Cennet-Cehennem', soru: 'Cennetteki kadınlara ne denir?', secenekler: ['Huriler', 'Gılman', 'Melekler', 'Cennet kızları'], dogru: 0, zorluk: 2 },
+
+        // ----- ALLAH (22 soru) -----
+        { bolum: 'Allah', soru: 'Allah\'ın (c.c.) zatî sıfatlarından biri aşağıdakilerden hangisidir?', secenekler: ['Vücud', 'İlim', 'Kudret', 'Semi'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın subuti sıfatlarından biri aşağıdakilerden hangisidir?', secenekler: ['Hayat', 'Kıdem', 'Beka', 'Vahdaniyet'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın her şeyi bilmesine ne denir?', secenekler: ['İlim', 'Semi', 'Basar', 'Kudret'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın her şeyi işitmesine ne denir?', secenekler: ['Semi', 'Basar', 'İlim', 'Kudret'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın her şeyi görmesine ne denir?', secenekler: ['Basar', 'Semi', 'İlim', 'Kudret'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın her şeye gücünün yetmesine ne denir?', secenekler: ['Kudret', 'İrade', 'Tekvin', 'Hayat'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın dilediğini yapmasına ne denir?', secenekler: ['İrade', 'Kudret', 'Tekvin', 'İlim'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın yaratmasına ne denir?', secenekler: ['Tekvin', 'Kudret', 'İrade', 'İlim'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın ezelî olmasına ne denir?', secenekler: ['Kıdem', 'Beka', 'Vücud', 'Vahdaniyet'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın ebedî olmasına ne denir?', secenekler: ['Beka', 'Kıdem', 'Vücud', 'Vahdaniyet'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın bir olmasına ne denir?', secenekler: ['Vahdaniyet', 'Kıdem', 'Beka', 'Vücud'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın hiçbir şeye benzememesine ne denir?', secenekler: ['Muhalefetün lil-havadis', 'Kıyam bi-nefsihi', 'Vücud', 'Kıdem'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın varlığının kendinden olmasına ne denir?', secenekler: ['Kıyam bi-nefsihi', 'Muhalefetün lil-havadis', 'Vücud', 'Beka'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "Er-Rahman" ismi ne anlama gelir?', secenekler: ['Çok merhametli', 'Çok bağışlayıcı', 'Çok güçlü', 'Çok adil'], dogru: 0, zorluk: 1 },
+        { bolum: 'Allah', soru: 'Allah\'ın "Er-Rahim" ismi ne anlama gelir?', secenekler: ['Çok merhametli (özellikle ahirette)', 'Çok bağışlayıcı', 'Çok şefkatli', 'Çok koruyucu'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "El-Melik" ismi ne anlama gelir?', secenekler: ['Her şeyin sahibi', 'Çok güçlü', 'Çok yüce', 'Çok adil'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "El-Kuddüs" ismi ne anlama gelir?', secenekler: ['Her türlü eksiklikten uzak', 'Çok temiz', 'Çok kutsal', 'Çok yüce'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "Es-Selam" ismi ne anlama gelir?', secenekler: ['Kurtuluş ve esenlik veren', 'Barış', 'Selamet', 'Güven veren'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "El-Mümin" ismi ne anlama gelir?', secenekler: ['Güven veren', 'İnanan', 'Koruyan', 'Emin'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "El-Aziz" ismi ne anlama gelir?', secenekler: ['Çok güçlü', 'Çok yüce', 'Çok değerli', 'Çok onurlu'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "El-Gafur" ismi ne anlama gelir?', secenekler: ['Çok bağışlayıcı', 'Çok merhametli', 'Çok örten', 'Çok affedici'], dogru: 0, zorluk: 2 },
+        { bolum: 'Allah', soru: 'Allah\'ın "Er-Rezzak" ismi ne anlama gelir?', secenekler: ['Rızık veren', 'Çok bağışlayan', 'Çok yaratan', 'Çok yaşatan'], dogru: 0, zorluk: 1 }
+    ];
 
     const AVATAR_LIST = [
         { name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
@@ -1012,22 +1218,59 @@
     ];
 
     // ------------------------------------------------------------
-    // SES SİSTEMİ (kısaltılmış)
+    // SES SİSTEMİ
     // ------------------------------------------------------------
     let soundEnabled = true;
     const sounds = {
         correct: new Howl({ src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3'] }),
         levelUp: new Howl({ src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3'] })
     };
-
-    function playBeep(type) { /* ... */ }
-    function createBeep(audioCtx, type) { /* ... */ }
+    function playBeep(type) {
+        if (!soundEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume().then(() => createBeep(audioCtx, type));
+            else createBeep(audioCtx, type);
+        } catch(e) {}
+    }
+    function createBeep(audioCtx, type) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        switch(type) {
+            case 'wrong':
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                break;
+            case 'gameOver':
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+                break;
+            case 'hint':
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                break;
+        }
+    }
     function playSound(soundName) {
         if (!soundEnabled) return;
         if (sounds[soundName]) sounds[soundName].play();
         else playBeep(soundName);
     }
-    function unlockAudio() { /* ... */ }
+    function unlockAudio() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+            const resume = () => { audioCtx.resume(); document.removeEventListener('click', resume); };
+            document.addEventListener('click', resume, { once: true });
+        }
+    }
 
     // ------------------------------------------------------------
     // OYUN DURUMU
@@ -1045,8 +1288,16 @@
             quranMaster: false,
             namazkar: false,
             peygamberSever: false,
-            level5: false, level10: false, level15: false, level20: false, level25: false,
-            level30: false, level35: false, level40: false, level45: false, level50: false
+            level5: false,
+            level10: false,
+            level15: false,
+            level20: false,
+            level25: false,
+            level30: false,
+            level35: false,
+            level40: false,
+            level45: false,
+            level50: false
         },
         recentAchievements: [],
         solvedQuestions: [],
@@ -1063,7 +1314,13 @@
                 const parsed = JSON.parse(saved);
                 gameState = { ...gameState, ...parsed };
                 if (!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
-                if (!gameState.achievements) gameState.achievements = { /* varsayılanlar */ };
+                if (!gameState.achievements) {
+                    gameState.achievements = {
+                        firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+                        level5: false, level10: false, level15: false, level20: false, level25: false,
+                        level30: false, level35: false, level40: false, level45: false, level50: false
+                    };
+                }
                 if (!gameState.recentAchievements) gameState.recentAchievements = [];
                 if (!gameState.solvedQuestions) gameState.solvedQuestions = [];
                 if (isNaN(gameState.score)) gameState.score = 0;
@@ -1071,10 +1328,6 @@
         }
     }
     function saveGameState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
-
-    const ACHIEVEMENT_NAMES = { /* ... */ };
-
-    function unlockAchievement(achievementKey) { /* ... */ }
 
     // ------------------------------------------------------------
     // DOM ELEMENTLERİ
@@ -1097,6 +1350,8 @@
     const gameContainer = document.getElementById('gameContainer');
     const gameAvatar = document.getElementById('gameAvatar');
     const gameUserName = document.getElementById('gameUserName');
+    const gameScore = document.getElementById('gameScore');
+    const gameLevel = document.getElementById('gameLevel');
     const scoreDisplay = document.getElementById('scoreDisplay');
     const currentLevelDisplay = document.getElementById('currentLevelDisplay');
     const levelIndicators = document.getElementById('levelIndicators');
@@ -1123,7 +1378,7 @@
     const adminPanel = document.getElementById('adminPanel');
     const closeAdminBtn = document.getElementById('closeAdminBtn');
     const adminQuestionsList = document.getElementById('adminQuestionsList');
-    const adminStatsInfo = document.getElementById('adminStatsInfo');
+    const adminStats = document.getElementById('adminStats');
     const formTitle = document.getElementById('formTitle');
     const adminSoru = document.getElementById('adminSoru');
     const adminSecenek1 = document.getElementById('adminSecenek1');
@@ -1158,10 +1413,444 @@
     // ------------------------------------------------------------
     // YARDIMCI FONKSİYONLAR
     // ------------------------------------------------------------
-    function showToast(message, type = 'success') { /* ... */ }
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-message ${type === 'success' ? 'toast-success' : 'toast-info'}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
     function triggerConfetti() { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); }
 
-    function initAvatarSelector() { /* ... */ }
+    // ------------------------------------------------------------
+    // FONKSİYON: seedQuestionsIfNeeded – VERİTABANI BOŞSA ÖRNEK SORULARI YÜKLE
+    // ------------------------------------------------------------
+    async function seedQuestionsIfNeeded() {
+        try {
+            const q = query(collection(db, QUESTIONS_COLLECTION), limit(1));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                for (const q of SAMPLE_QUESTIONS) {
+                    await addDoc(collection(db, QUESTIONS_COLLECTION), q);
+                }
+                console.log('Örnek sorular eklendi.');
+            }
+        } catch (e) {
+            console.error('Örnek sorular eklenirken hata:', e);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // LİDERLİK TABLOSU – SADECE EN YÜKSEK PUANI KAYDET
+    // ------------------------------------------------------------
+    async function saveScoreToLeaderboard() {
+        if (!gameState.username || gameState.username === 'Misafir') return;
+        try {
+            const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", gameState.username.trim()));
+            const snapshot = await getDocs(q);
+            
+            let maxScore = 0;
+            const docsToDelete = [];
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const score = Number(data.score);
+                if (score > maxScore) maxScore = score;
+                docsToDelete.push(doc.ref);
+            });
+
+            if (gameState.score > maxScore) {
+                if (docsToDelete.length > 0) {
+                    const batch = writeBatch(db);
+                    docsToDelete.forEach(ref => batch.delete(ref));
+                    await batch.commit();
+                }
+                await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+                    username: gameState.username.trim(),
+                    score: Number(gameState.score),
+                    level: Number(gameState.currentLevel),
+                    timestamp: new Date()
+                });
+            } else if (maxScore === 0 && gameState.score > 0) {
+                await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+                    username: gameState.username.trim(),
+                    score: Number(gameState.score),
+                    level: Number(gameState.currentLevel),
+                    timestamp: new Date()
+                });
+            }
+        } catch (e) {
+            console.error("Liderlik kaydedilemedi:", e);
+        }
+    }
+
+    async function loadLeaderboard() {
+        try {
+            const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
+            const snapshot = await getDocs(q);
+            let html = '<ol style="list-style:none; padding:0;">';
+            snapshot.forEach((doc, idx) => {
+                const data = doc.data();
+                let scoreVal = Number(data.score);
+                if (isNaN(scoreVal)) scoreVal = 0;
+                const username = data.username?.trim() || 'İsimsiz';
+                let levelVal = Number(data.level);
+                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
+                const rank = idx + 1;
+                html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
+                            <span style="font-weight:700; margin-right:15px; width:30px;">#${rank}</span>
+                            <i class="fas fa-user-circle"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
+                            <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
+                            <span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
+                        </li>`;
+            });
+            html += '</ol>';
+            leaderboardList.innerHTML = html;
+        } catch (e) {
+            leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
+        }
+    }
+
+    // ------------------------------------------------------------
+    // OYUN FONKSİYONLARI (Özet, ana kodda tümü var)
+    // ------------------------------------------------------------
+    async function loadAllQuestions() {
+        try {
+            const q = query(collection(db, QUESTIONS_COLLECTION));
+            const snapshot = await getDocs(q);
+            allQuestions = [];
+            snapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
+            if (allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
+        } catch (e) {
+            allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
+        }
+    }
+
+    function getQuestionCountForLevel(level) { return level * 2; }
+
+    function loadLevelQuestions(level) {
+        const countNeeded = getQuestionCountForLevel(level);
+        let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
+        if (unsolved.length < countNeeded) {
+            gameState.solvedQuestions = [];
+            unsolved = [...allQuestions];
+            showToast('🔄 Tüm soruları çözdün! Havuz yenilendi.', 'info');
+        }
+        const shuffled = [...unsolved].sort(() => Math.random() - 0.5);
+        currentLevelQuestions = shuffled.slice(0, countNeeded);
+        gameState.currentQuestionIndexInLevel = Math.min(gameState.currentQuestionIndexInLevel, currentLevelQuestions.length - 1);
+        if (gameState.currentQuestionIndexInLevel < 0) gameState.currentQuestionIndexInLevel = 0;
+        loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
+        gameState.hintUsedInThisLevel = false;
+        hintBtn.classList.remove('disabled');
+    }
+
+    function loadQuestionAtIndex(index) {
+        if (!currentLevelQuestions.length) return;
+        currentQuestion = currentLevelQuestions[index];
+        questionEl.innerText = currentQuestion.soru;
+        optionsEl.innerHTML = '';
+        currentQuestion.secenekler.forEach((sec, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span style="font-weight:700; margin-right:8px;">${String.fromCharCode(65 + idx)}</span> ${sec}`;
+            btn.dataset.optionIndex = idx;
+            btn.addEventListener('click', () => handleOptionClick(idx, btn));
+            optionsEl.appendChild(btn);
+        });
+        answered = false;
+        firstAttempt = true;
+        eliminatedOptions = [];
+        nextBtn.classList.add('disabled');
+        nextBtn.classList.remove('active');
+        startTimer(60);
+    }
+
+    function startTimer(seconds) {
+        if (timerInterval) clearInterval(timerInterval);
+        timeLeft = seconds;
+        timerEl.innerText = timeLeft;
+        timerBox.style.display = 'flex';
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (!answered) {
+                    if (firstAttempt) {
+                        playSound('wrong');
+                        showToast('⏳ Süre doldu! Bir hakkın kaldı.', 'info');
+                        firstAttempt = false;
+                    } else {
+                        gameActive = false;
+                        gameOverMessage.innerText = 'Süre doldu ve ikinci hakkını kullanamadın.';
+                        gameOverModal.classList.add('active');
+                        document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+                        playSound('gameOver');
+                    }
+                }
+            }
+        }, 1000);
+    }
+
+    async function useHint() {
+        if (gameState.hintUsedInThisLevel) { showToast('Bu seviyede ipucu hakkın bitti!', 'info'); return; }
+        if (gameState.score < 1) { showToast('İpucu için 1 puana ihtiyacın var!', 'info'); return; }
+        if (answered) { showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info'); return; }
+        const correctIndex = currentQuestion.dogru;
+        const allIndexes = [0,1,2,3];
+        const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
+        const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
+        const eliminateThese = shuffledWrong.slice(0, 2);
+        eliminateThese.forEach(idx => {
+            const btn = optionsEl.children[idx];
+            if (btn) { btn.classList.add('eliminated'); btn.disabled = true; }
+        });
+        eliminatedOptions = eliminateThese;
+        gameState.score -= 1;
+        if (gameState.score < 0) gameState.score = 0;
+        gameState.hintUsedInThisLevel = true;
+        hintBtn.classList.add('disabled');
+        saveGameState();
+        scoreDisplay.innerText = gameState.score;
+        gameScore.innerText = gameState.score;
+        playSound('hint');
+        showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
+    }
+
+    async function handleOptionClick(selectedIdx, btnElement) {
+        if (!gameActive || answered) return;
+        if (eliminatedOptions.includes(selectedIdx)) return;
+
+        const isCorrect = (selectedIdx === currentQuestion.dogru);
+        const questionId = currentQuestion.id;
+
+        if (isCorrect) {
+            clearInterval(timerInterval);
+            answered = true;
+            btnElement.classList.add('correct');
+            document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+
+            if (!gameState.solvedQuestions.includes(questionId)) {
+                gameState.solvedQuestions.push(questionId);
+            }
+
+            if (firstAttempt && !gameState.earnedPointsForQuestion[questionId]) {
+                gameState.score += 1;
+                gameState.earnedPointsForQuestion[questionId] = true;
+                saveGameState();
+                showToast('🎉 Harika! Doğru cevap! +1 Puan', 'success');
+                triggerConfetti();
+                playSound('correct');
+                checkAchievements('correct', questionId);
+            } else if (!firstAttempt) {
+                showToast('✅ Doğru! (İkinci denemede)', 'info');
+                playSound('correct');
+            } else {
+                showToast('✅ Doğru!', 'success');
+                playSound('correct');
+            }
+
+            nextBtn.classList.remove('disabled');
+            nextBtn.classList.add('active');
+            scoreDisplay.innerText = gameState.score;
+            gameScore.innerText = gameState.score;
+        } else {
+            playSound('wrong');
+            btnElement.classList.add('wrong');
+            btnElement.classList.add('disabled');
+            btnElement.disabled = true;
+
+            if (firstAttempt) {
+                firstAttempt = false;
+                showToast('❌ Yanlış! Bir hakkın daha var.', 'info');
+            } else {
+                clearInterval(timerInterval);
+                gameActive = false;
+                gameOverMessage.innerText = `İkinci hakkında da yanlış cevap verdin. Seviye ${gameState.currentLevel}'e geri dönüyorsun.`;
+                gameOverModal.classList.add('active');
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+                playSound('gameOver');
+            }
+        }
+    }
+
+    function onNext() {
+        if (!nextBtn.classList.contains('active')) return;
+        gameState.currentQuestionIndexInLevel++;
+        if (gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length) {
+            const completedLevel = gameState.currentLevel;
+            if (completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
+            gameState.currentLevel = completedLevel + 1;
+            gameState.currentQuestionIndexInLevel = 0;
+            gameState.hintUsedInThisLevel = false;
+            
+            if (completedLevel % 5 === 0) {
+                const levelKey = `level${completedLevel}`;
+                if (gameState.achievements[levelKey] === false) {
+                    unlockAchievement(levelKey);
+                }
+            }
+            
+            saveGameState();
+            loadLevelQuestions(gameState.currentLevel);
+            currentLevelDisplay.innerText = gameState.currentLevel;
+            gameLevel.innerText = gameState.currentLevel;
+            renderLevelIndicators();
+            showToast(`🎯 Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} başladı.`, 'success');
+            playSound('levelUp');
+            showShareButtons(completedLevel);
+        } else {
+            loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
+            saveGameState();
+        }
+        nextBtn.classList.remove('active');
+        nextBtn.classList.add('disabled');
+    }
+
+    function restartLevelAfterGameOver() {
+        gameState.currentQuestionIndexInLevel = 0;
+        gameState.hintUsedInThisLevel = false;
+        gameActive = true;
+        gameOverModal.classList.remove('active');
+        loadLevelQuestions(gameState.currentLevel);
+        currentLevelDisplay.innerText = gameState.currentLevel;
+        gameLevel.innerText = gameState.currentLevel;
+    }
+
+    function renderLevelIndicators() {
+        const maxLevel = gameState.maxUnlockedLevel;
+        let html = '';
+        for (let i = 1; i <= maxLevel + 2; i++) {
+            if (i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
+            else if (i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock"></i></div>`;
+            else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock"></i></div>`;
+        }
+        levelIndicators.innerHTML = html;
+        document.querySelectorAll('.level-badge.active').forEach(badge => {
+            badge.addEventListener('click', () => {
+                const lvl = parseInt(badge.dataset.level);
+                if (lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel) {
+                    gameState.currentLevel = lvl;
+                    gameState.currentQuestionIndexInLevel = 0;
+                    gameState.hintUsedInThisLevel = false;
+                    saveGameState();
+                    loadLevelQuestions(lvl);
+                    currentLevelDisplay.innerText = lvl;
+                    gameLevel.innerText = lvl;
+                }
+            });
+        });
+    }
+
+    const ACHIEVEMENT_NAMES = {
+        firstCorrect: '🌟 İlk Doğru',
+        streak: '🔥 Seri Katili (10 doğru üst üste)',
+        quranMaster: '🧩 Kur\'an Ustası',
+        namazkar: '🕌 Namazkâr',
+        peygamberSever: '👑 Peygamber Sever',
+        level5: '🌱 Acemi Bilge',
+        level10: '🌿 Bilgelik Yolcusu',
+        level15: '🍃 İlim Çırağı',
+        level20: '🌳 Manevi Fidan',
+        level25: '📚 Hakikat Arayıcısı',
+        level30: '🕊️ Hikmet Taliplisi',
+        level35: '✨ İrfan Dostu',
+        level40: '🕌 Hakikat Yolcusu',
+        level45: '🌟 Marifet Sahibi',
+        level50: '👑 Manevi Alim'
+    };
+
+    function unlockAchievement(achievementKey) {
+        if (!gameState.achievements[achievementKey]) {
+            gameState.achievements[achievementKey] = true;
+            const achievementName = ACHIEVEMENT_NAMES[achievementKey];
+            gameState.recentAchievements.unshift(achievementName);
+            if (gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
+            saveGameState();
+            showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
+            triggerConfetti();
+        }
+    }
+
+    function checkAchievements(action, questionId) {
+        if (!gameState.achievements.firstCorrect && action === 'correct') {
+            unlockAchievement('firstCorrect');
+        }
+        if (action === 'correct') {
+            gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
+            if (gameState.achievements.streak === 10 && !gameState.achievements.streak) {
+                unlockAchievement('streak');
+            }
+        } else {
+            gameState.achievements.streak = 0;
+        }
+        saveGameState();
+    }
+
+    function renderAchievements() {
+        const a = gameState.achievements;
+        let html = '<ul style="list-style:none; padding:0;">';
+        
+        html += `<li style="padding:12px; background:${a.firstCorrect ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-star" style="color:${a.firstCorrect ? '#ffc107' : '#6c757d'};"></i> 🌟 İlk Doğru ${a.firstCorrect ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${(a.streak ||0) >=10 ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-fire" style="color:${(a.streak ||0) >=10 ? '#ff9800' : '#6c757d'};"></i> 🔥 Seri Katili (10) ${(a.streak ||0) >=10 ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.quranMaster ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-book" style="color:${a.quranMaster ? '#28a745' : '#6c757d'};"></i> 🧩 Kur'an Ustası ${a.quranMaster ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.namazkar ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-mosque" style="color:${a.namazkar ? '#28a745' : '#6c757d'};"></i> 🕌 Namazkâr ${a.namazkar ? '✓' : '❌'}</li>`;
+        html += `<li style="padding:12px; background:${a.peygamberSever ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                    <i class="fas fa-dove" style="color:${a.peygamberSever ? '#28a745' : '#6c757d'};"></i> 👑 Peygamber Sever ${a.peygamberSever ? '✓' : '❌'}</li>`;
+        
+        const levelAchievements = [
+            { key: 'level5', name: '🌱 Acemi Bilge' },
+            { key: 'level10', name: '🌿 Bilgelik Yolcusu' },
+            { key: 'level15', name: '🍃 İlim Çırağı' },
+            { key: 'level20', name: '🌳 Manevi Fidan' },
+            { key: 'level25', name: '📚 Hakikat Arayıcısı' },
+            { key: 'level30', name: '🕊️ Hikmet Taliplisi' },
+            { key: 'level35', name: '✨ İrfan Dostu' },
+            { key: 'level40', name: '🕌 Hakikat Yolcusu' },
+            { key: 'level45', name: '🌟 Marifet Sahibi' },
+            { key: 'level50', name: '👑 Manevi Alim' }
+        ];
+        
+        levelAchievements.forEach(ach => {
+            html += `<li style="padding:12px; background:${a[ach.key] ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+                        <i class="fas fa-crown" style="color:${a[ach.key] ? '#ffc107' : '#6c757d'};"></i> ${ach.name} ${a[ach.key] ? '✓' : '❌'}</li>`;
+        });
+        
+        html += '</ul>';
+        achievementsList.innerHTML = html;
+    }
+
+    function updateGameHeader() {
+        gameAvatar.innerText = gameState.avatar;
+        gameUserName.innerText = gameState.username;
+        gameScore.innerText = gameState.score;
+        gameLevel.innerText = gameState.currentLevel;
+        scoreDisplay.innerText = gameState.score;
+        currentLevelDisplay.innerText = gameState.currentLevel;
+    }
+
+    function initAvatarSelector() {
+        settingsAvatarSelector.innerHTML = '';
+        AVATAR_LIST.forEach((av, idx) => {
+            const div = document.createElement('div');
+            div.className = 'avatar-option' + (av.icon === gameState.avatar ? ' selected' : '');
+            div.innerHTML = av.icon;
+            div.dataset.avatarIcon = av.icon;
+            div.dataset.avatarImg = av.img;
+            div.dataset.avatarName = av.name;
+            div.addEventListener('click', function() {
+                document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => el.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+            settingsAvatarSelector.appendChild(div);
+        });
+    }
 
     async function updateIntroUI() {
         introAvatar.innerText = gameState.avatar;
@@ -1209,17 +1898,20 @@
         introAchievementsList.innerHTML = html;
     }
 
-    function updateGameHeader() {
-        // elementlerin varlığını kontrol et (null hatası için)
-        if (gameAvatar && gameUserName && scoreDisplay && currentLevelDisplay) {
-            gameAvatar.innerText = gameState.avatar;
-            gameUserName.innerText = gameState.username;
-            scoreDisplay.innerText = gameState.score;
-            currentLevelDisplay.innerText = gameState.currentLevel;
+    function saveSettings() {
+        const newName = settingsUsername.value.trim() || 'Misafir';
+        const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
+        if (selectedAvatar) {
+            gameState.avatar = selectedAvatar.dataset.avatarIcon;
+            gameState.avatarImg = selectedAvatar.dataset.avatarImg;
         }
+        gameState.username = newName;
+        saveGameState();
+        updateIntroUI();
+        updateGameHeader();
+        introSettingsPanel.style.display = 'none';
+        showToast('Profil güncellendi!', 'success');
     }
-
-    function saveSettings() { /* ... */ }
 
     function startGameFromIntro() {
         if (!gameState.username) {
@@ -1243,158 +1935,27 @@
     }
 
     // ------------------------------------------------------------
-    // OYUN FONKSİYONLARI
+    // ADMIN PANELİ İSTATİSTİKLERİ
     // ------------------------------------------------------------
-    async function loadAllQuestions() {
-        try {
-            const q = query(collection(db, QUESTIONS_COLLECTION));
-            const snapshot = await getDocs(q);
-            allQuestions = [];
-            snapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
-            if (allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
-        } catch (e) {
-            allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
-        }
-    }
+    let lastAddedCount = 0, lastSkippedCount = 0, lastBulkTime = '';
 
-    function getQuestionCountForLevel(level) { return level * 2; }
-
-    function loadLevelQuestions(level) {
-        const countNeeded = getQuestionCountForLevel(level);
-        let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
-        if (unsolved.length < countNeeded) {
-            gameState.solvedQuestions = [];
-            unsolved = [...allQuestions];
-            showToast('🔄 Tüm soruları çözdün! Havuz yenilendi.', 'info');
-        }
-        const shuffled = [...unsolved].sort(() => Math.random() - 0.5);
-        currentLevelQuestions = shuffled.slice(0, countNeeded);
-        gameState.currentQuestionIndexInLevel = Math.min(gameState.currentQuestionIndexInLevel, currentLevelQuestions.length - 1);
-        if (gameState.currentQuestionIndexInLevel < 0) gameState.currentQuestionIndexInLevel = 0;
-        loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-        gameState.hintUsedInThisLevel = false;
-        hintBtn.classList.remove('disabled');
-    }
-
-    function loadQuestionAtIndex(index) { /* ... */ }
-    function startTimer(seconds) { /* ... */ }
-    async function useHint() { /* ... */ }
-    async function handleOptionClick(selectedIdx, btnElement) { /* ... */ }
-    function onNext() { /* ... */ }
-    function restartLevelAfterGameOver() { /* ... */ }
-
-    function renderLevelIndicators() {
-        const maxLevel = gameState.maxUnlockedLevel;
-        let html = '';
-        for (let i = 1; i <= maxLevel + 2; i++) {
-            if (i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
-            else if (i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock"></i></div>`;
-            else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock"></i></div>`;
-        }
-        levelIndicators.innerHTML = html;
-        document.querySelectorAll('.level-badge.active').forEach(badge => {
-            badge.addEventListener('click', () => {
-                const lvl = parseInt(badge.dataset.level);
-                if (lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel) {
-                    gameState.currentLevel = lvl;
-                    gameState.currentQuestionIndexInLevel = 0;
-                    gameState.hintUsedInThisLevel = false;
-                    saveGameState();
-                    loadLevelQuestions(lvl);
-                    currentLevelDisplay.innerText = lvl;
-                }
-            });
-        });
-    }
-
-    function checkAchievements(action, questionId) { /* ... */ }
-    function renderAchievements() { /* ... */ }
-
-    // ------------------------------------------------------------
-    // LİDERLİK TABLOSU – YENİ (EN YÜKSEK PUAN)
-    // ------------------------------------------------------------
-    async function saveScoreToLeaderboard() {
-        if (!gameState.username || gameState.username === 'Misafir') return;
-        try {
-            // Aynı kullanıcı adına sahip tüm kayıtları getir
-            const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", gameState.username.trim()));
-            const snapshot = await getDocs(q);
-            
-            let maxScore = 0;
-            const docsToDelete = [];
-            
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const score = Number(data.score);
-                if (score > maxScore) {
-                    maxScore = score;
-                }
-                docsToDelete.push(doc.ref);
-            });
-
-            // Yeni puan mevcut en yüksek puandan büyükse, eski kayıtları sil ve yenisini ekle
-            if (gameState.score > maxScore) {
-                if (docsToDelete.length > 0) {
-                    const batch = writeBatch(db);
-                    docsToDelete.forEach(ref => batch.delete(ref));
-                    await batch.commit();
-                }
-                await addDoc(collection(db, LEADERBOARD_COLLECTION), {
-                    username: gameState.username.trim(),
-                    score: Number(gameState.score),
-                    level: Number(gameState.currentLevel),
-                    timestamp: new Date()
-                });
-            } 
-            // Hiç kayıt yoksa ve puan 0'dan büyükse ekle (ilk kayıt)
-            else if (maxScore === 0 && gameState.score > 0) {
-                await addDoc(collection(db, LEADERBOARD_COLLECTION), {
-                    username: gameState.username.trim(),
-                    score: Number(gameState.score),
-                    level: Number(gameState.currentLevel),
-                    timestamp: new Date()
-                });
-            }
-        } catch (e) {
-            console.error("Liderlik kaydedilemedi:", e);
-        }
-    }
-
-    async function loadLeaderboard() {
-        try {
-            const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
-            const snapshot = await getDocs(q);
-            let html = '<ol style="list-style:none; padding:0;">';
-            snapshot.forEach((doc, idx) => {
-                const data = doc.data();
-                let scoreVal = Number(data.score);
-                if (isNaN(scoreVal)) scoreVal = 0;
-                const username = data.username?.trim() || 'İsimsiz';
-                let levelVal = Number(data.level);
-                if (isNaN(levelVal) || levelVal < 1) levelVal = 1;
-                const rank = idx + 1;
-                html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
-                            <span style="font-weight:700; margin-right:15px; width:30px;">#${rank}</span>
-                            <i class="fas fa-user-circle"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
-                            <span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
-                            <span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
-                        </li>`;
-            });
-            html += '</ol>';
-            leaderboardList.innerHTML = html;
-        } catch (e) {
-            leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
-        }
+    async function updateAdminStats() {
+        const totalQuestions = allQuestions.length;
+        adminStats.innerHTML = `
+            <p><span>📚 Toplam Soru:</span> <strong>${totalQuestions}</strong></p>
+            <p><span>➕ Son Eklenen:</span> <strong>${lastAddedCount}</strong></p>
+            <p><span>⏭️ Atlanan (Tekrar):</span> <strong>${lastSkippedCount}</strong></p>
+            <p><span>🕒 Son İşlem:</span> <strong>${lastBulkTime || 'Henüz yapılmadı'}</strong></p>
+        `;
     }
 
     // ------------------------------------------------------------
-    // TOPLU SORU EKLEME – YENİ (TEKRARLI SORULARI ATLA)
+    // TOPLU SORU EKLEME (TEKRAR KONTROLLÜ)
     // ------------------------------------------------------------
     async function bulkAddQuestions() {
         if (!confirm('⚠️ Bu işlem, SAMPLE_QUESTIONS dizisindeki 169 soruyu Firestore\'a ekleyecek. Daha önce eklenmiş sorular tekrar eklenmeyecek. Devam etmek istiyor musunuz?')) return;
         
         try {
-            // Mevcut soruların metinlerini bir Set olarak al
             const existingQuestionsSnapshot = await getDocs(collection(db, QUESTIONS_COLLECTION));
             const existingQuestionsSet = new Set();
             existingQuestionsSnapshot.forEach(doc => {
@@ -1414,44 +1975,19 @@
                 }
             }
             
+            lastAddedCount = addedCount;
+            lastSkippedCount = skippedCount;
+            lastBulkTime = new Date().toLocaleTimeString('tr-TR');
+            await updateAdminStats();
+            
             showToast(`✅ ${addedCount} yeni soru eklendi, ${skippedCount} soru zaten mevcuttu.`, 'success');
             
-            // İstatistikleri güncelle
             await loadAllQuestions();
             await loadAdminQuestions();
-            await updateAdminStats(); // yeni istatistik fonksiyonu
+            
         } catch (e) {
             showToast('Toplu ekleme başarısız: ' + e.message, 'error');
         }
-    }
-
-    // ------------------------------------------------------------
-    // ADMIN PANELİ İSTATİSTİKLERİ (yeni)
-    // ------------------------------------------------------------
-    async function updateAdminStats() {
-        // Toplam soru sayısı
-        const totalQuestions = allQuestions.length;
-        
-        // Eklenen ve eklenmeyen soru sayısını hesapla (SAMPLE_QUESTIONS'a göre)
-        let addedCount = 0;
-        let notAddedCount = 0;
-        
-        // Mevcut soru metinlerini Set'e al
-        const existingQuestionsSet = new Set(allQuestions.map(q => q.soru));
-        
-        for (const q of SAMPLE_QUESTIONS) {
-            if (existingQuestionsSet.has(q.soru)) {
-                addedCount++;
-            } else {
-                notAddedCount++;
-            }
-        }
-        
-        adminStatsInfo.innerHTML = `
-            <span><i class="fas fa-database"></i> Toplam soru: <strong>${totalQuestions}</strong></span>
-            <span><i class="fas fa-check-circle" style="color:#28a745;"></i> Eklenen: <strong>${addedCount}</strong></span>
-            <span><i class="fas fa-times-circle" style="color:#dc3545;"></i> Eklenmeyen: <strong>${notAddedCount}</strong></span>
-        `;
     }
 
     // ------------------------------------------------------------
@@ -1474,7 +2010,7 @@
     }
 
     // ------------------------------------------------------------
-    // ADMIN PANELİ – SORU YÖNETİMİ
+    // ADMIN PANELİ – SORU YÖNETİMİ (Düzenle, Sil, Ekle)
     // ------------------------------------------------------------
     let adminClickCount = 0;
     function initAdminTrigger() {
@@ -1486,7 +2022,7 @@
                     if (pwd === ADMIN_PASSWORD) {
                         adminPanel.classList.add('active');
                         await loadAdminQuestions();
-                        await updateAdminStats(); // istatistikleri güncelle
+                        await updateAdminStats();
                         resetFormToAddMode();
                     }
                     adminClickCount = 0;
@@ -1544,17 +2080,57 @@
         }
     }
 
-    async function editQuestion(questionId) { /* ... */ }
-    async function deleteQuestion(questionId) { 
-        await deleteDoc(doc(db, QUESTIONS_COLLECTION, questionId));
-        showToast('Soru silindi!', 'success');
-        await loadAdminQuestions();
-        await loadAllQuestions();
-        await updateAdminStats(); // istatistikleri güncelle
-        if (editingQuestionId === questionId) resetFormToAddMode();
+    async function editQuestion(questionId) {
+        try {
+            const docRef = doc(db, QUESTIONS_COLLECTION, questionId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                adminSoru.value = data.soru || '';
+                adminSecenek1.value = data.secenekler?.[0] || '';
+                adminSecenek2.value = data.secenekler?.[1] || '';
+                adminSecenek3.value = data.secenekler?.[2] || '';
+                adminSecenek4.value = data.secenekler?.[3] || '';
+                adminDogru.value = data.dogru || 0;
+                adminKategori.value = data.bolum || 'Kur\'an';
+                adminZorluk.value = data.zorluk || 1;
+                editingQuestionId = questionId;
+                formTitle.innerHTML = '<i class="fas fa-edit"></i> Soruyu Düzenle';
+                saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Soruyu Güncelle';
+                cancelEditBtn.style.display = 'block';
+            }
+        } catch (e) {
+            showToast('Soru yüklenirken hata oluştu.', 'error');
+        }
     }
 
-    function resetFormToAddMode() { /* ... */ }
+    async function deleteQuestion(questionId) {
+        try {
+            await deleteDoc(doc(db, QUESTIONS_COLLECTION, questionId));
+            showToast('Soru silindi!', 'success');
+            await loadAdminQuestions();
+            await loadAllQuestions();
+            await updateAdminStats();
+            if (editingQuestionId === questionId) resetFormToAddMode();
+        } catch (e) {
+            showToast('Soru silinemedi.', 'error');
+        }
+    }
+
+    function resetFormToAddMode() {
+        adminSoru.value = '';
+        adminSecenek1.value = '';
+        adminSecenek2.value = '';
+        adminSecenek3.value = '';
+        adminSecenek4.value = '';
+        adminDogru.value = 0;
+        adminKategori.value = 'Kur\'an';
+        adminZorluk.value = 1;
+        editingQuestionId = null;
+        formTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Yeni Soru Ekle';
+        saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Soruyu Kaydet';
+        cancelEditBtn.style.display = 'none';
+    }
 
     async function saveQuestion() {
         const soru = adminSoru.value.trim();
@@ -1581,7 +2157,7 @@
             resetFormToAddMode();
             await loadAdminQuestions();
             await loadAllQuestions();
-            await updateAdminStats(); // istatistikleri güncelle
+            await updateAdminStats();
         } catch (e) {
             showToast('İşlem başarısız.', 'error');
         }
@@ -1696,7 +2272,7 @@
     // ------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', async () => {
         loadGameState();
-        await seedQuestionsIfNeeded(); // seedQuestionsIfNeeded fonksiyonu eklenmeli (ilk kurulum için)
+        await seedQuestionsIfNeeded();   // ← EKSİK OLAN ÇAĞRI
         await loadAllQuestions();
 
         initAvatarSelector();
@@ -1729,7 +2305,7 @@
         restartGameBtn.addEventListener('click', restartLevelAfterGameOver);
         exitGameBtn.addEventListener('click', exitToIntro);
 
-        // LİDERLİK BUTONU – ÖNCE PUANI KAYDET, SONRA GÖSTER
+        // LİDERLİK BUTONU: ÖNCE KAYDET, SONRA GÖSTER
         leaderboardBtn.addEventListener('click', async () => {
             await saveScoreToLeaderboard();
             await loadLeaderboard();
