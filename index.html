@@ -280,7 +280,7 @@
         .avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #ffe0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: #fef9e0; transition: 0.1s; }
         .avatar-option.selected { border-color: #7c3aed; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(124,58,237,0.3); }
 
-        /* ---------- OYUN KONTEYNERİ ---------- */
+        /* ---------- OYUN KONTEYNERİ (kullanıcı bilgileri intro ile uyumlu hale getirildi) ---------- */
         .game-container { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: var(--border-radius-lg); padding: 25px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.5); width: 100%; max-width: 1000px; margin: 0 auto; transition: 0.3s; }
         .user-header { 
             display: flex; 
@@ -288,25 +288,25 @@
             gap: 10px; 
             margin-bottom: 20px; 
             background: rgba(255,255,255,0.4); 
-            padding: 8px 15px; 
+            padding: 8px 12px; 
             border-radius: 60px; 
             flex-wrap: wrap; 
         }
         .user-avatar { 
-            width: 45px; 
-            height: 45px; 
+            width: 50px; 
+            height: 50px; 
             border-radius: 50%; 
             background: #ffe6c7; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 1.8rem; 
+            font-size: 2rem; 
             border: 3px solid white; 
             box-shadow: 0 3px 0 #d4a373; 
             flex-shrink: 0;
         }
         .user-info { flex: 1; min-width: 140px; }
-        .user-name { font-weight: 700; font-size: 1.1rem; }
+        .user-name { font-weight: 700; font-size: 1.2rem; color: var(--text-dark); }
         .user-stats { display: flex; gap: 12px; font-size: 0.85rem; color: #6b7280; flex-wrap: wrap; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
         .score-box, .level-box { background: white; padding: 8px 18px; border-radius: 40px; box-shadow: 0 5px 0 #cbd5e0; border: 1px solid #cbd5e0; font-weight: 600; display: flex; align-items: center; gap: 8px; color: #2d3e50; font-size: 1rem; }
@@ -570,7 +570,7 @@
             .leaderboard-btn span, .achievements-btn span, .settings-btn span, .exit-btn span { display: none; }
             .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn { padding: 8px 10px; }
             .user-stats { gap: 8px; }
-            .user-name { font-size: 1rem; }
+            .user-name { font-size: 1.1rem; }
         }
         @media (max-width: 600px) {
             .options-grid { grid-template-columns: 1fr; }
@@ -595,6 +595,9 @@
             .intro-user-name { font-size: 1rem; }
             .intro-user-stats { font-size: 0.8rem; gap: 8px; }
             .intro-avatar { width: 45px; height: 45px; font-size: 1.8rem; }
+            .user-avatar { width: 45px; height: 45px; font-size: 1.8rem; }
+            .user-name { font-size: 1rem; }
+            .user-stats { font-size: 0.8rem; }
         }
         @media (max-width: 360px) {
             .question-text { font-size: 1.1rem; }
@@ -2033,7 +2036,12 @@
         restartGameBtn.addEventListener('click', restartLevelAfterGameOver);
         exitGameBtn.addEventListener('click', exitToIntro);
 
-        leaderboardBtn.addEventListener('click', async () => { await loadLeaderboard(); leaderboardPanel.classList.add('active'); });
+        // LİDERLİK BUTONU – ÖNCE PUANI KAYDET, SONRA GÖSTER
+        leaderboardBtn.addEventListener('click', async () => {
+            await saveScoreToLeaderboard();
+            await loadLeaderboard();
+            leaderboardPanel.classList.add('active');
+        });
         closeLeaderboardBtn.addEventListener('click', () => leaderboardPanel.classList.remove('active'));
 
         achievementsBtn.addEventListener('click', () => { renderAchievements(); achievementsPanel.classList.add('active'); });
