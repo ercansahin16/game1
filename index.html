@@ -309,8 +309,23 @@
         .user-name { font-weight: 700; font-size: 1rem; color: var(--text-dark); line-height: 1.2; margin-bottom: 2px; }
         .user-stats { display: flex; gap: 8px; font-size: 0.75rem; color: #6b7280; flex-wrap: wrap; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px; }
-        .score-box, .level-box { background: white; padding: 6px 14px; border-radius: 40px; box-shadow: 0 4px 0 #cbd5e0; border: 1px solid #cbd5e0; font-weight: 600; display: flex; align-items: center; gap: 6px; color: #2d3e50; font-size: 0.9rem; }
-        .score-box i, .level-box i { color: #ff9f1c; font-size: 1rem; }
+        .score-box, .level-box {
+    background: white;
+    padding: 2px 8px;        /* Daha da küçük iç boşluk */
+    border-radius: 30px;      /* Biraz daha yuvarlak */
+    box-shadow: 0 3px 0 #cbd5e0;  /* Daha küçük gölge */
+    border: 1px solid #cbd5e0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;                 /* İkon-yazı arası iyice azaltıldı */
+    color: #2d3e50;
+    font-size: 0.75rem;        /* Yazı boyutu daha da küçüldü */
+}
+        .score-box i, .level-box i {
+    color: #ff9f1c;
+    font-size: 0.8rem;         /* İkon boyutu küçüldü */
+}
         .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn {
             background: rgba(255,255,255,0.7);
             border: 2px solid #ffe0b0;
@@ -556,6 +571,13 @@
         }
         .toast-success { background: #d4edda; border-color: #a3d0b1; color: #0b5e42; }
         .toast-info { background: #fff3cd; border-color: #ffe69b; color: #856404; }
+        .score-level-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;   /* 6px'di, 3px yap */
+    margin-left: auto;
+    flex-wrap: wrap;
+}
         @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 15px; opacity: 1; } }
 
         /* ========== RESPONSIVE İYİLEŞTİRMELER ========= */
@@ -570,11 +592,32 @@
             .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn { padding: 6px 8px; }
             .user-stats { gap: 6px; }
             .user-name { font-size: 0.95rem; }
+              .score-box, .level-box {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        gap: 2px;
+    }
+    .score-box i, .level-box i {
+        font-size: 0.7rem;
+    }
+    .score-level-group {
+        gap: 2px;
+    }
         }
         @media (max-width: 600px) {
             .options-grid { grid-template-columns: 1fr; }
             .header { flex-direction: column; align-items: stretch; }
-            .score-box, .level-box { width: 100%; justify-content: center; }
+              .score-box, .level-box {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        gap: 2px;
+    }
+    .score-box i, .level-box i {
+        font-size: 0.7rem;
+    }
+    .score-level-group {
+        gap: 2px;
+    }
             .user-header { flex-direction: row; text-align: left; }
             .user-avatar { margin: 0; }
             .intro-user-header { flex-direction: row; text-align: left; }
@@ -597,7 +640,17 @@
             .user-avatar { width: 36px; height: 36px; font-size: 1.4rem; }
             .user-name { font-size: 0.9rem; }
             .user-stats { font-size: 0.7rem; gap: 5px; }
-            .score-box, .level-box { font-size: 0.85rem; padding: 4px 12px; }
+              .score-box, .level-box {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        gap: 2px;
+    }
+    .score-box i, .level-box i {
+        font-size: 0.7rem;
+    }
+    .score-level-group {
+        gap: 2px;
+    }
             .leaderboard-btn, .achievements-btn, .settings-btn, .exit-btn { padding: 4px 8px; font-size: 0.85rem; }
         }
         @media (max-width: 360px) {
@@ -651,15 +704,15 @@
 <!-- ========== ANA OYUN KONTEYNERİ ========= -->
 <div id="gameContainer" class="game-container" style="display: none;">
     <div class="user-header">
+    <div class="user-info-left">
         <div id="gameAvatar" class="user-avatar">🐻</div>
-        <div class="user-info">
-            <div id="gameUserName" class="user-name">Misafir</div>
-            <div class="user-stats">
-                <span><i class="fas fa-trophy"></i> <span id="gameScore">0</span></span>
-                <span><i class="fas fa-crown"></i> <span id="gameLevel">1</span></span>
-            </div>
-        </div>
+        <div id="gameUserName" class="user-name">Misafir</div>
     </div>
+    <div class="user-stats-right">
+        <span class="stat-item"><i class="fas fa-trophy"></i> <span id="gameScore">0</span></span>
+        <span class="stat-item"><i class="fas fa-crown"></i> <span id="gameLevel">1</span></span>
+    </div>
+</div>
     <div class="header">
         <div class="score-box"><i class="fas fa-star"></i> <span id="scoreDisplay">0</span></div>
         <div class="level-box"><i class="fas fa-crown"></i> <span id="currentLevelDisplay">1</span></div>
@@ -1455,25 +1508,58 @@
     // ------------------------------------------------------------
     // LİDERLİK TABLOSU (GÜNCELLENMİŞ – HATA KONTROLLÜ)
     // ------------------------------------------------------------
-    async function saveScoreToLeaderboard() {
-        if (!gameState.username || gameState.username === 'Misafir') {
-            showToast('Liderliğe kayıt için kullanıcı adı gerekli!', 'info');
-            return false;
-        }
-        try {
+    // ------------------------------------------------------------
+// LİDERLİK TABLOSU – YENİ (EN YÜKSEK PUANI KORU)
+// ------------------------------------------------------------
+async function saveScoreToLeaderboard() {
+    if (!gameState.username || gameState.username === 'Misafir') return;
+    try {
+        // Aynı kullanıcı adına sahip tüm kayıtları getir
+        const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", gameState.username.trim()));
+        const snapshot = await getDocs(q);
+        
+        let maxScore = 0;
+        const docsToDelete = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const score = Number(data.score);
+            if (score > maxScore) {
+                maxScore = score;
+            }
+            docsToDelete.push(doc.ref);
+        });
+
+        // Yeni puan mevcut en yüksek puandan büyükse, eski kayıtları sil ve yenisini ekle
+        if (gameState.score > maxScore) {
+            // Eski kayıtları topluca sil
+            if (docsToDelete.length > 0) {
+                const batch = writeBatch(db);
+                docsToDelete.forEach(ref => batch.delete(ref));
+                await batch.commit();
+            }
+            // Yeni en yüksek puanı ekle
             await addDoc(collection(db, LEADERBOARD_COLLECTION), {
                 username: gameState.username.trim(),
                 score: Number(gameState.score),
                 level: Number(gameState.currentLevel),
                 timestamp: new Date()
             });
-            return true;
-        } catch (e) {
-            console.error('Liderlik kaydı başarısız:', e);
-            showToast('Liderlik kaydı başarısız: ' + e.message, 'error');
-            return false;
+        } 
+        // Hiç kayıt yoksa ve puan 0'dan büyükse ekle (ilk kayıt)
+        else if (maxScore === 0 && gameState.score > 0) {
+            await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+                username: gameState.username.trim(),
+                score: Number(gameState.score),
+                level: Number(gameState.currentLevel),
+                timestamp: new Date()
+            });
         }
+        // Eğer yeni puan daha düşükse hiçbir işlem yapma
+    } catch (e) {
+        console.error("Liderlik kaydedilemedi:", e);
     }
+}
 
     async function loadLeaderboard() {
         try {
@@ -1866,13 +1952,11 @@
         exitGameBtn.addEventListener('click', exitToIntro);
 
         // LİDERLİK BUTONU – ÖNCE PUANI KAYDET, SONRA GÖSTER
-        leaderboardBtn.addEventListener('click', async () => {
-            // Önce mevcut puanı kaydet (başarılı olursa)
-            await saveScoreToLeaderboard();
-            // Sonra listeyi yükle
-            await loadLeaderboard();
-            leaderboardPanel.classList.add('active');
-        });
+      leaderboardBtn.addEventListener('click', async () => {
+    await saveScoreToLeaderboard();  // Önce en yüksek puanı kaydet
+    await loadLeaderboard();         // Sonra güncel listeyi göster
+    leaderboardPanel.classList.add('active');
+});
         closeLeaderboardBtn.addEventListener('click', () => leaderboardPanel.classList.remove('active'));
 
         achievementsBtn.addEventListener('click', () => { renderAchievements(); achievementsPanel.classList.add('active'); });
@@ -1907,3 +1991,4 @@
 </script>
 </body>
 </html>
+
