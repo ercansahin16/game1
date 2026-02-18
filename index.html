@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     <!-- howler.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* ---------- RESET & DEĞİŞKENLER ---------- */
         * {
@@ -2145,23 +2146,67 @@ showToast(`🎉 Tebrikler! ${completedLevel}. seviyeyi tamamladınız!${badgeMes
     }
 
 let adminClickCount = 0;
+
 function initAdminTrigger() {
-    if (gameAvatar) {
-        gameAvatar.addEventListener('click', async () => {
-            adminClickCount++;
-            if (adminClickCount === 3) {
-                const pwd = prompt('admin123:');  // burada şifreyi soruyor
-                if (pwd === ADMIN_PASSWORD) {
-                    adminPanel.classList.add('active');
-                    await loadAdminQuestions();
-                    await updateAdminStats();
-                    resetFormToAddMode();
+    if (!gameAvatar) return;
+
+    gameAvatar.addEventListener('click', async () => {
+        adminClickCount++;
+        
+        if (adminClickCount === 3) {
+            adminClickCount = 0; // Sayaç sıfırlanır, çünkü artık modal açılacak
+            
+            // SweetAlert ile şifre sorma
+            const { value: password } = await Swal.fire({
+                title: 'Admin Girişi',
+                text: 'Lütfen şifrenizi girin:',
+                input: 'password',
+                inputPlaceholder: 'Şifre',
+                showCancelButton: true,
+                confirmButtonText: 'Giriş Yap',
+                cancelButtonText: 'İptal',
+                confirmButtonColor: '#7c3aed',
+                background: '#fff9e6',
+                backdrop: true,
+                allowOutsideClick: false,
+                customClass: {
+                    popup: 'rounded-3xl shadow-2xl border-4 border-[#ffe8d9]'
                 }
-                adminClickCount = 0;
+            });
+
+            if (password === ADMIN_PASSWORD) {
+                // Şifre doğruysa admin panelini aç
+                adminPanel.classList.add('active');
+                await loadAdminQuestions();
+                await updateAdminStats();
+                resetFormToAddMode();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Giriş Başarılı',
+                    text: 'Hoş geldiniz!',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#fff9e6'
+                });
+            } else if (password !== undefined) {
+                // Şifre yanlışsa uyarı
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hatalı Şifre',
+                    text: 'Lütfen tekrar deneyin.',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#fff9e6'
+                });
             }
-            setTimeout(() => adminClickCount = 0, 3000);
-        });
-    }
+            // Kullanıcı iptal ederse hiçbir şey yapma
+        }
+
+        // 3 saniye içinde tıklama sayısını sıfırla
+        setTimeout(() => {
+            adminClickCount = 0;
+        }, 3000);
+    });
 }
 
     // ------------------------------------------------------------
@@ -2287,6 +2332,7 @@ function initAdminTrigger() {
 </script>
 </body>
 </html>
+
 
 
 
