@@ -1,2641 +1,2326 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Manevi Bilgi Oyunu 🌙</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --pastel-pink: #fbe9f0;
-            --pastel-green: #e0f2e6;
-            --accent: #7c3aed;
-            --accent-soft: #a78bfa;
-            --card-bg: rgba(255,255,255,0.8);
-            --text-dark: #1f2937;
-            --text-light: #f3f4f6;
-            --text-secondary: #6b7280;
-            --border-light: #e2e8f0;
-            --shadow: 0 20px 40px rgba(0,0,0,0.05);
-            --border-radius-lg: 32px;
-            --border-radius-md: 20px;
-            --border-radius-sm: 12px;
-        }
-
-        body {
-            background: linear-gradient(145deg, var(--pastel-pink), var(--pastel-green));
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 8px;
-            color: var(--text-dark);
-            overflow-x: hidden;
-        }
-
-        body.dark-theme {
-            background: linear-gradient(145deg, #0b1a2e, #04111f);
-            color: #ffffff;
-        }
-
-        /* Intro Ekranı */
-        .intro-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(12px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            padding: 8px;
-        }
-
-        .intro-overlay.hidden {
-            display: none;
-        }
-
-        .intro-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border-radius: var(--border-radius-lg);
-            padding: 20px;
-            width: 100%;
-            max-width: 500px;
-            max-height: 95vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 0 #ffe0b5, 0 20px 40px rgba(0,0,0,0.1);
-            border: 4px solid #ffe8d9;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .intro-user-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.4);
-            padding: 10px 15px;
-            border-radius: 50px;
-            border: 2px solid #ffe0b0;
-        }
-
-        .intro-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: #ffe6c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            border: 3px solid white;
-            box-shadow: 0 4px 0 #d4a373;
-            flex-shrink: 0;
-        }
-
-        .intro-user-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .intro-user-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #3a4e5e;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .intro-user-stats {
-            font-size: 0.8rem;
-            color: #6b7280;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .intro-settings {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: none;
-            border: none;
-            font-size: 1.3rem;
-            color: #a78bfa;
-            cursor: pointer;
-            padding: 5px;
-            transition: transform 0.2s;
-        }
-
-        .intro-settings .settings-text {
-            font-size: 0.65rem;
-            margin-top: 2px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .intro-settings:hover {
-            transform: rotate(90deg);
-        }
-
-        .intro-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .intro-leaderboard-preview, .intro-achievements-preview {
-            background: rgba(255,255,255,0.5);
-            border-radius: var(--border-radius-md);
-            padding: 12px;
-            border: 2px solid #ffe0b0;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .intro-leaderboard-preview h4, .intro-achievements-preview h4 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #7c3aed;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-        }
-
-        .intro-play-btn {
-            background: #ffe69b;
-            border: none;
-            border-radius: 50px;
-            padding: 14px 20px;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #5e4b3c;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 8px 0 #d4a373;
-            cursor: pointer;
-            transition: 0.1s;
-            width: 100%;
-            border: 3px solid #ffe0b0;
-        }
-
-        .intro-play-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 0 #d4a373;
-        }
-
-        /* Modal Ayarlar */
-        .settings-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10001;
-            padding: 10px;
-        }
-
-        .settings-modal-overlay.active {
-            display: flex;
-        }
-
-        .settings-modal {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 25px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 0 #ffe0b5;
-            border: 4px solid #ffe8d9;
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .settings-modal h4 {
-            color: #7c3aed;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .settings-modal input {
-            width: 100%;
-            padding: 12px 15px;
-            border-radius: 50px;
-            border: 2px solid #ffe0b0;
-            font-size: 0.95rem;
-            margin-bottom: 15px;
-            outline: none;
-        }
-
-        .settings-modal input:focus {
-            border-color: #7c3aed;
-        }
-
-        .avatar-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin: 15px 0;
-        }
-
-        .avatar-option {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            border: 4px solid #ffe0b0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            background: #fef9e0;
-            transition: 0.1s;
-        }
-
-        .avatar-option.selected {
-            border-color: #7c3aed;
-            transform: scale(1.1);
-            box-shadow: 0 0 0 4px rgba(124,58,237,0.3);
-        }
-
-        .settings-modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .settings-modal-buttons button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-
-        .btn-save {
-            background: #a5d6b7;
-            box-shadow: 0 6px 0 #6b8c7e;
-            color: #1e3a2f;
-        }
-
-        .btn-close {
-            background: #ffe0b0;
-            box-shadow: 0 6px 0 #d4a373;
-            color: #5e4b3c;
-        }
-
-        /* Oyun Konteyneri */
-        .game-container {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: var(--border-radius-lg);
-            padding: 12px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.5);
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            display: none;
-        }
-
-        /* Üst Panel */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 6px;
-            margin-bottom: 12px;
-            background: rgba(255,255,255,0.4);
-            padding: 6px 10px;
-            border-radius: 50px;
-            border: 2px solid #ffe0b0;
-            flex-wrap: wrap;
-        }
-
-        .left-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: #ffe6c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            border: 2px solid white;
-            box-shadow: 0 3px 0 #d4a373;
-            cursor: pointer;
-        }
-
-        .user-name {
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--text-dark);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100px;
-        }
-
-        .right-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-
-        .stat-box {
-            background: white;
-            padding: 4px 8px;
-            border-radius: 20px;
-            box-shadow: 0 3px 0 #cbd5e0;
-            border: 1px solid #cbd5e0;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: #2d3e50;
-            font-size: 0.75rem;
-        }
-
-        .stat-box i {
-            color: #ff9f1c;
-            font-size: 0.8rem;
-        }
-
-        .action-btn {
-            background: rgba(255,255,255,0.7);
-            border: 2px solid #ffe0b0;
-            border-radius: 20px;
-            padding: 4px 8px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: #4a5a6a;
-            transition: 0.1s;
-        }
-
-        .action-btn i {
-            font-size: 0.85rem;
-        }
-
-        /* Seviye Göstergeleri */
-        .levels-wrapper {
-            overflow-x: auto;
-            margin-bottom: 12px;
-            padding-bottom: 5px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .levels-container {
-            display: flex;
-            gap: 8px;
-            background: rgba(255,255,255,0.4);
-            padding: 10px;
-            border-radius: 50px;
-            min-width: min-content;
-        }
-
-        .level-badge {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 700;
-            font-size: 1rem;
-            color: #2d3e50;
-            box-shadow: 0 4px 0 #b0c4ce;
-            border: 2px solid #ffe9e9;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
-
-        .level-badge.active {
-            background: #b5e6c3;
-            box-shadow: 0 4px 0 #6b9e7a;
-            color: #1e3a2f;
-        }
-
-        .level-badge.locked {
-            background: #e0e0e0;
-            box-shadow: 0 4px 0 #adadad;
-            color: #7e7e7e;
-            opacity: 0.7;
-        }
-
-        /* Soru Kartı */
-        .question-card {
-            background: white;
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 6px 0 #e2e8f0;
-            border: 2px solid #edf2f7;
-            position: relative;
-        }
-
-        .question-text {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2d3e50;
-            line-height: 1.4;
-            margin-bottom: 12px;
-            word-break: break-word;
-            padding-right: 60px;
-        }
-
-        .timer {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: #ffe2cc;
-            border-radius: 20px;
-            padding: 4px 10px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            border: 2px solid #ffb08c;
-            box-shadow: 0 3px 0 #d48c6b;
-            color: #5e3e2e;
-        }
-
-        .hint-btn {
-            background: #ffeaa5;
-            border: none;
-            border-radius: 30px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #6b4f1a;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 0 auto 12px;
-            box-shadow: 0 4px 0 #d4a373;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-
-        .hint-btn.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 480px) {
-            .options-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .option-btn {
-            background: #fff6e6;
-            border: 3px solid #ffdab9;
-            border-radius: 16px;
-            padding: 12px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #3a4e5e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 0 #e6c4a8;
-            cursor: pointer;
-            transition: 0.1s;
-            word-break: break-word;
-            text-align: left;
-            line-height: 1.3;
-        }
-
-        .option-btn.correct {
-            background: #c8e6c9;
-            border-color: #81c784;
-            box-shadow: 0 4px 0 #519657;
-        }
-
-        .option-btn.wrong {
-            background: #ffcdd2;
-            border-color: #e57373;
-            box-shadow: 0 4px 0 #b71c1c;
-        }
-
-        .option-btn.eliminated {
-            opacity: 0.3;
-            pointer-events: none;
-            background: #ccc;
-            border-color: #999;
-            text-decoration: line-through;
-        }
-
-        .next-btn {
-            background: #b2d8d8;
-            border: none;
-            border-radius: 30px;
-            padding: 12px 25px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1e4a4a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin: 8px auto 0;
-            width: 100%;
-            max-width: 200px;
-            box-shadow: 0 5px 0 #6b9e9e;
-            cursor: pointer;
-            border: 2px solid #c0e0e0;
-        }
-
-        .next-btn.active {
-            background: #ffe69b;
-            box-shadow: 0 5px 0 #d4a373;
-            color: #5e4b3c;
-        }
-
-        .next-btn.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-        /* Game Over Modal */
-        .game-over-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10001;
-            visibility: hidden;
-            opacity: 0;
-            transition: 0.2s;
-        }
-
-        .game-over-modal.active {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .game-over-card {
-            background: white;
-            border-radius: 32px;
-            padding: 25px;
-            max-width: 350px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 15px 0 #ffe0b5;
-            border: 3px solid #ffe8d9;
-        }
-
-        .restart-btn {
-            background: #ffb7b7;
-            border: none;
-            border-radius: 30px;
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #631e1e;
-            box-shadow: 0 5px 0 #b47272;
-            cursor: pointer;
-            display: inline-flex;
-            gap: 8px;
-            margin-top: 15px;
-        }
-
-        /* Admin Panel */
-        .admin-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 32px;
-            padding: 20px;
-            max-width: 900px;
-            width: 95%;
-            max-height: 90vh;
-            overflow-y: auto;
-            z-index: 10002;
-            box-shadow: 0 20px 0 #ffe0b5;
-            border: 4px solid #ffe8d9;
-            visibility: hidden;
-            opacity: 0;
-            transition: 0.2s;
-        }
-
-        .admin-panel.active {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .admin-split {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        @media (min-width: 768px) {
-            .admin-split {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .admin-left, .admin-right {
-            background: #fef9e0;
-            border-radius: var(--border-radius-md);
-            padding: 15px;
-            border: 2px solid #ffe0b0;
-        }
-
-        .admin-left {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .admin-left h3, .admin-right h3 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #7c3aed;
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-        }
-
-        .admin-stats {
-            background: #ffe6c7;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ffb08c;
-            font-size: 0.85rem;
-            color: #5e3e2e;
-        }
-
-        .admin-stats p {
-            display: flex;
-            justify-content: space-between;
-            margin: 4px 0;
-        }
-
-        .admin-question-item {
-            background: white;
-            border-radius: 16px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ffe0b0;
-        }
-
-        .admin-question-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .admin-question-text {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #2d3e50;
-            word-break: break-word;
-            flex: 1;
-        }
-
-        .admin-question-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .admin-question-actions button {
-            background: none;
-            border: none;
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 6px;
-            transition: 0.1s;
-        }
-
-        .admin-question-actions button:hover {
-            background: rgba(124,58,237,0.1);
-        }
-
-        .admin-question-meta {
-            display: flex;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: #6b7280;
-            margin-top: 6px;
-        }
-
-        .admin-right input, .admin-right select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 2px solid #ffe0b0;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            outline: none;
-        }
-
-        .admin-right input:focus, .admin-right select:focus {
-            border-color: #7c3aed;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn-group button {
-            flex: 1;
-            background: #b5e6c3;
-            border: none;
-            border-radius: 30px;
-            padding: 10px;
-            font-weight: 600;
-            color: #1e3a2f;
-            box-shadow: 0 4px 0 #6b9e7a;
-            cursor: pointer;
-            transition: 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 0.9rem;
-        }
-
-        .btn-group button#cancelEditBtn {
-            background: #ffe0b0;
-            box-shadow: 0 4px 0 #d4a373;
-            color: #5e4b3c;
-        }
-
-        .admin-clear-btn {
-            background: #ffb7b7 !important;
-            box-shadow: 0 4px 0 #b47272 !important;
-            color: #631e1e !important;
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 30px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: 0.1s;
-            font-size: 0.9rem;
-        }
-
-        .admin-danger-btn {
-            background: #e53e3e !important;
-            box-shadow: 0 4px 0 #c53030 !important;
-            color: white !important;
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 30px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: 0.1s;
-            font-size: 0.9rem;
-        }
-
-        .admin-bulk-btn {
-            background: #b5e6c3 !important;
-            box-shadow: 0 4px 0 #6b9e7a !important;
-            color: #1e3a2f !important;
-            margin-top: 10px;
-        }
-
-        .admin-download-btn {
-            background: #63b3ed !important;
-            box-shadow: 0 4px 0 #3182ce !important;
-            color: white !important;
-            margin-top: 10px;
-        }
-
-        /* Liderlik ve Başarımlar Panelleri */
-        .leaderboard-panel, .achievements-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 32px;
-            padding: 20px;
-            max-width: 400px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 10002;
-            box-shadow: 0 20px 0 #ffe0b5;
-            border: 4px solid #ffe8d9;
-            visibility: hidden;
-            opacity: 0;
-            transition: 0.2s;
-        }
-
-        .leaderboard-panel.active, .achievements-panel.active {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .leaderboard-panel h2, .achievements-panel h2 {
-            color: #7c3aed;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .leaderboard-panel li, .achievements-panel li {
-            background: #fef9e0;
-            border-radius: 30px;
-            padding: 10px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            word-break: break-word;
-            font-size: 0.85rem;
-        }
-
-        /* Maskot ve Ses */
-        .mascot {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            width: 60px;
-            z-index: 999;
-            cursor: pointer;
-        }
-
-        .speech-bubble {
-            position: absolute;
-            bottom: 70px;
-            left: 0;
-            background: white;
-            padding: 8px 12px;
-            border-radius: 20px 20px 20px 5px;
-            font-size: 0.8rem;
-            max-width: 150px;
-            box-shadow: 0 4px 0 #d4a373;
-            border: 2px solid #ffe0b0;
-            display: none;
-        }
-
-        .speech-bubble.active {
-            display: block;
-        }
-
-        .sound-toggle {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: white;
-            border: 2px solid #ffe0b0;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: #7c3aed;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 0 #d4a373;
-        }
-
-        /* Toast Mesajları */
-        .toast-message {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            color: #2d3e50;
-            padding: 10px 18px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 9999;
-            border: 2px solid #ffe0b0;
-            animation: slideDown 0.3s;
-            max-width: 90%;
-        }
-
-        .toast-success {
-            background: #d4edda;
-            border-color: #a3d0b1;
-            color: #0b5e42;
-        }
-
-        .toast-info {
-            background: #fff3cd;
-            border-color: #ffe69b;
-            color: #856404;
-        }
-
-        @keyframes slideDown {
-            from {
-                top: -50px;
-                opacity: 0;
-            }
-            to {
-                top: 10px;
-                opacity: 1;
-            }
-        }
-
-        /* Dark Mode */
-        body.dark-theme .game-container,
-        body.dark-theme .intro-card,
-        body.dark-theme .leaderboard-panel,
-        body.dark-theme .achievements-panel,
-        body.dark-theme .admin-panel,
-        body.dark-theme .game-over-card,
-        body.dark-theme .question-card,
-        body.dark-theme .option-btn,
-        body.dark-theme .level-badge,
-        body.dark-theme .stat-box,
-        body.dark-theme .top-bar,
-        body.dark-theme .intro-user-header,
-        body.dark-theme .hint-btn,
-        body.dark-theme .next-btn,
-        body.dark-theme .restart-btn,
-        body.dark-theme .timer,
-        body.dark-theme .settings-modal,
-        body.dark-theme .avatar-option,
-        body.dark-theme .toast-message,
-        body.dark-theme .action-btn,
-        body.dark-theme .exit-btn,
-        body.dark-theme .admin-left,
-        body.dark-theme .admin-right,
-        body.dark-theme .admin-question-item {
-            background: rgba(15,30,45,0.9) !important;
-            backdrop-filter: blur(10px);
-            border-color: #3a4a5a !important;
-            color: #ffffff !important;
-            box-shadow: 0 6px 0 #1a2a3a !important;
-        }
-
-        body.dark-theme .leaderboard-panel,
-        body.dark-theme .achievements-panel,
-        body.dark-theme .admin-panel {
-            background: #1e293b !important;
-            border-color: #475569 !important;
-        }
-
-        body.dark-theme .leaderboard-panel h2,
-        body.dark-theme .achievements-panel h2,
-        body.dark-theme .admin-panel h2,
-        body.dark-theme .admin-left h3,
-        body.dark-theme .admin-right h3 {
-            color: #a78bfa !important;
-        }
-
-        body.dark-theme .leaderboard-panel li,
-        body.dark-theme .achievements-panel li {
-            background: #0f172a !important;
-            color: white !important;
-        }
-
-        body.dark-theme .option-btn.correct {
-            background: #0f4c2b !important;
-            border-color: #2e7d5e !important;
-        }
-
-        body.dark-theme .option-btn.wrong {
-            background: #7a1f1f !important;
-            border-color: #b33f3f !important;
-        }
-
-        body.dark-theme .level-badge.active {
-            background: #2c5f3a !important;
-        }
-
-        body.dark-theme .level-badge.locked {
-            background: #3a3a3a !important;
-            color: #aaa !important;
-        }
-
-        body.dark-theme .user-name,
-        body.dark-theme .score-box span,
-        body.dark-theme .level-box span,
-        body.dark-theme .question-text,
-        body.dark-theme .option-btn span,
-        body.dark-theme .toast-message,
-        body.dark-theme .admin-question-text,
-        body.dark-theme .admin-question-meta {
-            color: #ffffff !important;
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .intro-card {
-                padding: 15px;
-                gap: 12px;
-            }
-
-            .intro-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .question-text {
-                font-size: 1rem;
-                padding-right: 0;
-                margin-top: 35px;
-            }
-
-            .timer {
-                position: relative;
-                top: 0;
-                right: 0;
-                margin-bottom: 8px;
-                width: fit-content;
-                font-size: 0.8rem;
-            }
-
-            .option-btn {
-                padding: 10px;
-                font-size: 0.9rem;
-            }
-
-            .admin-panel {
-                padding: 15px;
-                width: 98%;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+<title>Manevi Bilgi Oyunu 🌙</title>
+<!-- Favicon -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<!-- Google Font: Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+<!-- howler.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+<!-- Sweet Alert 2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+/* ---------- RESET & DEĞİŞKENLER ---------- */
+* {
+margin:0;
+padding:0;
+box-sizing: border-box;
+font-family:'Poppins', sans-serif;
+}
+
+:root {
+--pastel-pink:#fbe9f0;
+--pastel-green:#e0f2e6;
+--accent:#7c3aed;
+--accent-soft:#a78bfa;
+--card-bg:rgba(255,255,255,0.8);
+--text-dark:#1f2937;
+--text-light:#f3f4f6;
+--text-secondary:#6b7280;
+--border-light:#e2e8f0;
+--shadow:0 20px 40px rgba(0,0,0,0.05);
+--border-radius-lg:48px;
+--border-radius-md:24px;
+--border-radius-sm:16px;
+--transition: all 0.2s ease;
+}
+
+body {
+background:linear-gradient(145deg,var(--pastel-pink),var(--pastel-green));
+min-height:100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+padding:16px;
+transition: background 0.3s, color 0.2s;
+color:var(--text-dark);
+}
+
+/* ========== DARK MODE ========= */
+body.dark-theme {
+background:linear-gradient(145deg,#0b1a2e,#04111f);
+color:#ffffff;
+}
+body.dark-theme .game-container,
+body.dark-theme .intro-card,
+body.dark-theme .leaderboard-panel,
+body.dark-theme .achievements-panel,
+body.dark-theme .admin-panel,
+body.dark-theme .game-over-card,
+body.dark-theme .question-card,
+body.dark-theme .option-btn,
+body.dark-theme .level-badge,
+body.dark-theme .score-box,
+body.dark-theme .level-box,
+body.dark-theme .top-bar,
+body.dark-theme .intro-user-header,
+body.dark-theme .hint-btn,
+body.dark-theme .next-btn,
+body.dark-theme .restart-btn,
+body.dark-theme .timer,
+body.dark-theme .intro-settings-panel,
+body.dark-theme .avatar-option,
+body.dark-theme .toast-message,
+body.dark-theme .leaderboard-btn,
+body.dark-theme .achievements-btn,
+body.dark-theme .settings-btn,
+body.dark-theme .exit-btn,
+body.dark-theme .admin-left,
+body.dark-theme .admin-right,
+body.dark-theme .admin-question-item {
+background:rgba(15,30,45,0.9) !important;
+backdrop-filter:blur(10px);
+border-color:#3a4a5a!important;
+color:#ffffff!important;
+box-shadow:0 6px 0 #1a2a3a!important;
+}
+body.dark-theme .leaderboard-panel,
+body.dark-theme .achievements-panel,
+body.dark-theme .admin-panel {
+background:#1e293b!important;
+border-color:#475569!important;
+}
+body.dark-theme .leaderboard-panel h2,
+body.dark-theme .achievements-panel h2,
+body.dark-theme .admin-panel h2,
+body.dark-theme .admin-left h3,
+body.dark-theme .admin-right h3 {
+color:#a78bfa!important;
+}
+body.dark-theme .leaderboard-panel li,
+body.dark-theme .achievements-panel li {
+background:#0f172a!important;
+color: white !important;
+}
+body.dark-theme .option-btn.correct { background:#0f4c2b!important; border-color:#2e7d5e!important; }
+body.dark-theme .option-btn.wrong { background:#7a1f1f!important; border-color:#b33f3f!important; }
+body.dark-theme .level-badge.active { background:#2c5f3a!important; }
+body.dark-theme .level-badge.locked { background:#3a3a3a!important; color:#aaa!important; }
+body.dark-theme .score-box i,
+body.dark-theme .level-box i,
+body.dark-theme .top-bar i,
+body.dark-theme .intro-user-stats i,
+body.dark-theme .leaderboard-btn i,
+body.dark-theme .achievements-btn i,
+body.dark-theme .settings-btn i,
+body.dark-theme .exit-btn i { color:#ffd966!important; }
+body.dark-theme .user-name,
+body.dark-theme .score-box span,
+body.dark-theme .level-box span,
+body.dark-theme .question-text,
+body.dark-theme .option-btn span,
+body.dark-theme .toast-message,
+body.dark-theme .leaderboard-btn span,
+body.dark-theme .achievements-btn span,
+body.dark-theme .settings-btn span,
+body.dark-theme .exit-btn span,
+body.dark-theme .admin-question-text,
+body.dark-theme .admin-question-meta {
+color:#ffffff!important;
+}
+body.dark-theme .toast-success { background:#0f4c2b!important; }
+body.dark-theme .toast-info { background:#7a5c1f!important; }
+
+/* ---------- INTRO EKRANI ---------- */
+.intro-overlay {
+position: fixed;
+top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.2);
+backdrop-filter:blur(12px);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index:10000;
+visibility: visible;
+opacity:1;
+transition:0.3s;
+padding:16px;
+}
+.intro-overlay.hidden { visibility: hidden; opacity:0; pointer-events: none; }
+.intro-card {
+background:var(--card-bg);
+backdrop-filter:blur(16px);
+border-radius:var(--border-radius-lg);
+padding:30px;
+width:100%;
+max-width:800px;
+max-height:90vh;
+overflow-y: auto;
+box-shadow:0 30px 0 #ffe0b5, 0 20px 40px rgba(0,0,0,0.1);
+border:4px solid #ffe8d9;
+display: flex;
+flex-direction: column;
+gap:24px;
+}
+.intro-user-header {
+display: flex;
+align-items: center;
+gap:10px;
+background:rgba(255,255,255,0.4);
+padding:10px 15px;
+border-radius:80px;
+border:2px solid #ffe0b0;
+flex-wrap: wrap;
+}
+.intro-avatar {
+width:50px;
+height:50px;
+border-radius:50%;
+background:#ffe6c7;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size:2rem;
+border:3px solid white;
+box-shadow:0 4px 0 #d4a373;
+flex-shrink:0;
+cursor: pointer;
+transition: transform 0.2s;
+user-select: none;
+}
+.intro-avatar:active {
+transform: scale(0.95);
+}
+.intro-user-details {
+flex:1;
+min-width:140px;
+}
+.intro-user-name {
+font-size:1.2rem;
+font-weight:700;
+color:#3a4e5e;
+line-height:1.2;
+}
+.intro-user-stats {
+font-size:0.85rem;
+color:#6b7280;
+display: flex;
+gap:12px;
+flex-wrap: wrap;
+}
+
+/*ayarlar*/
+.intro-settings {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+background: none;
+border: none;
+font-size:1.5rem;
+color:#a78bfa;
+cursor: pointer;
+padding:5px;
+transition: transform 0.2s;
+line-height:1;
+}
+
+.intro-settings .settings-text {
+font-size:0.7rem;
+margin-top:2px;
+color:var(--text-secondary);
+font-weight:500;
+}
+
+.intro-settings:hover {
+transform:rotate(90deg);
+}
+
+/* Dark mode uyumu (isteğe bağlı) */
+body.dark-theme .intro-settings .settings-text {
+color:#ffd966;
+}
+
+.intro-stats {
+display: grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+margin-top:10px;
+}
+.intro-leaderboard-preview, .intro-achievements-preview {
+background:rgba(255,255,255,0.5);
+border-radius:var(--border-radius-md);
+padding:16px;
+border:2px solid #ffe0b0;
+max-height:200px;
+overflow-y: auto;
+word-break: break-word;
+}
+.intro-leaderboard-preview h4, .intro-achievements-preview h4 {
+display: flex;
+align-items: center;
+gap:8px;
+color:#7c3aed;
+margin-bottom:12px;
+font-size:1.1rem;
+}
+.intro-leaderboard-preview ul, .intro-achievements-preview ul {
+font-size:0.85rem;
+}
+.intro-leaderboard-preview li, .intro-achievements-preview li {
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+/* YENİ: En İyisini Gör Butonu Stili */
+.view-leaderboard-btn {
+width: 100%;
+background: linear-gradient(135deg, #ffe69b 0%, #ffd966 100%);
+border: none;
+border-radius: 60px;
+padding: 14px 20px;
+font-size: 1rem;
+font-weight: 600;
+color: #5e4b3c;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+box-shadow: 0 6px 0 #d4a373;
+cursor: pointer;
+transition: all 0.2s;
+margin-top: 10px;
+border: 3px solid #ffe0b0;
+}
+
+.view-leaderboard-btn:hover {
+transform: translateY(-3px);
+box-shadow: 0 9px 0 #d4a373;
+}
+
+.view-leaderboard-btn:active {
+transform: translateY(0);
+box-shadow: 0 3px 0 #d4a373;
+}
+
+.view-leaderboard-btn i {
+font-size: 1.2rem;
+color: #ff9f1c;
+}
+
+.intro-play-btn {
+background:#ffe69b;
+border: none;
+border-radius:80px;
+padding:16px 25px;
+font-size:1.5rem;
+font-weight:700;
+color:#5e4b3c;
+display: flex;
+align-items: center;
+justify-content: center;
+gap:12px;
+box-shadow:0 10px 0 #d4a373;
+cursor: pointer;
+transition:0.1s;
+width:100%;
+border:3px solid #ffe0b0;
+}
+.intro-play-btn:hover { transform:translateY(-4px); box-shadow:0 14px 0 #d4a373; }
+.intro-settings-panel { background: white; border-radius:var(--border-radius-md); padding:20px; border:3px solid #ffe0b0; margin-top:10px; }
+.intro-settings-panel input { width:100%; padding:12px; border-radius:60px; border:2px solid #ffe0b0; font-size:0.95rem; margin-bottom:15px; }
+.avatar-selector { display: flex; flex-wrap: wrap; gap:10px; justify-content: center; margin:15px 0; }
+.avatar-option { width:60px; height:60px; border-radius:50%; border:4px solid #ffe0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size:2rem; background:#fef9e0; transition:0.1s; }
+.avatar-option.selected { border-color:#7c3aed; transform:scale(1.1); box-shadow:0 0 0 4px rgba(124,58,237,0.3); }
+
+/* ---------- OYUN KONTEYNERİ – TEK SATIR ÜST PANEL ---------- */
+.game-container {
+background:var(--card-bg);
+backdrop-filter:blur(10px);
+border-radius:var(--border-radius-lg);
+padding:20px;
+box-shadow:var(--shadow);
+border:1px solid rgba(255,255,255,0.5);
+width:100%;
+max-width:1000px;
+margin:0 auto;
+transition:0.3s;
+}
+
+/* TEK SATIR ÜST PANEL */
+.top-bar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap:8px;
+margin-bottom:16px;
+background:rgba(255,255,255,0.4);
+padding:6px 12px;
+border-radius:60px;
+border:2px solid #ffe0b0;
+flex-wrap: wrap;
+}
+
+.left-group {
+display: flex;
+align-items: center;
+gap:10px;
+flex-shrink:0;
+}
+
+.user-avatar {
+width:40px;
+height:40px;
+border-radius:50%;
+background:#ffe6c7;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size:1.8rem;
+border:2px solid white;
+box-shadow:0 3px 0 #d4a373;
+flex-shrink:0;
+}
+
+.user-name {
+font-weight:700;
+font-size:1rem;
+color:var(--text-dark);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width:120px;
+}
+
+.right-group {
+display: flex;
+align-items: center;
+gap:6px;
+flex-wrap: wrap;
+margin-left: auto;
+}
+
+.stat-box {
+background: white;
+padding:4px 10px;
+border-radius:30px;
+box-shadow:0 3px 0 #cbd5e0;
+border:1px solid #cbd5e0;
+font-weight:600;
+display: flex;
+align-items: center;
+gap:4px;
+color:#2d3e50;
+font-size:0.8rem;
+}
+
+.stat-box i {
+color:#ff9f1c;
+font-size:0.9rem;
+}
+
+.action-btn {
+background:rgba(255,255,255,0.7);
+border:2px solid #ffe0b0;
+border-radius:30px;
+padding:4px 10px;
+font-size:0.8rem;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap:4px;
+color:#4a5a6a;
+transition:0.1s;
+white-space: nowrap;
+}
+
+.action-btn i {
+font-size:0.9rem;
+}
+
+/* Seviye göstergeleri */
+.levels-wrapper {
+overflow-x: auto;
+margin-bottom:20px;
+padding-bottom:5px;
+-webkit-overflow-scrolling: touch;
+}
+.levels-container {
+display: flex;
+gap:10px;
+background:rgba(255,255,255,0.4);
+padding:12px;
+border-radius:60px;
+min-width: min-content;
+}
+.level-badge {
+width:50px;
+height:50px;
+border-radius:50%;
+background: white;
+display: flex;
+justify-content: center;
+align-items: center;
+font-weight:700;
+font-size:1.3rem;
+color:#2d3e50;
+box-shadow:0 5px 0 #b0c4ce;
+border:2px solid #ffe9e9;
+flex-shrink:0;
+}
+.level-badge.active {
+background:#b5e6c3;
+box-shadow:0 5px 0 #6b9e7a;
+color:#1e3a2f;
+}
+.level-badge.locked {
+background:#e0e0e0;
+box-shadow:0 5px 0 #adadad;
+color:#7e7e7e;
+opacity:0.7;
+}
+.level-badge.locked i {
+font-size:1.4rem;
+}
+
+/* Soru kartı */
+.question-card {
+background: white;
+border-radius:32px;
+padding:25px 20px;
+margin-bottom:20px;
+box-shadow:0 8px 0 #e2e8f0;
+border:2px solid #edf2f7;
+position: relative;
+}
+.question-text {
+font-size:1.4rem;
+font-weight:600;
+color:#2d3e50;
+line-height:1.4;
+margin-bottom:20px;
+word-break: break-word;
+padding-right:70px;
+}
+.timer {
+position: absolute;
+top:15px;
+right:20px;
+background:#ffe2cc;
+border-radius:30px;
+padding:5px 12px;
+font-weight:700;
+font-size:1rem;
+display: flex;
+align-items: center;
+gap:5px;
+border:2px solid #ffb08c;
+box-shadow:0 3px 0 #d48c6b;
+color:#5e3e2e;
+}
+.hint-btn {
+background:#ffeaa5;
+border: none;
+border-radius:40px;
+padding:10px 20px;
+font-size:1rem;
+font-weight:600;
+color:#6b4f1a;
+display: flex;
+align-items: center;
+gap:8px;
+margin:0 auto 15px;
+box-shadow:0 5px 0 #d4a373;
+cursor: pointer;
+transition:0.1s;
+}
+.hint-btn.disabled {
+opacity:0.5;
+pointer-events: none;
+}
+.options-grid {
+display: grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+margin-bottom:20px;
+}
+.option-btn {
+background:#fff6e6;
+border:3px solid #ffdab9;
+border-radius:60px;
+padding:14px 10px;
+font-size:1rem;
+font-weight:500;
+color:#3a4e5e;
+display: flex;
+align-items: center;
+justify-content: center;
+gap:8px;
+box-shadow:0 5px 0 #e6c4a8;
+cursor: pointer;
+transition:0.1s;
+word-break: break-word;
+text-align: left;
+}
+.option-btn.correct {
+background:#c8e6c9;
+border-color:#81c784;
+box-shadow:0 5px 0 #519657;
+}
+.option-btn.wrong {
+background:#ffcdd2;
+border-color:#e57373;
+box-shadow:0 5px 0 #b71c1c;
+}
+.option-btn.eliminated {
+opacity:0.3;
+pointer-events: none;
+background:#ccc;
+border-color:#999;
+text-decoration: line-through;
+}
+.next-btn {
+background:#b2d8d8;
+border: none;
+border-radius:50px;
+padding:14px 30px;
+font-size:1.2rem;
+font-weight:600;
+color:#1e4a4a;
+display: flex;
+align-items: center;
+justify-content: center;
+gap:10px;
+margin:10px auto 0;
+width: fit-content;
+box-shadow:0 6px 0 #6b9e9e;
+cursor: pointer;
+border:2px solid #c0e0e0;
+}
+.next-btn.active {
+background:#ffe69b;
+box-shadow:0 6px 0 #d4a373;
+color:#5e4b3c;
+}
+.next-btn.disabled {
+opacity:0.4;
+pointer-events: none;
+}
+.game-over-modal {
+position: fixed;
+top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.2);
+backdrop-filter:blur(8px);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index:10001;
+visibility: hidden;
+opacity:0;
+transition:0.2s;
+}
+.game-over-modal.active {
+visibility: visible;
+opacity:1;
+}
+.game-over-card {
+background: white;
+border-radius:48px;
+padding:30px;
+max-width:400px;
+width:90%;
+text-align: center;
+box-shadow:0 20px 0 #ffe0b5;
+border:3px solid #ffe8d9;
+}
+.restart-btn {
+background:#ffb7b7;
+border: none;
+border-radius:50px;
+padding:12px 25px;
+font-size:1.1rem;
+font-weight:600;
+color:#631e1e;
+box-shadow:0 6px 0 #b47272;
+cursor: pointer;
+display: inline-flex;
+gap:8px;
+}
+
+/* ========== ADMIN PANELİ – YENİ İSTATİSTİK ALANI ========= */
+.admin-panel {
+position: fixed;
+top:50%; left:50%; transform:translate(-50%,-50%);
+background: white;
+border-radius:48px;
+padding:25px;
+max-width:1000px;
+width:95%;
+max-height:90vh;
+overflow-y: auto;
+z-index:10002;
+box-shadow:0 20px 0 #ffe0b5;
+border:4px solid #ffe8d9;
+visibility: hidden;
+opacity:0;
+transition:0.2s;
+}
+.admin-panel.active { visibility: visible; opacity:1; }
+.admin-split { display: grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+.admin-left, .admin-right {
+background:#fef9e0;
+border-radius:var(--border-radius-md);
+padding:20px;
+border:2px solid #ffe0b0;
+}
+.admin-left { max-height:500px; overflow-y: auto; }
+.admin-left h3, .admin-right h3 {
+display: flex;
+align-items: center;
+gap:8px;
+color:#7c3aed;
+margin-bottom:15px;
+font-size:1.2rem;
+}
+.admin-stats {
+background:#ffe6c7;
+border-radius:20px;
+padding:12px;
+margin-bottom:20px;
+border:1px solid #ffb08c;
+font-size:0.9rem;
+color:#5e3e2e;
+display: flex;
+flex-direction: column;
+gap:8px;
+}
+.admin-stats p {
+display: flex;
+justify-content: space-between;
+margin:0;
+}
+.admin-question-item {
+background: white;
+border-radius:20px;
+padding:10px 12px;
+margin-bottom:12px;
+border:1px solid #ffe0b0;
+display: flex;
+flex-direction: column;
+gap:6px;
+}
+.admin-question-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.admin-question-text {
+font-weight:600;
+font-size:0.9rem;
+color:#2d3e50;
+word-break: break-word;
+flex:1;
+}
+.admin-question-actions { display: flex; gap:8px; }
+.admin-question-actions button {
+background: none;
+border: none;
+font-size:1.1rem;
+cursor: pointer;
+padding:5px;
+border-radius:8px;
+transition:0.1s;
+}
+.admin-question-actions button:hover { background:rgba(124,58,237,0.1); }
+.admin-question-meta {
+display: flex;
+gap:12px;
+font-size:0.75rem;
+color:#6b7280;
+}
+.admin-right input, .admin-right select {
+width:100%;
+padding:10px;
+margin-bottom:12px;
+border:2px solid #ffe0b0;
+border-radius:60px;
+font-size:0.9rem;
+}
+.admin-right .btn-group {
+display: flex;
+gap:10px;
+margin-top:10px;
+}
+.admin-right button {
+flex:1;
+background:#b5e6c3;
+border: none;
+border-radius:60px;
+padding:12px;
+font-weight:600;
+color:#1e3a2f;
+box-shadow:0 5px 0 #6b9e7a;
+cursor: pointer;
+transition:0.1s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap:6px;
+}
+.admin-right button#cancelEditBtn {
+background:#ffe0b0;
+box-shadow:0 5px 0 #d4a373;
+color:#5e4b3c;
+}
+.admin-right button:hover { transform:translateY(-2px); box-shadow:0 7px 0 #6b9e7a; }
+.admin-right button#cancelEditBtn:hover { box-shadow:0 7px 0 #d4a373; }
+.admin-clear-btn {
+background:#ffb7b7!important;
+box-shadow:0 5px 0 #b47272!important;
+color:#631e1e!important;
+margin-top:12px;
+width:100%;
+padding:12px;
+border: none;
+border-radius:60px;
+font-weight:600;
+display: flex;
+align-items: center;
+justify-content: center;
+gap:8px;
+cursor: pointer;
+transition:0.1s;
+}
+.admin-clear-btn:hover { transform:translateY(-2px); box-shadow:0 7px 0 #b47272!important; }
+.admin-bulk-btn {
+background:#b5e6c3!important;
+box-shadow:0 5px 0 #6b9e7a!important;
+color:#1e3a2f!important;
+margin-top:12px;
+min-width:220px;
+}
+
+/* Liderlik, başarımlar panelleri */
+.leaderboard-panel, .achievements-panel {
+position: fixed;
+top:50%; left:50%; transform:translate(-50%,-50%);
+background: white;
+border-radius:48px;
+padding:25px;
+max-width:450px;
+width:90%;
+max-height:80vh;
+overflow-y: auto;
+z-index:10002;
+box-shadow:0 20px 0 #ffe0b5;
+border:4px solid #ffe8d9;
+visibility: hidden;
+opacity:0;
+transition:0.2s;
+}
+.leaderboard-panel.active, .achievements-panel.active { visibility: visible; opacity:1; }
+.leaderboard-panel li, .achievements-panel li {
+background:#fef9e0;
+border-radius:40px;
+padding:10px;
+margin-bottom:8px;
+display: flex;
+align-items: center;
+word-break: break-word;
+font-size:0.9rem;
+}
+
+/* Maskot, ses butonu */
+.mascot { position: fixed; bottom:15px; left:15px; width:70px; z-index:999; cursor: pointer; }
+.speech-bubble { position: absolute; bottom:80px; left:10px; background: white; padding:8px 12px; border-radius:30px 30px 30px 5px; font-size:0.85rem; max-width:150px; box-shadow:0 5px 0 #d4a373; border:2px solid #ffe0b0; display: none; }
+.speech-bubble.active { display: block; }
+.sound-toggle { position: fixed; bottom:15px; right:15px; background: white; border:2px solid #ffe0b0; border-radius:50%; width:50px; height:50px; display: flex; align-items: center; justify-content: center; font-size:1.4rem; color:#7c3aed; cursor: pointer; z-index:1000; box-shadow:0 5px 0 #d4a373; }
+
+/* Toast mesajları */
+.toast-message {
+position: fixed;
+top:15px;
+left:50%;
+transform:translateX(-50%);
+background: white;
+color:#2d3e50;
+padding:10px 20px;
+border-radius:50px;
+font-weight:600;
+font-size:0.9rem;
+box-shadow:0 8px 15px rgba(0,0,0,0.1);
+display: flex;
+align-items: center;
+gap:10px;
+z-index:9999;
+border:2px solid #ffe0b0;
+backdrop-filter:blur(4px);
+animation: slideDown 0.3s;
+}
+.toast-success { background:#d4edda; border-color:#a3d0b1; color:#0b5e42; }
+.toast-info { background:#fff3cd; border-color:#ffe69b; color:#856404; }
+
+
+@keyframes slideDown { from { top:-50px; opacity:0; } to { top:15px; opacity:1; } }
+
+/* Responsive iyileştirmeler */
+@media (max-width:768px) {
+.admin-split { grid-template-columns:1fr; }
+.admin-left { max-height:300px; }
+.game-container { padding:15px; }
+.question-text { font-size:1.3rem; padding-right:60px; }
+.intro-stats { grid-template-columns:1fr; }
+.top-bar { padding:5px 10px; }
+.user-avatar { width:35px; height:35px; font-size:1.6rem; }
+.user-name { max-width:100px; }
+.stat-box { padding:3px 8px; font-size:0.75rem; }
+.stat-box i { font-size:0.8rem; }
+.action-btn { padding:3px 8px; font-size:0.75rem; }
+.action-btn i { font-size:0.8rem; }
+.action-btn span { display: none; } /* mobilde sadece ikon */
+}
+@media (max-width:600px) {
+.options-grid { grid-template-columns:1fr; }
+.top-bar { flex-wrap: wrap; }
+.right-group { margin-left:0; width:100%; justify-content: flex-end; }
+}
+@media (max-width:480px) {
+body { padding:8px; }
+.game-container { padding:12px; }
+.question-text { font-size:1.2rem; padding-right:0; margin-top:40px; }
+.timer { position: relative; top:0; right:0; margin-bottom:10px; width: fit-content; }
+.next-btn { width:100%; }
+.level-badge { width:45px; height:45px; font-size:1.1rem; }
+.mascot { width:60px; bottom:10px; left:10px; }
+.sound-toggle { width:45px; height:45px; font-size:1.3rem; bottom:10px; right:10px; }
+}
+</style>
 </head>
 <body>
 
-    <!-- Intro Ekranı -->
-    <div id="introOverlay" class="intro-overlay">
-        <div class="intro-card">
-            <div class="intro-user-header">
-                <div id="introAvatar" class="intro-avatar">🐻</div>
-                <div class="intro-user-details">
-                    <div id="introUserName" class="intro-user-name">Misafir</div>
-                    <div id="introUserStats" class="intro-user-stats">
-                        <span><i class="fas fa-crown"></i> Seviye <span id="introLevel">1</span></span>
-                        <span><i class="fas fa-star"></i> Puan <span id="introScore">0</span></span>
-                    </div>
-                </div>
-                <button id="introSettingsBtn" class="intro-settings">
-                    <i class="fas fa-cog"></i>
-                    <span class="settings-text">ayarlar</span>
-                </button>
-            </div>
-            
-            <div class="intro-stats">
-                <div class="intro-leaderboard-preview">
-                    <h4><i class="fas fa-trophy"></i> En İyi Performans</h4>
-                    <div id="introLeaderboardList">Yükleniyor...</div>
-                </div>
-                <div class="intro-achievements-preview">
-                    <h4><i class="fas fa-medal"></i> Son Başarımlar</h4>
-                    <div id="introAchievementsList">Yükleniyor...</div>
-                </div>
-            </div>
-            
-            <button id="introStartGameBtn" class="intro-play-btn">
-                <i class="fas fa-play-circle"></i> BAŞLA
-            </button>
-        </div>
-    </div>
+<!-- ========== INTRO EKRANI ========= -->
+<div id="introOverlay" class="intro-overlay">
+<div class="intro-card">
+<div class="intro-user-header">
+<div id="introAvatar" class="intro-avatar">🐻</div>
+<div class="intro-user-details">
+<div id="introUserName" class="intro-user-name">Misafir</div>
+<div id="introUserStats" class="intro-user-stats">
+<span><i class="fas fa-crown"></i> Seviye <span id="introLevel">1</span></span>
+<span><i class="fas fa-star"></i> Puan <span id="introScore">0</span></span>
+</div>
+</div>
+<button id="introSettingsBtn" class="intro-settings">
+<i class="fas fa-cog"></i>
+<span class="settings-text">ayarlar</span>
+</button>
+</div>
+<div class="intro-stats">
+<!-- DEĞİŞTİ: En İyi Performans bölümü -->
+<div class="intro-leaderboard-preview">
+<h4><i class="fas fa-trophy"></i> En İyisini Gör</h4>
+<p style="color: #6b7280; font-size: 0.85rem; margin-bottom: 10px;">En yüksek puanları görüp kendini challange et!</p>
+<button id="viewLeaderboardBtn" class="view-leaderboard-btn">
+<i class="fas fa-trophy"></i> Liderlik Tablosunu Gör
+</button>
+</div>
+<div class="intro-achievements-preview">
+<h4><i class="fas fa-medal"></i> Son Başarımlar</h4>
+<div id="introAchievementsList">Yükleniyor...</div>
+</div>
+</div>
+<button id="introStartGameBtn" class="intro-play-btn"><i class="fas fa-play-circle"></i> BAŞLA</button>
+<div id="introSettingsPanel" class="intro-settings-panel" style="display: none;">
+<h4><i class="fas fa-user-edit"></i> Profil Ayarları</h4>
+<input type="text" id="settingsUsername" placeholder="Adın Soyadın" value="Misafir">
+<div style="font-weight: 600; margin-bottom: 10px;">Avatar Seç:</div>
+<div id="settingsAvatarSelector" class="avatar-selector"></div>
+<div style="display: flex; gap: 15px; margin-top: 15px;">
+<button id="saveSettingsBtn" class="restart-btn" style="background: #a5d6b7; box-shadow: 0 8px 0 #6b8c7e; color: #1e3a2f;">Kaydet</button>
+<button id="closeSettingsBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 8px 0 #d4a373; color: #5e4b3c;">Kapat</button>
+</div>
+</div>
+</div>
+</div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModalOverlay" class="settings-modal-overlay">
-        <div class="settings-modal">
-            <h4><i class="fas fa-user-edit"></i> Profil Ayarları</h4>
-            <input type="text" id="settingsUsername" placeholder="Adın Soyadın" value="Misafir">
-            <div style="font-weight: 600; margin-bottom: 10px; font-size: 0.9rem;">Avatar Seç:</div>
-            <div id="settingsAvatarSelector" class="avatar-selector"></div>
-            <div class="settings-modal-buttons">
-                <button id="saveSettingsBtn" class="btn-save">Kaydet</button>
-                <button id="closeSettingsBtn" class="btn-close">Kapat</button>
-            </div>
-        </div>
-    </div>
+<!-- ========== ANA OYUN KONTEYNERİ – YENİ ÜST PANEL ========= -->
+<div id="gameContainer" class="game-container" style="display: none;">
+<!-- TEK SATIR ÜST PANEL -->
+<div class="top-bar">
+<div class="left-group">
+<div id="gameAvatar" class="user-avatar">🐻</div>
+<div id="gameUserName" class="user-name">Misafir</div>
+</div>
+<div class="right-group">
+<div class="stat-box"><i class="fas fa-star"></i><span id="scoreDisplay">0</span></div>
+<div class="stat-box"><i class="fas fa-crown"></i><span id="currentLevelDisplay">1</span></div>
+<button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-trophy"></i><span>Liderlik</span></button>
+<button id="achievementsBtn" class="action-btn" title="Başarımlar"><i class="fas fa-medal"></i><span>Başarımlar</span></button>
+<button id="settingsBtn" class="action-btn" title="Tema"><i class="fas fa-moon"></i><span>Tema</span></button>
+<button id="exitGameBtn" class="action-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i><span>Çık</span></button>
+</div>
+</div>
 
-    <!-- Ana Oyun -->
-    <div id="gameContainer" class="game-container">
-        <div class="top-bar">
-            <div class="left-group">
-                <div id="gameAvatar" class="user-avatar">🐻</div>
-                <div id="gameUserName" class="user-name">Misafir</div>
-            </div>
-            <div class="right-group">
-                <div class="stat-box"><i class="fas fa-star"></i><span id="scoreDisplay">0</span></div>
-                <div class="stat-box"><i class="fas fa-crown"></i><span id="currentLevelDisplay">1</span></div>
-                <button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-trophy"></i></button>
-                <button id="achievementsBtn" class="action-btn" title="Başarımlar"><i class="fas fa-medal"></i></button>
-                <button id="settingsBtn" class="action-btn" title="Tema"><i class="fas fa-moon"></i></button>
-                <button id="exitGameBtn" class="action-btn" title="Çık"><i class="fas fa-sign-out-alt"></i></button>
-            </div>
-        </div>
+<!-- Seviye göstergeleri -->
+<div class="levels-wrapper">
+<div id="levelIndicators" class="levels-container"></div>
+</div>
 
-        <div class="levels-wrapper">
-            <div id="levelIndicators" class="levels-container"></div>
-        </div>
+<!-- Soru kartı -->
+<div id="questionCard" class="question-card">
+<div id="timer" class="timer"><i class="fas fa-hourglass-half"></i><span id="timerSeconds">60</span>sn</div>
+<div id="questionText" class="question-text">Soru yükleniyor...</div>
+<button id="hintButton" class="hint-btn"><i class="fas fa-lightbulb"></i> İpucu (1 puan)</button>
+<div id="optionsContainer" class="options-grid"></div>
+<div style="display: flex; gap: 10px; justify-content: center;">
+<button id="nextButton" class="next-btn disabled"><i class="fas fa-arrow-right"></i> İleri</button>
+</div>
+</div>
+</div>
 
-        <div id="questionCard" class="question-card">
-            <div id="timer" class="timer"><i class="fas fa-hourglass-half"></i><span id="timerSeconds">60</span>sn</div>
-            <div id="questionText" class="question-text">Soru yükleniyor...</div>
-            <button id="hintButton" class="hint-btn"><i class="fas fa-lightbulb"></i> İpucu (1 puan)</button>
-            <div id="optionsContainer" class="options-grid"></div>
-            <button id="nextButton" class="next-btn disabled"><i class="fas fa-arrow-right"></i> İleri</button>
-        </div>
-    </div>
+<!-- ========== LİDERLİK PANELİ ========= -->
+<div id="leaderboardPanel" class="leaderboard-panel">
+<h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-trophy"></i> En İyi Performans</h2>
+<div id="leaderboardList" style="margin-bottom: 20px;">Yükleniyor...</div>
+<button id="closeLeaderboardBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c;">Kapat</button>
+</div>
 
-    <!-- Liderlik Paneli -->
-    <div id="leaderboardPanel" class="leaderboard-panel">
-        <h2><i class="fas fa-trophy"></i> En İyi Performans</h2>
-        <div id="leaderboardList" style="margin-bottom: 15px;">Yükleniyor...</div>
-        <button id="closeLeaderboardBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 0;">Kapat</button>
-    </div>
+<!-- ========== BAŞARIM PANELİ ========= -->
+<div id="achievementsPanel" class="achievements-panel">
+<h2 style="color: #7c3aed; margin-bottom: 20px;"><i class="fas fa-medal"></i> Başarımlar</h2>
+<div id="achievementsList">Yükleniyor...</div>
+<button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 20px;">Kapat</button>
+</div>
 
-    <!-- Başarım Paneli -->
-    <div id="achievementsPanel" class="achievements-panel">
-        <h2><i class="fas fa-medal"></i> Başarımlar</h2>
-        <div id="achievementsList">Yükleniyor...</div>
-        <button id="closeAchievementsBtn" class="restart-btn" style="background: #ffe0b0; color: #5e4b3c; margin-top: 15px;">Kapat</button>
-    </div>
+<!-- ========== ADMIN PANELİ – YENİ İSTATİSTİK ALANI ========= -->
+<div id="adminPanel" class="admin-panel">
+<h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
+<div class="admin-split">
+<div class="admin-left">
+<h3><i class="fas fa-list"></i> Mevcut Sorular</h3>
+<div id="adminStats" class="admin-stats">
+<!-- JS ile doldurulacak -->
+</div>
+<div id="adminQuestionsList">
+<p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
+</div>
+<button id="clearLeaderboardBtn" class="admin-clear-btn">
+<i class="fas fa-trash-alt"></i> Liderlik Tablosunu Temizle
+</button>
+<button id="resetAllUserDataBtn" class="admin-clear-btn" style="margin-top: 10px; background: #b34180 !important; box-shadow: 0 5px 0 #7a2d5a !important; color: white !important;">
+<i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla
+</button>
+<button id="bulkAddQuestionsBtn" class="admin-clear-btn admin-bulk-btn" style="margin-top: 10px;">
+<i class="fas fa-database"></i><span class="btn-text">Toplu Soru Ekle</span>
+<span class="loading-spinner" style="display: none;"><i class="fas fa-spinner fa-pulse"></i> Yükleniyor...</span>
+</button>
+</div>
+<div class="admin-right">
+<h3 id="formTitle"><i class="fas fa-plus-circle"></i> Yeni Soru Ekle</h3>
+<input type="text" id="adminSoru" placeholder="Soru metni">
+<input type="text" id="adminSecenek1" placeholder="Şık A">
+<input type="text" id="adminSecenek2" placeholder="Şık B">
+<input type="text" id="adminSecenek3" placeholder="Şık C">
+<input type="text" id="adminSecenek4" placeholder="Şık D">
+<select id="adminDogru">
+<option value="0">Şık A doğru</option><option value="1">Şık B doğru</option>
+<option value="2">Şık C doğru</option><option value="3">Şık D doğru</option>
+</select>
+<select id="adminKategori">
+<option value="Kur'an">Kur'an</option><option value="Namaz">Namaz</option><option value="Peygamberler">Peygamberler</option>
+<option value="İslam Dini">İslam Dini</option>
+<option value="Melekler">Melekler</option>
+<option value="Cennet-Cehennem">Cennet-Cehennem</option>
+<option value="Allah">Allah</option>
+</select>
+<select id="adminZorluk">
+<option value="1">Kolay</option><option value="2">Orta</option><option value="3">Zor</option>
+</select>
+<div class="btn-group">
+<button id="saveQuestionBtn"><i class="fas fa-save"></i> Soruyu Kaydet</button>
+<button id="cancelEditBtn" style="display: none;"><i class="fas fa-times"></i> İptal</button>
+</div>
+</div>
+</div>
+<div style="text-align: center; margin-top: 25px;">
+<button id="closeAdminBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 8px 0 #d4a373; color: #5e4b3c; padding: 12px 25px;">Admin Panelini Kapat</button>
+</div>
+</div>
 
-    <!-- Admin Paneli -->
-    <div id="adminPanel" class="admin-panel">
-        <h2 style="color: #7c3aed; text-align: center; margin-bottom: 10px; font-size: 1.4rem;"><i class="fas fa-lock"></i> Admin – Soru Yönetimi</h2>
-        <div class="admin-split">
-            <div class="admin-left">
-                <h3><i class="fas fa-list"></i> Mevcut Sorular</h3>
-                <div id="adminStats" class="admin-stats"></div>
-                <div id="adminQuestionsList">
-                    <p style="color: #6b7280; text-align: center;">Yükleniyor...</p>
-                </div>
-                <button id="downloadQuestionsBtn" class="admin-clear-btn admin-download-btn">
-                    <i class="fas fa-download"></i> Soruları İndir (JSON)
-                </button>
-                <button id="deleteAllQuestionsBtn" class="admin-danger-btn">
-                    <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
-                </button>
-                <button id="clearLeaderboardBtn" class="admin-clear-btn">
-                    <i class="fas fa-trash-alt"></i> Liderlik Tablosunu Temizle
-                </button>
-                <button id="resetAllUserDataBtn" class="admin-clear-btn" style="background: #b34180 !important; box-shadow: 0 4px 0 #7a2d5a !important; color: white !important;">
-                    <i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla
-                </button>
-                <button id="fixNaNBtn" class="admin-clear-btn" style="background: #ed8936 !important; box-shadow: 0 4px 0 #c05621 !important; color: white !important;">
-                    <i class="fas fa-wrench"></i> NaN Düzelt
-                </button>
-                <button id="bulkAddQuestionsBtn" class="admin-clear-btn admin-bulk-btn">
-                    <i class="fas fa-database"></i> Toplu Soru Ekle
-                </button>
-            </div>
-            <div class="admin-right">
-                <h3 id="formTitle"><i class="fas fa-plus-circle"></i> Yeni Soru Ekle</h3>
-                <input type="text" id="adminSoru" placeholder="Soru metni">
-                <input type="text" id="adminSecenek1" placeholder="Şık A">
-                <input type="text" id="adminSecenek2" placeholder="Şık B">
-                <input type="text" id="adminSecenek3" placeholder="Şık C">
-                <input type="text" id="adminSecenek4" placeholder="Şık D">
-                <select id="adminDogru">
-                    <option value="0">Şık A doğru</option>
-                    <option value="1">Şık B doğru</option>
-                    <option value="2">Şık C doğru</option>
-                    <option value="3">Şık D doğru</option>
-                </select>
-                <select id="adminKategori">
-                    <option value="Kur'an">Kur'an</option>
-                    <option value="Namaz">Namaz</option>
-                    <option value="Peygamberler">Peygamberler</option>
-                    <option value="İslam Dini">İslam Dini</option>
-                    <option value="Melekler">Melekler</option>
-                    <option value="Cennet-Cehennem">Cennet-Cehennem</option>
-                    <option value="Allah">Allah</option>
-                    <option value="Helaller ve Haramlar">Helaller ve Haramlar</option>
-                    <option value="Kıyamet ve Ahiret">Kıyamet ve Ahiret</option>
-                    <option value="Siyer (Peygamberimizin Hayatı)">Siyer (Peygamberimizin Hayatı)</option>
-                    <option value="Çocuklara Özel İslami Kavramlar">Çocuklara Özel İslami Kavramlar</option>
-                </select>
-                <select id="adminZorluk">
-                    <option value="1">Kolay</option>
-                    <option value="2">Orta</option>
-                    <option value="3">Zor</option>
-                </select>
-                <div class="btn-group">
-                    <button id="saveQuestionBtn"><i class="fas fa-save"></i> Kaydet</button>
-                    <button id="cancelEditBtn" style="display: none;"><i class="fas fa-times"></i> İptal</button>
-                </div>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button id="closeAdminBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 6px 0 #d4a373; color: #5e4b3c; padding: 10px 20px;">Admin Panelini Kapat</button>
-        </div>
-    </div>
+<!-- ========== OYUN BİTTİ MODAL ========= -->
+<div id="gameOverModal" class="game-over-modal">
+<div class="game-over-card">
+<h2><i class="fas fa-heart-crack"></i> Oyun Bitti</h2>
+<p id="gameOverMessage">İkinci hakkında da yanlış cevap verdin.</p>
+<button id="restartGameBtn" class="restart-btn"><i class="fas fa-rotate-left"></i> Seviyeyi Tekrarla</button>
+</div>
+</div>
 
-    <!-- Oyun Bitti Modal -->
-    <div id="gameOverModal" class="game-over-modal">
-        <div class="game-over-card">
-            <h2 style="font-size: 1.3rem;"><i class="fas fa-heart-crack"></i> Oyun Bitti</h2>
-            <p id="gameOverMessage" style="font-size: 0.95rem; margin: 15px 0;">İkinci hakkında da yanlış cevap verdin.</p>
-            <button id="restartGameBtn" class="restart-btn"><i class="fas fa-rotate-left"></i> Seviyeyi Tekrarla</button>
-        </div>
-    </div>
+<!-- ========== MASKOT & SES ========= -->
+<div id="mascot" class="mascot">
+<img src="https://cdn-icons-png.flaticon.com/512/1995/1995575.png" alt="Baykuş" style="width:100%;">
+<div id="speechBubble" class="speech-bubble">Merhaba! 👋</div>
+</div>
+<div id="soundToggleBtn" class="sound-toggle">
+<i class="fas fa-volume-up"></i>
+</div>
+<div id="toastContainer"></div>
 
-    <!-- Maskot ve Ses -->
-    <div id="mascot" class="mascot">
-        <img src="https://cdn-icons-png.flaticon.com/512/1995/1995575.png" alt="Baykuş" style="width:100%;">
-        <div id="speechBubble" class="speech-bubble">Merhaba! 👋</div>
-    </div>
-    <div id="soundToggleBtn" class="sound-toggle">
-        <i class="fas fa-volume-up"></i>
-    </div>
-    <div id="toastContainer"></div>
+<script type="module">
+// ------------------------------------------------------------
+// FIREBASE IMPORTLAR
+// ------------------------------------------------------------
+import { db } from './firebase-core.js';
+import {
+collection, getDocs, addDoc, query, orderBy, limit,
+doc, getDoc, updateDoc, deleteDoc, where,
+writeBatch
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-    <script type="module">
-        // Firebase Importlar
-        import { db } from './firebase-core.js';
-        import {
-            collection, getDocs, addDoc, query, orderBy, limit,
-            doc, getDoc, updateDoc, deleteDoc, where,
-            writeBatch
-        } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+// ------------------------------------------------------------
+// SABİTLER
+// ------------------------------------------------------------
+const QUESTIONS_COLLECTION = 'manevi_sorular';
+const LEADERBOARD_COLLECTION = 'leaderboard';
+const ADMIN_PASSWORD = 'admin123';
+const STORAGE_KEY = 'maneviOyunSave';
 
-        // Sabitler
-        const QUESTIONS_COLLECTION = 'manevi_sorular';
-        const LEADERBOARD_COLLECTION = 'leaderboard';
-        const ADMIN_PASSWORD = 'admin123';
-        const STORAGE_KEY = 'maneviOyunSave';
+// ----- 169 SORU (kısaltıldı, gerçek kodda tam liste olacak) -----
+const SAMPLE_QUESTIONS = [
+{bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28','29','30','31'], dogru: 2, zorluk: 1},
+{bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha','Yasin','Rahman','Mülk'], dogru: 1, zorluk: 2},
+{bolum: 'Kur\'an', soru: 'Kur\'an\'da adı geçen tek sahabe kimdir?', secenekler: ['Ebu Bekir','Ömer','Zeyd','Üsame'], dogru: 2, zorluk: 2},
+//SORU EKLEME BÖLÜMÜ
+//Ercan şahin notlarıdır: Buraya soruları ekle, sonra adminden toplu soru ekle butonu tıkla.
+//daha sonra burdaki soruları kaldırabilirsin. çunku sorular firestore kaydoluyor.
 
-        // Örnek Sorular
-        const SAMPLE_QUESTIONS = [
-            { bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28', '29', '30', '31'], dogru: 2, zorluk: 1 },
-            { bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha', 'Yasin', 'Rahman', 'Mülk'], dogru: 1, zorluk: 2 },
-            { bolum: 'Kur\'an', soru: 'Kur\'an\'da adı geçen tek sahabe kimdir?', secenekler: ['Ebu Bekir', 'Ömer', 'Zeyd', 'Üsame'], dogru: 2, zorluk: 2 },
-            // Diğer sorular buraya eklenecek...
-        ];
+];
 
-        const AVATAR_LIST = [
-            { name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-            { name: 'Koca Ayı', icon: '🐨', img: 'https://cdn-icons-png.flaticon.com/512/616/616412.png' },
-            { name: 'Sonic', icon: '🦔', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-            { name: 'Labubi', icon: '🐶', img: 'https://cdn-icons-png.flaticon.com/512/616/616408.png' },
-            { name: 'Mickey', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-            { name: 'Minnie', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-            { name: 'Donald', icon: '🦆', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-            { name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png' },
-        ];
+const AVATAR_LIST = [
+{name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Koca Ayı', icon: '🐨', img: 'https://cdn-icons-png.flaticon.com/512/616/616412.png'},
+{name: 'Sonic', icon: '🦔', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Labubi', icon: '🐶', img: 'https://cdn-icons-png.flaticon.com/512/616/616408.png'},
+{name: 'Mickey', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Minnie', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Donald', icon: '🦆', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+];
 
-        // Ses Sistemi
-        let soundEnabled = true;
-        const sounds = {
-            correct: new Howl({ src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3'] }),
-            levelUp: new Howl({ src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3'] })
-        };
+// ------------------------------------------------------------
+// SES SİSTEMİ
+// ------------------------------------------------------------
+let soundEnabled = true;
+const sounds = {
+correct: new Howl({src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3']}),
+levelUp: new Howl({src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3']})
+};
+function playBeep(type){
+if(!soundEnabled) return;
+try{
+const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+if(audioCtx.state === 'suspended') audioCtx.resume().then(() => createBeep(audioCtx, type));
+else createBeep(audioCtx, type);
+}catch(e){}
+}
+function createBeep(audioCtx, type){
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+switch(type){
+case 'wrong':
+osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+break;
+case 'gameOver':
+osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+break;
+case 'hint':
+osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+break;
+}
+}
+function playSound(soundName){
+if(!soundEnabled) return;
+if(sounds[soundName]) sounds[soundName].play();
+else playBeep(soundName);
+}
+function unlockAudio(){
+const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+if(audioCtx.state === 'suspended'){
+const resume = () => { audioCtx.resume(); document.removeEventListener('click', resume); };
+document.addEventListener('click', resume, {once: true});
+}
+}
 
-        function playBeep(type) {
-            if (!soundEnabled) return;
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume().then(() => createBeep(audioCtx, type));
-                else createBeep(audioCtx, type);
-            } catch (e) {}
-        }
+// ------------------------------------------------------------
+// OYUN DURUMU
+// ------------------------------------------------------------
+let gameState = {
+maxUnlockedLevel: 1,
+currentLevel: 1,
+currentQuestionIndexInLevel: 0,
+score: 0,
+earnedPointsForQuestion: {},
+hintUsedInThisLevel: false,
+achievements: {
+firstCorrect: false,
+streak: 0,
+quranMaster: false,
+namazkar: false,
+peygamberSever: false,
+level5: false,
+level10: false,
+level15: false,
+level20: false,
+level25: false,
+level30: false,
+level35: false,
+level40: false,
+level45: false,
+level50: false
+},
+recentAchievements: [],
+solvedQuestions: [],
+username: '',
+avatar: AVATAR_LIST[0].icon,
+avatarImg: AVATAR_LIST[0].img,
+darkMode: false
+};
 
-        function createBeep(audioCtx, type) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            switch(type) {
-                case 'wrong':
-                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
-                    break;
-                case 'gameOver':
-                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.5);
-                    break;
-                case 'hint':
-                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
-                    break;
+function loadGameState(){
+const saved = localStorage.getItem(STORAGE_KEY);
+if(saved){
+try{
+const parsed = JSON.parse(saved);
+gameState = { ...gameState, ...parsed};
+if(!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
+if(!gameState.achievements){
+gameState.achievements = {
+firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+level5: false, level10: false, level15: false, level20: false, level25: false,
+level30: false, level35: false, level40: false, level45: false, level50: false
+};
+}
+if(!gameState.recentAchievements) gameState.recentAchievements = [];
+if(!gameState.solvedQuestions) gameState.solvedQuestions = [];
+if(isNaN(gameState.score)) gameState.score = 0;
+}catch(e){}
+}
+}
+function saveGameState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
+
+// ------------------------------------------------------------
+// DOM ELEMENTLERİ
+// ------------------------------------------------------------
+const introOverlay = document.getElementById('introOverlay');
+const introAvatar = document.getElementById('introAvatar');
+const introUserName = document.getElementById('introUserName');
+const introLevel = document.getElementById('introLevel');
+const introScore = document.getElementById('introScore');
+const introAchievementsList = document.getElementById('introAchievementsList');
+const introStartBtn = document.getElementById('introStartGameBtn');
+const introSettingsBtn = document.getElementById('introSettingsBtn');
+const introSettingsPanel = document.getElementById('introSettingsPanel');
+const settingsUsername = document.getElementById('settingsUsername');
+const settingsAvatarSelector = document.getElementById('settingsAvatarSelector');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+// YENİ: Intro'daki leaderboard butonu
+const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
+
+const gameContainer = document.getElementById('gameContainer');
+const gameAvatar = document.getElementById('gameAvatar');
+const gameUserName = document.getElementById('gameUserName');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const currentLevelDisplay = document.getElementById('currentLevelDisplay');
+const levelIndicators = document.getElementById('levelIndicators');
+const questionEl = document.getElementById('questionText');
+const optionsEl = document.getElementById('optionsContainer');
+const nextBtn = document.getElementById('nextButton');
+const hintBtn = document.getElementById('hintButton');
+const timerEl = document.getElementById('timerSeconds');
+const timerBox = document.getElementById('timer');
+const gameOverModal = document.getElementById('gameOverModal');
+const gameOverMessage = document.getElementById('gameOverMessage');
+const restartGameBtn = document.getElementById('restartGameBtn');
+const exitGameBtn = document.getElementById('exitGameBtn');
+
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+const leaderboardPanel = document.getElementById('leaderboardPanel');
+const leaderboardList = document.getElementById('leaderboardList');
+const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+const achievementsBtn = document.getElementById('achievementsBtn');
+const achievementsPanel = document.getElementById('achievementsPanel');
+const achievementsList = document.getElementById('achievementsList');
+const closeAchievementsBtn = document.getElementById('closeAchievementsBtn');
+
+const adminPanel = document.getElementById('adminPanel');
+const closeAdminBtn = document.getElementById('closeAdminBtn');
+const adminQuestionsList = document.getElementById('adminQuestionsList');
+const adminStats = document.getElementById('adminStats');
+const formTitle = document.getElementById('formTitle');
+const adminSoru = document.getElementById('adminSoru');
+const adminSecenek1 = document.getElementById('adminSecenek1');
+const adminSecenek2 = document.getElementById('adminSecenek2');
+const adminSecenek3 = document.getElementById('adminSecenek3');
+const adminSecenek4 = document.getElementById('adminSecenek4');
+const adminDogru = document.getElementById('adminDogru');
+const adminKategori = document.getElementById('adminKategori');
+const adminZorluk = document.getElementById('adminZorluk');
+const saveQuestionBtn = document.getElementById('saveQuestionBtn');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn');
+const bulkAddQuestionsBtn = document.getElementById('bulkAddQuestionsBtn');
+
+const soundToggleBtn = document.getElementById('soundToggleBtn');
+const mascot = document.getElementById('mascot');
+const speechBubble = document.getElementById('speechBubble');
+const settingsBtn = document.getElementById('settingsBtn');
+
+// ------------------------------------------------------------
+// OYUN DEĞİŞKENLERİ
+// ------------------------------------------------------------
+let editingQuestionId = null;
+let allQuestions = [];
+let currentLevelQuestions = [];
+let currentQuestion = null;
+let answered = false;
+let firstAttempt = true;
+let gameActive = true;
+let timerInterval = null;
+let timeLeft = 60;
+let eliminatedOptions = [];
+
+// ------------------------------------------------------------
+// ÖRNEK SORULARI YÜKLE (seedQuestionsIfNeeded)
+// ------------------------------------------------------------
+async function seedQuestionsIfNeeded(){
+try{
+const q = query(collection(db, QUESTIONS_COLLECTION), limit(1));
+const snapshot = await getDocs(q);
+if(snapshot.empty){
+for(const q of SAMPLE_QUESTIONS){
+await addDoc(collection(db, QUESTIONS_COLLECTION), q);
+}
+console.log('Örnek sorular eklendi.');
+}
+}catch(e){
+console.error('Örnek sorular eklenirken hata:', e);
+}
+}
+
+// ------------------------------------------------------------
+// LİDERLİK TABLOSU – SADECE EN YÜKSEK PUANI KAYDET
+// ------------------------------------------------------------
+async function saveScoreToLeaderboard(){
+if(!gameState.username || gameState.username === 'Misafir') return;
+try{
+const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", gameState.username.trim()));
+const snapshot = await getDocs(q);
+
+let maxScore = 0;
+const docsToDelete = [];
+
+snapshot.forEach(doc => {
+const data = doc.data();
+const score = Number(data.score);
+if(score > maxScore) maxScore = score;
+docsToDelete.push(doc.ref);
+});
+
+if(gameState.score > maxScore){
+if(docsToDelete.length > 0){
+const batch = writeBatch(db);
+docsToDelete.forEach(ref => batch.delete(ref));
+await batch.commit();
+}
+await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+username: gameState.username.trim(),
+score: Number(gameState.score),
+level: Number(gameState.currentLevel),
+timestamp: new Date()
+});
+} else if(maxScore === 0 && gameState.score > 0){
+await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+username: gameState.username.trim(),
+score: Number(gameState.score),
+level: Number(gameState.currentLevel),
+timestamp: new Date()
+});
+}
+}catch(e){
+console.error("Liderlik kaydedilemedi:", e);
+}
+}
+
+async function loadLeaderboard(){
+try{
+const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
+const snapshot = await getDocs(q);
+let html = '<ol style="list-style:none; padding:0;">';
+snapshot.forEach((doc, idx) => {
+const data = doc.data();
+let scoreVal = Number(data.score);
+if(isNaN(scoreVal)) scoreVal = 0;
+const username = data.username?.trim() || 'İsimsiz';
+let levelVal = Number(data.level);
+if(isNaN(levelVal) || levelVal < 1) levelVal = 1;
+const rank = idx + 1;
+html += `<li style="display:flex; align-items:center; padding:12px; background:#fef9e0; margin-bottom:8px; border-radius:40px;">
+<span style="font-weight:700; margin-right:15px; width:30px;">#${rank}</span>
+<i class="fas fa-user-circle"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${username}</span>
+<span style="margin-left:auto; background:#ffd966; padding:5px 15px; border-radius:40px;">${scoreVal} puan</span>
+<span style="margin-left:10px; color:#6b7280;">Seviye ${levelVal}</span>
+</li>`;
+});
+html += '</ol>';
+leaderboardList.innerHTML = html;
+}catch(e){
+leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
+}
+}
+
+// ------------------------------------------------------------
+// YARDIMCI FONKSİYONLAR
+// ------------------------------------------------------------
+function showToast(message, type='success'){
+const container = document.getElementById('toastContainer');
+const toast = document.createElement('div');
+toast.className = `toast-message ${type === 'success' ? 'toast-success' : 'toast-info'}`;
+toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> ${message}`;
+container.appendChild(toast);
+setTimeout(() => toast.remove(), 2500);
+}
+function triggerConfetti(){ confetti({particleCount: 80, spread: 70, origin: {y: 0.6}}); }
+
+function initAvatarSelector(){
+settingsAvatarSelector.innerHTML = '';
+AVATAR_LIST.forEach((av, idx) => {
+const div = document.createElement('div');
+div.className = 'avatar-option' + (av.icon === gameState.avatar ? ' selected' : '');
+div.innerHTML = av.icon;
+div.dataset.avatarIcon = av.icon;
+div.dataset.avatarImg = av.img;
+div.dataset.avatarName = av.name;
+div.addEventListener('click', function(){
+document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => el.classList.remove('selected'));
+this.classList.add('selected');
+});
+settingsAvatarSelector.appendChild(div);
+});
+}
+
+async function updateIntroUI(){
+introAvatar.innerText = gameState.avatar;
+introUserName.innerText = gameState.username || 'Misafir';
+introLevel.innerText = gameState.currentLevel;
+introScore.innerText = gameState.score;
+updateAchievementsPreview();
+}
+
+function updateAchievementsPreview(){
+let html = '<ul style="list-style:none; padding:0;">';
+if(gameState.recentAchievements && gameState.recentAchievements.length > 0){
+gameState.recentAchievements.slice(0, 3).forEach(b => {
+html += `<li style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-medal" style="color:#ffc107;"></i> ${b}</li>`;
+});
+} else {
+html += '<li style="color: #6b7280;">Henüz başarım yok</li>';
+}
+html += '</ul>';
+introAchievementsList.innerHTML = html;
+}
+
+// ------------------------------------------------------------
+// GÜNCELLENMİŞ updateGameHeader – sadece var olan elementleri günceller
+// ------------------------------------------------------------
+function updateGameHeader(){
+gameAvatar.innerText = gameState.avatar;
+gameUserName.innerText = gameState.username;
+if(scoreDisplay) scoreDisplay.innerText = gameState.score;
+if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
+}
+
+function saveSettings(){
+const newName = settingsUsername.value.trim() || 'Misafir';
+const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
+if(selectedAvatar){
+gameState.avatar = selectedAvatar.dataset.avatarIcon;
+gameState.avatarImg = selectedAvatar.dataset.avatarImg;
+}
+gameState.username = newName;
+saveGameState();
+updateIntroUI();
+updateGameHeader();
+introSettingsPanel.style.display = 'none';
+showToast('Profil güncellendi!', 'success');
+}
+
+function startGameFromIntro(){
+if(!gameState.username){
+gameState.username = 'Misafir';
+gameState.avatar = AVATAR_LIST[0].icon;
+saveGameState();
+}
+updateGameHeader();
+introOverlay.classList.add('hidden');
+gameContainer.style.display = 'block';
+loadLevelQuestions(gameState.currentLevel);
+renderLevelIndicators();
+unlockAudio();
+
+// --- YENİ: İlknur için Sweet Alert ---
+if(gameState.username.toLowerCase() === 'ilknur'){
+Swal.fire({
+title: '❤️ Özel Mesaj ❤️',
+text: 'Ercan seni seviyor!',
+icon: 'success',
+confirmButtonText: 'Ben de seni seviyorum',
+confirmButtonColor: '#ff6b6b',
+background: '#fff5f5',
+timer: 5000,
+timerProgressBar: true
+});
+}
+// --------------------------------------
+}
+
+function exitToIntro(){
+gameContainer.style.display = 'none';
+introOverlay.classList.remove('hidden');
+clearInterval(timerInterval);
+updateIntroUI();
+}
+
+// ------------------------------------------------------------
+// OYUN FONKSİYONLARI (kısaltıldı, asıl kodda uzun)
+// ------------------------------------------------------------
+async function loadAllQuestions(){
+try{
+const q = query(collection(db, QUESTIONS_COLLECTION));
+const snapshot = await getDocs(q);
+allQuestions = [];
+snapshot.forEach(doc => allQuestions.push({id: doc.id, ...doc.data()}));
+if(allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
+}catch(e){
+allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
+}
+}
+
+function getQuestionCountForLevel(level){ return level * 2; }
+
+function loadLevelQuestions(level){
+const countNeeded = getQuestionCountForLevel(level);
+let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
+if(unsolved.length < countNeeded){
+gameState.solvedQuestions = [];
+unsolved = [...allQuestions];
+showToast('🔄 Tüm soruları çözdün! Havuz yenilendi.', 'info');
+}
+const shuffled = [...unsolved].sort(() => Math.random() - 0.5);
+currentLevelQuestions = shuffled.slice(0, countNeeded);
+gameState.currentQuestionIndexInLevel = Math.min(gameState.currentQuestionIndexInLevel, currentLevelQuestions.length - 1);
+if(gameState.currentQuestionIndexInLevel < 0) gameState.currentQuestionIndexInLevel = 0;
+loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
+gameState.hintUsedInThisLevel = false;
+hintBtn.classList.remove('disabled');
+}
+
+function loadQuestionAtIndex(index){
+if(!currentLevelQuestions.length) return;
+currentQuestion = currentLevelQuestions[index];
+questionEl.innerText = currentQuestion.soru;
+optionsEl.innerHTML = '';
+currentQuestion.secenekler.forEach((sec, idx) => {
+const btn = document.createElement('button');
+btn.className = 'option-btn';
+btn.innerHTML = `<span style="font-weight:700; margin-right:8px;">${String.fromCharCode(65 + idx)}</span> ${sec}`;
+btn.dataset.optionIndex = idx;
+btn.addEventListener('click', () => handleOptionClick(idx, btn));
+optionsEl.appendChild(btn);
+});
+answered = false;
+firstAttempt = true;
+eliminatedOptions = [];
+nextBtn.classList.add('disabled');
+nextBtn.classList.remove('active');
+startTimer(60);
+}
+
+function startTimer(seconds){
+if(timerInterval) clearInterval(timerInterval);
+timeLeft = seconds;
+timerEl.innerText = timeLeft;
+timerBox.style.display = 'flex';
+timerInterval = setInterval(() => {
+timeLeft--;
+timerEl.innerText = timeLeft;
+if(timeLeft <= 0){
+clearInterval(timerInterval);
+if(!answered){
+if(firstAttempt){
+playSound('wrong');
+showToast('⏳ Süre doldu! Bir hakkın kaldı.', 'info');
+firstAttempt = false;
+} else {
+gameActive = false;
+gameOverMessage.innerText = 'Süre doldu ve ikinci hakkını kullanamadın.';
+gameOverModal.classList.add('active');
+document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+playSound('gameOver');
+}
+}
+}
+}, 1000);
+}
+
+async function useHint(){
+if(gameState.hintUsedInThisLevel){ showToast('Bu seviyede ipucu hakkın bitti!', 'info'); return; }
+if(gameState.score < 1){ showToast('İpucu için 1 puana ihtiyacın var!', 'info'); return; }
+if(answered){ showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info'); return; }
+const correctIndex = currentQuestion.dogru;
+const allIndexes = [0, 1, 2, 3];
+const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
+const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
+const eliminateThese = shuffledWrong.slice(0, 2);
+eliminateThese.forEach(idx => {
+const btn = optionsEl.children[idx];
+if(btn){ btn.classList.add('eliminated'); btn.disabled = true; }
+});
+eliminatedOptions = eliminateThese;
+gameState.score -= 1;
+if(gameState.score < 0) gameState.score = 0;
+gameState.hintUsedInThisLevel = true;
+hintBtn.classList.add('disabled');
+saveGameState();
+if(scoreDisplay) scoreDisplay.innerText = gameState.score;
+playSound('hint');
+showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
+}
+
+async function handleOptionClick(selectedIdx, btnElement){
+if(!gameActive || answered) return;
+if(eliminatedOptions.includes(selectedIdx)) return;
+
+const isCorrect = (selectedIdx === currentQuestion.dogru);
+const questionId = currentQuestion.id;
+
+if(isCorrect){
+clearInterval(timerInterval);
+answered = true;
+btnElement.classList.add('correct');
+document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+
+if(!gameState.solvedQuestions.includes(questionId)){
+gameState.solvedQuestions.push(questionId);
+}
+
+if(firstAttempt && !gameState.earnedPointsForQuestion[questionId]){
+gameState.score += 1;
+gameState.earnedPointsForQuestion[questionId] = true;
+saveGameState();
+triggerConfetti();
+playSound('correct');
+checkAchievements('correct', questionId);
+} else if(!firstAttempt){
+showToast('✅ Doğru! (İkinci denemede)', 'info');
+playSound('correct');
+} else {
+showToast('✅ Doğru!', 'success');
+playSound('correct');
+}
+
+nextBtn.classList.remove('disabled');
+nextBtn.classList.add('active');
+if(scoreDisplay) scoreDisplay.innerText = gameState.score;
+} else {
+playSound('wrong');
+btnElement.classList.add('wrong');
+btnElement.classList.add('disabled');
+btnElement.disabled = true;
+
+if(firstAttempt){
+firstAttempt = false;
+showToast('❌ Yanlış! Bir hakkın daha var.', 'info');
+} else {
+clearInterval(timerInterval);
+gameActive = false;
+gameOverMessage.innerText = `İkinci hakkında da yanlış cevap verdin. Seviye ${gameState.currentLevel}'e geri dönüyorsun.`;
+gameOverModal.classList.add('active');
+document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+playSound('gameOver');
+}
+}
+}
+
+function onNext(){
+if(!nextBtn.classList.contains('active')) return;
+gameState.currentQuestionIndexInLevel++;
+if(gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length){
+const completedLevel = gameState.currentLevel;
+if(completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
+gameState.currentLevel = completedLevel + 1;
+gameState.currentQuestionIndexInLevel = 0;
+gameState.hintUsedInThisLevel = false;
+
+if(completedLevel % 5 === 0){
+const levelKey = `level${completedLevel}`;
+if(gameState.achievements[levelKey] === false){
+unlockAchievement(levelKey);
+}
+}
+
+saveGameState();
+loadLevelQuestions(gameState.currentLevel);
+if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
+renderLevelIndicators();
+
+let badgeMessage = '';
+if(completedLevel % 5 === 0 && gameState.achievements[`level${completedLevel}`]){
+const badgeName = ACHIEVEMENT_NAMES[`level${completedLevel}`];
+badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
+}
+
+showToast(`🎉 Tebrikler! ${completedLevel}. seviyeyi tamamladınız!${badgeMessage}${completedLevel % 5 === 0 ? 'Kendinizle gurur duymalısınız! 🏆' : ''}`, 'success');
+
+playSound('levelUp');
+showShareButtons(completedLevel);
+} else {
+loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
+saveGameState();
+}
+nextBtn.classList.remove('active');
+nextBtn.classList.add('disabled');
+}
+
+function restartLevelAfterGameOver(){
+gameState.currentQuestionIndexInLevel = 0;
+gameState.hintUsedInThisLevel = false;
+gameActive = true;
+gameOverModal.classList.remove('active');
+loadLevelQuestions(gameState.currentLevel);
+if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
+}
+
+function renderLevelIndicators(){
+const maxLevel = gameState.maxUnlockedLevel;
+let html = '';
+for(let i = 1; i <= maxLevel + 2; i++){
+if(i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
+else if(i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock"></i></div>`;
+else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock"></i></div>`;
+}
+levelIndicators.innerHTML = html;
+document.querySelectorAll('.level-badge.active').forEach(badge => {
+badge.addEventListener('click', () => {
+const lvl = parseInt(badge.dataset.level);
+if(lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel){
+gameState.currentLevel = lvl;
+gameState.currentQuestionIndexInLevel = 0;
+gameState.hintUsedInThisLevel = false;
+saveGameState();
+loadLevelQuestions(lvl);
+if(currentLevelDisplay) currentLevelDisplay.innerText = lvl;
+}
+});
+});
+}
+
+function checkAchievements(action, questionId){
+if(!gameState.achievements.firstCorrect && action === 'correct'){
+unlockAchievement('firstCorrect');
+}
+if(action === 'correct'){
+gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
+if(gameState.achievements.streak === 10 && !gameState.achievements.streak){
+unlockAchievement('streak');
+}
+} else {
+gameState.achievements.streak = 0;
+}
+saveGameState();
+}
+
+const ACHIEVEMENT_NAMES = {
+firstCorrect: '🌱 Yeni Fidan',
+streak: '🌿 Yaprak',
+quranMaster: '🍃 Dal',
+namazkar: '🌳 Genç Ağaç',
+peygamberSever: '📚 Bilge Yaprak',
+level5: '🌱 Acemi Bilge',
+level10: '🌿 Bilgelik Yolcusu',
+level15: '🍃 İlim Çırağı',
+level20: '🌳 Manevi Fidan',
+level25: '📚 Hakikat Arayıcısı',
+level30: '🕊️ Hikmet Taliplisi',
+level35: '✨ İrfan Dostu',
+level40: '🕌 Hakikat Yolcusu',
+level45: '🌟 Marifet Sahibi',
+level50: '👑 Manevi Alim'
+};
+
+function unlockAchievement(achievementKey){
+if(!gameState.achievements[achievementKey]){
+gameState.achievements[achievementKey] = true;
+const achievementName = ACHIEVEMENT_NAMES[achievementKey];
+gameState.recentAchievements.unshift(achievementName);
+if(gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
+saveGameState();
+showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
+triggerConfetti();
+}
+}
+
+function renderAchievements(){
+const a = gameState.achievements;
+let html = '<ul style="list-style:none; padding:0;">';
+
+html += `<li style="padding:12px; background:${a.firstCorrect ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-star" style="color:${a.firstCorrect ? '#ffc107' : '#6c757d'};"></i> 🌱 Yeni Fidan ${a.firstCorrect ? '✓' : '❌'}</li>`;
+html += `<li style="padding:12px; background:${(a.streak || 0) >= 10 ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-fire" style="color:${(a.streak || 0) >= 10 ? '#ff9800' : '#6c757d'};"></i> 🌿 Yaprak ${(a.streak || 0) >= 10 ? '✓' : '❌'}</li>`;
+html += `<li style="padding:12px; background:${a.quranMaster ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-book" style="color:${a.quranMaster ? '#28a745' : '#6c757d'};"></i> 🍃 Dal ${a.quranMaster ? '✓' : '❌'}</li>`;
+html += `<li style="padding:12px; background:${a.namazkar ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-mosque" style="color:${a.namazkar ? '#28a745' : '#6c757d'};"></i> 🌳 Genç Ağaç ${a.namazkar ? '✓' : '❌'}</li>`;
+html += `<li style="padding:12px; background:${a.peygamberSever ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-dove" style="color:${a.peygamberSever ? '#28a745' : '#6c757d'};"></i> 📚 Bilge Yaprak ${a.peygamberSever ? '✓' : '❌'}</li>`;
+
+const levelAchievements = [
+{key: 'level5', name: '🌱 Acemi Bilge'},
+{key: 'level10', name: '🌿 Bilgelik Yolcusu'},
+{key: 'level15', name: '🍃 İlim Çırağı'},
+{key: 'level20', name: '🌳 Manevi Fidan'},
+{key: 'level25', name: '📚 Hakikat Arayıcısı'},
+{key: 'level30', name: '🕊️ Hikmet Taliplisi'},
+{key: 'level35', name: '✨ İrfan Dostu'},
+{key: 'level40', name: '🕌 Hakikat Yolcusu'},
+{key: 'level45', name: '🌟 Marifet Sahibi'},
+{key: 'level50', name: '👑 Manevi Alim'}
+];
+
+levelAchievements.forEach(ach => {
+html += `<li style="padding:12px; background:${a[ach.key] ? '#d4edda' : '#f8f9fa'}; margin-bottom:8px; border-radius:40px;">
+<i class="fas fa-crown" style="color:${a[ach.key] ? '#ffc107' : '#6c757d'};"></i> ${ach.name} ${a[ach.key] ? '✓' : '❌'}</li>`;
+});
+
+html += '</ul>';
+achievementsList.innerHTML = html;
+}
+
+// ------------------------------------------------------------
+// SOSYAL MEDYA PAYLAŞIMI
+// ------------------------------------------------------------
+function showShareButtons(level){
+const text = `Manevi Bilgi Oyunu'nda Seviye ${level} tamamladım! Yarışmayı sen de dene 🌙 tr.ee/esahin`;
+const shareDiv = document.createElement('div');
+shareDiv.style = 'position:fixed; bottom:100px; right:20px; background:white; border-radius:40px; padding:15px; box-shadow:0 10px 0 #ffe0b5; z-index:10002; border:2px solid #ffe0b0;';
+shareDiv.innerHTML = `
+<p style="margin-bottom:10px;"><i class="fas fa-share-alt"></i> Paylaş:</p>
+<a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-whatsapp" style="color:#25D366; font-size:1.8rem;"></i></a>
+<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-twitter" style="color:#1DA1F2; font-size:1.8rem;"></i></a>
+<a href="https://t.me/share/url?url=tr.ee/esahin&text=${encodeURIComponent(text)}" target="_blank"><i class="fab fa-telegram" style="color:#0088cc; font-size:1.8rem;"></i></a>
+<button id="closeShare" style="margin-left:15px; background:none; border:none;"><i class="fas fa-times"></i></button>
+`;
+document.body.appendChild(shareDiv);
+document.getElementById('closeShare')?.addEventListener('click', () => shareDiv.remove());
+setTimeout(() => shareDiv.remove(), 10000);
+}
+
+// ------------------------------------------------------------
+// ADMIN PANELİ FONKSİYONLARI (kısaltıldı)
+// ------------------------------------------------------------
+async function clearLeaderboard(){
+if(!confirm('⚠️ Tüm liderlik kayıtlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+try{
+const q = query(collection(db, LEADERBOARD_COLLECTION));
+const snapshot = await getDocs(q);
+const batch = writeBatch(db);
+snapshot.docs.forEach(doc => batch.delete(doc.ref));
+await batch.commit();
+showToast('Liderlik tablosu tamamen temizlendi!', 'success');
+await loadLeaderboard();
+} catch(e){
+showToast('Temizleme başarısız: ' + e.message, 'error');
+}
+}
+
+async function resetAllUserData(){
+if(!confirm('⚠️ TÜM KULLANICI VERİLERİNİ SIFIRLA? Bu işlem:\n- LocalStorage\'daki oyun ilerlemenizi siler\n- Firestore\'daki tüm liderlik kayıtlarını siler\n- Oyun başlangıç seviyesine döner\n\nDevam etmek istediğinize emin misiniz?')) return;
+try{
+localStorage.removeItem(STORAGE_KEY);
+const q = query(collection(db, LEADERBOARD_COLLECTION));
+const snapshot = await getDocs(q);
+const batch = writeBatch(db);
+snapshot.docs.forEach(doc => batch.delete(doc.ref));
+await batch.commit();
+
+gameState = {
+maxUnlockedLevel: 1,
+currentLevel: 1,
+currentQuestionIndexInLevel: 0,
+score: 0,
+earnedPointsForQuestion: {},
+hintUsedInThisLevel: false,
+achievements: {
+firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+level5: false, level10: false, level15: false, level20: false, level25: false,
+level30: false, level35: false, level40: false, level45: false, level50: false
+},
+recentAchievements: [],
+solvedQuestions: [],
+username: '',
+avatar: AVATAR_LIST[0].icon,
+avatarImg: AVATAR_LIST[0].img,
+darkMode: false
+};
+saveGameState();
+
+await updateIntroUI();
+await loadLeaderboard();
+showToast('Tüm kullanıcı verileri sıfırlandı!', 'success');
+adminPanel.classList.remove('active');
+introOverlay.classList.remove('hidden');
+gameContainer.style.display = 'none';
+} catch(e){
+showToast('Sıfırlama başarısız: ' + e.message, 'error');
+}
+}
+
+// Toplu soru ekleme
+let lastAddedCount = 0;
+let lastSkippedCount = 0;
+let lastBulkTime = '';
+
+async function bulkAddQuestions(){
+// SweetAlert ile yükleme uyarısı göster
+Swal.fire({
+title: 'Yükleniyor, lütfen bekleyiniz...',
+text: 'Sorular Firestore\'a ekleniyor',
+allowOutsideClick: false,
+allowEscapeKey: false,
+allowEnterKey: false,
+showConfirmButton: false,
+willOpen: () => {
+Swal.showLoading();
+}
+});
+
+try{
+const existingQuestionsSnapshot = await getDocs(collection(db, QUESTIONS_COLLECTION));
+const existingQuestionsSet = new Set();
+existingQuestionsSnapshot.forEach(doc => {
+const data = doc.data();
+if(data.soru) existingQuestionsSet.add(data.soru);
+});
+
+let addedCount = 0;
+let skippedCount = 0;
+
+for(const q of SAMPLE_QUESTIONS){
+if(!existingQuestionsSet.has(q.soru)){
+await addDoc(collection(db, QUESTIONS_COLLECTION), q);
+addedCount++;
+} else {
+skippedCount++;
+}
+}
+
+lastAddedCount = addedCount;
+lastSkippedCount = skippedCount;
+lastBulkTime = new Date().toLocaleString('tr-TR');
+
+// Başarılı sonuç
+Swal.fire({
+icon: 'success',
+title: 'İşlem Tamamlandı!',
+text: `${addedCount} yeni soru eklendi, ${skippedCount} soru zaten mevcuttu.`,
+confirmButtonColor: '#7c3aed',
+background: '#fff9e6'
+});
+
+await loadAllQuestions();
+await loadAdminQuestions();
+await updateAdminStats();
+
+} catch(e){
+// Hata durumu
+Swal.fire({
+icon: 'error',
+title: 'Hata!',
+text: 'Toplu ekleme başarısız: ' + e.message,
+confirmButtonColor: '#7c3aed',
+background: '#fff9e6'
+});
+}
+}
+
+// Admin istatistiklerini güncelle
+async function updateAdminStats(){
+const totalQuestions = allQuestions.length;
+adminStats.innerHTML = `
+<p><span>📚 Toplam Soru:</span> <strong>${totalQuestions}</strong></p>
+<p><span>➕ Son Eklenen:</span> <strong>${lastAddedCount || 0}</strong></p>
+<p><span>⏭️ Atlanan (Tekrar):</span> <strong>${lastSkippedCount || 0}</strong></p>
+<p><span>🕒 Son İşlem:</span> <strong>${lastBulkTime || 'Henüz yapılmadı'}</strong></p>
+`;
+}
+
+async function loadAdminQuestions(){
+try{
+const q = query(collection(db, QUESTIONS_COLLECTION), orderBy('zorluk', 'asc'));
+const snapshot = await getDocs(q);
+let html = '';
+snapshot.forEach(doc => {
+const data = doc.data();
+const soruKisa = data.soru.length > 50 ? data.soru.substring(0, 50) + '…' : data.soru;
+html += `
+<div class="admin-question-item" data-id="${doc.id}">
+<div class="admin-question-header">
+<span class="admin-question-text">${soruKisa}</span>
+<div class="admin-question-actions">
+<button class="edit-question-btn" title="Düzenle"><i class="fas fa-edit" style="color:#7c3aed;"></i></button>
+<button class="delete-question-btn" title="Sil"><i class="fas fa-trash" style="color:#e53e3e;"></i></button>
+</div>
+</div>
+<div class="admin-question-meta">
+<span><i class="fas fa-tag"></i> ${data.bolum || 'Genel'}</span>
+<span><i class="fas fa-signal"></i> Zorluk: ${data.zorluk || 1}</span>
+</div>
+</div>
+`;
+});
+adminQuestionsList.innerHTML = html || '<p style="color: #6b7280; text-align: center;">Henüz soru yok.</p>';
+
+document.querySelectorAll('.edit-question-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+const questionItem = e.target.closest('.admin-question-item');
+const questionId = questionItem.dataset.id;
+editQuestion(questionId);
+});
+});
+
+document.querySelectorAll('.delete-question-btn').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+const questionItem = e.target.closest('.admin-question-item');
+const questionId = questionItem.dataset.id;
+if(confirm('Bu soruyu silmek istediğinize emin misiniz?')){
+await deleteQuestion(questionId);
+}
+});
+});
+} catch(e){
+adminQuestionsList.innerHTML = '<p style="color: red;">Sorular yüklenemedi.</p>';
+}
+}
+
+async function editQuestion(questionId){
+try{
+const docRef = doc(db, QUESTIONS_COLLECTION, questionId);
+const docSnap = await getDoc(docRef);
+if(docSnap.exists()){
+const data = docSnap.data();
+adminSoru.value = data.soru || '';
+adminSecenek1.value = data.secenekler?.[0] || '';
+adminSecenek2.value = data.secenekler?.[1] || '';
+adminSecenek3.value = data.secenekler?.[2] || '';
+adminSecenek4.value = data.secenekler?.[3] || '';
+adminDogru.value = data.dogru || 0;
+adminKategori.value = data.bolum || 'Kur\'an';
+adminZorluk.value = data.zorluk || 1;
+editingQuestionId = questionId;
+formTitle.innerHTML = '<i class="fas fa-edit"></i> Soruyu Düzenle';
+saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Soruyu Güncelle';
+cancelEditBtn.style.display = 'block';
+}
+} catch(e){
+showToast('Soru yüklenirken hata oluştu.', 'error');
+}
+}
+
+async function deleteQuestion(questionId){
+try{
+await deleteDoc(doc(db, QUESTIONS_COLLECTION, questionId));
+showToast('Soru silindi!', 'success');
+await loadAdminQuestions();
+await loadAllQuestions();
+await updateAdminStats();
+if(editingQuestionId === questionId) resetFormToAddMode();
+} catch(e){
+showToast('Soru silinemedi.', 'error');
+}
+}
+
+function resetFormToAddMode(){
+adminSoru.value = '';
+adminSecenek1.value = '';
+adminSecenek2.value = '';
+adminSecenek3.value = '';
+adminSecenek4.value = '';
+adminDogru.value = 0;
+adminKategori.value = 'Kur\'an';
+adminZorluk.value = 1;
+editingQuestionId = null;
+formTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Yeni Soru Ekle';
+saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Soruyu Kaydet';
+cancelEditBtn.style.display = 'none';
+}
+
+async function saveQuestion(){
+const soru = adminSoru.value.trim();
+const sec1 = adminSecenek1.value.trim();
+const sec2 = adminSecenek2.value.trim();
+const sec3 = adminSecenek3.value.trim();
+const sec4 = adminSecenek4.value.trim();
+const dogru = parseInt(adminDogru.value);
+const kategori = adminKategori.value;
+const zorluk = parseInt(adminZorluk.value);
+if(!soru || !sec1 || !sec2 || !sec3 || !sec4){
+showToast('Lütfen tüm alanları doldurun.', 'error');
+return;
+}
+const questionData = {bolum: kategori, soru, secenekler: [sec1, sec2, sec3, sec4], dogru, zorluk };
+try{
+if(editingQuestionId){
+await updateDoc(doc(db, QUESTIONS_COLLECTION, editingQuestionId), questionData);
+showToast('Soru güncellendi!', 'success');
+} else {
+await addDoc(collection(db, QUESTIONS_COLLECTION), questionData);
+showToast('Soru eklendi!', 'success');
+}
+resetFormToAddMode();
+await loadAdminQuestions();
+await loadAllQuestions();
+await updateAdminStats();
+} catch(e){
+showToast('İşlem başarısız.', 'error');
+}
+}
+
+// YENİ: Admin trigger - 5 kere tıklama ile giriş
+let adminClickCount = 0;
+let adminClickTimer = null;
+
+function initAdminTrigger(){
+if(!introAvatar) return;
+
+introAvatar.addEventListener('click', async () => {
+adminClickCount++;
+    
+    // İlk tıklamada timer başlat
+    if(adminClickCount === 1){
+        adminClickTimer = setTimeout(() => {
+            adminClickCount = 0;
+        }, 3000);
+    }
+    
+    // 5 kere tıklandığında
+    if(adminClickCount === 5){
+        clearTimeout(adminClickTimer);
+        adminClickCount = 0;
+        
+        // SweetAlert ile şifre sorma
+        const {value: password} = await Swal.fire({
+            title: 'Admin Girişi',
+            text: 'admin123:',
+            input: 'password',
+            inputPlaceholder: 'Şifre',
+            showCancelButton: true,
+            confirmButtonText: 'Giriş Yap',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#7c3aed',
+            background: '#fff9e6',
+            backdrop: true,
+            allowOutsideClick: false,
+            customClass: {
+                popup: 'rounded-3xl shadow-2xl border-4 border-[#ffe8d9]'
             }
-        }
-
-        function playSound(soundName) {
-            if (!soundEnabled) return;
-            if (sounds[soundName]) sounds[soundName].play();
-            else playBeep(soundName);
-        }
-
-        function unlockAudio() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') {
-                const resume = () => { audioCtx.resume(); document.removeEventListener('click', resume); };
-                document.addEventListener('click', resume, { once: true });
-            }
-        }
-
-        // Oyun Durumu
-        let gameState = {
-            maxUnlockedLevel: 1,
-            currentLevel: 1,
-            currentQuestionIndexInLevel: 0,
-            score: 0,
-            earnedPointsForQuestion: {},
-            hintUsedInThisLevel: false,
-            achievements: {
-                firstCorrect: false,
-                streak: 0,
-                quranMaster: false,
-                namazkar: false,
-                peygamberSever: false,
-                level5: false,
-                level10: false,
-                level15: false,
-                level20: false,
-                level25: false,
-                level30: false,
-                level35: false,
-                level40: false,
-                level45: false,
-                level50: false
-            },
-            achievementsOrder: [], // Kazanılma sırası
-            recentAchievements: [],
-            solvedQuestions: [],
-            username: '',
-            avatar: AVATAR_LIST[0].icon,
-            avatarImg: AVATAR_LIST[0].img,
-            darkMode: false
-        };
-
-        function loadGameState() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    gameState = { ...gameState, ...parsed };
-                    if (!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
-                    if (!gameState.achievements) {
-                        gameState.achievements = {
-                            firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
-                            level5: false, level10: false, level15: false, level20: false, level25: false,
-                            level30: false, level35: false, level40: false, level45: false, level50: false
-                        };
-                    }
-                    if (!gameState.achievementsOrder) gameState.achievementsOrder = [];
-                    if (!gameState.recentAchievements) gameState.recentAchievements = [];
-                    if (!gameState.solvedQuestions) gameState.solvedQuestions = [];
-                    if (isNaN(gameState.score)) gameState.score = 0;
-                } catch (e) {}
-            }
-        }
-
-        function saveGameState() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-        }
-
-        // DOM Elementleri
-        const introOverlay = document.getElementById('introOverlay');
-        const introAvatar = document.getElementById('introAvatar');
-        const introUserName = document.getElementById('introUserName');
-        const introLevel = document.getElementById('introLevel');
-        const introScore = document.getElementById('introScore');
-        const introLeaderboardList = document.getElementById('introLeaderboardList');
-        const introAchievementsList = document.getElementById('introAchievementsList');
-        const introStartBtn = document.getElementById('introStartGameBtn');
-        const introSettingsBtn = document.getElementById('introSettingsBtn');
-        const settingsModalOverlay = document.getElementById('settingsModalOverlay');
-        const settingsUsername = document.getElementById('settingsUsername');
-        const settingsAvatarSelector = document.getElementById('settingsAvatarSelector');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-
-        const gameContainer = document.getElementById('gameContainer');
-        const gameAvatar = document.getElementById('gameAvatar');
-        const gameUserName = document.getElementById('gameUserName');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const currentLevelDisplay = document.getElementById('currentLevelDisplay');
-        const levelIndicators = document.getElementById('levelIndicators');
-        const questionEl = document.getElementById('questionText');
-        const optionsEl = document.getElementById('optionsContainer');
-        const nextBtn = document.getElementById('nextButton');
-        const hintBtn = document.getElementById('hintButton');
-        const timerEl = document.getElementById('timerSeconds');
-        const timerBox = document.getElementById('timer');
-        const gameOverModal = document.getElementById('gameOverModal');
-        const gameOverMessage = document.getElementById('gameOverMessage');
-        const restartGameBtn = document.getElementById('restartGameBtn');
-        const exitGameBtn = document.getElementById('exitGameBtn');
-
-        const leaderboardBtn = document.getElementById('leaderboardBtn');
-        const leaderboardPanel = document.getElementById('leaderboardPanel');
-        const leaderboardList = document.getElementById('leaderboardList');
-        const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
-        const achievementsBtn = document.getElementById('achievementsBtn');
-        const achievementsPanel = document.getElementById('achievementsPanel');
-        const achievementsList = document.getElementById('achievementsList');
-        const closeAchievementsBtn = document.getElementById('closeAchievementsBtn');
-
-        const adminPanel = document.getElementById('adminPanel');
-        const closeAdminBtn = document.getElementById('closeAdminBtn');
-        const adminQuestionsList = document.getElementById('adminQuestionsList');
-        const adminStats = document.getElementById('adminStats');
-        const formTitle = document.getElementById('formTitle');
-        const adminSoru = document.getElementById('adminSoru');
-        const adminSecenek1 = document.getElementById('adminSecenek1');
-        const adminSecenek2 = document.getElementById('adminSecenek2');
-        const adminSecenek3 = document.getElementById('adminSecenek3');
-        const adminSecenek4 = document.getElementById('adminSecenek4');
-        const adminDogru = document.getElementById('adminDogru');
-        const adminKategori = document.getElementById('adminKategori');
-        const adminZorluk = document.getElementById('adminZorluk');
-        const saveQuestionBtn = document.getElementById('saveQuestionBtn');
-        const cancelEditBtn = document.getElementById('cancelEditBtn');
-        const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
-        const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn');
-        const bulkAddQuestionsBtn = document.getElementById('bulkAddQuestionsBtn');
-        const downloadQuestionsBtn = document.getElementById('downloadQuestionsBtn');
-        const deleteAllQuestionsBtn = document.getElementById('deleteAllQuestionsBtn');
-        const fixNaNBtn = document.getElementById('fixNaNBtn');
-
-        const soundToggleBtn = document.getElementById('soundToggleBtn');
-        const mascot = document.getElementById('mascot');
-        const speechBubble = document.getElementById('speechBubble');
-        const settingsBtn = document.getElementById('settingsBtn');
-
-        // Oyun Değişkenleri
-        let editingQuestionId = null;
-        let allQuestions = [];
-        let currentLevelQuestions = [];
-        let currentQuestion = null;
-        let answered = false;
-        let firstAttempt = true;
-        let gameActive = true;
-        let timerInterval = null;
-        let timeLeft = 60;
-        let eliminatedOptions = [];
-
-        // Örnek Soruları Yükle
-        async function seedQuestionsIfNeeded() {
-            try {
-                const q = query(collection(db, QUESTIONS_COLLECTION), limit(1));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) {
-                    for (const q of SAMPLE_QUESTIONS) {
-                        await addDoc(collection(db, QUESTIONS_COLLECTION), q);
-                    }
-                    console.log('Örnek sorular eklendi.');
-                }
-            } catch (e) {
-                console.error('Örnek sorular eklenirken hata:', e);
-            }
-        }
-
-        // Liderlik Tablosu
-        async function saveScoreToLeaderboard() {
-            if (!gameState.username || gameState.username === 'Misafir') return;
-            try {
-                const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", gameState.username.trim()));
-                const snapshot = await getDocs(q);
-
-                let maxScore = 0;
-                const docsToDelete = [];
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const score = Number(data.score) || 0;
-                    if (score > maxScore) maxScore = score;
-                    docsToDelete.push(doc.ref);
-                });
-
-                if (gameState.score > maxScore) {
-                    if (docsToDelete.length > 0) {
-                        const batch = writeBatch(db);
-                        docsToDelete.forEach(ref => batch.delete(ref));
-                        await batch.commit();
-                    }
-                    await addDoc(collection(db, LEADERBOARD_COLLECTION), {
-                        username: gameState.username.trim(),
-                        score: Number(gameState.score) || 0,
-                        level: Number(gameState.currentLevel) || 1,
-                        timestamp: new Date()
-                    });
-                } else if (maxScore === 0 && gameState.score > 0) {
-                    await addDoc(collection(db, LEADERBOARD_COLLECTION), {
-                        username: gameState.username.trim(),
-                        score: Number(gameState.score) || 0,
-                        level: Number(gameState.currentLevel) || 1,
-                        timestamp: new Date()
-                    });
-                }
-            } catch (e) {
-                console.error("Liderlik kaydedilemedi:", e);
-            }
-        }
-
-        async function loadLeaderboard() {
-            try {
-                const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
-                const snapshot = await getDocs(q);
-                let html = '<ol style="list-style:none; padding:0;">';
-                snapshot.forEach((doc, idx) => {
-                    const data = doc.data();
-                    let scoreVal = Number(data.score) || 0;
-                    const username = data.username?.trim() || 'İsimsiz';
-                    let levelVal = Number(data.level) || 1;
-                    const rank = idx + 1;
-                    html += `<li style="display:flex; align-items:center; padding:10px; background:#fef9e0; margin-bottom:6px; border-radius:30px; font-size:0.85rem;">
-                        <span style="font-weight:700; margin-right:10px; width:25px;">#${rank}</span>
-                        <i class="fas fa-user-circle" style="margin-right:8px;"></i>
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; flex:1;">${username}</span>
-                        <span style="background:#ffd966; padding:4px 12px; border-radius:20px; font-weight:600;">${scoreVal} p</span>
-                    </li>`;
-                });
-                html += '</ol>';
-                leaderboardList.innerHTML = html || '<p style="text-align:center; color:#6b7280;">Henüz kayıt yok</p>';
-            } catch (e) {
-                leaderboardList.innerHTML = '<p style="text-align:center; color:#6b7280;">Liderlik yüklenemedi</p>';
-            }
-        }
-
-        async function loadLeaderboardPreview() {
-            try {
-                const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(5));
-                const snapshot = await getDocs(q);
-                let html = '<ul style="list-style:none; padding:0;">';
-                snapshot.forEach((doc, idx) => {
-                    const data = doc.data();
-                    let scoreVal = Number(data.score) || 0;
-                    const username = data.username?.trim() || 'İsimsiz';
-                    const rank = idx + 1;
-                    html += `<li style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:0.8rem;">
-                        <span style="font-weight:700; min-width:20px;">${rank}.</span>
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex:1;">${username}</span>
-                        <span style="background:#ffe0b0; padding:2px 10px; border-radius:20px; font-weight:600;">${scoreVal}</span>
-                    </li>`;
-                });
-                html += '</ul>';
-                introLeaderboardList.innerHTML = html || '<p style="color: #6b7280; font-size:0.8rem;">Henüz kayıt yok</p>';
-            } catch (e) {
-                introLeaderboardList.innerHTML = '<p style="color: #6b7280; font-size:0.8rem;">Liderlik alınamadı</p>';
-            }
-        }
-
-        // Yardımcı Fonksiyonlar
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast-message ${type === 'success' ? 'toast-success' : 'toast-info'}`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
-        }
-
-        function triggerConfetti() {
-            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-        }
-
-        function initAvatarSelector() {
-            settingsAvatarSelector.innerHTML = '';
-            AVATAR_LIST.forEach((av, idx) => {
-                const div = document.createElement('div');
-                div.className = 'avatar-option' + (av.icon === gameState.avatar ? ' selected' : '');
-                div.innerHTML = av.icon;
-                div.dataset.avatarIcon = av.icon;
-                div.dataset.avatarImg = av.img;
-                div.dataset.avatarName = av.name;
-                div.addEventListener('click', function() {
-                    document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => el.classList.remove('selected'));
-                    this.classList.add('selected');
-                });
-                settingsAvatarSelector.appendChild(div);
-            });
-        }
-
-        async function updateIntroUI() {
-            introAvatar.innerText = gameState.avatar;
-            introUserName.innerText = gameState.username || 'Misafir';
-            introLevel.innerText = gameState.currentLevel;
-            introScore.innerText = gameState.score;
-            await loadLeaderboardPreview();
-            updateAchievementsPreview();
-        }
-
-        function updateAchievementsPreview() {
-            let html = '<ul style="list-style:none; padding:0;">';
-            if (gameState.recentAchievements && gameState.recentAchievements.length > 0) {
-                gameState.recentAchievements.slice(0, 3).forEach(b => {
-                    html += `<li style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size:0.8rem; margin-bottom:4px;"><i class="fas fa-medal" style="color:#ffc107;"></i> ${b}</li>`;
-                });
-            } else {
-                html += '<li style="color: #6b7280; font-size:0.8rem;">Henüz başarım yok</li>';
-            }
-            html += '</ul>';
-            introAchievementsList.innerHTML = html;
-        }
-
-        function updateGameHeader() {
-            gameAvatar.innerText = gameState.avatar;
-            gameUserName.innerText = gameState.username;
-            if (scoreDisplay) scoreDisplay.innerText = gameState.score;
-            if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
-        }
-
-        function saveSettings() {
-            const newName = settingsUsername.value.trim() || 'Misafir';
-            const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
-            if (selectedAvatar) {
-                gameState.avatar = selectedAvatar.dataset.avatarIcon;
-                gameState.avatarImg = selectedAvatar.dataset.avatarImg;
-            }
-            gameState.username = newName;
-            saveGameState();
-            updateIntroUI();
-            updateGameHeader();
-            settingsModalOverlay.classList.remove('active');
-            showToast('Profil güncellendi!', 'success');
-        }
-
-        function startGameFromIntro() {
-            if (!gameState.username) {
-                gameState.username = 'Misafir';
-                gameState.avatar = AVATAR_LIST[0].icon;
-                saveGameState();
-            }
-            updateGameHeader();
-            introOverlay.classList.add('hidden');
-            gameContainer.style.display = 'block';
-            loadLevelQuestions(gameState.currentLevel);
-            renderLevelIndicators();
-            unlockAudio();
-
-            if (gameState.username.toLowerCase() === 'ilknur') {
-                Swal.fire({
-                    title: '❤️ Özel Mesaj ❤️',
-                    text: 'Ercan seni seviyor!',
-                    icon: 'success',
-                    confirmButtonText: 'Ben de seni seviyorum',
-                    confirmButtonColor: '#ff6b6b',
-                    background: '#fff5f5',
-                    timer: 5000,
-                    timerProgressBar: true
-                });
-            }
-        }
-
-        function exitToIntro() {
-            gameContainer.style.display = 'none';
-            introOverlay.classList.remove('hidden');
-            clearInterval(timerInterval);
-            updateIntroUI();
-        }
-
-        // Oyun Fonksiyonları
-        async function loadAllQuestions() {
-            try {
-                const q = query(collection(db, QUESTIONS_COLLECTION));
-                const snapshot = await getDocs(q);
-                allQuestions = [];
-                snapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
-                if (allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
-            } catch (e) {
-                allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({ id: `sample-${idx}`, ...q }));
-            }
-        }
-
-        function getQuestionCountForLevel(level) { return level * 2; }
-
-        function loadLevelQuestions(level) {
-            const countNeeded = getQuestionCountForLevel(level);
-            let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
-            if (unsolved.length < countNeeded) {
-                gameState.solvedQuestions = [];
-                unsolved = [...allQuestions];
-                showToast('🔄 Tüm soruları çözdün! Havuz yenilendi.', 'info');
-            }
-            const shuffled = [...unsolved].sort(() => Math.random() - 0.5);
-            currentLevelQuestions = shuffled.slice(0, countNeeded);
-            gameState.currentQuestionIndexInLevel = Math.min(gameState.currentQuestionIndexInLevel, currentLevelQuestions.length - 1);
-            if (gameState.currentQuestionIndexInLevel < 0) gameState.currentQuestionIndexInLevel = 0;
-            loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-            gameState.hintUsedInThisLevel = false;
-            hintBtn.classList.remove('disabled');
-        }
-
-        function loadQuestionAtIndex(index) {
-            if (!currentLevelQuestions.length) return;
-            currentQuestion = currentLevelQuestions[index];
-            questionEl.innerText = currentQuestion.soru;
-            optionsEl.innerHTML = '';
-            currentQuestion.secenekler.forEach((sec, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerHTML = `<span style="font-weight:700; margin-right:6px; flex-shrink:0;">${String.fromCharCode(65 + idx)})</span> <span>${sec}</span>`;
-                btn.dataset.optionIndex = idx;
-                btn.addEventListener('click', () => handleOptionClick(idx, btn));
-                optionsEl.appendChild(btn);
-            });
-            answered = false;
-            firstAttempt = true;
-            eliminatedOptions = [];
-            nextBtn.classList.add('disabled');
-            nextBtn.classList.remove('active');
-            startTimer(60);
-        }
-
-        function startTimer(seconds) {
-            if (timerInterval) clearInterval(timerInterval);
-            timeLeft = seconds;
-            timerEl.innerText = timeLeft;
-            timerBox.style.display = 'flex';
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    if (!answered) {
-                        if (firstAttempt) {
-                            playSound('wrong');
-                            showToast('⏳ Süre doldu! Bir hakkın kaldı.', 'info');
-                            firstAttempt = false;
-                        } else {
-                            gameActive = false;
-                            gameOverMessage.innerText = 'Süre doldu ve ikinci hakkını kullanamadın.';
-                            gameOverModal.classList.add('active');
-                            document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
-                            playSound('gameOver');
-                        }
-                    }
-                }
-            }, 1000);
-        }
-
-        async function useHint() {
-            if (gameState.hintUsedInThisLevel) { showToast('Bu seviyede ipucu hakkın bitti!', 'info'); return; }
-            if (gameState.score < 1) { showToast('İpucu için 1 puana ihtiyacın var!', 'info'); return; }
-            if (answered) { showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info'); return; }
-            const correctIndex = currentQuestion.dogru;
-            const allIndexes = [0, 1, 2, 3];
-            const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
-            const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
-            const eliminateThese = shuffledWrong.slice(0, 2);
-            eliminateThese.forEach(idx => {
-                const btn = optionsEl.children[idx];
-                if (btn) { btn.classList.add('eliminated'); btn.disabled = true; }
-            });
-            eliminatedOptions = eliminateThese;
-            gameState.score -= 1;
-            if (gameState.score < 0) gameState.score = 0;
-            gameState.hintUsedInThisLevel = true;
-            hintBtn.classList.add('disabled');
-            saveGameState();
-            if (scoreDisplay) scoreDisplay.innerText = gameState.score;
-            playSound('hint');
-            showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
-        }
-
-        async function handleOptionClick(selectedIdx, btnElement) {
-            if (!gameActive || answered) return;
-            if (eliminatedOptions.includes(selectedIdx)) return;
-
-            const isCorrect = (selectedIdx === currentQuestion.dogru);
-            const questionId = currentQuestion.id;
-
-            if (isCorrect) {
-                clearInterval(timerInterval);
-                answered = true;
-                btnElement.classList.add('correct');
-                document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
-
-                if (!gameState.solvedQuestions.includes(questionId)) {
-                    gameState.solvedQuestions.push(questionId);
-                }
-
-                if (firstAttempt && !gameState.earnedPointsForQuestion[questionId]) {
-                    gameState.score += 1;
-                    gameState.earnedPointsForQuestion[questionId] = true;
-                    saveGameState();
-                    triggerConfetti();
-                    playSound('correct');
-                    checkAchievements('correct', questionId);
-                } else if (!firstAttempt) {
-                    showToast('✅ Doğru! (İkinci denemede)', 'info');
-                    playSound('correct');
-                } else {
-                    showToast('✅ Doğru!', 'success');
-                    playSound('correct');
-                }
-
-                nextBtn.classList.remove('disabled');
-                nextBtn.classList.add('active');
-                if (scoreDisplay) scoreDisplay.innerText = gameState.score;
-            } else {
-                playSound('wrong');
-                btnElement.classList.add('wrong');
-                btnElement.classList.add('disabled');
-                btnElement.disabled = true;
-
-                if (firstAttempt) {
-                    firstAttempt = false;
-                    showToast('❌ Yanlış! Bir hakkın daha var.', 'info');
-                } else {
-                    clearInterval(timerInterval);
-                    gameActive = false;
-                    gameOverMessage.innerText = `İkinci hakkında da yanlış cevap verdin. Seviye ${gameState.currentLevel}'e geri dönüyorsun.`;
-                    gameOverModal.classList.add('active');
-                    document.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
-                    playSound('gameOver');
-                }
-            }
-        }
-
-        function onNext() {
-            if (!nextBtn.classList.contains('active')) return;
-            gameState.currentQuestionIndexInLevel++;
-            if (gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length) {
-                const completedLevel = gameState.currentLevel;
-                if (completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
-                gameState.currentLevel = completedLevel + 1;
-                gameState.currentQuestionIndexInLevel = 0;
-                gameState.hintUsedInThisLevel = false;
-
-                if (completedLevel % 5 === 0) {
-                    const levelKey = `level${completedLevel}`;
-                    if (gameState.achievements[levelKey] === false) {
-                        unlockAchievement(levelKey);
-                    }
-                }
-
-                saveGameState();
-                loadLevelQuestions(gameState.currentLevel);
-                if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
-                renderLevelIndicators();
-
-                let badgeMessage = '';
-                if (completedLevel % 5 === 0 && gameState.achievements[`level${completedLevel}`]) {
-                    const badgeName = ACHIEVEMENT_NAMES[`level${completedLevel}`];
-                    badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
-                }
-
-                showToast(`🎉 Tebrikler! ${completedLevel}. seviyeyi tamamladınız!${badgeMessage}${completedLevel % 5 === 0 ? ' Kendinizle gurur duymalısınız! 🏆' : ''}`, 'success');
-                playSound('levelUp');
-                showShareButtons(completedLevel);
-            } else {
-                loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-                saveGameState();
-            }
-            nextBtn.classList.remove('active');
-            nextBtn.classList.add('disabled');
-        }
-
-        function restartLevelAfterGameOver() {
-            gameState.currentQuestionIndexInLevel = 0;
-            gameState.hintUsedInThisLevel = false;
-            gameActive = true;
-            gameOverModal.classList.remove('active');
-            loadLevelQuestions(gameState.currentLevel);
-            if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
-        }
-
-        function renderLevelIndicators() {
-            const maxLevel = gameState.maxUnlockedLevel;
-            let html = '';
-            for (let i = 1; i <= maxLevel + 2; i++) {
-                if (i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
-                else if (i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock" style="font-size:0.8rem;"></i></div>`;
-                else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock" style="font-size:0.8rem;"></i></div>`;
-            }
-            levelIndicators.innerHTML = html;
-            document.querySelectorAll('.level-badge.active').forEach(badge => {
-                badge.addEventListener('click', () => {
-                    const lvl = parseInt(badge.dataset.level);
-                    if (lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel) {
-                        gameState.currentLevel = lvl;
-                        gameState.currentQuestionIndexInLevel = 0;
-                        gameState.hintUsedInThisLevel = false;
-                        saveGameState();
-                        loadLevelQuestions(lvl);
-                        if (currentLevelDisplay) currentLevelDisplay.innerText = lvl;
-                    }
-                });
-            });
-        }
-
-        function checkAchievements(action, questionId) {
-            if (!gameState.achievements.firstCorrect && action === 'correct') {
-                unlockAchievement('firstCorrect');
-            }
-            if (action === 'correct') {
-                gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
-                if (gameState.achievements.streak === 10 && !gameState.achievements.streak) {
-                    unlockAchievement('streak');
-                }
-            } else {
-                gameState.achievements.streak = 0;
-            }
-            saveGameState();
-        }
-
-        const ACHIEVEMENT_NAMES = {
-            firstCorrect: '🌱 Yeni Fidan',
-            streak: '🌿 Yaprak',
-            quranMaster: '🍃 Dal',
-            namazkar: '🌳 Genç Ağaç',
-            peygamberSever: '📚 Bilge Yaprak',
-            level5: '🌱 Acemi Bilge',
-            level10: '🌿 Bilgelik Yolcusu',
-            level15: '🍃 İlim Çırağı',
-            level20: '🌳 Manevi Fidan',
-            level25: '📚 Hakikat Arayıcısı',
-            level30: '🕊️ Hikmet Taliplisi',
-            level35: '✨ İrfan Dostu',
-            level40: '🕌 Hakikat Yolcusu',
-            level45: '🌟 Marifet Sahibi',
-            level50: '👑 Manevi Alim'
-        };
-
-        function unlockAchievement(achievementKey) {
-            if (!gameState.achievements[achievementKey]) {
-                gameState.achievements[achievementKey] = true;
-                const achievementName = ACHIEVEMENT_NAMES[achievementKey];
-                
-                // Kazanılma sırasına ekle
-                if (!gameState.achievementsOrder.includes(achievementKey)) {
-                    gameState.achievementsOrder.unshift(achievementKey);
-                }
-                
-                gameState.recentAchievements.unshift(achievementName);
-                if (gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
-                saveGameState();
-                showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
-                triggerConfetti();
-            }
-        }
-
-        function renderAchievements() {
-            // Kazanılan ve kazanılmayanları ayır
-            const earned = [];
-            const notEarned = [];
-            
-            // Önce kazanılma sırasına göre sırala
-            gameState.achievementsOrder.forEach(key => {
-                if (gameState.achievements[key]) {
-                    earned.push({ key, name: ACHIEVEMENT_NAMES[key] });
-                }
-            });
-            
-            // Sonra diğerleri
-            Object.keys(ACHIEVEMENT_NAMES).forEach(key => {
-                if (!gameState.achievementsOrder.includes(key)) {
-                    if (gameState.achievements[key]) {
-                        earned.push({ key, name: ACHIEVEMENT_NAMES[key] });
-                    } else {
-                        notEarned.push({ key, name: ACHIEVEMENT_NAMES[key] });
-                    }
-                }
-            });
-            
-            let html = '<ul style="list-style:none; padding:0;">';
-            
-            // Kazanılanlar
-            earned.forEach(ach => {
-                html += `<li style="padding:10px; background:#d4edda; margin-bottom:6px; border-radius:30px; font-size:0.85rem;">
-                    <i class="fas fa-check-circle" style="color:#28a745; margin-right:8px;"></i> ${ach.name}
-                </li>`;
-            });
-            
-            // Kazanılmayanlar
-            notEarned.forEach(ach => {
-                html += `<li style="padding:10px; background:#f8f9fa; margin-bottom:6px; border-radius:30px; font-size:0.85rem; opacity:0.7;">
-                    <i class="fas fa-lock" style="color:#6c757d; margin-right:8px;"></i> ${ach.name}
-                </li>`;
-            });
-            
-            html += '</ul>';
-            achievementsList.innerHTML = html;
-        }
-
-        function showShareButtons(level) {
-            const text = `Manevi Bilgi Oyunu'nda Seviye ${level} tamamladım! Yarışmayı sen de dene 🌙`;
-            const shareDiv = document.createElement('div');
-            shareDiv.style = 'position:fixed; bottom:80px; right:10px; background:white; border-radius:30px; padding:12px; box-shadow:0 8px 0 #ffe0b5; z-index:10002; border:2px solid #ffe0b0;';
-            shareDiv.innerHTML = `
-                <p style="margin-bottom:8px; font-size:0.85rem;"><i class="fas fa-share-alt"></i> Paylaş:</p>
-                <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:10px;"><i class="fab fa-whatsapp" style="color:#25D366; font-size:1.5rem;"></i></a>
-                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:10px;"><i class="fab fa-twitter" style="color:#1DA1F2; font-size:1.5rem;"></i></a>
-                <button id="closeShare" style="margin-left:5px; background:none; border:none; cursor:pointer;"><i class="fas fa-times"></i></button>
-            `;
-            document.body.appendChild(shareDiv);
-            document.getElementById('closeShare')?.addEventListener('click', () => shareDiv.remove());
-            setTimeout(() => shareDiv.remove(), 10000);
-        }
-
-        // Admin Paneli Fonksiyonları
-        async function clearLeaderboard() {
-            if (!confirm('⚠️ Tüm liderlik kayıtlarını silmek istediğinize emin misiniz?')) return;
-            try {
-                const q = query(collection(db, LEADERBOARD_COLLECTION));
-                const snapshot = await getDocs(q);
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                showToast('Liderlik tablosu temizlendi!', 'success');
-                await loadLeaderboardPreview();
-                await loadLeaderboard();
-            } catch (e) {
-                showToast('Temizleme başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function resetAllUserData() {
-            if (!confirm('⚠️ TÜM KULLANICI VERİLERİNİ SIFIRLA? Bu işlem geri alınamaz!')) return;
-            try {
-                localStorage.removeItem(STORAGE_KEY);
-                const q = query(collection(db, LEADERBOARD_COLLECTION));
-                const snapshot = await getDocs(q);
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-
-                gameState = {
-                    maxUnlockedLevel: 1,
-                    currentLevel: 1,
-                    currentQuestionIndexInLevel: 0,
-                    score: 0,
-                    earnedPointsForQuestion: {},
-                    hintUsedInThisLevel: false,
-                    achievements: {
-                        firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
-                        level5: false, level10: false, level15: false, level20: false, level25: false,
-                        level30: false, level35: false, level40: false, level45: false, level50: false
-                    },
-                    achievementsOrder: [],
-                    recentAchievements: [],
-                    solvedQuestions: [],
-                    username: '',
-                    avatar: AVATAR_LIST[0].icon,
-                    avatarImg: AVATAR_LIST[0].img,
-                    darkMode: false
-                };
-                saveGameState();
-                await updateIntroUI();
-                await loadLeaderboard();
-                showToast('Tüm kullanıcı verileri sıfırlandı!', 'success');
-                adminPanel.classList.remove('active');
-                introOverlay.classList.remove('hidden');
-                gameContainer.style.display = 'none';
-            } catch (e) {
-                showToast('Sıfırlama başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function fixNaNData() {
-            if (!confirm('⚠️ NaN düzeltme işlemi tüm liderlik ve kullanıcı verilerini sıfırlayacak. Emin misiniz?')) return;
-            try {
-                // LocalStorage temizle
-                localStorage.removeItem(STORAGE_KEY);
-                
-                // Firestore liderlik temizle
-                const q = query(collection(db, LEADERBOARD_COLLECTION));
-                const snapshot = await getDocs(q);
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-
-                // Oyun durumunu sıfırla
-                gameState = {
-                    maxUnlockedLevel: 1,
-                    currentLevel: 1,
-                    currentQuestionIndexInLevel: 0,
-                    score: 0,
-                    earnedPointsForQuestion: {},
-                    hintUsedInThisLevel: false,
-                    achievements: {
-                        firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
-                        level5: false, level10: false, level15: false, level20: false, level25: false,
-                        level30: false, level35: false, level40: false, level45: false, level50: false
-                    },
-                    achievementsOrder: [],
-                    recentAchievements: [],
-                    solvedQuestions: [],
-                    username: '',
-                    avatar: AVATAR_LIST[0].icon,
-                    avatarImg: AVATAR_LIST[0].img,
-                    darkMode: false
-                };
-                saveGameState();
-                
-                await updateIntroUI();
-                await loadLeaderboard();
-                showToast('NaN düzeltildi! Tüm veriler temizlendi.', 'success');
-            } catch (e) {
-                showToast('Düzeltme başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function bulkAddQuestions() {
-            if (!confirm('⚠️ Bu işlem, SAMPLE_QUESTIONS dizisindeki soruları Firestore\'a ekleyecek. Devam etmek istiyor musunuz?')) return;
-            try {
-                const existingQuestionsSnapshot = await getDocs(collection(db, QUESTIONS_COLLECTION));
-                const existingQuestionsSet = new Set();
-                existingQuestionsSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.soru) existingQuestionsSet.add(data.soru);
-                });
-
-                let addedCount = 0;
-                let skippedCount = 0;
-
-                for (const q of SAMPLE_QUESTIONS) {
-                    if (!existingQuestionsSet.has(q.soru)) {
-                        await addDoc(collection(db, QUESTIONS_COLLECTION), q);
-                        addedCount++;
-                    } else {
-                        skippedCount++;
-                    }
-                }
-
-                showToast(`✅ ${addedCount} yeni soru eklendi, ${skippedCount} soru zaten mevcuttu.`, 'success');
-                await loadAllQuestions();
-                await loadAdminQuestions();
-                await updateAdminStats();
-            } catch (e) {
-                showToast('Toplu ekleme başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function downloadQuestions() {
-            try {
-                const q = query(collection(db, QUESTIONS_COLLECTION));
-                const snapshot = await getDocs(q);
-                const questions = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    questions.push({
-                        bolum: data.bolum || '',
-                        soru: data.soru || '',
-                        secenekler: data.secenekler || [],
-                        dogru: data.dogru || 0,
-                        zorluk: data.zorluk || 1
-                    });
-                });
-
-                const jsonStr = JSON.stringify(questions, null, 2);
-                const blob = new Blob([jsonStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'sorular.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showToast('Sorular indirildi!', 'success');
-            } catch (e) {
-                showToast('İndirme başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function deleteAllQuestions() {
-            if (!confirm('⚠️ TÜM SORULARI SİLMEK ÜZERESİNİZ! Bu işlem geri alınamaz. Emin misiniz?')) return;
-            if (!confirm('Son uyarı: Gerçekten TÜM soruları silmek istiyor musunuz?')) return;
-            
-            try {
-                const q = query(collection(db, QUESTIONS_COLLECTION));
-                const snapshot = await getDocs(q);
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                
-                showToast('Tüm sorular silindi!', 'success');
-                await loadAllQuestions();
-                await loadAdminQuestions();
-                await updateAdminStats();
-            } catch (e) {
-                showToast('Silme başarısız: ' + e.message, 'error');
-            }
-        }
-
-        async function updateAdminStats() {
-            const totalQuestions = allQuestions.length;
-            adminStats.innerHTML = `
-                <p><span>📚 Toplam Soru:</span> <strong>${totalQuestions}</strong></p>
-            `;
-        }
-
-        async function loadAdminQuestions() {
-            try {
-                const q = query(collection(db, QUESTIONS_COLLECTION), orderBy('zorluk', 'asc'));
-                const snapshot = await getDocs(q);
-                let html = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const soruKisa = data.soru.length > 40 ? data.soru.substring(0, 40) + '…' : data.soru;
-                    html += `
-                        <div class="admin-question-item" data-id="${doc.id}">
-                            <div class="admin-question-header">
-                                <span class="admin-question-text">${soruKisa}</span>
-                                <div class="admin-question-actions">
-                                    <button class="edit-question-btn" title="Düzenle"><i class="fas fa-edit" style="color:#7c3aed;"></i></button>
-                                    <button class="delete-question-btn" title="Sil"><i class="fas fa-trash" style="color:#e53e3e;"></i></button>
-                                </div>
-                            </div>
-                            <div class="admin-question-meta">
-                                <span><i class="fas fa-tag"></i> ${data.bolum || 'Genel'}</span>
-                                <span><i class="fas fa-signal"></i> Zorluk: ${data.zorluk || 1}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                adminQuestionsList.innerHTML = html || '<p style="color: #6b7280; text-align: center; font-size:0.85rem;">Henüz soru yok.</p>';
-
-                document.querySelectorAll('.edit-question-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const questionItem = e.target.closest('.admin-question-item');
-                        const questionId = questionItem.dataset.id;
-                        editQuestion(questionId);
-                    });
-                });
-
-                document.querySelectorAll('.delete-question-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const questionItem = e.target.closest('.admin-question-item');
-                        const questionId = questionItem.dataset.id;
-                        if (confirm('Bu soruyu silmek istediğinize emin misiniz?')) {
-                            await deleteQuestion(questionId);
-                        }
-                    });
-                });
-            } catch (e) {
-                adminQuestionsList.innerHTML = '<p style="color: red; font-size:0.85rem;">Sorular yüklenemedi.</p>';
-            }
-        }
-
-        async function editQuestion(questionId) {
-            try {
-                const docRef = doc(db, QUESTIONS_COLLECTION, questionId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    adminSoru.value = data.soru || '';
-                    adminSecenek1.value = data.secenekler?.[0] || '';
-                    adminSecenek2.value = data.secenekler?.[1] || '';
-                    adminSecenek3.value = data.secenekler?.[2] || '';
-                    adminSecenek4.value = data.secenekler?.[3] || '';
-                    adminDogru.value = data.dogru || 0;
-                    adminKategori.value = data.bolum || 'Kur\'an';
-                    adminZorluk.value = data.zorluk || 1;
-                    editingQuestionId = questionId;
-                    formTitle.innerHTML = '<i class="fas fa-edit"></i> Soruyu Düzenle';
-                    saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Güncelle';
-                    cancelEditBtn.style.display = 'block';
-                }
-            } catch (e) {
-                showToast('Soru yüklenirken hata oluştu.', 'error');
-            }
-        }
-
-        async function deleteQuestion(questionId) {
-            try {
-                await deleteDoc(doc(db, QUESTIONS_COLLECTION, questionId));
-                showToast('Soru silindi!', 'success');
-                await loadAdminQuestions();
-                await loadAllQuestions();
-                await updateAdminStats();
-                if (editingQuestionId === questionId) resetFormToAddMode();
-            } catch (e) {
-                showToast('Soru silinemedi.', 'error');
-            }
-        }
-
-        function resetFormToAddMode() {
-            adminSoru.value = '';
-            adminSecenek1.value = '';
-            adminSecenek2.value = '';
-            adminSecenek3.value = '';
-            adminSecenek4.value = '';
-            adminDogru.value = 0;
-            adminKategori.value = 'Kur\'an';
-            adminZorluk.value = 1;
-            editingQuestionId = null;
-            formTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Yeni Soru Ekle';
-            saveQuestionBtn.innerHTML = '<i class="fas fa-save"></i> Kaydet';
-            cancelEditBtn.style.display = 'none';
-        }
-
-        async function saveQuestion() {
-            const soru = adminSoru.value.trim();
-            const sec1 = adminSecenek1.value.trim();
-            const sec2 = adminSecenek2.value.trim();
-            const sec3 = adminSecenek3.value.trim();
-            const sec4 = adminSecenek4.value.trim();
-            const dogru = parseInt(adminDogru.value);
-            const kategori = adminKategori.value;
-            const zorluk = parseInt(adminZorluk.value);
-            
-            if (!soru || !sec1 || !sec2 || !sec3 || !sec4) {
-                showToast('Lütfen tüm alanları doldurun.', 'error');
-                return;
-            }
-            
-            const questionData = { bolum: kategori, soru, secenekler: [sec1, sec2, sec3, sec4], dogru, zorluk };
-            try {
-                if (editingQuestionId) {
-                    await updateDoc(doc(db, QUESTIONS_COLLECTION, editingQuestionId), questionData);
-                    showToast('Soru güncellendi!', 'success');
-                } else {
-                    await addDoc(collection(db, QUESTIONS_COLLECTION), questionData);
-                    showToast('Soru eklendi!', 'success');
-                }
-                resetFormToAddMode();
-                await loadAdminQuestions();
-                await loadAllQuestions();
-                await updateAdminStats();
-            } catch (e) {
-                showToast('İşlem başarısız.', 'error');
-            }
-        }
-
-        let adminClickCount = 0;
-
-        function initAdminTrigger() {
-            if (!gameAvatar) return;
-
-            gameAvatar.addEventListener('click', async () => {
-                adminClickCount++;
-
-                if (adminClickCount === 3) {
-                    adminClickCount = 0;
-
-                    const { value: password } = await Swal.fire({
-                        title: 'Admin Girişi',
-                        text: 'Şifreyi girin:',
-                        input: 'password',
-                        inputPlaceholder: 'Şifre',
-                        showCancelButton: true,
-                        confirmButtonText: 'Giriş Yap',
-                        cancelButtonText: 'İptal',
-                        confirmButtonColor: '#7c3aed',
-                        background: '#fff9e6',
-                        backdrop: true,
-                        allowOutsideClick: false
-                    });
-
-                    if (password === ADMIN_PASSWORD) {
-                        adminPanel.classList.add('active');
-                        await loadAdminQuestions();
-                        await updateAdminStats();
-                        resetFormToAddMode();
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Giriş Başarılı',
-                            text: 'Hoş geldiniz!',
-                            timer: 1500,
-                            showConfirmButton: false,
-                            background: '#fff9e6'
-                        });
-                    } else if (password !== undefined) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Hatalı Şifre',
-                            text: 'Lütfen tekrar deneyin.',
-                            confirmButtonColor: '#7c3aed',
-                            background: '#fff9e6'
-                        });
-                    }
-                }
-
-                setTimeout(() => {
-                    adminClickCount = 0;
-                }, 3000);
-            });
-        }
-
-        // Maskot, Ses, Dark Mode
-        function mascotSpeak(text) {
-            speechBubble.innerText = text;
-            speechBubble.classList.add('active');
-            setTimeout(() => speechBubble.classList.remove('active'), 3000);
-        }
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const icon = soundToggleBtn.querySelector('i');
-            if (soundEnabled) {
-                icon.classList.remove('fa-volume-mute');
-                icon.classList.add('fa-volume-up');
-            } else {
-                icon.classList.remove('fa-volume-up');
-                icon.classList.add('fa-volume-mute');
-            }
-        }
-
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-theme');
-            gameState.darkMode = document.body.classList.contains('dark-theme');
-            const icon = settingsBtn.querySelector('i');
-            if (gameState.darkMode) {
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            } else {
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-            }
-            saveGameState();
-        }
-
-        // Event Listeners
-        window.addEventListener('DOMContentLoaded', async () => {
-            loadGameState();
-            await seedQuestionsIfNeeded();
-            await loadAllQuestions();
-
-            initAvatarSelector();
-            settingsUsername.value = gameState.username || 'Misafir';
-
-            if (gameState.darkMode) {
-                document.body.classList.add('dark-theme');
-                settingsBtn.querySelector('i').classList.remove('fa-moon');
-                settingsBtn.querySelector('i').classList.add('fa-sun');
-            } else {
-                settingsBtn.querySelector('i').classList.add('fa-moon');
-            }
-
-            // Intro açılırken liderliği yükle
-            await updateIntroUI();
-
-            introStartBtn.addEventListener('click', startGameFromIntro);
-            
-            introSettingsBtn.addEventListener('click', () => {
-                settingsUsername.value = gameState.username;
-                document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => {
-                    if (el.dataset.avatarIcon === gameState.avatar) el.classList.add('selected');
-                    else el.classList.remove('selected');
-                });
-                settingsModalOverlay.classList.add('active');
-            });
-            
-            saveSettingsBtn.addEventListener('click', saveSettings);
-            closeSettingsBtn.addEventListener('click', () => settingsModalOverlay.classList.remove('active'));
-            settingsModalOverlay.addEventListener('click', (e) => {
-                if (e.target === settingsModalOverlay) settingsModalOverlay.classList.remove('active');
-            });
-
-            nextBtn.addEventListener('click', onNext);
-            hintBtn.addEventListener('click', useHint);
-            restartGameBtn.addEventListener('click', restartLevelAfterGameOver);
-            exitGameBtn.addEventListener('click', exitToIntro);
-
-            leaderboardBtn.addEventListener('click', async () => {
-                await saveScoreToLeaderboard();
-                await loadLeaderboard();
-                leaderboardPanel.classList.add('active');
-            });
-            closeLeaderboardBtn.addEventListener('click', () => leaderboardPanel.classList.remove('active'));
-
-            achievementsBtn.addEventListener('click', () => {
-                renderAchievements();
-                achievementsPanel.classList.add('active');
-            });
-            closeAchievementsBtn.addEventListener('click', () => achievementsPanel.classList.remove('active'));
-
-            closeAdminBtn.addEventListener('click', () => {
-                adminPanel.classList.remove('active');
-                resetFormToAddMode();
-            });
-            
-            saveQuestionBtn.addEventListener('click', saveQuestion);
-            cancelEditBtn.addEventListener('click', resetFormToAddMode);
-
-            if (clearLeaderboardBtn) {
-                clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
-            }
-
-            if (resetAllUserDataBtn) {
-                resetAllUserDataBtn.addEventListener('click', resetAllUserData);
-            }
-
-            if (bulkAddQuestionsBtn) {
-                bulkAddQuestionsBtn.addEventListener('click', bulkAddQuestions);
-            }
-
-            if (downloadQuestionsBtn) {
-                downloadQuestionsBtn.addEventListener('click', downloadQuestions);
-            }
-
-            if (deleteAllQuestionsBtn) {
-                deleteAllQuestionsBtn.addEventListener('click', deleteAllQuestions);
-            }
-
-            if (fixNaNBtn) {
-                fixNaNBtn.addEventListener('click', fixNaNData);
-            }
-
-            initAdminTrigger();
-
-            soundToggleBtn.addEventListener('click', toggleSound);
-            settingsBtn.addEventListener('click', toggleDarkMode);
-            mascot.addEventListener('click', () => mascotSpeak('Soruyu cevaplamaya ne dersin?'));
-            window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
         });
-    </script>
+
+        if(password === ADMIN_PASSWORD){
+            // Şifre doğruysa admin panelini aç
+            adminPanel.classList.add('active');
+            await loadAdminQuestions();
+            await updateAdminStats();
+            resetFormToAddMode();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Giriş Başarılı',
+                text: 'Hoş geldiniz!',
+                timer: 1500,
+                showConfirmButton: false,
+                background: '#fff9e6'
+            });
+        } else if(password !== undefined){
+            // Şifre yanlışsa uyarı
+            Swal.fire({
+                icon: 'error',
+                title: 'Hatalı Şifre',
+                text: 'Lütfen tekrar deneyin.',
+                confirmButtonColor: '#7c3aed',
+                background: '#fff9e6'
+            });
+        }
+        // Kullanıcı iptal ederse hiçbir şey yapma
+    }
+});
+}
+
+// ------------------------------------------------------------
+// MASKOT, SES, DARK MODE
+// ------------------------------------------------------------
+function mascotSpeak(text){
+speechBubble.innerText = text;
+speechBubble.classList.add('active');
+setTimeout(() => speechBubble.classList.remove('active'), 3000);
+}
+
+function toggleSound(){
+soundEnabled = !soundEnabled;
+const icon = soundToggleBtn.querySelector('i');
+if(soundEnabled){
+icon.classList.remove('fa-volume-mute');
+icon.classList.add('fa-volume-up');
+} else {
+icon.classList.remove('fa-volume-up');
+icon.classList.add('fa-volume-mute');
+}
+}
+
+function toggleDarkMode(){
+document.body.classList.toggle('dark-theme');
+gameState.darkMode = document.body.classList.contains('dark-theme');
+const icon = settingsBtn.querySelector('i');
+if(gameState.darkMode){
+icon.classList.remove('fa-moon');
+icon.classList.add('fa-sun');
+} else {
+icon.classList.remove('fa-sun');
+icon.classList.add('fa-moon');
+}
+saveGameState();
+}
+
+// ------------------------------------------------------------
+// EVENT LİSTENERLAR
+// ------------------------------------------------------------
+window.addEventListener('DOMContentLoaded', async () => {
+loadGameState();
+await seedQuestionsIfNeeded();
+await loadAllQuestions();
+
+initAvatarSelector();
+settingsUsername.value = gameState.username || 'Misafir';
+
+if(gameState.darkMode){
+document.body.classList.add('dark-theme');
+settingsBtn.querySelector('i').classList.remove('fa-moon');
+settingsBtn.querySelector('i').classList.add('fa-sun');
+} else {
+settingsBtn.querySelector('i').classList.add('fa-moon');
+}
+
+await updateIntroUI();
+
+introStartBtn.addEventListener('click', startGameFromIntro);
+introSettingsBtn.addEventListener('click', () => {
+settingsUsername.value = gameState.username;
+document.querySelectorAll('#settingsAvatarSelector .avatar-option').forEach(el => {
+if(el.dataset.avatarIcon === gameState.avatar) el.classList.add('selected');
+else el.classList.remove('selected');
+});
+introSettingsPanel.style.display = 'block';
+});
+saveSettingsBtn.addEventListener('click', saveSettings);
+closeSettingsBtn.addEventListener('click', () => introSettingsPanel.style.display = 'none');
+
+// YENİ: Intro'daki "En İyisini Gör" butonu
+if(viewLeaderboardBtn){
+viewLeaderboardBtn.addEventListener('click', async () => {
+await saveScoreToLeaderboard();
+await loadLeaderboard();
+leaderboardPanel.classList.add('active');
+});
+}
+
+nextBtn.addEventListener('click', onNext);
+hintBtn.addEventListener('click', useHint);
+restartGameBtn.addEventListener('click', restartLevelAfterGameOver);
+exitGameBtn.addEventListener('click', exitToIntro);
+
+leaderboardBtn.addEventListener('click', async () => {
+await saveScoreToLeaderboard();
+await loadLeaderboard();
+leaderboardPanel.classList.add('active');
+});
+closeLeaderboardBtn.addEventListener('click', () => leaderboardPanel.classList.remove('active'));
+
+achievementsBtn.addEventListener('click', () => { renderAchievements(); achievementsPanel.classList.add('active'); });
+closeAchievementsBtn.addEventListener('click', () => achievementsPanel.classList.remove('active'));
+
+closeAdminBtn.addEventListener('click', () => {
+adminPanel.classList.remove('active');
+resetFormToAddMode();
+});
+saveQuestionBtn.addEventListener('click', saveQuestion);
+cancelEditBtn.addEventListener('click', resetFormToAddMode);
+
+if(clearLeaderboardBtn){
+clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
+}
+
+if(resetAllUserDataBtn){
+resetAllUserDataBtn.addEventListener('click', resetAllUserData);
+}
+
+if(bulkAddQuestionsBtn){
+bulkAddQuestionsBtn.addEventListener('click', async () => {
+const result = await Swal.fire({
+title: 'Emin misiniz?',
+text: 'Bu işlem, SAMPLE_QUESTIONS dizisine eklediğiniz soruları Firestore\'a ekleyecek. Daha önce eklenmiş sorular tekrar eklenmeyecek.',
+icon: 'warning',
+showCancelButton: true,
+confirmButtonColor: '#7c3aed',
+cancelButtonColor: '#d33',
+confirmButtonText: 'Evet, ekle!',
+cancelButtonText: 'İptal',
+background: '#fff9e6'
+});
+
+if (result.isConfirmed) {
+await bulkAddQuestions();
+}
+});
+}
+
+initAdminTrigger();
+
+soundToggleBtn.addEventListener('click', toggleSound);
+settingsBtn.addEventListener('click', toggleDarkMode);
+mascot.addEventListener('click', () => mascotSpeak('Soruyu cevaplamaya ne dersin?'));
+window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
+});
+</script>
 </body>
 </html>
