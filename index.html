@@ -870,13 +870,13 @@ box-shadow:0 8px 15px rgba(0,0,0,0.1);
 display: flex;
 align-items: center;
 gap:10px;
-z-index:10000;
+z-index:100000;
 border:2px solid #ffe0b0;
 backdrop-filter:blur(4px);
 animation: slideDown 0.3s;
 }
-.toast-success { background:#d4edda; border-color:#a3d0b1; color:#0b5e42;z-index:10000; }
-.toast-info { background:#fff3cd; border-color:#ffe69b; color:#856404;z-index:10000; }
+.toast-success { background:#d4edda; border-color:#a3d0b1; color:#0b5e42;z-index:100000; }
+.toast-info { background:#fff3cd; border-color:#ffe69b; color:#856404;z-index:100000; }
 
               /* Modal Ayarlar */
         .settings-modal-overlay {
@@ -1861,14 +1861,17 @@ badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
 
 showToast(`🎉 Tebrikler! ${completedLevel}. seviyeyi tamamladınız!${badgeMessage}${completedLevel % 5 === 0 ? 'Kendinizle gurur duymalısınız! 🏆' : ''}`, 'success');
 
-playSound('levelUp');
-showShareButtons(completedLevel);
-} else {
-loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-saveGameState();
-}
-nextBtn.classList.remove('active');
-nextBtn.classList.add('disabled');
+    // --- SEVİYE ATLAMA KUTLAMASI ---
+    triggerConfetti();               // ✨ YENİ: konfeti patlat
+    showToast(`🎯 Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} başladı.`, 'success');
+    playSound('levelUp');
+    showShareButtons(completedLevel);
+  } else {
+    loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
+    saveGameState();
+  }
+  nextBtn.classList.remove('active');
+  nextBtn.classList.add('disabled');
 }
 
 function restartLevelAfterGameOver(){
@@ -2511,6 +2514,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
