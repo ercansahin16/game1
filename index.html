@@ -1263,6 +1263,7 @@ function saveGameState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(gameS
 // ------------------------------------------------------------
 // DOM ELEMENTLERİ
 // ------------------------------------------------------------
+const settingsModalOverlay = document.getElementById('settingsModalOverlay');
 const introOverlay = document.getElementById('introOverlay');
 const introAvatar = document.getElementById('introAvatar');
 const introUserName = document.getElementById('introUserName');
@@ -1494,20 +1495,22 @@ if(scoreDisplay) scoreDisplay.innerText = gameState.score;
 if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 }
 
-function saveSettings(){
-const newName = settingsUsername.value.trim() || 'Misafir';
-const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
-if(selectedAvatar){
-gameState.avatar = selectedAvatar.dataset.avatarIcon;
-gameState.avatarImg = selectedAvatar.dataset.avatarImg;
-}
-gameState.username = newName;
-saveGameState();
-updateIntroUI();
-updateGameHeader();
-introSettingsPanel.style.display = 'none';
-showToast('Profil güncellendi!', 'success');
-}
+               function saveSettings() {
+            const newName = settingsUsername.value.trim() || 'Misafir';
+            const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
+            if (selectedAvatar) {
+                gameState.avatar = selectedAvatar.dataset.avatarIcon;
+                gameState.avatarImg = selectedAvatar.dataset.avatarImg;
+            }
+            gameState.username = newName;
+            saveGameState();
+            updateIntroUI();
+            updateGameHeader();
+            settingsModalOverlay.classList.remove('active');
+            showToast('Profil güncellendi!', 'success');
+        }
+
+
 
 function startGameFromIntro(){
 if(!gameState.username){
@@ -2386,6 +2389,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
