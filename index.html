@@ -1149,7 +1149,7 @@ body { padding:8px; }
 <span id="timerSeconds">60</span>sn
 </div>
 <button id="hintButton" class="hint-btn" style="margin: 0;">
-<i class="fas fa-lightbulb"></i> İpucu (1 puan)
+<i class="fas fa-lightbulb"></i> İpucu (5 puan)
 </button>
 </div>
 <div id="questionText" class="question-text">Soru yükleniyor...</div>
@@ -1711,6 +1711,9 @@ allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
 }
 }
 
+
+            
+//function getQuestionCountForLevel(level) {return level * 2 + 5;}   STAR (BUNU KULLAN)
 function getQuestionCountForLevel(level){ return level * 2; }
 
             // Seviye ilerleme bilgisini güncelle
@@ -1841,7 +1844,7 @@ playSound('gameOver');
 
 async function useHint(){
 if(gameState.hintUsedInThisLevel){ showToast('Bu seviyede ipucu hakkın bitti!', 'info'); return; }
-if(gameState.score < 1){ showToast('İpucu için 1 puana ihtiyacın var!', 'info'); return; }
+if(gameState.score < 5){ showToast('İpucu için 5 puana ihtiyacın var!', 'info'); return; }
 if(answered){ showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info'); return; }
 const correctIndex = currentQuestion.dogru;
 const allIndexes = [0, 1, 2, 3];
@@ -1853,7 +1856,7 @@ const btn = optionsEl.children[idx];
 if(btn){ btn.classList.add('eliminated'); btn.disabled = true; }
 });
 eliminatedOptions = eliminateThese;
-gameState.score -= 1;
+gameState.score -= 5;
 if(gameState.score < 0) gameState.score = 0;
 gameState.hintUsedInThisLevel = true;
 hintBtn.classList.add('disabled');
@@ -2579,7 +2582,7 @@ settingsBtn.addEventListener('click', toggleDarkMode);
 
 
 
-            mascot.addEventListener('click', () => {
+mascot.addEventListener('click', () => {
   Swal.fire({
     title: '🎮 Oyun Kuralları',
     html: `
@@ -2596,10 +2599,10 @@ settingsBtn.addEventListener('click', toggleDarkMode);
             ❌ <strong>İkinci hakkın var</strong> (yine yanlışta oyun biter)
           </li>
           <li style="margin-bottom: 5px; background: #f9f3e7; padding: 6px 8px; border-radius: 10px;">
-            💡 <strong>İpucu (1 puan)</strong> → 2 yanlış şık elenir (seviyede bir kez)
+            💡 <strong>İpucu (5 puan)</strong> → 2 yanlış şık elenir (seviyede bir kez)
           </li>
           <li style="margin-bottom: 5px; background: #f9f3e7; padding: 6px 8px; border-radius: 10px;">
-            🚀 <strong>Seviye atlama:</strong> Her seviyede 2×seviye soru.
+            🚀 <strong>Seviye atlama:</strong> Her seviyede (seviye × 2 + 2) soru. <br> (Seviye 1: 4 soru, Seviye 2: 6 soru, Seviye 3: 8 soru, ...)
           </li>
           <li style="margin-bottom: 5px; background: #f9f3e7; padding: 6px 8px; border-radius: 10px;">
             🏅 <strong>Rozetler:</strong> İlk doğru, seri katili (10), kategori ustalıkları ve <span style="color:#7c3aed; font-weight:bold;">her 5 seviyede bir özel rozet</span>!
@@ -2613,11 +2616,10 @@ settingsBtn.addEventListener('click', toggleDarkMode);
         </p>
       </div>
     `,
-    
     confirmButtonText: 'Anlaşıldı',
     confirmButtonColor: '#7c3aed',
-    background: document.body.classList.contains('dark') ? '#2c2f33' : '#fff9f0',
-    color: document.body.classList.contains('dark') ? '#fff' : '#2d3e50',
+    background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+    color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
     showCloseButton: true,
     showClass: { popup: 'animate__animated animate__tada' },
     hideClass: { popup: 'animate__animated animate__fadeOut' }
@@ -2631,6 +2633,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
