@@ -1052,6 +1052,12 @@ body { padding:8px; }
 .sound-toggle { width:45px; height:45px; font-size:1.3rem; bottom:10px; right:10px; }
 .right-group > * {padding: 5px 6px; /* daha da küçült */font-size: 0.8rem; min-width: 35px;}
 }
+
+
+            .top-bar { display: flex; align-items: center; gap:8px; flex-wrap: wrap; }
+            .left-group { flex-shrink:0; display:flex; align-items:center; gap:8px; }
+
+             .right-group2 { flex: 1 1 auto; min-width:160px; justify-content:center; text-align:center; white-space:nowrap; font-size:0.9rem; padding:6px 12px; }
 </style>
 </head>
 <body>
@@ -1723,7 +1729,7 @@ function updateLevelProgress() {
   const remaining = total - answered;
   const progressDiv = document.getElementById('levelProgress');
   if (progressDiv) {
-    progressDiv.innerHTML = `📊 soru sayısı : ${total} = C${answered} + K${remaining}`;
+    progressDiv.innerHTML = `📊 Soru sayısı : ${total} = C${answered} + K${remaining}`;
   }
 }
             
@@ -1842,29 +1848,65 @@ playSound('gameOver');
 }, 1000);
 }
 
-async function useHint(){
-if(gameState.hintUsedInThisLevel){ showToast('Bu seviyede ipucu hakkın bitti!', 'info'); return; }
-if(gameState.score < 5){ showToast('İpucu için 5 puana ihtiyacın var!', 'info'); return; }
-if(answered){ showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info'); return; }
-const correctIndex = currentQuestion.dogru;
-const allIndexes = [0, 1, 2, 3];
-const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
-const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
-const eliminateThese = shuffledWrong.slice(0, 2);
-eliminateThese.forEach(idx => {
-const btn = optionsEl.children[idx];
-if(btn){ btn.classList.add('eliminated'); btn.disabled = true; }
-});
-eliminatedOptions = eliminateThese;
-gameState.score -= 5;
-if(gameState.score < 0) gameState.score = 0;
-gameState.hintUsedInThisLevel = true;
-hintBtn.classList.add('disabled');
-saveGameState();
-if(scoreDisplay) scoreDisplay.innerText = gameState.score;
-playSound('hint');
-showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
+
+            
+// YARDIMCI: Seviyeye göre ipucu maliyeti
+function getHintCostForLevel(level) {
+  if (level <= 5) return 5;
+  if (level <= 10) return 7;
+  return 10; // 11 ve üzeri
 }
+
+// REVİZE EDİLMİŞ useHint
+async function useHint() {
+  const hintCost = getHintCostForLevel(gameState.currentLevel);
+  
+  if (gameState.hintUsedInThisLevel) {
+    showToast('Bu seviyede ipucu hakkın bitti!', 'info');
+    return;
+  }
+  if (gameState.score < hintCost) {
+    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
+    return;
+  }
+  if (answered) {
+    showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info');
+    return;
+  }
+
+  const correctIndex = currentQuestion.dogru;
+  const allIndexes = [0, 1, 2, 3];
+  const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
+  const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
+  const eliminateThese = shuffledWrong.slice(0, 2);
+  
+  eliminateThese.forEach(idx => {
+    const btn = optionsEl.children[idx];
+    if (btn) {
+      btn.classList.add('eliminated');
+      btn.disabled = true;
+    }
+  });
+  
+  eliminatedOptions = eliminateThese;
+  gameState.score -= hintCost;
+  if (gameState.score < 0) gameState.score = 0;
+  gameState.hintUsedInThisLevel = true;
+  hintBtn.classList.add('disabled');
+  saveGameState();
+  
+  if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+  playSound('hint');
+  showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
+}
+//
+ function updateHintButton() {
+  const hintCost = getHintCostForLevel(gameState.currentLevel);
+  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)`;
+}
+
+
+            
 
 async function handleOptionClick(selectedIdx, btnElement){
 if(!gameActive || answered) return;
@@ -2633,6 +2675,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
