@@ -1337,35 +1337,36 @@ document.addEventListener('click', resume, {once: true});
 // OYUN DURUMU
 // ------------------------------------------------------------
 let gameState = {
-maxUnlockedLevel: 1,
-currentLevel: 1,
-currentQuestionIndexInLevel: 0,
-score: 0,
-earnedPointsForQuestion: {},
-hintUsedInThisLevel: false,
-achievements: {
-firstCorrect: false,
-streak: 0,
-quranMaster: false,
-namazkar: false,
-peygamberSever: false,
-level5: false,
-level10: false,
-level15: false,
-level20: false,
-level25: false,
-level30: false,
-level35: false,
-level40: false,
-level45: false,
-level50: false
-},
-recentAchievements: [],
-solvedQuestions: [],
-username: '',
-avatar: AVATAR_LIST[0].icon,
-avatarImg: AVATAR_LIST[0].img,
-darkMode: false
+  maxUnlockedLevel: 1,
+  currentLevel: 1,
+  currentQuestionIndexInLevel: 0,
+  score: 0,
+  earnedPointsForQuestion: {},
+  hintUsedInThisLevel: false,
+  achievements: {
+    firstCorrect: false,
+    streak: 0,
+    quranMaster: false,
+    namazkar: false,
+    peygamberSever: false,
+    level5: false,
+    level10: false,
+    level15: false,
+    level20: false,
+    level25: false,
+    level30: false,
+    level35: false,
+    level40: false,
+    level45: false,
+    level50: false
+  },
+  recentAchievements: [],
+  solvedQuestions: [],
+  lastPlayedQuestions: [], // YENİ: Son oynanan soruların ID'leri
+  username: '',
+  avatar: AVATAR_LIST[0].icon,
+  avatarImg: AVATAR_LIST[0].img,
+  darkMode: false
 };
 
 function loadGameState(){
@@ -1384,6 +1385,7 @@ level30: false, level35: false, level40: false, level45: false, level50: false
 }
 if(!gameState.recentAchievements) gameState.recentAchievements = [];
 if(!gameState.solvedQuestions) gameState.solvedQuestions = [];
+if(!gameState.lastPlayedQuestions) gameState.lastPlayedQuestions = []; // YENİ
 if(isNaN(gameState.score)) gameState.score = 0;
 }catch(e){}
 }
@@ -1701,21 +1703,62 @@ allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
 function getQuestionCountForLevel(level){ return level * 2; }
 
 function loadLevelQuestions(level){
-const countNeeded = getQuestionCountForLevel(level);
-let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
-if(unsolved.length < countNeeded){
-gameState.solvedQuestions = [];
-unsolved = [...allQuestions];
-showToast('🔄 Tüm soruları çözdün! Havuz yenilendi.', 'info');
+  const countNeeded = getQuestionCountForLevel(level);
+  
+  // Önce çözülmemiş soruları filtrele
+  let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
+  
+  // YENİ: Son oynanan soruları da filtrele (tüm seviyelerden)
+  let availableQuestions = unsolved.filter(q => !gameState.lastPlayedQuestions.includes(q.id));
+  
+  // Eğer yeterli soru kalmadıysa, son oynananları sıfırla
+  if(availableQuestions.length < countNeeded){
+    // Son oynananlardan en eskilerini kaldır
+    const removeCount = Math.max(5, countNeeded - availableQuestions.length);
+    gameState.lastPlayedQuestions = gameState.lastPlayedQuestions.slice(removeCount);
+    
+    // Tekrar filtrele
+    availableQuestions = unsolved.filter(q => !gameState.lastPlayedQuestions.includes(q.id));
+    
+    // Hâlâ yetersizse çözülmüş sorulardan da seç (ama son oynananlar hariç)
+    if(availableQuestions.length < countNeeded){
+      const solvedButNotRecent = allQuestions.filter(q => 
+        gameState.solvedQuestions.includes(q.id) && 
+        !gameState.lastPlayedQuestions.includes(q.id)
+      );
+      availableQuestions = [...availableQuestions, ...solvedButNotRecent];
+    }
+  }
+  
+  // Eğer hâlâ yetersizse (çok az soru varsa), son oynananları tamamen sıfırla
+  if(availableQuestions.length < countNeeded){
+    gameState.lastPlayedQuestions = [];
+    availableQuestions = unsolved.length > 0 ? unsolved : allQuestions;
+  }
+  
+  const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5);
+  currentLevelQuestions = shuffled.slice(0, countNeeded);
+  
+  // YENİ: Seçilen soruları son oynananlara ekle
+  currentLevelQuestions.forEach(q => {
+    if(!gameState.lastPlayedQuestions.includes(q.id)){
+      gameState.lastPlayedQuestions.push(q.id);
+    }
+  });
+  
+  // En fazla son 50 soruyu tut (performans için)
+  if(gameState.lastPlayedQuestions.length > 50){
+    gameState.lastPlayedQuestions = gameState.lastPlayedQuestions.slice(-50);
+  }
+  
+  saveGameState(); // YENİ: Son oynananları kaydet
+  
+  gameState.currentQuestionIndexInLevel = 0;
+  gameState.hintUsedInThisLevel = false;
+  hintBtn.classList.remove('disabled');
+  loadQuestionAtIndex(0);
 }
-const shuffled = [...unsolved].sort(() => Math.random() - 0.5);
-currentLevelQuestions = shuffled.slice(0, countNeeded);
-gameState.currentQuestionIndexInLevel = Math.min(gameState.currentQuestionIndexInLevel, currentLevelQuestions.length - 1);
-if(gameState.currentQuestionIndexInLevel < 0) gameState.currentQuestionIndexInLevel = 0;
-loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-gameState.hintUsedInThisLevel = false;
-hintBtn.classList.remove('disabled');
-}
+            
 
 function loadQuestionAtIndex(index){
 if(!currentLevelQuestions.length) return;
@@ -2555,43 +2598,6 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
