@@ -1083,29 +1083,33 @@ body { padding:8px; }
 }
 
 
-            .info-bubble {
+.info-bubble {
   position: fixed;
-  background: #ffffff;        /* gündüz: beyaz */
-  color: #1f2937;             /* gündüz: koyu gri yazı */
-  padding: 10px 14px;
+  background: #111827;
+  color: #fff;
+  padding: 8px 12px;
   border-radius: 12px;
-  font-size: 0.9rem;
-  font-style: italic;
-  z-index: 10000;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 9999;
   pointer-events: none;
-  text-align: center;
-  line-height: 1.4;
-  border: 1px solid #e2e8f0;  /* gündüz açık gri kenar */
-  transition: background 0.2s, color 0.2s;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity .2s ease, transform .2s ease;
+}
+            /* OK */
+.info-bubble::after{
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: #111827 transparent transparent transparent;
 }
 
-/* dark mode */
-body.dark-theme .info-bubble {
-  background: #1e293b;         /* koyu lacivert / siyahımsı */
-  color: #f3f4f6;              /* açık gri yazı */
-  border-color: #4b5563;       /* koyu gri kenar */
-}
+
 </style>
 </head>
 <body>
@@ -1771,26 +1775,66 @@ allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
             
 // Bilgi balonunu gösteren fonksiyon
 function showInfoBubble(message, targetElement) {
-    const bubble = document.getElementById('infoBubble');
-    if (!bubble) return;
+  const bubble = document.getElementById('infoBubble');
+  if (!bubble || !targetElement) return;
 
-    // Mesajı güncelle (innerHTML ile)
-    bubble.innerHTML = message;  // <-- Burayı textContent yerine innerHTML yap
+  bubble.innerHTML = message;
+  bubble.style.display = 'block';
 
-    // Tıklanan elementin konumuna göre balonu konumlandır
-    const rect = targetElement.getBoundingClientRect();
-    bubble.style.left = rect.left + (rect.width / 2) + 'px';
-    bubble.style.top = (rect.top - 30) + 'px'; // elementin biraz üstünde
-    bubble.style.transform = 'translateX(-50%)';
+  const rect = targetElement.getBoundingClientRect();
 
-    // Balonu göster
-    bubble.style.display = 'block';
+  // İlk konum
+  let left = rect.left + rect.width / 2;
+  let top  = rect.top - 12;
 
-    // 2 saniye sonra otomatik gizle
+  bubble.style.left = left + 'px';
+  bubble.style.top  = top + 'px';
+  bubble.style.transform = 'translateX(-60%) scale(0.8)';
+  bubble.style.opacity = '0';
+
+  // DOM ölçüsü için kısa gecikme
+  requestAnimationFrame(() => {
+    const bubbleRect = bubble.getBoundingClientRect();
+    const padding = 8;
+
+    // Sol taşma
+    if (bubbleRect.left < padding) {
+      bubble.style.left = padding + 'px';
+      bubble.style.transform = 'translateX(0) scale(0.8)';
+    }
+
+    // Sağ taşma
+    if (bubbleRect.right > window.innerWidth - padding) {
+      bubble.style.left = (window.innerWidth - bubbleRect.width - padding) + 'px';
+      bubble.style.transform = 'translateX(0) scale(0.8)';
+    }
+
+    // Üst taşma → alta al
+    if (bubbleRect.top < padding) {
+      bubble.style.top = (rect.bottom + 12) + 'px';
+      bubble.style.setProperty('--arrow-pos', 'top');
+    }
+
+    // Pop animasyon
+    bubble.style.opacity = '1';
+    bubble.style.transform = bubble.style.transform.replace('scale(0.8)', 'scale(1)');
+  });
+
+  // Otomatik gizle
+  clearTimeout(bubble._hideTimer);
+  bubble._hideTimer = setTimeout(() => {
+    bubble.style.opacity = '0';
+    bubble.style.transform = 'scale(0.9)';
     setTimeout(() => {
-        bubble.style.display = 'none';
-    }, 2000);
+      bubble.style.display = 'none';
+    }, 200);
+  }, 2000);
 }
+
+
+
+
+            
 
 // levelProgress elementine tıklama olayı ekle
 document.getElementById('levelProgress')?.addEventListener('click', function(e) {
@@ -2763,6 +2807,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
