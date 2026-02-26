@@ -1119,47 +1119,38 @@ animation: slideDown 0.3s;
 
 
   /*mascot */
-/* 🎭 Mascot sol köşe */
+/* Mascot sabit, üstte */
 #mascot {
   position: fixed;
   bottom: 20px;
-  left: 20px; /* sol tarafa aldık */
+  left: 20px;
   font-size: 48px;
   cursor: pointer;
-  z-index:10000;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* 💬 Konuşma Balonu */
-#mascot-bubble {
-  position: absolute;
-  bottom: 60px;
-  left: 0; /* sol tarafa hizalandı */
-  background: #7c3aed;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: .3s;
+/* 👀 göz kırpma */
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
 }
 
-/* Hover ile görünürlük */
-#mascot:hover #mascot-bubble {
-  opacity: 1;
-  transform: translateY(0);
+#mascot-eyes {
+  display: inline-block;
+  animation: blink 4s infinite;
+  transform-origin: center center;
 }
 
-/* 🔥 Pulse animasyonu */
+/* 🐱 küçük zıplama / sallanma */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
 .mascot-attention {
-  animation: pulse 1.4s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.12); }
-  100% { transform: scale(1); }
+  animation: bounce 1s infinite;
 }
 
 
@@ -1169,9 +1160,10 @@ animation: slideDown 0.3s;
 
 
   <!-- 🎭 Mascot -->
+<!-- 🎭 Mascot -->
 <div id="mascot">
+  <span id="mascot-eyes">👀</span>
   🐱
-  <div id="mascot-bubble">👋 Beni oku!</div>
 </div>
 
   
@@ -2773,23 +2765,24 @@ settingsBtn.addEventListener('click', toggleDarkMode);
 
 
 /*mascot*/
-  const mascot = document.getElementById('mascot');
-const bubble = document.getElementById('mascot-bubble');
+const mascot = document.getElementById('mascot');
+const eyes = document.getElementById('mascot-eyes');
 const isDark = document.body.classList.contains('dark-theme');
 
-/* 🚨 Sayfa açılır açılmaz dikkat çekme */
-window.addEventListener('load', () => {
+/* 🎬 Her oyun açılışında Mascot dikkat çeksin */
+function mascotIntro() {
   mascot.classList.add('mascot-attention');
-  bubble.style.opacity = 1; // balon görünür
-  bubble.textContent = '👀 Buraya bak!';
 
+  // 3 saniye sonra dur
   setTimeout(() => {
     mascot.classList.remove('mascot-attention');
-    bubble.style.opacity = 0; // 4 sn sonra kaybolur
-  }, 4000);
-});
+  }, 3000);
+}
 
-/* 🎮 Mascot tıklanınca oyun akışı (SweetAlert2) */
+/* Sayfa yüklendiğinde de intro yap */
+window.addEventListener('load', mascotIntro);
+
+/* 🎮 Mascot tıklanınca oyun akışı */
 mascot.addEventListener('click', async () => {
 
   // 1️⃣ HEYECAN
@@ -2864,6 +2857,9 @@ mascot.addEventListener('click', async () => {
         color: isDark ? '#fff' : '#2d3e50',
         width: '90%'
       });
+
+      // 🐱 Her oyuna girişte Mascot tekrar dikkat çeksin
+      mascotIntro();
     }
   }
 });
@@ -2873,6 +2869,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
