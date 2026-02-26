@@ -1889,11 +1889,12 @@ loadQuestionAtIndex(0);
 
 
 
-    function updateHintButton() {
+function updateHintButton() {
   const maxHints = gameState.currentLevel;
   const used = gameState.hintsUsed || 0;
-  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (5 puan)<br> Kalan: ${maxHints - used}`;
-}        
+  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
+  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${maxHints - used}`;
+}      
 
 function loadQuestionAtIndex(index) {
   if (!currentLevelQuestions.length) return;
@@ -1948,16 +1949,16 @@ playSound('gameOver');
 
 
             
-
-//Her seviyede seviye numarası kadar ipucu hakkı olsun, maliyet sabit 5 puan. Ancak bunu minimum değişiklikle yapmak istiyorsunuz
 async function useHint() {
   const maxHints = gameState.currentLevel; // seviye kadar hak
+  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel)); // dinamik maliyet
+
   if (gameState.hintsUsed >= maxHints) {
     showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
     return;
   }
-  if (gameState.score < 5) {
-    showToast('İpucu için 5 puana ihtiyacın var!', 'info');
+  if (gameState.score < hintCost) {
+    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
     return;
   }
   if (answered) {
@@ -1970,7 +1971,7 @@ async function useHint() {
   const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
   const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
   const eliminateThese = shuffledWrong.slice(0, 2);
-  
+
   eliminateThese.forEach(idx => {
     const btn = optionsEl.children[idx];
     if (btn) {
@@ -1978,24 +1979,22 @@ async function useHint() {
       btn.disabled = true;
     }
   });
-  
+
   eliminatedOptions = eliminateThese;
-  gameState.score -= 5;
+  gameState.score -= hintCost;
   if (gameState.score < 0) gameState.score = 0;
   gameState.hintsUsed++;
-  
-  // Eğer hak bittiyse butonu pasif yap
+
   if (gameState.hintsUsed >= maxHints) {
     hintBtn.classList.add('disabled');
   }
-  
+
   saveGameState();
   if (scoreDisplay) scoreDisplay.innerText = gameState.score;
   playSound('hint');
   showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
- updateHintButton(); // eğer bu fonksiyon tanımlıysa
+  updateHintButton(); // buton metnini güncelle
 }
-
 
             
 
@@ -2771,6 +2770,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
