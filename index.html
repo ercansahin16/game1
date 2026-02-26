@@ -1780,47 +1780,47 @@ function showInfoBubble(message, targetElement) {
 
   bubble.innerHTML = message;
   bubble.style.display = 'block';
+  bubble.style.opacity = '0';
+  bubble.style.transform = 'scale(0.85)';
 
   const rect = targetElement.getBoundingClientRect();
+  const padding = 8;
 
-  // İlk konum
-  let left = rect.left + rect.width / 2;
-  let top  = rect.top - 12;
+  // Önce yaklaşık konum
+  let top = rect.top - 10;
+  bubble.style.top = top + 'px';
 
-  bubble.style.left = left + 'px';
-  bubble.style.top  = top + 'px';
-  bubble.style.transform = 'translateX(-60%) scale(0.8)';
-  bubble.style.opacity = '0';
-
-  // DOM ölçüsü için kısa gecikme
+  // Ölçüm için 1 frame bekle
   requestAnimationFrame(() => {
     const bubbleRect = bubble.getBoundingClientRect();
-    const padding = 8;
+    const viewportWidth = window.innerWidth;
 
-    // Sol taşma
-    if (bubbleRect.left < padding) {
-      bubble.style.left = padding + 'px';
-      bubble.style.transform = 'translateX(0) scale(0.8)';
+    // === X KONUMU HESABI (CLAMP) ===
+    let left = rect.left + rect.width / 2 - bubbleRect.width / 2;
+
+    // SOL TAŞMA
+    if (left < padding) {
+      left = padding;
     }
 
-    // Sağ taşma
-    if (bubbleRect.right > window.innerWidth - padding) {
-      bubble.style.left = (window.innerWidth - bubbleRect.width - padding) + 'px';
-      bubble.style.transform = 'translateX(0) scale(0.8)';
+    // SAĞ TAŞMA
+    if (left + bubbleRect.width > viewportWidth - padding) {
+      left = viewportWidth - bubbleRect.width - padding;
     }
 
-    // Üst taşma → alta al
-    if (bubbleRect.top < padding) {
-      bubble.style.top = (rect.bottom + 12) + 'px';
-      bubble.style.setProperty('--arrow-pos', 'top');
+    // ÜST TAŞMA → ALTA AL
+    if (top < padding) {
+      top = rect.bottom + 10;
+      bubble.style.top = top + 'px';
     }
 
-    // Pop animasyon
+    bubble.style.left = left + 'px';
+
+    // POP ANİMASYON
     bubble.style.opacity = '1';
-    bubble.style.transform = bubble.style.transform.replace('scale(0.8)', 'scale(1)');
+    bubble.style.transform = 'scale(1)';
   });
 
-  // Otomatik gizle
   clearTimeout(bubble._hideTimer);
   bubble._hideTimer = setTimeout(() => {
     bubble.style.opacity = '0';
@@ -1830,7 +1830,6 @@ function showInfoBubble(message, targetElement) {
     }, 200);
   }, 2000);
 }
-
 
 
 
@@ -2807,6 +2806,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
