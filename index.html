@@ -1118,10 +1118,80 @@ animation: slideDown 0.3s;
 }
 
 
+  /*mascot */
+  /* 🎴 Kural Kartları */
+.rule-card {
+  background: #f9f3e7;
+  padding: 10px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+
+.rule-final {
+  background: #ede9fe;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+
+/* 🎭 Mascot */
+#mascot {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-size: 48px;
+  cursor: pointer;
+  z-index: 9999;
+}
+
+/* 💬 Konuşma Balonu */
+#mascot-bubble {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  background: #7c3aed;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: .3s;
+}
+
+#mascot:hover #mascot-bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 🔥 Dikkat Çekme Animasyonu */
+.mascot-attention {
+  animation: pulse 1.4s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+
 </style>
 </head>
 <body>
 
+
+  <!-- 🎭 Mascot -->
+<div id="mascot">
+  🐱
+  <div id="mascot-bubble">👋 Beni oku!</div>
+</div>
+
+  
 <!-- ========== INTRO EKRANI ========= -->
 <div id="introOverlay" class="intro-overlay">
 <div class="intro-card">
@@ -2719,28 +2789,41 @@ settingsBtn.addEventListener('click', toggleDarkMode);
 
 
 
+const mascot = document.getElementById('mascot');
+const bubble = document.getElementById('mascot-bubble');
+const isDark = document.body.classList.contains('dark-theme');
+
+/* 🚨 Sayfa Açılınca Mascot Dikkat Çeksin */
+window.addEventListener('load', () => {
+  mascot.classList.add('mascot-attention');
+  bubble.style.opacity = 1;
+  bubble.textContent = '👀 Buraya bak!';
+
+  setTimeout(() => {
+    mascot.classList.remove('mascot-attention');
+    bubble.style.opacity = 0;
+  }, 4000);
+});
+
+/* 🎮 Mascot Tıklanınca Oyun Tanıtımı */
 mascot.addEventListener('click', async () => {
 
-  /* 1️⃣ AŞAMA — HEYECAN & DAVET */
+  /* 1️⃣ AŞAMA — HEYECAN */
   const intro = await Swal.fire({
     title: '🎮 Hazır mısın?',
     html: `
       <div style="text-align:center;font-size:0.95rem;line-height:1.6;">
-        
-        <div style="font-weight:600;letter-spacing:.5px;margin-bottom:8px;">
-          Bilgi • Hız • Eğlence
-        </div>
+        <strong>Bilgi • Hız • Eğlence</strong>
 
-        <p>
-          Bu modda <strong>yalnız değilsin.</strong><br>
-          Eşinle, arkadaşınla ya da ailenle<br>
-          aynı sorulara cevap veriyorsun!
+        <p style="margin-top:10px;">
+          Bu modda yalnız değilsin.<br>
+          Eşinle, arkadaşınla ya da ailenle yarışıyorsun!
         </p>
 
-        <p style="margin:10px 0;">
+        <p>
           Kim daha hızlı?<br>
           Kim daha dikkatli?<br>
-          Kim “ben biliyordum” diyecek? 😄
+          Görelim 😄
         </p>
 
         <div style="
@@ -2748,99 +2831,66 @@ mascot.addEventListener('click', async () => {
           padding:10px;
           border-radius:14px;
           font-style:italic;
-          box-shadow:0 4px 10px rgba(0,0,0,.08);
+          margin-top:10px;
         ">
           “Bir soruda ben öndeydim,<br>
-          diğerinde eşim geçti!”<br>
-          <strong>İşte bu oyunun ruhu 👏</strong>
+          diğerinde o geçti!”<br>
+          <strong>İşte oyunun keyfi 👏</strong>
         </div>
 
         <p style="margin-top:12px;">
-          Kazanan sadece puan değil…<br>
+          Kazanan puan değil,<br>
           <strong>en çok eğlenen olur ❤️</strong>
         </p>
-
       </div>
     `,
-    confirmButtonText: '🔥 Devam Edelim',
-    showCloseButton: true,
+    confirmButtonText: '🔥 Devam',
     confirmButtonColor: '#7c3aed',
-    background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-    color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
-    width: '90%',
-    padding: '1rem'
+    showCloseButton: true,
+    background: isDark ? '#2c2f33' : '#fff9f0',
+    color: isDark ? '#fff' : '#2d3e50',
+    width: '90%'
   });
 
-
-  /* 2️⃣ AŞAMA — KURALLAR (Sıkmayan Netlik) */
+  /* 2️⃣ AŞAMA — KURALLAR 1 */
   if (intro.isConfirmed) {
-    Swal.fire({
-      title: '🚀 Oyun Nasıl Oynanır?',
+    const rules1 = await Swal.fire({
+      title: '🚀 Oyun Kuralları',
       html: `
-        <div style="text-align:left;font-size:0.85rem;line-height:1.5;">
-          <ul style="list-style:none;padding:0;margin:0;">
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              ⏱️ <strong>60 saniyen var.</strong><br>
-              Düşün, karar ver, işaretle!
-            </li>
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              🎯 <strong>İlk cevap doğruysa</strong><br>
-              puanı direkt alırsın.
-            </li>
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              ❌ Yanlış yaptın mı?<br>
-              <strong>Bir şansın daha var.</strong><br>
-              Ama ikinci yanlışta oyun biter 😬
-            </li>
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              💡 <strong>Takıldın mı?</strong><br>
-              İpucu 2 yanlış şıkkı siler.<br>
-              (Puan harcar, her seviyede en fazla 2 kez)
-            </li>
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              🚀 <strong>Seviye atladıkça</strong><br>
-              sorular artar, tempo yükselir!
-            </li>
-
-            <li style="margin-bottom:8px;padding:8px 10px;background:#f9f3e7;border-radius:14px;">
-              🏅 <strong>Rozetleri kap!</strong><br>
-              Seri yap, başarıları topla.
-            </li>
-
-            <li style="
-              margin-bottom:8px;
-              padding:10px;
-              background:#ede9fe;
-              border-radius:14px;
-              text-align:center;
-              font-weight:600;
-            ">
-              👑 Hedef: <strong>50. Seviye</strong><br>
-              Ve evet… orada sürpriz var 😎
-            </li>
-
-          </ul>
-
-          <p style="text-align:center;margin-top:10px;font-size:.8rem;opacity:.85;">
-            Hazırsan başla.<br>
-            Gerisi zaten kendiliğinden geliyor 🎉
-          </p>
-
+        <div style="font-size:0.9rem;">
+          <div class="rule-card">⏱️ <strong>60 saniyen var.</strong><br>Hızlı düşün.</div>
+          <div class="rule-card">🎯 <strong>İlk cevap doğruysa</strong><br>puanı alırsın.</div>
+          <div class="rule-card">❌ Yanlış mı?<br><strong>Bir şansın daha var.</strong><br>İkinci yanlışta oyun biter 😬</div>
         </div>
       `,
-      confirmButtonText: '🎉 Oyunu Başlat',
-      showCloseButton: true,
+      confirmButtonText: 'Devam',
       confirmButtonColor: '#7c3aed',
-      background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
-      width: '90%',
-      padding: '1rem'
+      showCloseButton: true,
+      background: isDark ? '#2c2f33' : '#fff9f0',
+      color: isDark ? '#fff' : '#2d3e50',
+      width: '90%'
     });
+
+    /* 3️⃣ AŞAMA — KURALLAR 2 */
+    if (rules1.isConfirmed) {
+      Swal.fire({
+        title: '✨ Devamı',
+        html: `
+          <div style="font-size:0.9rem;">
+            <div class="rule-card">💡 <strong>İpucu:</strong><br>2 yanlış şıkkı siler.<br>(Her seviyede max 2)</div>
+            <div class="rule-card">🚀 <strong>Seviye atladıkça</strong><br>sorular artar.</div>
+            <div class="rule-card">🏅 <strong>Rozetleri topla</strong><br>Seriler yap.</div>
+            <div class="rule-final">👑 Hedef: <strong>50. Seviye</strong><br>Sürpriz var 😎</div>
+          </div>
+        `,
+        confirmButtonText: '🎉 Oyunu Başlat',
+        confirmButtonColor: '#7c3aed',
+        showCloseButton: true,
+        background: isDark ? '#2c2f33' : '#fff9f0',
+        color: isDark ? '#fff' : '#2d3e50',
+        width: '90%'
+      });
+    }
   }
 });
             
@@ -2849,50 +2899,6 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
