@@ -1081,6 +1081,20 @@ body { padding:8px; }
   /* Eğer elementi bulunduğu satırda en sağa yaslamak isterseniz */
   margin-left: auto;             /* Bu satırı kaldırabilirsiniz */
 }
+.info-bubble {
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    position: fixed;
+    z-index: 10000;
+    max-width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
 </style>
 </head>
 <body>
@@ -1154,6 +1168,10 @@ body { padding:8px; }
 <div id="gameUserName" class="user-name">Misafir</div><!-- kullanıcı acı -->
 </div>
 <div id="levelProgress" class="right-group2 stat-box" title="Toplam soru sayısı = Cevaplanan + Kalan"></div><!-- kalan soru sayısı bilgisi -->
+ <!--balon içeriği -->
+<div id="infoBubble" class="info-bubble" style="display: none; position: fixed; background: #333; 
+color: white; padding: 8px 12px; border-radius: 20px; font-size: 0.8rem; z-index: 10000; max-width: 200px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div>
+            
 <div class="right-group"><!-- seviye puan rozet başarı bilgileri -->
 <div class="stat-box"><i class="fas fa-star"></i><span id="scoreDisplay">0</span></div>
 <div class="stat-box"><i class="fas fa-crown"></i><span id="currentLevelDisplay">1</span></div>
@@ -1740,7 +1758,38 @@ if(allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({
 allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
 }
 }
+            
+// Bilgi balonunu gösteren fonksiyon
+function showInfoBubble(message, targetElement) {
+    const bubble = document.getElementById('infoBubble');
+    if (!bubble) return;
 
+    // Mesajı güncelle
+    bubble.textContent = message;
+
+    // Tıklanan elementin konumuna göre balonu konumlandır
+    const rect = targetElement.getBoundingClientRect();
+    bubble.style.left = rect.left + (rect.width / 2) + 'px';
+    bubble.style.top = (rect.top - 30) + 'px'; // elementin biraz üstünde
+    bubble.style.transform = 'translateX(-50%)';
+
+    // Balonu göster
+    bubble.style.display = 'block';
+
+    // 2 saniye sonra otomatik gizle
+    setTimeout(() => {
+        bubble.style.display = 'none';
+    }, 2000);
+}
+
+// levelProgress elementine tıklama olayı ekle
+document.getElementById('levelProgress')?.addEventListener('click', function(e) {
+    const total = getQuestionCountForLevel(gameState.currentLevel);
+    const answered = gameState.currentQuestionIndexInLevel;
+    const remaining = total - answered;
+    const message = `Toplam soru: ${total} = Cevaplanan: ${answered} + Kalan: ${remaining}`;
+    showInfoBubble(message, this);
+});
 
             
 //function getQuestionCountForLevel(level) {return level * 2 + 5;}   STAR (BUNU KULLAN)
@@ -2704,6 +2753,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
