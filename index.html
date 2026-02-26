@@ -1373,6 +1373,7 @@ document.addEventListener('click', resume, {once: true});
 // OYUN DURUMU
 // ------------------------------------------------------------
 let gameState = {
+  hintsUsed: 0,
   maxUnlockedLevel: 1,
   currentLevel: 1,
   currentQuestionIndexInLevel: 0,
@@ -1801,20 +1802,26 @@ function loadLevelQuestions(level) {
   if (gameState.lastPlayedQuestions.length > 50) {
     gameState.lastPlayedQuestions = gameState.lastPlayedQuestions.slice(-50);
   }
-  gameState.currentQuestionIndexInLevel = 0;
-  gameState.hintUsedInThisLevel = false;
-  hintBtn.classList.remove('disabled');
-  loadQuestionAtIndex(0);
+gameState.currentQuestionIndexInLevel = 0;
+gameState.hintUsedInThisLevel = false;
+gameState.hintsUsed = 0;        // <-- YENİ: ipucu sayacını sıfırla
+hintBtn.classList.remove('disabled');
+loadQuestionAtIndex(0);
 
   // YENİ: Seviye ilerleme bilgisini güncelle
   updateLevelProgress();
 
   // YENİ: Son oynananları kaydet
   saveGameState();
+ updateHintButton();// İpucu butonunda kalan hakkı göstermek isterseniz (opsiyonel)
 }
   
 
-            
+    function updateHintButton() {
+  const maxHints = gameState.currentLevel;
+  const used = gameState.hintsUsed || 0;
+  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (5 puan) Kalan: ${maxHints - used}`;
+}        
 
 function loadQuestionAtIndex(index) {
   if (!currentLevelQuestions.length) return;
@@ -1870,17 +1877,15 @@ playSound('gameOver');
 
             
 
-
-// REVİZE EDİLMİŞ useHint (sabit 5 puan)
+//Her seviyede seviye numarası kadar ipucu hakkı olsun, maliyet sabit 5 puan. Ancak bunu minimum değişiklikle yapmak istiyorsunuz
 async function useHint() {
-  const hintCost = 5; // sabit 5 puan
-
-  if (gameState.hintUsedInThisLevel) {
-    showToast('Bu seviyede ipucu hakkın bitti!', 'info');
+  const maxHints = gameState.currentLevel; // seviye kadar hak
+  if (gameState.hintsUsed >= maxHints) {
+    showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
     return;
   }
-  if (gameState.score < hintCost) {
-    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
+  if (gameState.score < 5) {
+    showToast('İpucu için 5 puana ihtiyacın var!', 'info');
     return;
   }
   if (answered) {
@@ -1903,16 +1908,23 @@ async function useHint() {
   });
   
   eliminatedOptions = eliminateThese;
-  gameState.score -= hintCost;
+  gameState.score -= 5;
   if (gameState.score < 0) gameState.score = 0;
-  gameState.hintUsedInThisLevel = true;
-  hintBtn.classList.add('disabled');
-  saveGameState();
+  gameState.hintsUsed++;
   
+  // Eğer hak bittiyse butonu pasif yap
+  if (gameState.hintsUsed >= maxHints) {
+    hintBtn.classList.add('disabled');
+  }
+  
+  saveGameState();
   if (scoreDisplay) scoreDisplay.innerText = gameState.score;
   playSound('hint');
-  showToast('💡 İpucu kullanıldı! 2 yanlış şık elendi.', 'info');
+  showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
 }
+
+
+            
 
 // İpucu butonu metnini sabit 5 olarak güncelle (isterseniz bu fonksiyonu çağırmaya devam edin)
 function updateHintButton() {
@@ -2689,6 +2701,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
