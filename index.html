@@ -1119,39 +1119,21 @@ animation: slideDown 0.3s;
 
 
   /*mascot */
-  /* 🎴 Kural Kartları */
-.rule-card {
-  background: #f9f3e7;
-  padding: 10px;
-  border-radius: 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-}
-
-.rule-final {
-  background: #ede9fe;
-  padding: 12px;
-  border-radius: 16px;
-  text-align: center;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-}
-
-/* 🎭 Mascot */
+/* 🎭 Mascot sol köşe */
 #mascot {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px; /* sol tarafa aldık */
   font-size: 48px;
   cursor: pointer;
-  z-index: 9999;
+  z-index:10000;
 }
 
 /* 💬 Konuşma Balonu */
 #mascot-bubble {
   position: absolute;
   bottom: 60px;
-  right: 0;
+  left: 0; /* sol tarafa hizalandı */
   background: #7c3aed;
   color: #fff;
   padding: 6px 10px;
@@ -1163,12 +1145,13 @@ animation: slideDown 0.3s;
   transition: .3s;
 }
 
+/* Hover ile görünürlük */
 #mascot:hover #mascot-bubble {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* 🔥 Dikkat Çekme Animasyonu */
+/* 🔥 Pulse animasyonu */
 .mascot-attention {
   animation: pulse 1.4s infinite;
 }
@@ -1379,7 +1362,7 @@ animation: slideDown 0.3s;
 
 <!-- ========== MASKOT & SES ========= -->
 <div id="mascot" class="mascot">
-<img src="https://cdn-icons-png.flaticon.com/512/1995/1995575.png" alt="Baykuş" style="width:100%;z-index:10000;">
+<!--<img src="https://cdn-icons-png.flaticon.com/512/1995/1995575.png" alt="Baykuş" style="width:100%;z-index:10000;">-->
 <div id="speechBubble" class="speech-bubble" style="z-index:10000;">Merhaba! 👋</div>
 </div>
 <div id="soundToggleBtn" class="sound-toggle">
@@ -2789,43 +2772,37 @@ settingsBtn.addEventListener('click', toggleDarkMode);
 
 
 
-const mascot = document.getElementById('mascot');
+/*mascot*/
+  const mascot = document.getElementById('mascot');
 const bubble = document.getElementById('mascot-bubble');
 const isDark = document.body.classList.contains('dark-theme');
 
-/* 🚨 Sayfa Açılınca Mascot Dikkat Çeksin */
+/* 🚨 Sayfa açılır açılmaz dikkat çekme */
 window.addEventListener('load', () => {
   mascot.classList.add('mascot-attention');
-  bubble.style.opacity = 1;
+  bubble.style.opacity = 1; // balon görünür
   bubble.textContent = '👀 Buraya bak!';
 
   setTimeout(() => {
     mascot.classList.remove('mascot-attention');
-    bubble.style.opacity = 0;
+    bubble.style.opacity = 0; // 4 sn sonra kaybolur
   }, 4000);
 });
 
-/* 🎮 Mascot Tıklanınca Oyun Tanıtımı */
+/* 🎮 Mascot tıklanınca oyun akışı (SweetAlert2) */
 mascot.addEventListener('click', async () => {
 
-  /* 1️⃣ AŞAMA — HEYECAN */
+  // 1️⃣ HEYECAN
   const intro = await Swal.fire({
     title: '🎮 Hazır mısın?',
     html: `
       <div style="text-align:center;font-size:0.95rem;line-height:1.6;">
         <strong>Bilgi • Hız • Eğlence</strong>
-
         <p style="margin-top:10px;">
           Bu modda yalnız değilsin.<br>
           Eşinle, arkadaşınla ya da ailenle yarışıyorsun!
         </p>
-
-        <p>
-          Kim daha hızlı?<br>
-          Kim daha dikkatli?<br>
-          Görelim 😄
-        </p>
-
+        <p>Kim daha hızlı? Kim daha dikkatli? Görelim 😄</p>
         <div style="
           background:#ffeaa5;
           padding:10px;
@@ -2833,14 +2810,11 @@ mascot.addEventListener('click', async () => {
           font-style:italic;
           margin-top:10px;
         ">
-          “Bir soruda ben öndeydim,<br>
-          diğerinde o geçti!”<br>
+          “Bir soruda ben öndeydim,<br>diğerinde o geçti!”<br>
           <strong>İşte oyunun keyfi 👏</strong>
         </div>
-
         <p style="margin-top:12px;">
-          Kazanan puan değil,<br>
-          <strong>en çok eğlenen olur ❤️</strong>
+          Kazanan puan değil, <strong>en çok eğlenen olur ❤️</strong>
         </p>
       </div>
     `,
@@ -2852,7 +2826,7 @@ mascot.addEventListener('click', async () => {
     width: '90%'
   });
 
-  /* 2️⃣ AŞAMA — KURALLAR 1 */
+  // 2️⃣ KURALLAR 1
   if (intro.isConfirmed) {
     const rules1 = await Swal.fire({
       title: '🚀 Oyun Kuralları',
@@ -2871,7 +2845,7 @@ mascot.addEventListener('click', async () => {
       width: '90%'
     });
 
-    /* 3️⃣ AŞAMA — KURALLAR 2 */
+    // 3️⃣ KURALLAR 2
     if (rules1.isConfirmed) {
       Swal.fire({
         title: '✨ Devamı',
@@ -2899,6 +2873,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
