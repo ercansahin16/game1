@@ -1754,21 +1754,50 @@ if(scoreDisplay) scoreDisplay.innerText = gameState.score;
 if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 }
 
-               function saveSettings() {
-            const newName = settingsUsername.value.trim() || 'Misafir';
-            const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
-            if (selectedAvatar) {
-                gameState.avatar = selectedAvatar.dataset.avatarIcon;
-                gameState.avatarImg = selectedAvatar.dataset.avatarImg;
-            }
-            gameState.username = newName;
-            saveGameState();
-            updateIntroUI();
-            updateGameHeader();
-            settingsModalOverlay.classList.remove('active');
-            showToast('Profil güncellendi!', 'success');
-        }
 
+
+  //benzersiz kullanıcı adı ve kullanıcı adu-ı değiştirme fonksiyonu 
+  // saveSettings fonksiyonunu güncelle (async yap)
+async function saveSettings() {
+    const newName = settingsUsername.value.trim();
+    
+    // Boş veya "Misafir" ismini engelle
+    if (!newName || newName.toLowerCase() === 'misafir') {
+        showToast('Lütfen geçerli bir kullanıcı adı girin (Misafir kullanılamaz).', 'error');
+        return;
+    }
+
+    // Firebase'de aynı isim var mı kontrol et
+    try {
+        const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", newName));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
+            return;
+        }
+    } catch (e) {
+        console.error("İsim kontrolü hatası:", e);
+        showToast('İsim kontrolü yapılamadı, lütfen tekrar deneyin.', 'error');
+        return;
+    }
+
+    // Seçilen avatarı al
+    const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
+    if (selectedAvatar) {
+        gameState.avatar = selectedAvatar.dataset.avatarIcon;
+        gameState.avatarImg = selectedAvatar.dataset.avatarImg;
+    }
+
+    // Yeni ismi kaydet
+    gameState.username = newName;
+    saveGameState();
+    updateIntroUI();
+    updateGameHeader();
+
+    // Modalı kapat
+    settingsModalOverlay.classList.remove('active');
+    showToast('Profil güncellendi!', 'success');
+}
 
 
 // ------------------------------------------------------------
@@ -2934,6 +2963,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
