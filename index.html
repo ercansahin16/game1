@@ -2012,23 +2012,35 @@ playSound('gameOver');
   }
 
   // Puan kontrolü
-  if (gameState.score < hintCost) {
-    const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
-    const result = await Swal.fire({
-      title: '⚡ Puanın Yetersiz!',
-      html: `İpucu için <strong>${hintCost} puan</strong> gerekiyor.<br><br>
-             <span style="font-size:1.1rem;">🔻 <strong>1 seviye düşerek</strong> 🔻</span><br>
-             <strong>${earnedPoints} puan</strong> kazanmak ister misin?<br><br>
-             <span style="color:#ff6b6b;">⚠️ Bu işlemle bir alt seviyeye (seviye ${gameState.currentLevel-1}) döneceksin ve ${gameState.currentLevel}. seviye kilitlenecek!</span>`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Evet, seviye düşeyim',
-      cancelButtonText: 'Hayır, vazgeç',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
-    });
+// Puan kontrolü
+if (gameState.score < hintCost) {
+  const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
+  const result = await Swal.fire({
+    title: '⚡ Puanın Yetersiz',
+    html: `
+      <div style="text-align: center;">
+        <p>İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
+        <p style="margin: 15px 0; font-size: 1.1rem;">
+          🔻 <strong>1 seviye düşerek</strong> 🔻<br>
+          <strong>${earnedPoints} puan</strong> kazan
+        </p>
+        <p style="background: #fff3cd; padding: 8px; border-radius: 8px; color: #856404;">
+          ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel-1}) iniyorsun.<br>
+          Soru değişecek, mevcut soru kaybolacak.
+        </p>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Evet, seviye düşeyim',
+    cancelButtonText: 'Hayır, vazgeç',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+    color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
+  });
+  // ... devamı
+}
 
     if (result.isConfirmed) {
       if (gameState.currentLevel > 1) {
@@ -2912,6 +2924,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
