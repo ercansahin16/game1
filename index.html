@@ -2001,17 +2001,6 @@ playSound('gameOver');
 
 
 
-  // Puan kontrolü
- async function useHint() {
-  const maxHints = 2; // sabit 2 hak
-  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
-
-  if (gameState.hintsUsed >= maxHints) {
-    showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
-    return;
-  }
-
-
 async function useHint() {
   const maxHints = 2;
   const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
@@ -2021,9 +2010,9 @@ async function useHint() {
     return;
   }
 
-
   if (gameState.score < hintCost) {
     const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
+
     const result = await Swal.fire({
       title: '⚡ Puanın Yetersiz',
       html: `
@@ -2034,7 +2023,7 @@ async function useHint() {
             <strong>${earnedPoints} puan</strong> kazan
           </p>
           <p style="background: #fff3cd; padding: 8px; border-radius: 8px; color: #856404;">
-            ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel-1}) iniyorsun.<br>
+            ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
             Soru değişecek, mevcut soru kaybolacak.
           </p>
         </div>
@@ -2064,19 +2053,23 @@ async function useHint() {
         await loadLevelQuestions(gameState.currentLevel);
         updateGameHeader();
         updateHintButton();
-        showToast(`💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`, 'success');
 
-        return; // Fonksiyon burada bitsin, ipucu uygulanmasın
+        showToast(
+          `💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`,
+          'success'
+        );
+
+        return;
       } else {
         showToast('Zaten en düşük seviyedesin!', 'error');
         return;
       }
     } else {
-      return; // Vazgeçti
+      return;
     }
   }
 
-  // ---- Normal ipucu kullanımı (puan yeterli) ----
+  // ---- Normal ipucu kullanımı ----
   const correctIndex = currentQuestion.dogru;
   const allIndexes = [0, 1, 2, 3];
   const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
@@ -2102,10 +2095,19 @@ async function useHint() {
 
   saveGameState();
   if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+
   playSound('hint');
-  showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
+  showToast(
+    `💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`,
+    'info'
+  );
+
   updateHintButton();
 }
+
+
+
+  
   
             
 
@@ -2930,6 +2932,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
