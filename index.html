@@ -1932,6 +1932,8 @@ loadQuestionAtIndex(0);
   // YENİ: Son oynananları kaydet
   saveGameState();
  updateHintButton();// İpucu butonunda kalan hakkı göstermek isterseniz (opsiyonel)
+   // Seviye göstergelerini güncelle
+  renderLevelIndicators();
 }
 
 
@@ -1996,11 +1998,14 @@ playSound('gameOver');
 
 
             
-async function useHint() {
+
+
+
+
+  async function useHint() {
   const maxHints = 2; // sabit 2 hak
   const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
 
-  // Önce ipucu hakkı kontrolü
   if (gameState.hintsUsed >= maxHints) {
     showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
     return;
@@ -2008,65 +2013,59 @@ async function useHint() {
 
   // Puan kontrolü
   if (gameState.score < hintCost) {
-    // Eğer bu seviyede daha önce seviye takası yapılmadıysa teklif et
-    if (!gameState.levelTradeUsed) {
-      const confirm = await Swal.fire({
-        title: '⚡ Puanın Yetersiz!',
-        html: `İpucu için ${hintCost} puana ihtiyacın var.<br>
-               <strong>1 seviye düşerek ${Math.floor(15 + gameState.currentLevel * 1.5)} puan kazanmak ister misin?</strong><br>
-               <small>(Bu işlem her seviyede bir kez yapılabilir)</small>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Evet, seviye düşeyim',
-        cancelButtonText: 'Hayır',
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-        color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
-      });
+    const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5); // kazanılacak puan
+    const result = await Swal.fire({
+      title: '⚡ Puanın Yetersiz!',
+      html: `İpucu için <strong>${hintCost} puan</strong> gerekiyor.<br><br>
+             <span style="font-size:1.1rem;">🔻 <strong>1 seviye düşerek</strong> 🔻</span><br>
+             <strong>${earnedPoints} puan</strong> kazanmak ister misin?<br><br>
+             <span style="color:#ff6b6b;">⚠️ Bu işlemle bir alt seviyeye (seviye ${gameState.currentLevel-1}) döneceksin ve ${gameState.currentLevel}. seviye kilitlenecek!</span>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Evet, seviye düşeyim',
+      cancelButtonText: 'Hayır, vazgeç',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
+    });
 
-      if (confirm.isConfirmed) {
-        // Seviye kontrolü: en düşük 1, daha düşülemez
-        if (gameState.currentLevel <= 1) {
-          showToast('Zaten en düşük seviyedesin!', 'error');
-          return;
-        }
-
-        // Kazanılacak puanı hesapla
-        const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
-
+    if (result.isConfirmed) {
+      if (gameState.currentLevel > 1) {
         // Seviye düşür
         gameState.currentLevel--;
         gameState.score += earnedPoints;
-        gameState.levelTradeUsed = true; // bu seviyede bir kez kullanıldı
         gameState.currentQuestionIndexInLevel = 0;
-        gameState.hintsUsed = 0; // ipucu hakları sıfırlansın mı? (yeni seviyede yeni haklar)
-        // Eğer hintUsedInThisLevel gibi bir değişken varsa onu da sıfırla
-        // gameState.hintUsedInThisLevel = false; 
+        gameState.hintsUsed = 0;
+
+        // Eğer maxUnlockedLevel mevcut seviyeden büyükse, onu da düşür (üst seviyeleri kilitle)
+        if (gameState.maxUnlockedLevel > gameState.currentLevel) {
+          gameState.maxUnlockedLevel = gameState.currentLevel;
+        }
 
         saveGameState();
 
-        // Yeni seviyeyi yükle
+        // Yeni seviyeyi yükle (renderLevelIndicators içinde çalışacak)
         await loadLevelQuestions(gameState.currentLevel);
+
+        // Üst paneli güncelle
         updateGameHeader();
         updateHintButton();
-        showToast(`💰 ${earnedPoints} puan kazandın! Yeni seviyen: ${gameState.currentLevel}`, 'success');
 
-        // Şimdi ipucu kullanımına devam et (puan arttı, tekrar dene)
-        // Tekrar useHint çağırarak ipucunu otomatik uygulayalım
-        return useHint();
+        showToast(`💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`, 'success');
+
+        // İpucu kullanımına devam et (otomatik)
+        return useHint(); // artık puan yeterli olacak
       } else {
-        // Vazgeçti, ipucu kullanma
+        showToast('Zaten en düşük seviyedesin!', 'error');
         return;
       }
     } else {
-      // Bu seviyede zaten takas yapılmış, sadece uyarı ver
-      showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
-      return;
+      return; // Vazgeçti
     }
   }
 
-  // ---- Normal ipucu kullanımı (puan yeterli) ----
+   // ---- Normal ipucu kullanımı (puan yeterli) ----
   const correctIndex = currentQuestion.dogru;
   const allIndexes = [0, 1, 2, 3];
   const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
@@ -2096,6 +2095,10 @@ async function useHint() {
   showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
   updateHintButton();
 }
+
+
+
+
   
             
 
@@ -2920,6 +2923,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
