@@ -1462,6 +1462,7 @@ document.addEventListener('click', resume, {once: true});
 // OYUN DURUMU
 // ------------------------------------------------------------
 let gameState = {
+  levelTradeUsed: false,
   hintsUsed: 0,
   maxUnlockedLevel: 1,
   currentLevel: 1,
@@ -1921,6 +1922,7 @@ function loadLevelQuestions(level) {
 gameState.currentQuestionIndexInLevel = 0;
 gameState.hintUsedInThisLevel = false;
 gameState.hintsUsed = 0;        // <-- YENİ: ipucu sayacını sıfırla
+gameState.levelTradeUsed = false; // YENİ
 hintBtn.classList.remove('disabled');
 loadQuestionAtIndex(0);
 
@@ -1995,22 +1997,76 @@ playSound('gameOver');
 
             
 async function useHint() {
-  const maxHints = 2; 
-  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel)); // dinamik maliyet
+  const maxHints = 2; // sabit 2 hak
+  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
 
+  // Önce ipucu hakkı kontrolü
   if (gameState.hintsUsed >= maxHints) {
     showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
     return;
   }
+
+  // Puan kontrolü
   if (gameState.score < hintCost) {
-    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
-    return;
-  }
-  if (answered) {
-    showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info');
-    return;
+    // Eğer bu seviyede daha önce seviye takası yapılmadıysa teklif et
+    if (!gameState.levelTradeUsed) {
+      const confirm = await Swal.fire({
+        title: '⚡ Puanın Yetersiz!',
+        html: `İpucu için ${hintCost} puana ihtiyacın var.<br>
+               <strong>1 seviye düşerek ${Math.floor(15 + gameState.currentLevel * 1.5)} puan kazanmak ister misin?</strong><br>
+               <small>(Bu işlem her seviyede bir kez yapılabilir)</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, seviye düşeyim',
+        cancelButtonText: 'Hayır',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+        color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
+      });
+
+      if (confirm.isConfirmed) {
+        // Seviye kontrolü: en düşük 1, daha düşülemez
+        if (gameState.currentLevel <= 1) {
+          showToast('Zaten en düşük seviyedesin!', 'error');
+          return;
+        }
+
+        // Kazanılacak puanı hesapla
+        const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
+
+        // Seviye düşür
+        gameState.currentLevel--;
+        gameState.score += earnedPoints;
+        gameState.levelTradeUsed = true; // bu seviyede bir kez kullanıldı
+        gameState.currentQuestionIndexInLevel = 0;
+        gameState.hintsUsed = 0; // ipucu hakları sıfırlansın mı? (yeni seviyede yeni haklar)
+        // Eğer hintUsedInThisLevel gibi bir değişken varsa onu da sıfırla
+        // gameState.hintUsedInThisLevel = false; 
+
+        saveGameState();
+
+        // Yeni seviyeyi yükle
+        await loadLevelQuestions(gameState.currentLevel);
+        updateGameHeader();
+        updateHintButton();
+        showToast(`💰 ${earnedPoints} puan kazandın! Yeni seviyen: ${gameState.currentLevel}`, 'success');
+
+        // Şimdi ipucu kullanımına devam et (puan arttı, tekrar dene)
+        // Tekrar useHint çağırarak ipucunu otomatik uygulayalım
+        return useHint();
+      } else {
+        // Vazgeçti, ipucu kullanma
+        return;
+      }
+    } else {
+      // Bu seviyede zaten takas yapılmış, sadece uyarı ver
+      showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
+      return;
+    }
   }
 
+  // ---- Normal ipucu kullanımı (puan yeterli) ----
   const correctIndex = currentQuestion.dogru;
   const allIndexes = [0, 1, 2, 3];
   const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
@@ -2038,14 +2094,9 @@ async function useHint() {
   if (scoreDisplay) scoreDisplay.innerText = gameState.score;
   playSound('hint');
   showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
-  updateHintButton(); // buton metnini güncelle
+  updateHintButton();
 }
-
-            
-
-
-
-
+  
             
 
 async function handleOptionClick(selectedIdx, btnElement){
@@ -2869,6 +2920,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 </script>
 </body>
 </html>
+
 
 
 
