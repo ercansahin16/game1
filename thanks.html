@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Teşekkürler & Lisans</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background:#f4f4f4; }
+  #license { font-weight: bold; font-size: 1.2em; margin: 20px 0; }
+  button { padding: 10px 20px; font-size: 1em; cursor: pointer; }
+</style>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+// Firebase ayarları
+const firebaseConfig = {
+  apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+  authDomain: "duapro-a7d7e.firebaseapp.com",
+  projectId: "duapro-a7d7e",
+  storageBucket: "duapro-a7d7e.appspot.com",
+  messagingSenderId: "450775848659",
+  appId: "1:450775848659:web:ca192a401da3f887e1e626"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Benzersiz lisans anahtarı oluştur
+const generateKey = () => 'GAME-' + Math.random().toString(36).substring(2,10).toUpperCase();
+const key = generateKey();
+
+// Firebase'e kaydet
+const saveKey = async () => {
+  try {
+    await addDoc(collection(db, "licenses"), { key: key, used: false });
+    document.getElementById('license').innerText = key;
+  } catch(e) {
+    console.error("Anahtar kaydedilemedi:", e);
+    document.getElementById('license').innerText = "Hata! Anahtar oluşturulamadı.";
+  }
+}
+
+saveKey();
+
+// Kopyala butonu
+window.copyKey = () => {
+  const licenseText = document.getElementById('license').innerText;
+  navigator.clipboard.writeText(licenseText).then(() => {
+    alert("Anahtar kopyalandı!");
+  });
+}
+</script>
+</head>
+<body>
+<h1>Teşekkürler! 🎉</h1>
+<p>Ödemeniz alındı. Lisans anahtarınız hazır:</p>
+<p id="license">Oluşturuluyor...</p>
+<button onclick="copyKey()">Anahtarı Kopyala</button>
+<p>Bu anahtarı oyun açarken kullanacaksınız.</p>
+<a href="game.html">Oyuna Git</a>
+</body>
+</html>
