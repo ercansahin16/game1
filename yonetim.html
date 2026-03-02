@@ -249,16 +249,19 @@
     </div>
 
     <!-- Modal (manuel key üretme, soru ekleme/düzenleme için) -->
-    <div class="modal" id="keyModal">
-        <div class="modal-content">
-            <h3 id="keyModalTitle">Manuel Key Üret</h3>
-            <input type="text" id="keyEmail" placeholder="Müşteri Email">
-            <div class="modal-buttons">
-                <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
-                <button class="btn btn-danger" id="closeKeyModal">İptal</button>
-            </div>
-        </div>
+ <div class="modal" id="keyModal">
+  <div class="modal-content">
+    <h3 id="keyModalTitle">Manuel Key Üret</h3>
+    <input type="text" id="keyFirstName" placeholder="Ad">
+    <input type="text" id="keyLastName" placeholder="Soyad">
+    <input type="text" id="keyPhone" placeholder="Telefon">
+    <input type="email" id="keyEmail" placeholder="Email">
+    <div class="modal-buttons">
+      <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
+      <button class="btn btn-danger" id="closeKeyModal">İptal</button>
     </div>
+  </div>
+</div>
 
     <!-- Soru Modal -->
     <div class="modal" id="questionModal">
@@ -346,33 +349,48 @@
         }
 
         // ------------------- LİSANSLAR -------------------
-        async function loadLicenses() {
-            const container = document.getElementById('licensesList');
-            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            try {
-                const q = query(collection(db, LICENSES_COLL));
-                const snapshot = await getDocs(q);
-                let html = '<table><tr><th>Key</th><th>Email</th><th>Durum</th><th>Cihaz ID</th><th>İşlem</th></tr>';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const used = data.used ? 'Kullanıldı' : 'Kullanılmadı';
-                    const badgeClass = data.used ? 'badge-danger' : 'badge-success';
-                    html += `<tr>
-                        <td><code>${data.key}</code></td>
-                        <td>${data.email || '-'}</td>
-                        <td><span class="badge ${badgeClass}">${used}</span></td>
-                        <td>${data.deviceId ? data.deviceId.substring(0, 8) + '…' : '-'}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm" onclick="deleteLicense('${doc.id}')">Sil</button>
-                        </td>
-                    </tr>`;
-                });
-                html += '</table>';
-                container.innerHTML = html;
-            } catch (e) {
-                container.innerHTML = 'Hata oluştu: ' + e.message;
-            }
-        }
+  async function loadLicenses() {
+  const container = document.getElementById('licensesList');
+  container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+  try {
+    const q = query(collection(db, LICENSES_COLL));
+    const snapshot = await getDocs(q);
+    let html = `
+      <div style="overflow-x: auto;">
+        <table>
+          <tr>
+            <th>Key</th>
+            <th>Ad Soyad</th>
+            <th>Telefon</th>
+            <th>Email</th>
+            <th>Durum</th>
+            <th>Cihaz ID</th>
+            <th>İşlem</th>
+          </tr>
+    `;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const used = data.used ? 'Kullanıldı' : 'Kullanılmadı';
+      const badgeClass = data.used ? 'badge-danger' : 'badge-success';
+      const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
+      html += `<tr>
+          <td><code>${data.key}</code></td>
+          <td>${fullName.trim() || '-'}</td>
+          <td>${data.phone || '-'}</td>
+          <td>${data.email || '-'}</td>
+          <td><span class="badge ${badgeClass}">${used}</span></td>
+          <td>${data.deviceId ? data.deviceId.substring(0, 8) + '…' : '-'}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteLicense('${doc.id}')">Sil</button>
+          </td>
+        </tr>`;
+    });
+    html += '</table></div>';
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = 'Hata oluştu: ' + e.message;
+  }
+}
 
         window.deleteLicense = async (id) => {
             const result = await Swal.fire({
@@ -395,56 +413,96 @@
         document.getElementById('closeKeyModal').addEventListener('click', () => {
             document.getElementById('keyModal').classList.remove('active');
         });
-        document.getElementById('generateKeyConfirm').addEventListener('click', async () => {
-            const email = document.getElementById('keyEmail').value.trim();
-            if (!email) {
-                Swal.fire('Hata', 'Email gerekli', 'error');
-                return;
-            }
-            const key = 'GAME-' + Math.random().toString(36).substring(2,10).toUpperCase();
-            try {
-                await addDoc(collection(db, LICENSES_COLL), {
-                    key: key,
-                    email: email,
-                    used: false,
-                    createdAt: new Date()
-                });
-                Swal.fire('Başarılı', `Yeni key: ${key}`, 'success');
-                document.getElementById('keyModal').classList.remove('active');
-                document.getElementById('keyEmail').value = '';
-                loadLicenses();
-            } catch (e) {
-                Swal.fire('Hata', e.message, 'error');
-            }
-        });
+   document.getElementById('generateKeyConfirm').addEventListener('click', async () => {
+  const firstName = document.getElementById('keyFirstName').value.trim();
+  const lastName = document.getElementById('keyLastName').value.trim();
+  const phone = document.getElementById('keyPhone').value.trim();
+  const email = document.getElementById('keyEmail').value.trim();
+  
+  if (!firstName || !lastName || !phone || !email) {
+    Swal.fire('Hata', 'Tüm alanlar zorunludur', 'error');
+    return;
+  }
+  
+  const key = 'GAME-' + Math.random().toString(36).substring(2,10).toUpperCase();
+  try {
+    await addDoc(collection(db, LICENSES_COLL), {
+      key: key,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
+      email: email,
+      used: false,
+      createdAt: new Date()
+    });
+    Swal.fire('Başarılı', `Yeni key: ${key}`, 'success');
+    document.getElementById('keyModal').classList.remove('active');
+    // Alanları temizle
+    ['keyFirstName','keyLastName','keyPhone','keyEmail'].forEach(id => document.getElementById(id).value = '');
+    loadLicenses();
+  } catch (e) {
+    Swal.fire('Hata', e.message, 'error');
+  }
+});
 
         // ------------------- SORULAR -------------------
-        async function loadQuestions() {
-            const container = document.getElementById('questionsList');
-            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            try {
-                const q = query(collection(db, QUESTIONS_COLL));
-                const snapshot = await getDocs(q);
-                let html = '<table><tr><th>Soru</th><th>Kategori</th><th>Zorluk</th><th>İşlem</th></tr>';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    html += `<tr>
-                        <td>${data.soru.substring(0, 50)}${data.soru.length > 50 ? '…' : ''}</td>
-                        <td>${data.bolum || '-'}</td>
-                        <td>${data.zorluk || 1}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editQuestion('${doc.id}')">Düzenle</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${doc.id}')">Sil</button>
-                        </td>
-                    </tr>`;
-                });
-                html += '</table>';
-                container.innerHTML = html;
-            } catch (e) {
-                container.innerHTML = 'Hata: ' + e.message;
-            }
-        }
+      // Global dizi
+let allQuestions = [];
 
+async function loadQuestions() {
+  const container = document.getElementById('questionsList');
+  container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+  try {
+    const q = query(collection(db, QUESTIONS_COLL));
+    const snapshot = await getDocs(q);
+    allQuestions = [];
+    snapshot.forEach(doc => {
+      allQuestions.push({ id: doc.id, ...doc.data() });
+    });
+    renderQuestions(); // Filtreleri uygula
+  } catch (e) {
+    container.innerHTML = 'Hata: ' + e.message;
+  }
+}
+
+function renderQuestions() {
+  const category = document.getElementById('categoryFilter').value;
+  const difficulty = document.getElementById('difficultyFilter').value;
+  
+  const filtered = allQuestions.filter(q => {
+    if (category !== 'all' && q.bolum !== category) return false;
+    if (difficulty !== 'all' && q.zorluk != difficulty) return false;
+    return true;
+  });
+  
+  let html = `
+    <div style="overflow-x: auto;">
+      <table>
+        <tr>
+          <th>Soru</th>
+          <th>Kategori</th>
+          <th>Zorluk</th>
+          <th>İşlem</th>
+        </tr>
+  `;
+  filtered.forEach(q => {
+    html += `<tr>
+        <td>${q.soru.substring(0, 50)}${q.soru.length > 50 ? '…' : ''}</td>
+        <td>${q.bolum || '-'}</td>
+        <td>${q.zorluk || 1}</td>
+        <td>
+          <button class="btn btn-warning btn-sm" onclick="editQuestion('${q.id}')">Düzenle</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.id}')">Sil</button>
+        </td>
+      </tr>`;
+  });
+  html += '</table></div>';
+  document.getElementById('questionsList').innerHTML = html;
+}
+
+// Filtre değişim olaylarını ekleyin (DOMContentLoaded içinde)
+document.getElementById('categoryFilter').addEventListener('change', renderQuestions);
+document.getElementById('difficultyFilter').addEventListener('change', renderQuestions);
         window.editQuestion = async (id) => {
             const docRef = doc(db, QUESTIONS_COLL, id);
             const docSnap = await getDoc(docRef);
