@@ -5,7 +5,7 @@ from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 function getDeviceId(){
   let id = localStorage.getItem("deviceId");
   if(!id){
-    id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    id = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
     localStorage.setItem("deviceId", id);
   }
   return id;
