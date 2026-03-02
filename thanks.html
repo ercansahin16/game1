@@ -6,7 +6,7 @@
 <style>
   body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background:#f4f4f4; }
   .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-  #license { font-weight: bold; font-size: 1.2em; margin: 20px 0; background: #e8f0fe; padding: 10px; border-radius: 6px; }
+  #license { font-weight: bold; font-size: 1.2em; margin: 20px 0; background: #e8f0fe; padding: 10px; border-radius: 6px; word-break: break-all; }
   input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
   button { background: #6c5ce7; color: white; border: none; cursor: pointer; font-size: 16px; }
   button:hover { background: #5a4ddb; }
@@ -46,7 +46,7 @@ window.generateLicense = async () => {
   try {
     await addDoc(collection(db, "licenses"), { 
       key: key, 
-      email: email,          // Email burada kaydediliyor
+      email: email,
       used: false,
       createdAt: new Date()
     });
@@ -59,11 +59,46 @@ window.generateLicense = async () => {
   }
 }
 
+// Güvenilir kopyalama fonksiyonu
 window.copyKey = () => {
   const licenseText = document.getElementById('license').innerText;
-  navigator.clipboard.writeText(licenseText).then(() => {
-    alert("Anahtar kopyalandı!");
-  });
+  
+  // Modern Clipboard API'yi dene
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(licenseText).then(() => {
+      alert("Anahtar panoya kopyalandı!");
+    }).catch(err => {
+      console.error("Clipboard yazma hatası:", err);
+      fallbackCopy(licenseText);
+    });
+  } else {
+    fallbackCopy(licenseText);
+  }
+}
+
+// Yedek kopyalama yöntemi (eski tarz)
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';  // Sayfa dışına taşmasın
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // Mobil için
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      alert('Anahtar panoya kopyalandı! (Yedek yöntem)');
+    } else {
+      alert('Kopyalama başarısız. Lütfen metni manuel seçip kopyalayın.');
+    }
+  } catch (err) {
+    console.error('Yedek kopyalama hatası:', err);
+    alert('Kopyalama başarısız. Lütfen metni manuel seçip kopyalayın.');
+  }
+  
+  document.body.removeChild(textarea);
 }
 </script>
 </head>
