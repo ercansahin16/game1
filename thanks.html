@@ -16,7 +16,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Firebase ayarları
 const firebaseConfig = {
   apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
   authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -29,10 +28,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Benzersiz lisans anahtarı oluştur
 const generateKey = () => 'GAME-' + Math.random().toString(36).substring(2,10).toUpperCase();
 
-// Anahtar oluşturma ve kaydetme
 window.generateLicense = async () => {
   const email = document.getElementById('emailInput').value.trim();
   const emailError = document.getElementById('emailError');
@@ -49,7 +46,7 @@ window.generateLicense = async () => {
   try {
     await addDoc(collection(db, "licenses"), { 
       key: key, 
-      email: email,
+      email: email,          // Email burada kaydediliyor
       used: false,
       createdAt: new Date()
     });
@@ -62,15 +59,12 @@ window.generateLicense = async () => {
   }
 }
 
-// Kopyala butonu
 window.copyKey = () => {
   const licenseText = document.getElementById('license').innerText;
   navigator.clipboard.writeText(licenseText).then(() => {
     alert("Anahtar kopyalandı!");
   });
 }
-
-// Sayfa yüklendiğinde otomatik oluşturma YOK, kullanıcı butona basmalı
 </script>
 </head>
 <body>
