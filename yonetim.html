@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nevafil Yönetim Paneli</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .tab.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .panel.active {
+            display: block;
+        }
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-success {
+            background: #2ecc71;
+        }
+        .btn-warning {
+            background: #f39c12;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="adminPanel" style="display: none;">
+        <div class="header">
+            <h1><i class="fas fa-crown"></i> Nevafil Yönetim Paneli</h1>
+            <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+        </div>
+
+        <div class="tabs" id="tabContainer">
+            <div class="tab active" data-tab="licenses">🔑 Lisans Yönetimi</div>
+            <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
+            <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
+            <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
+        </div>
+
+        <!-- Lisans Yönetimi Paneli -->
+        <div class="panel active" id="licensesPanel">
+            <h2><i class="fas fa-key"></i> Lisanslar</h2>
+            <button class="btn btn-success" id="manualKeyBtn"><i class="fas fa-plus"></i> Manuel Key Üret</button>
+            <div id="licensesList">Yükleniyor...</div>
+        </div>
+
+        <!-- Soru Yönetimi Paneli -->
+        <div class="panel" id="questionsPanel">
+            <h2><i class="fas fa-question-circle"></i> Sorular</h2>
+            <button class="btn btn-success" id="addQuestionBtn"><i class="fas fa-plus"></i> Yeni Soru</button>
+            <button class="btn btn-warning" id="bulkAddQuestionsBtn"><i class="fas fa-database"></i> Toplu Soru Ekle (Örnekler)</button>
+            <div id="questionsList">Yükleniyor...</div>
+        </div>
+
+        <!-- Kullanıcı Yönetimi Paneli -->
+        <div class="panel" id="usersPanel">
+            <h2><i class="fas fa-users"></i> Kullanıcılar (Liderlik Tablosu)</h2>
+            <button class="btn btn-danger" id="clearLeaderboardBtn"><i class="fas fa-trash"></i> Liderlik Tablosunu Temizle</button>
+            <div id="usersList">Yükleniyor...</div>
+        </div>
+
+        <!-- Toplu İşlemler Paneli -->
+        <div class="panel" id="bulkPanel">
+            <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
+            <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla (LocalStorage + Leaderboard)</button>
+            <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
+        </div>
+    </div>
+
+    <!-- Modal (manuel key üretme, soru ekleme/düzenleme için) -->
+    <div class="modal" id="keyModal">
+        <div class="modal-content">
+            <h3 id="keyModalTitle">Manuel Key Üret</h3>
+            <input type="text" id="keyEmail" placeholder="Müşteri Email">
+            <div class="modal-buttons">
+                <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
+                <button class="btn btn-danger" id="closeKeyModal">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Soru Modal -->
+    <div class="modal" id="questionModal">
+        <div class="modal-content">
+            <h3 id="questionModalTitle">Yeni Soru Ekle</h3>
+            <input type="text" id="questionText" placeholder="Soru metni">
+            <input type="text" id="option1" placeholder="Şık A">
+            <input type="text" id="option2" placeholder="Şık B">
+            <input type="text" id="option3" placeholder="Şık C">
+            <input type="text" id="option4" placeholder="Şık D">
+            <select id="correctAnswer">
+                <option value="0">Şık A doğru</option>
+                <option value="1">Şık B doğru</option>
+                <option value="2">Şık C doğru</option>
+                <option value="3">Şık D doğru</option>
+            </select>
+            <select id="questionCategory">
+                <option value="Kur'an">Kur'an</option>
+                <option value="Namaz">Namaz</option>
+                <option value="Peygamberler">Peygamberler</option>
+                <option value="İslam Dini">İslam Dini</option>
+                <option value="Melekler">Melekler</option>
+                <option value="Cennet-Cehennem">Cennet-Cehennem</option>
+                <option value="Allah">Allah</option>
+            </select>
+            <select id="questionDifficulty">
+                <option value="1">Kolay</option>
+                <option value="2">Orta</option>
+                <option value="3">Zor</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="btn btn-success" id="saveQuestionBtn">Kaydet</button>
+                <button class="btn btn-danger" id="closeQuestionModal">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './firebase-core.js';
+        import { collection, getDocs, addDoc, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        const ADMIN_PASSWORD = 'admin123'; // İstersen değiştir
+        const LICENSES_COLL = 'licenses';
+        const QUESTIONS_COLL = 'manevi_sorular';
+        const LEADERBOARD_COLL = 'leaderboard';
+
+        let currentEditId = null; // soru düzenleme için
+
+        // Giriş kontrolü
+        (async function() {
+            const { value: password } = await Swal.fire({
+                title: 'Yönetici Girişi',
+                input: 'password',
+                inputPlaceholder: 'Şifre',
+                showCancelButton: true,
+                confirmButtonText: 'Giriş',
+                cancelButtonText: 'İptal',
+                allowOutsideClick: false
+            });
+            if (password !== ADMIN_PASSWORD) {
+                Swal.fire('Hata', 'Geçersiz şifre', 'error').then(() => {
+                    window.location.href = 'index.html';
+                });
+                return;
+            }
+            document.getElementById('adminPanel').style.display = 'block';
+            loadAllData();
+        })();
+
+        // Sekme geçişleri
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById(tab.dataset.tab + 'Panel').classList.add('active');
+            });
+        });
+
+        // Tüm verileri yükle
+        async function loadAllData() {
+            loadLicenses();
+            loadQuestions();
+            loadUsers();
+        }
+
+        // ------------------- LİSANSLAR -------------------
+        async function loadLicenses() {
+            const container = document.getElementById('licensesList');
+            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+            try {
+                const q = query(collection(db, LICENSES_COLL));
+                const snapshot = await getDocs(q);
+                let html = '<table><tr><th>Key</th><th>Email</th><th>Durum</th><th>Cihaz ID</th><th>İşlem</th></tr>';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const used = data.used ? 'Kullanıldı' : 'Kullanılmadı';
+                    const badgeClass = data.used ? 'badge-danger' : 'badge-success';
+                    html += `<tr>
+                        <td><code>${data.key}</code></td>
+                        <td>${data.email || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${used}</span></td>
+                        <td>${data.deviceId ? data.deviceId.substring(0, 8) + '…' : '-'}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteLicense('${doc.id}')">Sil</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = 'Hata oluştu: ' + e.message;
+            }
+        }
+
+        window.deleteLicense = async (id) => {
+            const result = await Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Lisans kaydı silinecek!',
+                icon: 'warning',
+                showCancelButton: true
+            });
+            if (result.isConfirmed) {
+                await deleteDoc(doc(db, LICENSES_COLL, id));
+                loadLicenses();
+                Swal.fire('Silindi', '', 'success');
+            }
+        };
+
+        // Manuel key üret
+        document.getElementById('manualKeyBtn').addEventListener('click', () => {
+            document.getElementById('keyModal').classList.add('active');
+        });
+        document.getElementById('closeKeyModal').addEventListener('click', () => {
+            document.getElementById('keyModal').classList.remove('active');
+        });
+        document.getElementById('generateKeyConfirm').addEventListener('click', async () => {
+            const email = document.getElementById('keyEmail').value.trim();
+            if (!email) {
+                Swal.fire('Hata', 'Email gerekli', 'error');
+                return;
+            }
+            const key = 'GAME-' + Math.random().toString(36).substring(2,10).toUpperCase();
+            try {
+                await addDoc(collection(db, LICENSES_COLL), {
+                    key: key,
+                    email: email,
+                    used: false,
+                    createdAt: new Date()
+                });
+                Swal.fire('Başarılı', `Yeni key: ${key}`, 'success');
+                document.getElementById('keyModal').classList.remove('active');
+                document.getElementById('keyEmail').value = '';
+                loadLicenses();
+            } catch (e) {
+                Swal.fire('Hata', e.message, 'error');
+            }
+        });
+
+        // ------------------- SORULAR -------------------
+        async function loadQuestions() {
+            const container = document.getElementById('questionsList');
+            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+            try {
+                const q = query(collection(db, QUESTIONS_COLL));
+                const snapshot = await getDocs(q);
+                let html = '<table><tr><th>Soru</th><th>Kategori</th><th>Zorluk</th><th>İşlem</th></tr>';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    html += `<tr>
+                        <td>${data.soru.substring(0, 50)}${data.soru.length > 50 ? '…' : ''}</td>
+                        <td>${data.bolum || '-'}</td>
+                        <td>${data.zorluk || 1}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editQuestion('${doc.id}')">Düzenle</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${doc.id}')">Sil</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = 'Hata: ' + e.message;
+            }
+        }
+
+        window.editQuestion = async (id) => {
+            const docRef = doc(db, QUESTIONS_COLL, id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('questionText').value = data.soru || '';
+                document.getElementById('option1').value = data.secenekler?.[0] || '';
+                document.getElementById('option2').value = data.secenekler?.[1] || '';
+                document.getElementById('option3').value = data.secenekler?.[2] || '';
+                document.getElementById('option4').value = data.secenekler?.[3] || '';
+                document.getElementById('correctAnswer').value = data.dogru || 0;
+                document.getElementById('questionCategory').value = data.bolum || 'Kur\'an';
+                document.getElementById('questionDifficulty').value = data.zorluk || 1;
+                currentEditId = id;
+                document.getElementById('questionModalTitle').innerText = 'Soru Düzenle';
+                document.getElementById('questionModal').classList.add('active');
+            }
+        };
+
+        window.deleteQuestion = async (id) => {
+            const result = await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true });
+            if (result.isConfirmed) {
+                await deleteDoc(doc(db, QUESTIONS_COLL, id));
+                loadQuestions();
+                Swal.fire('Silindi', '', 'success');
+            }
+        };
+
+        document.getElementById('addQuestionBtn').addEventListener('click', () => {
+            currentEditId = null;
+            document.getElementById('questionText').value = '';
+            document.getElementById('option1').value = '';
+            document.getElementById('option2').value = '';
+            document.getElementById('option3').value = '';
+            document.getElementById('option4').value = '';
+            document.getElementById('correctAnswer').value = 0;
+            document.getElementById('questionCategory').value = 'Kur\'an';
+            document.getElementById('questionDifficulty').value = 1;
+            document.getElementById('questionModalTitle').innerText = 'Yeni Soru Ekle';
+            document.getElementById('questionModal').classList.add('active');
+        });
+
+        document.getElementById('closeQuestionModal').addEventListener('click', () => {
+            document.getElementById('questionModal').classList.remove('active');
+        });
+
+        document.getElementById('saveQuestionBtn').addEventListener('click', async () => {
+            const soru = document.getElementById('questionText').value.trim();
+            const sec1 = document.getElementById('option1').value.trim();
+            const sec2 = document.getElementById('option2').value.trim();
+            const sec3 = document.getElementById('option3').value.trim();
+            const sec4 = document.getElementById('option4').value.trim();
+            const dogru = parseInt(document.getElementById('correctAnswer').value);
+            const bolum = document.getElementById('questionCategory').value;
+            const zorluk = parseInt(document.getElementById('questionDifficulty').value);
+
+            if (!soru || !sec1 || !sec2 || !sec3 || !sec4) {
+                Swal.fire('Hata', 'Tüm alanları doldurun', 'error');
+                return;
+            }
+
+            const questionData = { soru, secenekler: [sec1, sec2, sec3, sec4], dogru, bolum, zorluk };
+            try {
+                if (currentEditId) {
+                    await updateDoc(doc(db, QUESTIONS_COLL, currentEditId), questionData);
+                } else {
+                    await addDoc(collection(db, QUESTIONS_COLL), questionData);
+                }
+                document.getElementById('questionModal').classList.remove('active');
+                loadQuestions();
+                Swal.fire('Başarılı', '', 'success');
+            } catch (e) {
+                Swal.fire('Hata', e.message, 'error');
+            }
+        });
+
+        // Toplu soru ekle (örnekler)
+        document.getElementById('bulkAddQuestionsBtn').addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: 'Toplu soru eklenecek',
+                text: 'Örnek sorular Firestore\'a eklenecek. Devam edilsin mi?',
+                icon: 'warning',
+                showCancelButton: true
+            });
+            if (!result.isConfirmed) return;
+
+            const SAMPLE_QUESTIONS = [
+                {bolum: 'Kur\'an', soru: 'Kur\'an-ı Kerim kaç cüzden oluşur?', secenekler: ['28','29','30','31'], dogru: 2, zorluk: 1},
+                {bolum: 'Kur\'an', soru: 'Hangi sure Kur\'an\'ın kalbi olarak bilinir?', secenekler: ['Fatiha','Yasin','Rahman','Mülk'], dogru: 1, zorluk: 2},
+                // ... daha fazla örnek eklenebilir
+            ];
+
+            try {
+                for (const q of SAMPLE_QUESTIONS) {
+                    await addDoc(collection(db, QUESTIONS_COLL), q);
+                }
+                Swal.fire('Başarılı', 'Örnek sorular eklendi', 'success');
+                loadQuestions();
+            } catch (e) {
+                Swal.fire('Hata', e.message, 'error');
+            }
+        });
+
+        // ------------------- KULLANICILAR (Liderlik) -------------------
+        async function loadUsers() {
+            const container = document.getElementById('usersList');
+            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+            try {
+                const q = query(collection(db, LEADERBOARD_COLL), orderBy('score', 'desc'));
+                const snapshot = await getDocs(q);
+                let html = '<table><tr><th>Kullanıcı</th><th>Puan</th><th>Seviye</th><th>İşlem</th></tr>';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    html += `<tr>
+                        <td>${data.username || 'İsimsiz'}</td>
+                        <td>${data.score || 0}</td>
+                        <td>${data.level || 1}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editUser('${doc.id}', ${data.score || 0}, ${data.level || 1})">Düzenle</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${doc.id}')">Sil</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = 'Hata: ' + e.message;
+            }
+        }
+
+        window.editUser = (id, currentScore, currentLevel) => {
+            Swal.fire({
+                title: 'Kullanıcı Düzenle',
+                html: `
+                    <input id="swal-score" class="swal2-input" placeholder="Puan" value="${currentScore}">
+                    <input id="swal-level" class="swal2-input" placeholder="Seviye" value="${currentLevel}">
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Kaydet',
+                preConfirm: () => {
+                    const score = parseInt(document.getElementById('swal-score').value);
+                    const level = parseInt(document.getElementById('swal-level').value);
+                    if (isNaN(score) || isNaN(level)) {
+                        Swal.showValidationMessage('Geçerli sayı girin');
+                    }
+                    return { score, level };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await updateDoc(doc(db, LEADERBOARD_COLL, id), {
+                        score: result.value.score,
+                        level: result.value.level
+                    });
+                    loadUsers();
+                    Swal.fire('Güncellendi', '', 'success');
+                }
+            });
+        };
+
+        window.deleteUser = async (id) => {
+            const result = await Swal.fire({ title: 'Emin misiniz?', icon: 'warning', showCancelButton: true });
+            if (result.isConfirmed) {
+                await deleteDoc(doc(db, LEADERBOARD_COLL, id));
+                loadUsers();
+                Swal.fire('Silindi', '', 'success');
+            }
+        };
+
+        // Liderlik tablosunu temizle
+        document.getElementById('clearLeaderboardBtn').addEventListener('click', async () => {
+            const result = await Swal.fire({ title: 'Liderlik tablosu silinecek!', icon: 'warning', showCancelButton: true });
+            if (!result.isConfirmed) return;
+            const q = query(collection(db, LEADERBOARD_COLL));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            loadUsers();
+            Swal.fire('Temizlendi', '', 'success');
+        });
+
+        // Tüm kullanıcı verilerini sıfırla (localStorage + leaderboard) - sadece leaderboard'u siler, localStorage kullanıcıya ait.
+        document.getElementById('resetAllUsersBtn').addEventListener('click', async () => {
+            const result = await Swal.fire({ title: 'TÜM KULLANICI VERİLERİ SIFIRLANSIN MI?', text: 'Liderlik tablosu tamamen silinecek!', icon: 'warning', showCancelButton: true });
+            if (!result.isConfirmed) return;
+            const q = query(collection(db, LEADERBOARD_COLL));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            loadUsers();
+            Swal.fire('Tüm veriler silindi', '', 'success');
+        });
+
+        // Çıkış
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('adminAuth'); // İstersen temizle
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
