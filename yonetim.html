@@ -182,6 +182,12 @@
     </style>
 </head>
 <body>
+
+    <button class="btn btn-warning" id="bulkUpdateCategoryBtn" onclick="bulkUpdateCategory()">
+  <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
+</button>
+
+    
     <div class="container" id="adminPanel" style="display: none;">
         <div class="header">
             <h1><i class="fas fa-crown"></i> Nevafil Yönetim Paneli</h1>
@@ -702,6 +708,69 @@ document.getElementById('difficultyFilter').addEventListener('change', renderQue
             localStorage.removeItem('adminAuth'); // İstersen temizle
             window.location.href = 'index.html';
         });
+
+
+
+
+
+        // Tüm soruların kategorisini "dini konular" olarak güncelle
+window.bulkUpdateCategory = async () => {
+  const result = await Swal.fire({
+    title: 'Emin misiniz?',
+    text: 'Tüm soruların kategorisi "dini konular" olarak değiştirilecek. Bu işlem geri alınamaz!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Evet, güncelle',
+    cancelButtonText: 'İptal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Güncelleniyor...',
+    html: 'Lütfen bekleyiniz.',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  try {
+    const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
+    const batch = writeBatch(db);
+    let count = 0;
+
+    snapshot.forEach(doc => {
+      batch.update(doc.ref, { bolum: "dini konular" });
+      count++;
+    });
+
+    await batch.commit();
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı',
+      text: `${count} soru güncellendi.`,
+      timer: 2000
+    });
+    
+    loadQuestions(); // Listeyi yenile
+  } catch (error) {
+    console.error("Güncelleme hatası:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Hata',
+      text: 'Güncelleme sırasında bir hata oluştu.'
+    });
+  }
+}
+
+
+        
     </script>
+
+    
 </body>
 </html>
