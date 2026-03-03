@@ -248,10 +248,26 @@
 
         <!-- Toplu İşlemler Paneli -->
         <div class="panel" id="bulkPanel">
-            <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
-            <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla (LocalStorage + Leaderboard)</button>
-            <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
-        </div>
+  <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
+  
+  <button class="btn btn-danger" onclick="deleteAllQuestions()">
+    <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
+  </button>
+  
+  <button class="btn btn-success" onclick="exportQuestions()">
+    <i class="fas fa-download"></i> Soruları Dışa Aktar (JSON)
+  </button>
+  
+  <!-- Gizli file input (JSON yükleme için) -->
+  <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
+  <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
+    <i class="fas fa-upload"></i> JSON'dan Soru Yükle
+  </button>
+  
+  <!-- Mevcut butonlar -->
+  <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla (LocalStorage + Leaderboard)</button>
+  <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
+</div>
     </div>
 
     <!-- Modal (manuel key üretme, soru ekleme/düzenleme için) -->
@@ -767,6 +783,137 @@ window.bulkUpdateCategory = async () => {
   }
 }
 
+        // Tüm soruları sil
+window.deleteAllQuestions = async () => {
+  const result = await Swal.fire({
+    title: 'Tüm sorular silinecek!',
+    text: 'Bu işlem geri alınamaz. Emin misiniz?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Evet, sil',
+    cancelButtonText: 'İptal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Siliniyor...',
+    html: 'Lütfen bekleyiniz.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı',
+      text: 'Tüm sorular silindi.',
+      timer: 2000
+    });
+    loadQuestions(); // Listeyi yenile
+  } catch (error) {
+    console.error("Silme hatası:", error);
+    Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
+  }
+};
+
+// Soruları dışa aktar (JSON)
+window.exportQuestions = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
+    const questions = [];
+    snapshot.forEach(doc => {
+      questions.push({ id: doc.id, ...doc.data() });
+    });
+
+    const dataStr = JSON.stringify(questions, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sorular_yedek_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı',
+      text: `${questions.length} soru dışa aktarıldı.`,
+      timer: 2000
+    });
+  } catch (error) {
+    console.error("Dışa aktarma hatası:", error);
+    Swal.fire({ icon: 'error', title: 'Hata', text: 'Dışa aktarma başarısız.' });
+  }
+};
+
+// JSON dosyasından soru yükle
+window.importQuestions = async (file) => {
+  if (!file) return;
+
+  Swal.fire({
+    title: 'Yükleniyor...',
+    html: 'Dosya okunuyor.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const text = await file.text();
+    const questions = JSON.parse(text);
+
+    if (!Array.isArray(questions)) {
+      throw new Error('Geçersiz JSON formatı. Dizi bekleniyor.');
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const q of questions) {
+      try {
+        // Her soru için gerekli alanları kontrol et
+        const soru = q.soru || q.question;
+        const secenekler = q.secenekler || q.options;
+        const dogru = q.dogru !== undefined ? q.dogru : q.correct;
+        const bolum = q.bolum || q.category || 'dini konular';
+        const zorluk = q.zorluk || q.difficulty || 1;
+
+        if (!soru || !secenekler || !Array.isArray(secenekler) || secenekler.length !== 4 || dogru === undefined) {
+          failCount++;
+          continue;
+        }
+
+        await addDoc(collection(db, QUESTIONS_COLL), {
+          soru: soru,
+          secenekler: secenekler,
+          dogru: Number(dogru),
+          bolum: bolum,
+          zorluk: Number(zorluk)
+        });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    Swal.fire({
+      icon: successCount > 0 ? 'success' : 'error',
+      title: 'İşlem tamamlandı',
+      html: `${successCount} soru eklendi.<br>${failCount} soru atlandı (hatalı format).`
+    });
+    loadQuestions(); // Listeyi yenile
+  } catch (error) {
+    console.error("Yükleme hatası:", error);
+    Swal.fire({ icon: 'error', title: 'Hata', text: 'Dosya okunamadı veya geçersiz JSON.' });
+  }
+};
 
         
     </script>
