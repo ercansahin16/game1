@@ -202,11 +202,17 @@
         </div>
 
         <!-- Lisans Yönetimi Paneli -->
-        <div class="panel active" id="licensesPanel">
-            <h2><i class="fas fa-key"></i> Lisanslar</h2>
-            <button class="btn btn-success" id="manualKeyBtn"><i class="fas fa-plus"></i> Manuel Key Üret</button>
-            <div id="licensesList">Yükleniyor...</div>
-        </div>
+     <div class="panel active" id="licensesPanel">
+  <h2><i class="fas fa-key"></i> Lisanslar</h2>
+  <button class="btn btn-success" id="manualKeyBtn"><i class="fas fa-plus"></i> Manuel Key Üret</button>
+  
+  <!-- Arama kutusu -->
+  <div style="margin: 15px 0;">
+    <input type="text" id="licenseSearch" placeholder="İsim, email, telefon veya sipariş no ile ara..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+  </div>
+  
+  <div id="licensesList">Yükleniyor...</div>
+</div>
 
         <!-- Soru Yönetimi Paneli -->
       <!-- Soru Yönetimi Paneli -->
@@ -271,13 +277,14 @@
     </div>
 
     <!-- Modal (manuel key üretme, soru ekleme/düzenleme için) -->
- <div class="modal" id="keyModal">
+<div class="modal" id="keyModal">
   <div class="modal-content">
     <h3 id="keyModalTitle">Manuel Key Üret</h3>
     <input type="text" id="keyFirstName" placeholder="Ad">
     <input type="text" id="keyLastName" placeholder="Soyad">
     <input type="text" id="keyPhone" placeholder="Telefon">
     <input type="email" id="keyEmail" placeholder="Email">
+    <input type="text" id="keyOrderId" placeholder="Sipariş No">
     <div class="modal-buttons">
       <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
       <button class="btn btn-danger" id="closeKeyModal">İptal</button>
@@ -371,49 +378,75 @@
         }
 
         // ------------------- LİSANSLAR -------------------
-  async function loadLicenses() {
+let allLicenses = []; // Tüm lisansları tutacak dizi
+
+async function loadLicenses() {
   const container = document.getElementById('licensesList');
   container.innerHTML = '<div class="loading">Yükleniyor...</div>';
   try {
     const q = query(collection(db, LICENSES_COLL));
     const snapshot = await getDocs(q);
-    let html = `
-      <div style="overflow-x: auto;">
-        <table>
-          <tr>
-            <th>Key</th>
-            <th>Ad Soyad</th>
-            <th>Telefon</th>
-            <th>Email</th>
-            <th>Durum</th>
-            <th>Cihaz ID</th>
-            <th>İşlem</th>
-          </tr>
-    `;
+    allLicenses = [];
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const used = data.used ? 'Kullanıldı' : 'Kullanılmadı';
-      const badgeClass = data.used ? 'badge-danger' : 'badge-success';
-      const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
-      html += `<tr>
-          <td><code>${data.key}</code></td>
-          <td>${fullName.trim() || '-'}</td>
-          <td>${data.phone || '-'}</td>
-          <td>${data.email || '-'}</td>
-          <td><span class="badge ${badgeClass}">${used}</span></td>
-          <td>${data.deviceId ? data.deviceId.substring(0, 8) + '…' : '-'}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteLicense('${doc.id}')">Sil</button>
-          </td>
-        </tr>`;
+      allLicenses.push({ id: doc.id, ...doc.data() });
     });
-    html += '</table></div>';
-    container.innerHTML = html;
+    renderLicenses(); // Arama terimine göre listele
   } catch (e) {
     container.innerHTML = 'Hata oluştu: ' + e.message;
   }
 }
 
+function renderLicenses() {
+  const searchTerm = document.getElementById('licenseSearch')?.value.toLowerCase() || '';
+  const filtered = allLicenses.filter(l => {
+    const fullName = ((l.firstName || '') + ' ' + (l.lastName || '')).toLowerCase();
+    const email = (l.email || '').toLowerCase();
+    const phone = (l.phone || '').toLowerCase();
+    const orderId = (l.orderId || '').toLowerCase();
+    const key = (l.key || '').toLowerCase();
+    return fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm) || orderId.includes(searchTerm) || key.includes(searchTerm);
+  });
+
+  let html = `
+    <div style="overflow-x: auto;">
+      <table>
+        <tr>
+          <th>Key</th>
+          <th>Ad Soyad</th>
+          <th>Telefon</th>
+          <th>Email</th>
+          <th>Sipariş No</th>
+          <th>Durum</th>
+          <th>Cihaz ID</th>
+          <th>İşlem</th>
+        </tr>
+  `;
+  filtered.forEach(l => {
+    const used = l.used ? 'Kullanıldı' : 'Kullanılmadı';
+    const badgeClass = l.used ? 'badge-danger' : 'badge-success';
+    const fullName = (l.firstName || '') + ' ' + (l.lastName || '');
+    html += `<tr>
+        <td><code>${l.key}</code></td>
+        <td>${fullName.trim() || '-'}</td>
+        <td>${l.phone || '-'}</td>
+        <td>${l.email || '-'}</td>
+        <td>${l.orderId || '-'}</td>
+        <td><span class="badge ${badgeClass}">${used}</span></td>
+        <td>${l.deviceId ? l.deviceId.substring(0, 8) + '…' : '-'}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteLicense('${l.id}')">Sil</button>
+        </td>
+      </tr>`;
+  });
+  html += '</table></div>';
+  document.getElementById('licensesList').innerHTML = html;
+}
+
+// Arama kutusuna olay ekle
+document.getElementById('licenseSearch')?.addEventListener('input', renderLicenses);
+
+
+        
         window.deleteLicense = async (id) => {
             const result = await Swal.fire({
                 title: 'Emin misiniz?',
@@ -435,13 +468,17 @@
         document.getElementById('closeKeyModal').addEventListener('click', () => {
             document.getElementById('keyModal').classList.remove('active');
         });
-   document.getElementById('generateKeyConfirm').addEventListener('click', async () => {
+
+
+
+        document.getElementById('generateKeyConfirm').addEventListener('click', async () => {
   const firstName = document.getElementById('keyFirstName').value.trim();
   const lastName = document.getElementById('keyLastName').value.trim();
   const phone = document.getElementById('keyPhone').value.trim();
   const email = document.getElementById('keyEmail').value.trim();
+  const orderId = document.getElementById('keyOrderId').value.trim();
   
-  if (!firstName || !lastName || !phone || !email) {
+  if (!firstName || !lastName || !phone || !email || !orderId) {
     Swal.fire('Hata', 'Tüm alanlar zorunludur', 'error');
     return;
   }
@@ -454,13 +491,14 @@
       lastName: lastName,
       phone: phone,
       email: email,
+      orderId: orderId,
       used: false,
       createdAt: new Date()
     });
     Swal.fire('Başarılı', `Yeni key: ${key}`, 'success');
     document.getElementById('keyModal').classList.remove('active');
     // Alanları temizle
-    ['keyFirstName','keyLastName','keyPhone','keyEmail'].forEach(id => document.getElementById(id).value = '');
+    ['keyFirstName','keyLastName','keyPhone','keyEmail','keyOrderId'].forEach(id => document.getElementById(id).value = '');
     loadLicenses();
   } catch (e) {
     Swal.fire('Hata', e.message, 'error');
