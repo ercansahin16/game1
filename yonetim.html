@@ -409,61 +409,74 @@ async function loadLicenses() {
 }
 
 function renderLicenses() {
-  const searchTerm = document.getElementById('licenseSearch')?.value.toLowerCase() || '';
-  const filtered = allLicenses.filter(l => {
-    const fullName = ((l.firstName || '') + ' ' + (l.lastName || '')).toLowerCase();
-    const email = (l.email || '').toLowerCase();
-    const phone = (l.phone || '').toLowerCase();
-    const orderId = (l.orderId || '').toLowerCase();
-    const key = (l.key || '').toLowerCase();
-    return fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm) || orderId.includes(searchTerm) || key.includes(searchTerm);
-  });
+    const searchTerm = document.getElementById('licenseSearch')?.value.toLowerCase() || '';
+    
+    const filtered = allLicenses.filter(l => {
+        // Alanlar yoksa boş string ata (undefined hatasını önler)
+        const firstName = (l.firstName || '').toLowerCase();
+        const lastName = (l.lastName || '').toLowerCase();
+        const fullName = (firstName + ' ' + lastName).trim();
+        const email = (l.email || '').toLowerCase();
+        const phone = (l.phone || '').toLowerCase();
+        const orderId = (l.orderId || '').toLowerCase();
+        const key = (l.key || '').toLowerCase();
 
-  console.log('Filtrelenmiş lisans sayısı:', filtered.length); // Kontrol
+        // Arama terimi boşsa tümünü göster, doluysa herhangi bir alanda eşleşme ara
+        return searchTerm === '' || 
+               fullName.includes(searchTerm) || 
+               email.includes(searchTerm) || 
+               phone.includes(searchTerm) || 
+               orderId.includes(searchTerm) || 
+               key.includes(searchTerm);
+    });
 
-  if (filtered.length === 0) {
-    document.getElementById('licensesList').innerHTML = '<p style="text-align:center; padding:20px;">Lisans bulunamadı.</p>';
-    return;
-  }
+    console.log('Filtrelenmiş lisans sayısı:', filtered.length);
 
-  let html = `
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Key</th>
-            <th>Ad Soyad</th>
-            <th>Telefon</th>
-            <th>Email</th>
-            <th>Sipariş No</th>
-            <th>Durum</th>
-            <th>Cihaz ID</th>
-            <th>İşlem</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
+    const container = document.getElementById('licensesList');
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="text-align:center; padding:20px;">Lisans bulunamadı.</p>';
+        return;
+    }
 
-  filtered.forEach(l => {
-    const used = l.used ? 'Kullanıldı' : 'Kullanılmadı';
-    const badgeClass = l.used ? 'badge-danger' : 'badge-success';
-    const fullName = (l.firstName || '') + ' ' + (l.lastName || '');
-    html += `<tr>
-        <td><code>${l.key}</code></td>
-        <td>${fullName.trim() || '-'}</td>
-        <td>${l.phone || '-'}</td>
-        <td>${l.email || '-'}</td>
-        <td>${l.orderId || '-'}</td>
-        <td><span class="badge ${badgeClass}">${used}</span></td>
-        <td>${l.deviceId ? l.deviceId.substring(0, 8) + '…' : '-'}</td>
-        <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteLicense('${l.id}')">Sil</button>
-        </td>
-      </tr>`;
-  });
+    let html = `
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Ad Soyad</th>
+                        <th>Telefon</th>
+                        <th>Email</th>
+                        <th>Sipariş No</th>
+                        <th>Durum</th>
+                        <th>Cihaz ID</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
-  html += '</tbody></table></div>';
-  document.getElementById('licensesList').innerHTML = html;
+    filtered.forEach(l => {
+        const used = l.used ? 'Kullanıldı' : 'Kullanılmadı';
+        const badgeClass = l.used ? 'badge-danger' : 'badge-success';
+        const displayFullName = ((l.firstName || '') + ' ' + (l.lastName || '')).trim() || '---';
+        
+        html += `<tr>
+            <td><code>${l.key || '-'}</code></td>
+            <td>${displayFullName}</td>
+            <td>${l.phone || '-'}</td>
+            <td>${l.email || '-'}</td>
+            <td>${l.orderId || '-'}</td>
+            <td><span class="badge ${badgeClass}">${used}</span></td>
+            <td>${l.deviceId ? l.deviceId.substring(0, 8) + '…' : '-'}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteLicense('${l.id}')">Sil</button>
+            </td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
 }
 
 // Arama kutusuna olay ekle
