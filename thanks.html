@@ -75,13 +75,6 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        input:disabled {
-            background: #e2e8f0;
-            color: #1e293b;
-            border-color: #cbd5e1;
-            cursor: not-allowed;
-        }
-
         button {
             width: 100%;
             padding: 14px;
@@ -199,6 +192,33 @@
             color: #2563eb;
         }
 
+        /* Kullanıcı bilgi kartı */
+        .user-info {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            border: 1px solid #cbd5e1;
+        }
+
+        .user-info h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .user-info p {
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        .user-info strong {
+            color: #1e293b;
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             .container { padding: 25px 20px; }
@@ -212,7 +232,7 @@
 <body>
 <div class="container">
     <h1>🎉 Teşekkürler!</h1>
-    <p id="introText">Ödemeniz başarıyla alındı. Lisans anahtarınızı oluşturmak için sipariş bilgilerinizi girin.</p>
+    <p>Ödemeniz başarıyla alındı. Lisans anahtarınızı oluşturmak için sipariş bilgilerinizi girin.</p>
 
     <!-- Ad -->
     <input type="text" id="firstName" placeholder="Adınız" required>
@@ -231,21 +251,22 @@
     <div id="emailError" class="error">Geçerli bir email adresi giriniz.</div>
 
     <!-- Sipariş No (Shopier Order ID) -->
-    <input type="text" id="orderId" placeholder="Sipariş numarası (9 haneli rakam)" required pattern="\d{9}">
+    <input type="text" id="orderId" placeholder="Sipariş numarası (9 haneli)" required>
     <div id="orderIdError" class="error">Sipariş numarası 9 haneli rakam olmalıdır.</div>
 
     <!-- Lisans üret butonu -->
     <button id="generateBtn" onclick="generateLicense()">🔑 Lisans Anahtarı Oluştur</button>
 
-    <!-- Lisans gösterimi -->
-    <div id="license"></div>
+    <!-- Lisans gösterimi ve kullanıcı bilgileri (başlangıçta gizli) -->
+    <div id="licenseSection" style="display: none;">
+        <div id="license"></div>
+        <button id="copyBtn" class="copy-btn" onclick="copyKey()">
+            <i class="fas fa-copy"></i> Anahtarı Kopyala
+        </button>
+        <div id="userInfoCard" class="user-info"></div>
+    </div>
 
-    <!-- Kopyala butonu (başlangıçta gizli, lisans oluşunca görünür) -->
-    <button id="copyBtn" class="copy-btn" onclick="copyKey()" style="display: none;">
-        <i class="fas fa-copy"></i> Anahtarı Kopyala
-    </button>
-
-    <!-- Oyun linki -->
+    <!-- Oyun linki (her zaman görünür) -->
     <div class="game-link">
         <p>🎮 Oyun bağlantınız:</p>
         <a href="http://nevafil.com.tr/" class="link-btn" target="_blank">
@@ -275,11 +296,10 @@
 
     // Email formatı kontrolü
     function isValidEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    // Sipariş no 9 haneli rakam mı?
+    // Sipariş numarası kontrolü (9 haneli rakam)
     function isValidOrderId(orderId) {
         return /^\d{9}$/.test(orderId);
     }
@@ -296,43 +316,36 @@
         document.querySelectorAll('.error').forEach(el => el.style.display = 'none');
 
         let hasError = false;
-
-        if (!firstName) {
-            document.getElementById('firstNameError').style.display = 'block';
-            hasError = true;
-        }
-        if (!lastName) {
-            document.getElementById('lastNameError').style.display = 'block';
-            hasError = true;
-        }
-        if (!phone) {
-            document.getElementById('phoneError').style.display = 'block';
-            hasError = true;
-        }
+        if (!firstName) { document.getElementById('firstNameError').style.display = 'block'; hasError = true; }
+        if (!lastName) { document.getElementById('lastNameError').style.display = 'block'; hasError = true; }
+        if (!phone) { document.getElementById('phoneError').style.display = 'block'; hasError = true; }
+        
+        // Email kontrolü
         if (!email) {
-            document.getElementById('emailError').innerText = 'Email alanı zorunludur.';
             document.getElementById('emailError').style.display = 'block';
+            document.getElementById('emailError').innerText = 'Email alanı zorunludur.';
             hasError = true;
         } else if (!isValidEmail(email)) {
-            document.getElementById('emailError').innerText = 'Geçerli bir email adresi giriniz.';
             document.getElementById('emailError').style.display = 'block';
+            document.getElementById('emailError').innerText = 'Geçerli bir email adresi giriniz (örnek: ad@domain.com).';
             hasError = true;
         }
+
+        // Sipariş numarası kontrolü
         if (!orderId) {
-            document.getElementById('orderIdError').innerText = 'Sipariş numarası zorunludur.';
             document.getElementById('orderIdError').style.display = 'block';
+            document.getElementById('orderIdError').innerText = 'Sipariş numarası zorunludur.';
             hasError = true;
         } else if (!isValidOrderId(orderId)) {
-            document.getElementById('orderIdError').innerText = 'Sipariş numarası 9 haneli rakam olmalıdır.';
             document.getElementById('orderIdError').style.display = 'block';
+            document.getElementById('orderIdError').innerText = 'Sipariş numarası 9 haneli rakam olmalıdır.';
             hasError = true;
         }
 
         if (hasError) return;
 
-        // Butonu devre dışı bırak ve yazıyı değiştir
+        // Butonu devre dışı bırak
         const generateBtn = document.getElementById('generateBtn');
-        const originalText = generateBtn.innerText;
         generateBtn.disabled = true;
         generateBtn.innerText = 'Oluşturuluyor...';
 
@@ -348,7 +361,7 @@
                     confirmButtonColor: '#3b82f6'
                 });
                 generateBtn.disabled = false;
-                generateBtn.innerText = originalText;
+                generateBtn.innerText = '🔑 Lisans Anahtarı Oluştur';
                 return;
             }
 
@@ -367,32 +380,20 @@
             });
 
             // Lisans oluşturuldu bilgisini localStorage'a kaydet
-            const licenseData = {
-                firstName,
-                lastName,
-                phone,
-                email,
-                orderId,
-                key
-            };
-            localStorage.setItem('licenseData', JSON.stringify(licenseData));
+            localStorage.setItem('licenseGenerated', 'true');
+            // Kullanıcı bilgilerini de localStorage'a kaydedelim ki sayfa yenilendiğinde gösterelim
+            const userData = { firstName, lastName, phone, email, orderId, key };
+            localStorage.setItem('licenseUserData', JSON.stringify(userData));
 
-            // Lisansı göster
-            document.getElementById('license').innerText = key;
-            document.getElementById('license').style.display = 'block';
-            document.getElementById('copyBtn').style.display = 'block';
-            generateBtn.style.display = 'none'; // butonu tamamen gizle
+            // Lisans bölümünü göster ve bilgileri doldur
+            showLicenseSection(userData);
 
-            // Inputları doldur ve readonly yap (opsiyonel)
-            document.querySelectorAll('input').forEach(input => input.disabled = true);
-
-            // Başlık metnini değiştir
-            document.getElementById('introText').innerText = '✅ Lisansınız başarıyla oluşturuldu.';
+            generateBtn.style.display = 'none'; // butonu gizle
 
             await Swal.fire({
                 icon: 'success',
                 title: 'Başarılı!',
-                html: `Lisans anahtarınız oluşturuldu.<br><strong>${key}</strong>`,
+                html: `Lisans anahtarınız oluşturuldu.`,
                 confirmButtonColor: '#3b82f6'
             });
 
@@ -405,15 +406,51 @@
                 confirmButtonColor: '#3b82f6'
             });
             generateBtn.disabled = false;
-            generateBtn.innerText = originalText;
+            generateBtn.innerText = '🔑 Lisans Anahtarı Oluştur';
         }
     };
+
+    function showLicenseSection(userData) {
+        // Inputları gizle
+        document.querySelectorAll('input').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.error').forEach(el => el.style.display = 'none');
+        
+        // Lisans bölümünü göster
+        document.getElementById('licenseSection').style.display = 'block';
+        document.getElementById('license').innerText = userData.key;
+
+        // Kullanıcı bilgi kartını doldur
+        const userInfoCard = document.getElementById('userInfoCard');
+        userInfoCard.innerHTML = `
+            <h3>📋 Lisans Bilgileriniz</h3>
+            <p><strong>Ad Soyad:</strong> ${userData.firstName} ${userData.lastName}</p>
+            <p><strong>Telefon:</strong> ${userData.phone}</p>
+            <p><strong>Email:</strong> ${userData.email}</p>
+            <p><strong>Sipariş No:</strong> ${userData.orderId}</p>
+            <p><strong>Lisans Anahtarı:</strong> <code>${userData.key}</code></p>
+        `;
+    }
+
+    // Sayfa yüklendiğinde daha önce lisans oluşturulmuş mu kontrol et
+    window.addEventListener('load', function() {
+        if (localStorage.getItem('licenseGenerated') === 'true') {
+            const savedUserData = localStorage.getItem('licenseUserData');
+            if (savedUserData) {
+                try {
+                    const userData = JSON.parse(savedUserData);
+                    showLicenseSection(userData);
+                } catch (e) {
+                    console.error("Kullanıcı verisi okunamadı");
+                }
+            }
+        }
+    });
 
     // Kopyalama fonksiyonu (güvenilir)
     window.copyKey = () => {
         const licenseText = document.getElementById('license').innerText;
         if (!licenseText || licenseText === '') {
-            Swal.fire({ icon: 'warning', title: 'Uyarı', text: 'Önce lisans oluşturun!' });
+            Swal.fire({ icon: 'warning', title: 'Uyarı', text: 'Lisans anahtarı bulunamadı!' });
             return;
         }
 
@@ -459,36 +496,6 @@
         }
         document.body.removeChild(textarea);
     }
-
-    // Sayfa yüklendiğinde daha önce lisans oluşturulmuş mu kontrol et
-    window.addEventListener('load', function() {
-        const savedData = localStorage.getItem('licenseData');
-        if (savedData) {
-            try {
-                const data = JSON.parse(savedData);
-                // Inputları doldur
-                document.getElementById('firstName').value = data.firstName || '';
-                document.getElementById('lastName').value = data.lastName || '';
-                document.getElementById('phone').value = data.phone || '';
-                document.getElementById('emailInput').value = data.email || '';
-                document.getElementById('orderId').value = data.orderId || '';
-                // Inputları disabled yap
-                document.querySelectorAll('input').forEach(input => input.disabled = true);
-                // Butonu gizle
-                document.getElementById('generateBtn').style.display = 'none';
-                // Lisansı göster
-                if (data.key) {
-                    document.getElementById('license').innerText = data.key;
-                    document.getElementById('license').style.display = 'block';
-                    document.getElementById('copyBtn').style.display = 'block';
-                }
-                // Başlık metnini değiştir
-                document.getElementById('introText').innerText = '✅ Lisansınız daha önce oluşturulmuştur. Bilgileriniz aşağıdadır.';
-            } catch (e) {
-                console.error('localStorage verisi bozuk', e);
-            }
-        }
-    });
 </script>
 </body>
 </html>
