@@ -3,130 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nevafil Game - Manevi Bilgi Oyunu</title>
-    <!-- SweetAlert2 CSS (opsiyonel) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <title>Nevafil - Manevi Bilgi Yolculuğu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4ddb;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 15px;
+            overflow: hidden;
+            color: #fff;
         }
-        
+
         /* Loading Spinner */
         #loadingSpinner {
             position: fixed;
             inset: 0;
-            background: #121212;
+            background: #0f172a;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
+            z-index: 9999;
         }
+
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #333;
-            border-top: 5px solid #6c5ce7;
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(108, 92, 231, 0.1);
+            border-left-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Lisans Prompt Overlay */
+        /* Modern Lisans Kutusu */
         #licensePrompt {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 100; /* SweetAlert'in altında kalması için düşürüldü */
             padding: 20px;
-            box-sizing: border-box;
         }
 
-        .license-box {
-            background: #1e1e1e;
-            padding: 35px;
-            border-radius: 15px;
+        .license-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 24px;
             width: 100%;
-            max-width: 360px;
+            max-width: 400px;
             text-align: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            transition: transform 0.3s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
         }
 
-        .license-box:hover {
-            transform: translateY(-3px);
+        .logo-area {
+            font-size: 3rem;
+            margin-bottom: 1rem;
         }
 
-        .license-box h2 {
-            color: #6c5ce7;
+        .license-card h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #a29bfe, #6c5ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .license-card p {
+            color: #94a3b8;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+        }
+
+        .input-group {
+            position: relative;
             margin-bottom: 20px;
-            font-size: 1.8em;
         }
 
         #licenseInput {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background: #121212;
+            padding: 15px 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(108, 92, 231, 0.2);
+            border-radius: 12px;
             color: #fff;
-            font-size: 1em;
-            box-sizing: border-box;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
 
-        #licenseInput::placeholder {
-            color: #888;
+        #licenseInput:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
+            background: rgba(15, 23, 42, 0.8);
         }
 
-        button {
+        .submit-btn {
             width: 100%;
-            padding: 12px;
-            background: #6c5ce7;
-            color: #fff;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
 
-        button:hover {
-            background: #5a4ddb;
+        .submit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(108, 92, 231, 0.5);
         }
 
-        /* Game container */
+        /* Iframe */
         #gameContainer {
             width: 100%;
             height: 100vh;
             display: none;
         }
 
-        @media (max-width: 480px) {
-            .license-box { padding: 25px; }
-            .license-box h2 { font-size: 1.5em; }
-            #licenseInput { padding: 10px; }
-            button { padding: 10px; }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* SweetAlert Custom Style */
+        .swal2-popup {
+            border-radius: 20px !important;
+            padding: 2rem !important;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="license-check.js"></script>
 </head>
 <body>
 
@@ -135,22 +174,31 @@
 </div>
 
 <div id="licensePrompt">
-    <div class="license-box">
-        <h2>🔑 Lisans Anahtarı</h2>
-        <p style="color: #fff; margin-bottom: 15px;">Lütfen size gönderilen lisans anahtarını girin</p>
-        <input type="text" id="licenseInput" placeholder="GAME-XXXXXX">
-        <button onclick="window.onLicenseSubmit()">Oyuna Başla</button>
+    <div class="license-card animate__animated animate__zoomIn">
+        <div class="logo-area">🕌</div>
+        <h2>Lisans Doğrulama</h2>
+        <p>Devam etmek için lütfen anahtarınızı girin</p>
+        
+        <div class="input-group">
+            <input type="text" id="licenseInput" placeholder="GAME-XXXXXX" spellcheck="false">
+        </div>
+        
+        <button class="submit-btn" onclick="window.onLicenseSubmit()">
+            <span>Maceraya Başla</span>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+        </button>
     </div>
 </div>
 
 <div id="gameContainer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc } 
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc } 
     from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
     
-    // Firebase config (kendi config'ini buraya ekle)
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -163,67 +211,61 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    // Device ID fonksiyonu
     function getDeviceId() {
         let id = localStorage.getItem("deviceId");
         if (!id) {
-            id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            id = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
             localStorage.setItem("deviceId", id);
         }
         return id;
     }
     
-    // Lisans doğrulama
     async function verifyLicense(key) {
         try {
             const q = query(collection(db, "licenses"), where("key", "==", key));
             const snapshot = await getDocs(q);
             
-            if (snapshot.empty) return false;
+            if (snapshot.empty) return { ok: false, msg: "Lisans anahtarı geçersiz!" };
             
-            const docRef = snapshot.docs[0];
-            const data = docRef.data();
+            const licenseDoc = snapshot.docs[0];
+            const data = licenseDoc.data();
             const currentDevice = getDeviceId();
             
-            if (!data.deviceId) {
-                await updateDoc(docRef.ref, {
+            if (!data.deviceId || data.deviceId === "") {
+                await updateDoc(doc(db, "licenses", licenseDoc.id), {
                     deviceId: currentDevice,
                     used: true
                 });
-                return true;
+                return { ok: true };
             }
             
-            if (data.deviceId === currentDevice) return true;
+            if (data.deviceId === currentDevice) return { ok: true };
             
-            return false;
+            return { ok: false, msg: "Bu lisans zaten başka bir cihazda kullanılıyor!" };
         } catch (e) {
-            console.error("Lisans doğrulama hatası:", e);
-            return false;
+            return { ok: false, msg: "Bağlantı hatası oluştu." };
         }
     }
     
-    // Oyun başlatma
     function startGame() {
         document.getElementById("loadingSpinner").style.display = "none";
         document.getElementById("licensePrompt").style.display = "none";
-        document.getElementById("gameContainer").style.display = "block";
+        const container = document.getElementById("gameContainer");
+        container.style.display = "block";
         
-        const iframe = document.createElement("iframe");
-        iframe.src = "game/index.html";
-        iframe.style.width = "100%";
-        iframe.style.height = "100vh";
-        iframe.style.border = "none";
-        
-        document.getElementById("gameContainer").appendChild(iframe);
+        if (!container.querySelector("iframe")) {
+            const iframe = document.createElement("iframe");
+            iframe.src = "game/index.html";
+            container.appendChild(iframe);
+        }
     }
     
-    // Sayfa yüklendiğinde
     window.addEventListener("load", async () => {
         const saved = localStorage.getItem("nevafilKey");
         
         if (saved) {
-            const ok = await verifyLicense(saved);
-            if (ok) {
+            const res = await verifyLicense(saved);
+            if (res.ok) {
                 startGame();
                 return;
             } else {
@@ -231,54 +273,55 @@
             }
         }
         
-        // İlk kez gelen kullanıcı için hoş geldin mesajı
-        const { isConfirmed } = await Swal.fire({
-            title: '✨ Nevafil Oyununa Hoş Geldiniz!',
+        document.getElementById("loadingSpinner").style.display = "none";
+
+        // ÖNCE HOŞGELDİN MESAJI
+        await Swal.fire({
+            title: '✨ Nevafil’e Hoş Geldin!',
             html: `
-                <div style="text-align: center;">
+                <div style="text-align: center; color: #4a5568;">
                     <p style="font-size: 1.1rem; margin-bottom: 15px;">
-                        Manevi bilgilerle dolu bu güzel yolculuğa hazır mısınız?
+                        Manevi bilgilerle dolu, eğlenceli ve huzurlu bir yolculuğa çıkmaya hazır mısın?
                     </p>
-                    <p style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin: 10px 0;">
-                        <i class="fas fa-key" style="color: #6c5ce7;"></i> 
-                        Lisans anahtarınızı girin ve oyuna başlayın.
-                    </p>
+                    <div style="background: #edf2f7; padding: 15px; border-radius: 12px;">
+                        🔑 Lisans anahtarını girerek macerayı başlatabilirsin.
+                    </div>
                 </div>
             `,
-            icon: 'info',
-            confirmButtonText: 'Anladım, devam et',
+            confirmButtonText: 'Başlayalım!',
             confirmButtonColor: '#6c5ce7',
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp'
-            },
-            background: '#fff',
-            color: '#2d3748',
-            backdrop: true,
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            showClass: { popup: 'animate__animated animate__fadeInDown' }
         });
         
-        // Kullanıcı anladım dedikten sonra lisans ekranını göster
-        document.getElementById("loadingSpinner").style.display = "none";
+        // SONRA LİSANS EKRANI
         document.getElementById("licensePrompt").style.display = "flex";
     });
     
-    // Lisans gönderme işlemi
     window.onLicenseSubmit = async () => {
-        const key = document.getElementById("licenseInput").value.trim();
+        const input = document.getElementById("licenseInput");
+        const key = input.value.trim().toUpperCase();
+        
         if (!key) {
-            Swal.fire('Uyarı', 'Lütfen bir lisans anahtarı girin', 'warning');
+            Swal.fire('Hata', 'Lütfen lisans anahtarınızı girin.', 'warning');
             return;
         }
+
+        Swal.showLoading();
+        const res = await verifyLicense(key);
         
-        const ok = await verifyLicense(key);
-        if (ok) {
+        if (res.ok) {
             localStorage.setItem("nevafilKey", key);
-            startGame();
+            Swal.fire({
+                icon: 'success',
+                title: 'Doğrulandı!',
+                text: 'Keyifli oyunlar dileriz...',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            setTimeout(startGame, 1500);
         } else {
-            Swal.fire('Hata', 'Geçersiz lisans veya başka cihazda kullanılıyor!', 'error');
+            Swal.fire('Başarısız', res.msg, 'error');
         }
     };
 </script>
