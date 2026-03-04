@@ -392,14 +392,18 @@ async function loadLicenses() {
   const container = document.getElementById('licensesList');
   container.innerHTML = '<div class="loading">Yükleniyor...</div>';
   try {
+    console.log("Veriler yükleniyor...");
     const q = query(collection(db, LICENSES_COLL));
     const snapshot = await getDocs(q);
+    console.log("Snapshot alındı, doküman sayısı:", snapshot.size);
     allLicenses = [];
     snapshot.forEach(doc => {
+      console.log("Doküman:", doc.id, doc.data());
       allLicenses.push({ id: doc.id, ...doc.data() });
     });
     renderLicenses(); // Arama terimine göre listele
   } catch (e) {
+    console.error("Hata oluştu:", e);
     container.innerHTML = 'Hata oluştu: ' + e.message;
   }
 }
