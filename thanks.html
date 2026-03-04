@@ -322,6 +322,9 @@
                 createdAt: new Date()
             });
 
+            // Lisans oluşturuldu bilgisini localStorage'a kaydet
+            localStorage.setItem('licenseGenerated', 'true');
+
             // Lisansı göster
             document.getElementById('license').innerText = key;
             document.getElementById('license').style.display = 'block';
@@ -398,6 +401,28 @@
         }
         document.body.removeChild(textarea);
     }
+
+    // Sayfa yüklendiğinde daha önce lisans oluşturulmuş mu kontrol et
+    window.addEventListener('load', function() {
+        if (localStorage.getItem('licenseGenerated') === 'true') {
+            // Tüm inputları ve butonları gizle
+            document.querySelectorAll('input').forEach(el => el.style.display = 'none');
+            document.getElementById('generateBtn').style.display = 'none';
+            document.querySelectorAll('.error').forEach(el => el.style.display = 'none');
+            
+            // Bilgi mesajı ekle
+            const infoMsg = document.createElement('p');
+            infoMsg.innerHTML = '✅ Lisansınız daha önce oluşturulmuştur.';
+            infoMsg.style.color = '#10b981';
+            infoMsg.style.fontWeight = 'bold';
+            infoMsg.style.margin = '20px 0';
+            infoMsg.style.textAlign = 'center';
+            document.querySelector('.container').insertBefore(infoMsg, document.getElementById('license'));
+            
+            // Eğer lisans anahtarı hala duruyorsa göster (yoksa belki localStorage'dan alınabilir)
+            // Şimdilik sadece mevcut license div'ini gösteriyoruz, içi boş olabilir.
+        }
+    });
 </script>
 </body>
 </html>
