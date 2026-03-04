@@ -183,9 +183,7 @@
 </head>
 <body>
 
-    <button class="btn btn-warning" id="bulkUpdateCategoryBtn" onclick="bulkUpdateCategory()">
-  <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
-</button>
+
 
     
     <div class="container" id="adminPanel" style="display: none;">
@@ -253,8 +251,13 @@
         </div>
 
         <!-- Toplu İşlemler Paneli -->
-        <div class="panel" id="bulkPanel">
+      <div class="panel" id="bulkPanel">
   <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
+  
+  <!-- Tüm Kategorileri "dini konular" Yap butonu buraya taşındı -->
+  <button class="btn btn-warning" onclick="bulkUpdateCategory()">
+    <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
+  </button>
   
   <button class="btn btn-danger" onclick="deleteAllQuestions()">
     <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
@@ -268,6 +271,11 @@
   <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
   <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
     <i class="fas fa-upload"></i> JSON'dan Soru Yükle
+  </button>
+  
+  <!-- Tüm Lisansları Sil butonu -->
+  <button class="btn btn-danger" onclick="deleteAllLicenses()">
+    <i class="fas fa-trash-alt"></i> Tüm Lisansları Sil
   </button>
   
   <!-- Mevcut butonlar -->
@@ -505,6 +513,49 @@ document.getElementById('licenseSearch')?.addEventListener('input', renderLicens
   }
 });
 
+
+        // Tüm lisansları sil
+window.deleteAllLicenses = async () => {
+  const result = await Swal.fire({
+    title: 'Tüm lisanslar silinecek!',
+    text: 'Bu işlem geri alınamaz. Emin misiniz?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Evet, sil',
+    cancelButtonText: 'İptal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Siliniyor...',
+    html: 'Lütfen bekleyiniz.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const snapshot = await getDocs(collection(db, LICENSES_COLL));
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı',
+      text: 'Tüm lisanslar silindi.',
+      timer: 2000
+    });
+    loadLicenses(); // Listeyi yenile
+  } catch (error) {
+    console.error("Silme hatası:", error);
+    Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
+  }
+};
+
+        
         // ------------------- SORULAR -------------------
       // Global dizi
 let allQuestions = [];
