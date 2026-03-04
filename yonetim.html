@@ -419,20 +419,31 @@ function renderLicenses() {
     return fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm) || orderId.includes(searchTerm) || key.includes(searchTerm);
   });
 
+  console.log('Filtrelenmiş lisans sayısı:', filtered.length); // Kontrol
+
+  if (filtered.length === 0) {
+    document.getElementById('licensesList').innerHTML = '<p style="text-align:center; padding:20px;">Lisans bulunamadı.</p>';
+    return;
+  }
+
   let html = `
     <div style="overflow-x: auto;">
       <table>
-        <tr>
-          <th>Key</th>
-          <th>Ad Soyad</th>
-          <th>Telefon</th>
-          <th>Email</th>
-          <th>Sipariş No</th>
-          <th>Durum</th>
-          <th>Cihaz ID</th>
-          <th>İşlem</th>
-        </tr>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Ad Soyad</th>
+            <th>Telefon</th>
+            <th>Email</th>
+            <th>Sipariş No</th>
+            <th>Durum</th>
+            <th>Cihaz ID</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
   `;
+
   filtered.forEach(l => {
     const used = l.used ? 'Kullanıldı' : 'Kullanılmadı';
     const badgeClass = l.used ? 'badge-danger' : 'badge-success';
@@ -450,7 +461,8 @@ function renderLicenses() {
         </td>
       </tr>`;
   });
-  html += '</table></div>';
+
+  html += '</tbody></table></div>';
   document.getElementById('licensesList').innerHTML = html;
 }
 
