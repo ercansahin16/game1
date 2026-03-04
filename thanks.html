@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teşekkürler & Lisans</title>
+<title>Teşekkürler & Lisans - Nevafil</title>
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <style>
   * {
     box-sizing: border-box;
@@ -103,15 +105,38 @@
   .copy-btn:hover {
     background: #38a169;
   }
-  .link {
-    display: inline-block;
+  .game-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin-top: 20px;
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
+    padding: 15px;
+    background: #f0f4f8;
+    border-radius: 10px;
   }
-  .link:hover {
-    text-decoration: underline;
+  .game-link p {
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #2d3748;
+  }
+  .game-link .link-btn {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+  .game-link .link-btn:hover {
+    background: #5a67d8;
+  }
+  .game-link .link-text {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #4a5568;
+    word-break: break-all;
   }
   /* Responsive */
   @media (max-width: 480px) {
@@ -121,9 +146,11 @@
     button { padding: 12px; }
   }
 </style>
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -141,6 +168,7 @@ const generateKey = () => 'GAME-' + Math.random().toString(36).substring(2,10).t
 
 window.generateLicense = async () => {
   // Alanları al
+  const orderId = document.getElementById('orderId').value.trim();
   const firstName = document.getElementById('firstName').value.trim();
   const lastName = document.getElementById('lastName').value.trim();
   const phone = document.getElementById('phone').value.trim();
@@ -150,6 +178,10 @@ window.generateLicense = async () => {
   document.querySelectorAll('.error').forEach(el => el.style.display = 'none');
   
   let hasError = false;
+  if (!orderId) {
+    document.getElementById('orderIdError').style.display = 'block';
+    hasError = true;
+  }
   if (!firstName) {
     document.getElementById('firstNameError').style.display = 'block';
     hasError = true;
@@ -168,12 +200,39 @@ window.generateLicense = async () => {
   }
   
   if (hasError) return;
-  
-  const key = generateKey();
-  document.getElementById('license').innerText = 'Oluşturuluyor...';
-  
+
+  // Butonu geçici olarak devre dışı bırak
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerText = 'Kontrol ediliyor...';
+
   try {
+    // Önce bu orderId ile kayıt var mı kontrol et
+    const q = query(collection(db, "licenses"), where("orderId", "==", orderId));
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      // Kayıt varsa, mevcut anahtarı göster
+      const existing = snapshot.docs[0].data();
+      Swal.fire({
+        icon: 'info',
+        title: 'Lisans zaten oluşturulmuş',
+        text: `Bu sipariş numarası için daha önce lisans oluşturulmuş. Anahtar: ${existing.key}`,
+        confirmButtonColor: '#667eea'
+      });
+      document.getElementById('license').innerText = existing.key;
+      btn.disabled = true;
+      btn.innerText = 'Anahtar Zaten Var';
+      return;
+    }
+
+    // Yeni anahtar oluştur
+    const key = generateKey();
+    document.getElementById('license').innerText = 'Oluşturuluyor...';
+
+    // Firestore'a kaydet
     await addDoc(collection(db, "licenses"), { 
+      orderId: orderId,
       key: key,
       firstName: firstName,
       lastName: lastName,
@@ -182,12 +241,28 @@ window.generateLicense = async () => {
       used: false,
       createdAt: new Date()
     });
+
     document.getElementById('license').innerText = key;
-    document.getElementById('generateBtn').disabled = true;
-    document.getElementById('generateBtn').style.opacity = '0.5';
+    btn.disabled = true;
+    btn.innerText = 'Anahtar Oluşturuldu';
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı!',
+      text: 'Lisans anahtarınız oluşturuldu. Aşağıdan kopyalayabilirsiniz.',
+      confirmButtonColor: '#667eea'
+    });
+
   } catch(e) {
     console.error("Anahtar kaydedilemedi:", e);
     document.getElementById('license').innerText = "Hata! Anahtar oluşturulamadı.";
+    btn.disabled = false;
+    btn.innerText = 'Anahtar Oluştur';
+    Swal.fire({
+      icon: 'error',
+      title: 'Hata',
+      text: 'Bir hata oluştu. Lütfen tekrar deneyin.'
+    });
   }
 }
 
@@ -195,13 +270,23 @@ window.generateLicense = async () => {
 window.copyKey = () => {
   const licenseText = document.getElementById('license').innerText;
   if (!licenseText || licenseText === 'Oluşturuluyor...' || licenseText.includes('Hata')) {
-    alert('Önce anahtar oluşturun!');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Uyarı',
+      text: 'Önce anahtar oluşturun!'
+    });
     return;
   }
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(licenseText).then(() => {
-      alert("Anahtar panoya kopyalandı!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Kopyalandı!',
+        text: 'Anahtar panoya kopyalandı.',
+        timer: 1500,
+        showConfirmButton: false
+      });
     }).catch(() => fallbackCopy(licenseText));
   } else {
     fallbackCopy(licenseText);
@@ -219,9 +304,27 @@ function fallbackCopy(text) {
   
   try {
     const successful = document.execCommand('copy');
-    alert(successful ? 'Anahtar kopyalandı!' : 'Kopyalama başarısız.');
+    if (successful) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Kopyalandı!',
+        text: 'Anahtar panoya kopyalandı.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Hata',
+        text: 'Kopyalama başarısız.'
+      });
+    }
   } catch (err) {
-    alert('Kopyalama başarısız. Lütfen manuel kopyalayın.');
+    Swal.fire({
+      icon: 'error',
+      title: 'Hata',
+      text: 'Kopyalama başarısız.'
+    });
   }
   
   document.body.removeChild(textarea);
@@ -231,7 +334,11 @@ function fallbackCopy(text) {
 <body>
 <div class="container">
   <h1>🎉 Teşekkürler!</h1>
-  <p>Lisans anahtarınızı oluşturmak için bilgilerinizi girin:</p>
+  <p>Lisans anahtarınızı oluşturmak için sipariş bilgilerinizi girin:</p>
+  
+  <!-- Sipariş Numarası (Shopier) -->
+  <input type="text" id="orderId" placeholder="Shopier Sipariş Numaranız" required>
+  <div id="orderIdError" class="error">Sipariş numarası zorunludur.</div>
   
   <input type="text" id="firstName" placeholder="Adınız" required>
   <div id="firstNameError" class="error">Ad alanı zorunludur.</div>
@@ -251,8 +358,14 @@ function fallbackCopy(text) {
   
   <button class="copy-btn" onclick="copyKey()">📋 Anahtarı Kopyala</button>
   
-  <p style="margin-top: 20px;">Bu anahtarı oyun açarken kullanacaksınız.</p>
-  <a href="index.html" class="link">← Oyuna Git</a>
+  <!-- Oyun Linki -->
+  <div class="game-link">
+    <p>🎮 Oyunumuzu hemen başlat:</p>
+    <a href="http://nevafil.com.tr/" class="link-btn" target="_blank">nevafil.com.tr</a>
+    <div class="link-text">veya kopyala: http://nevafil.com.tr/</div>
+  </div>
+  
+  <a href="index.html" class="link" style="display:inline-block; margin-top:20px; color:#667eea;">← Ana Sayfaya Dön</a>
 </div>
 </body>
 </html>
