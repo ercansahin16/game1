@@ -213,47 +213,32 @@
 </div>
 
         <!-- Soru Yönetimi Paneli -->
-      <!-- Soru Yönetimi Paneli -->
+<!-- Soru Yönetimi Paneli -->
 <div class="panel" id="questionsPanel">
   <h2><i class="fas fa-question-circle"></i> Sorular</h2>
-
-
-    <!-- Soru İstatistikleri Kartı -->
-<div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="totalQuestionsCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">📚 Toplam Soru</div>
-  </div>
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="easyQuestionsCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">🥉 Kolay (1)</div>
-  </div>
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="mediumQuestionsCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">🥈 Orta (2)</div>
-  </div>
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="hardQuestionsCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">🥇 Zor (3)</div>
-  </div>
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #e53e3e;" id="duplicateQuestionsCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">⚠️ Mükerrer Soru</div>
-  </div>
-  <!-- İstersen ekstra bir bilgi daha ekleyelim: Kategori sayısı -->
-  <div style="text-align: center; flex: 1 1 120px;">
-    <div style="font-size: 2rem; font-weight: 700; color: #805ad5;" id="categoryCount">0</div>
-    <div style="font-size: 0.85rem; color: #64748b;">🏷️ Kategori</div>
-  </div>
-</div>
-
-    
-  <button class="btn btn-success" id="addQuestionBtn"><i class="fas fa-plus"></i> Yeni Soru</button>
-  <button class="btn btn-warning" id="bulkAddQuestionsBtn"><i class="fas fa-database"></i> Toplu Soru Ekle (Örnekler)</button>
   
-  <!-- Filtreler -->
-  <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
-    <select id="categoryFilter" style="padding: 8px; border-radius: 6px;">
+  <!-- İstatistik Kartı -->
+  <div style="background: #f0f4f8; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;">
+    <div style="flex: 1; min-width: 150px;">
+      <div style="font-size: 0.9rem; color: #4a5568;">📊 Toplam Soru</div>
+      <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="totalQuestionCount">0</div>
+    </div>
+    <div style="flex: 2; min-width: 250px;">
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div><span style="font-weight:600;">Zorluk 1:</span> <span id="difficulty1Count">0</span></div>
+        <div><span style="font-weight:600;">Zorluk 2:</span> <span id="difficulty2Count">0</span></div>
+        <div><span style="font-weight:600;">Zorluk 3:</span> <span id="difficulty3Count">0</span></div>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 150px;">
+      <div style="font-size: 0.9rem; color: #4a5568;">🔁 Mükerrer Soru</div>
+      <div style="font-size: 2rem; font-weight: 700; color: #e53e3e;" id="duplicateQuestionCount">0</div>
+    </div>
+  </div>
+
+  <!-- Filtreler ve Yeni Soru Butonu (tek satır) -->
+  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
+    <select id="categoryFilter" style="padding: 8px; border-radius: 6px; flex: 1; min-width: 150px;">
       <option value="all">Tüm Kategoriler</option>
       <option value="Kur'an">Kur'an</option>
       <option value="Namaz">Namaz</option>
@@ -262,14 +247,19 @@
       <option value="Melekler">Melekler</option>
       <option value="Cennet-Cehennem">Cennet-Cehennem</option>
       <option value="Allah">Allah</option>
+      <option value="dini konular">dini konular</option>
     </select>
     
-    <select id="difficultyFilter" style="padding: 8px; border-radius: 6px;">
+    <select id="difficultyFilter" style="padding: 8px; border-radius: 6px; flex: 1; min-width: 150px;">
       <option value="all">Tüm Zorluklar</option>
       <option value="1">Kolay</option>
       <option value="2">Orta</option>
       <option value="3">Zor</option>
     </select>
+
+    <button class="btn btn-success" id="addQuestionBtn" style="white-space: nowrap;">
+      <i class="fas fa-plus"></i> Yeni Soru
+    </button>
   </div>
   
   <div id="questionsList">Yükleniyor...</div>
@@ -630,6 +620,7 @@ window.deleteAllLicenses = async () => {
       // Global dizi
 let allQuestions = [];
 
+// Soruları Firestore'dan çek ve istatistikleri güncelle
 async function loadQuestions() {
   const container = document.getElementById('questionsList');
   container.innerHTML = '<div class="loading">Yükleniyor...</div>';
@@ -640,37 +631,50 @@ async function loadQuestions() {
     snapshot.forEach(doc => {
       allQuestions.push({ id: doc.id, ...doc.data() });
     });
+    
+    // İstatistikleri hesapla ve göster
+    updateQuestionStats();
+    
     renderQuestions(); // Filtreleri uygula
-      updateQuestionStats();
   } catch (e) {
     container.innerHTML = 'Hata: ' + e.message;
   }
 }
 
         // Soru istatistiklerini güncelle
+// İstatistikleri güncelle
 function updateQuestionStats() {
   const total = allQuestions.length;
-  const kolay = allQuestions.filter(q => q.zorluk == 1).length;
-  const orta = allQuestions.filter(q => q.zorluk == 2).length;
-  const zor = allQuestions.filter(q => q.zorluk == 3).length;
+  document.getElementById('totalQuestionCount').innerText = total;
+
+  // Zorluk dağılımı
+  let diff1 = 0, diff2 = 0, diff3 = 0;
+  allQuestions.forEach(q => {
+    const z = q.zorluk || 1;
+    if (z == 1) diff1++;
+    else if (z == 2) diff2++;
+    else if (z == 3) diff3++;
+  });
+  document.getElementById('difficulty1Count').innerText = diff1;
+  document.getElementById('difficulty2Count').innerText = diff2;
+  document.getElementById('difficulty3Count').innerText = diff3;
 
   // Mükerrer soru sayısı (soru metnine göre)
-  const soruMetinleri = allQuestions.map(q => q.soru);
-  const unique = new Set(soruMetinleri);
-  const duplicateCount = total - unique.size;
-
-  // Benzersiz kategori sayısı
-  const kategoriler = allQuestions.map(q => q.bolum).filter(Boolean);
-  const uniqueCategories = new Set(kategoriler).size;
-
-  document.getElementById('totalQuestionsCount').innerText = total;
-  document.getElementById('easyQuestionsCount').innerText = kolay;
-  document.getElementById('mediumQuestionsCount').innerText = orta;
-  document.getElementById('hardQuestionsCount').innerText = zor;
-  document.getElementById('duplicateQuestionsCount').innerText = duplicateCount;
-  document.getElementById('categoryCount').innerText = uniqueCategories;
+  const seen = new Set();
+  const duplicates = new Set();
+  allQuestions.forEach(q => {
+    if (seen.has(q.soru)) {
+      duplicates.add(q.soru);
+    } else {
+      seen.add(q.soru);
+    }
+  });
+  document.getElementById('duplicateQuestionCount').innerText = duplicates.size;
 }
 
+        
+
+// Filtreleme ve tabloyu oluştur
 function renderQuestions() {
   const category = document.getElementById('categoryFilter').value;
   const difficulty = document.getElementById('difficultyFilter').value;
@@ -706,9 +710,12 @@ function renderQuestions() {
   document.getElementById('questionsList').innerHTML = html;
 }
 
+        
 // Filtre değişim olaylarını ekleyin (DOMContentLoaded içinde)
 document.getElementById('categoryFilter').addEventListener('change', renderQuestions);
 document.getElementById('difficultyFilter').addEventListener('change', renderQuestions);
+
+        
         window.editQuestion = async (id) => {
             const docRef = doc(db, QUESTIONS_COLL, id);
             const docSnap = await getDoc(docRef);
