@@ -3115,13 +3115,8 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 
   if (!installBtn) return; // buton yoksa çık
 
-  // Tarayıcı yüklemeye uygun olduğunda
-  window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('✅ beforeinstallprompt tetiklendi!');
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installPwaBtn').style.display = 'inline-block';
-});
+  // Tarayıcı yüklemeye uygun olduğunda buraya ercan
+
 
   // Butona tıklanınca
   installBtn.addEventListener('click', async () => {
@@ -3159,9 +3154,39 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
     });
   }
 </script>
+  <!-- Sayfanın en altına koy -->
+<script>
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    console.log('beforeinstallprompt yakalandı!');
+    const btn = document.createElement('button');
+    btn.textContent = '📲 Uygulamayı Yükle';
+    btn.style.position = 'fixed';
+    btn.style.top = '10px';
+    btn.style.right = '20px';
+    btn.style.zIndex = 10000;
+    btn.style.padding = '10px 20px';
+    btn.style.background = '#a78bfa';
+    btn.style.color = 'white';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '30px';
+    btn.style.cursor = 'pointer';
+    btn.onclick = () => {
+      e.prompt();
+      e.userChoice.then((result) => {
+        if (result.outcome === 'accepted') {
+          console.log('Kullanıcı yükledi');
+          btn.remove();
+        }
+      });
+    };
+    document.body.appendChild(btn);
+  });
+</script>
   
 </body>
 </html>
+
 
 
 
