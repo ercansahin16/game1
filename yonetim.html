@@ -216,6 +216,38 @@
       <!-- Soru Yönetimi Paneli -->
 <div class="panel" id="questionsPanel">
   <h2><i class="fas fa-question-circle"></i> Sorular</h2>
+
+
+    <!-- Soru İstatistikleri Kartı -->
+<div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="totalQuestionsCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">📚 Toplam Soru</div>
+  </div>
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="easyQuestionsCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">🥉 Kolay (1)</div>
+  </div>
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="mediumQuestionsCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">🥈 Orta (2)</div>
+  </div>
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="hardQuestionsCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">🥇 Zor (3)</div>
+  </div>
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #e53e3e;" id="duplicateQuestionsCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">⚠️ Mükerrer Soru</div>
+  </div>
+  <!-- İstersen ekstra bir bilgi daha ekleyelim: Kategori sayısı -->
+  <div style="text-align: center; flex: 1 1 120px;">
+    <div style="font-size: 2rem; font-weight: 700; color: #805ad5;" id="categoryCount">0</div>
+    <div style="font-size: 0.85rem; color: #64748b;">🏷️ Kategori</div>
+  </div>
+</div>
+
+    
   <button class="btn btn-success" id="addQuestionBtn"><i class="fas fa-plus"></i> Yeni Soru</button>
   <button class="btn btn-warning" id="bulkAddQuestionsBtn"><i class="fas fa-database"></i> Toplu Soru Ekle (Örnekler)</button>
   
@@ -609,9 +641,34 @@ async function loadQuestions() {
       allQuestions.push({ id: doc.id, ...doc.data() });
     });
     renderQuestions(); // Filtreleri uygula
+      updateQuestionStats();
   } catch (e) {
     container.innerHTML = 'Hata: ' + e.message;
   }
+}
+
+        // Soru istatistiklerini güncelle
+function updateQuestionStats() {
+  const total = allQuestions.length;
+  const kolay = allQuestions.filter(q => q.zorluk == 1).length;
+  const orta = allQuestions.filter(q => q.zorluk == 2).length;
+  const zor = allQuestions.filter(q => q.zorluk == 3).length;
+
+  // Mükerrer soru sayısı (soru metnine göre)
+  const soruMetinleri = allQuestions.map(q => q.soru);
+  const unique = new Set(soruMetinleri);
+  const duplicateCount = total - unique.size;
+
+  // Benzersiz kategori sayısı
+  const kategoriler = allQuestions.map(q => q.bolum).filter(Boolean);
+  const uniqueCategories = new Set(kategoriler).size;
+
+  document.getElementById('totalQuestionsCount').innerText = total;
+  document.getElementById('easyQuestionsCount').innerText = kolay;
+  document.getElementById('mediumQuestionsCount').innerText = orta;
+  document.getElementById('hardQuestionsCount').innerText = zor;
+  document.getElementById('duplicateQuestionsCount').innerText = duplicateCount;
+  document.getElementById('categoryCount').innerText = uniqueCategories;
 }
 
 function renderQuestions() {
