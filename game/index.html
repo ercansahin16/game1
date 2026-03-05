@@ -1197,45 +1197,28 @@ body.dark-theme .report-btn:hover {
   padding: 0; /* İstediğin değer, sıfır da yapabilirsin */
 }
   /* PWA Yükleme Butonu Stili */
+/* PWA Yükleme Butonu Stili */
 .pwa-install-btn {
-    background: #a78bfa;        /* açık mor */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
-    opacity: 0.9;
-    transition: all 0.2s;
-    border: 1px solid #7c3aed;
+    background: #a78bfa !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 30px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3) !important;
+    opacity: 0.9 !important;
+    transition: all 0.2s !important;
+    border: 1px solid #7c3aed !important;
+    white-space: nowrap !important;
 }
 
 .pwa-install-btn:hover {
-    opacity: 1;
-    background: #7c3aed;        /* koyu mor */
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
-}
-#installPwaBtn {
-    position: fixed !important;   /* sabit konum, her şeyin üstünde */
-    top: 20px !important;
-    right: 20px !important;
-    z-index: 999999 !important;  /* çok yüksek bir değer */
-    background: #a78bfa;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
-    opacity: 0.9;
-    transition: all 0.2s;
-    border: 1px solid #7c3aed;
-    display: none; /* başlangıçta gizli */
+    opacity: 1 !important;
+    background: #7c3aed !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4) !important;
 }
 
 #installPwaBtn:hover {
@@ -1254,13 +1237,12 @@ body.dark-theme .report-btn:hover {
 
 
 
-  <!-- 🎭 Mascot -->
-<!-- 🎭 Mascot -->
-<div id="mascot">
+<!-- 🎭 Mascot + PWA Butonu -->
+<div id="mascot" style="position: fixed; bottom: 20px; left: 20px; z-index: 15000; display: flex; align-items: center; gap: 10px;">
   <span id="mascot-eyes">👀</span>
-  <div id="pwa-install-container" style="position: fixed; top: 10px; right: 20px; z-index: 10000; background: transparent;">
+  <div id="pwa-install-container" style="background: transparent;">
     <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>
-</div>
+  </div>
 </div>
 
   
@@ -3127,6 +3109,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
 
   // PWA yükleme butonu (sayfa en üstü)
+// PWA yükleme butonu
 (function() {
   // Uygulama zaten yüklü mü (standalone mod)?
   if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -3143,27 +3126,26 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
   let deferredPrompt;
   const installBtn = document.getElementById('installPwaBtn');
 
-  if (!installBtn) return; // buton yoksa çık
+  if (!installBtn) return;
 
-  // Tarayıcı yüklemeye uygun olduğunda buraya ercan
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block'; // butonu göster
+    console.log('beforeinstallprompt tetiklendi, buton gösterildi.');
+  });
 
-
-  // Butona tıklanınca
   installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-
+    if (!deferredPrompt) {
+      alert('Yükleme şu anda mümkün değil.');
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-
     if (outcome === 'accepted') {
-      console.log('Kullanıcı uygulamayı yükledi.');
       localStorage.setItem('pwaInstalled', 'true');
       installBtn.style.display = 'none';
-    } else {
-      console.log('Kullanıcı yüklemeden vazgeçti.');
-      // Vazgeçerse buton görünür kalsın (tekrar deneyebilir)
     }
-
     deferredPrompt = null;
   });
 })();
@@ -3217,6 +3199,7 @@ if ('serviceWorker' in navigator) {
   
 </body>
 </html>
+
 
 
 
