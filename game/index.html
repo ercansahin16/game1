@@ -1216,28 +1216,38 @@ body.dark-theme .report-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
 }
-  #installPwaBtn {
-  position: fixed;  /* sabit konum */
-  top: 20px;
-  right: 20px;
-  z-index: 999999;  /* çok yüksek bir değer */
-  background: #a78bfa;
-  /* diğer stiller */
+#installPwaBtn {
+    position: fixed !important;   /* sabit konum, her şeyin üstünde */
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 999999 !important;  /* çok yüksek bir değer */
+    background: #a78bfa;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+    opacity: 0.9;
+    transition: all 0.2s;
+    border: 1px solid #7c3aed;
+    display: none; /* başlangıçta gizli */
+}
+
+#installPwaBtn:hover {
+    opacity: 1;
+    background: #7c3aed;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
 }
 
 
 </style>
 </head>
 <body>
-  <script>
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    alert('✅ beforeinstallprompt tetiklendi!');
-    // İstersen butonu manuel göster
-    const btn = document.getElementById('installPwaBtn');
-    if (btn) btn.style.display = 'inline-block';
-  });
-</script>
+
   
 <div id="pwa-install-container" style="position: fixed; top: 10px; right: 20px; z-index: 10000; background: transparent;">
     <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>
@@ -3155,53 +3165,42 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
     deferredPrompt = null;
   });
 })();
+
+
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  console.log('beforeinstallprompt yakalandı!');
+  const btn = document.createElement('button');
+  btn.textContent = '📲 Uygulamayı Yükle';
+  btn.style.position = 'fixed';
+  btn.style.top = '10px';
+  btn.style.right = '20px';
+  btn.style.zIndex = '999999';
+  btn.style.padding = '10px 20px';
+  btn.style.background = '#a78bfa';
+  btn.style.color = 'white';
+  btn.style.border = 'none';
+  btn.style.borderRadius = '30px';
+  btn.style.cursor = 'pointer';
+  btn.onclick = () => {
+    e.prompt();
+    e.userChoice.then((result) => {
+      if (result.outcome === 'accepted') {
+        console.log('Kullanıcı uygulamayı yükledi.');
+        btn.remove();
+      }
+    });
+  };
+  document.body.appendChild(btn);
+});
   
 </script>
 
 
-
-  <!-- Sayfanın en altına koy -->
-<script>
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    console.log('beforeinstallprompt yakalandı!');
-    const btn = document.createElement('button');
-    btn.textContent = '📲 Uygulamayı Yükle';
-    btn.style.position = 'fixed';
-    btn.style.top = '10px';
-    btn.style.right = '20px';
-    btn.style.zIndex = 10000;
-    btn.style.padding = '10px 20px';
-    btn.style.background = '#a78bfa';
-    btn.style.color = 'white';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '30px';
-    btn.style.cursor = 'pointer';
-    btn.onclick = () => {
-      e.prompt();
-      e.userChoice.then((result) => {
-        if (result.outcome === 'accepted') {
-          console.log('Kullanıcı yükledi');
-          btn.remove();
-        }
-      });
-    };
-    document.body.appendChild(btn);
-  });
-</script>
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
 
 
