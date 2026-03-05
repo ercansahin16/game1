@@ -1194,11 +1194,36 @@ body.dark-theme .report-btn:hover {
   .intro-play-btn {
   padding: 0; /* İstediğin değer, sıfır da yapabilirsin */
 }
+  /* PWA Yükleme Butonu Stili */
+.pwa-install-btn {
+    background: #a78bfa;        /* açık mor */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+    opacity: 0.9;
+    transition: all 0.2s;
+    border: 1px solid #7c3aed;
+}
+
+.pwa-install-btn:hover {
+    opacity: 1;
+    background: #7c3aed;        /* koyu mor */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
+}
 
 
 </style>
 </head>
 <body>
+<div id="pwa-install-container" style="position: fixed; top: 10px; right: 20px; z-index: 10000; background: transparent;">
+    <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>
+</div>
 
 
   <!-- 🎭 Mascot -->
@@ -3070,6 +3095,54 @@ mascot.addEventListener('click', async () => {
             
 window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
+
+  // PWA yükleme butonu (sayfa en üstü)
+(function() {
+  // Uygulama zaten yüklü mü (standalone mod)?
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('PWA zaten yüklü, buton gösterilmeyecek.');
+    return;
+  }
+
+  // Daha önce başarıyla yüklendi mi?
+  if (localStorage.getItem('pwaInstalled') === 'true') {
+    console.log('Daha önce yükleme yapılmış, buton gösterilmeyecek.');
+    return;
+  }
+
+  let deferredPrompt;
+  const installBtn = document.getElementById('installPwaBtn');
+
+  if (!installBtn) return; // buton yoksa çık
+
+  // Tarayıcı yüklemeye uygun olduğunda
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block'; // butonu göster
+    console.log('PWA yüklenebilir durumda, buton gösterildi.');
+  });
+
+  // Butona tıklanınca
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      console.log('Kullanıcı uygulamayı yükledi.');
+      localStorage.setItem('pwaInstalled', 'true');
+      installBtn.style.display = 'none';
+    } else {
+      console.log('Kullanıcı yüklemeden vazgeçti.');
+      // Vazgeçerse buton görünür kalsın (tekrar deneyebilir)
+    }
+
+    deferredPrompt = null;
+  });
+})();
+  
 </script>
 
 
@@ -3089,37 +3162,6 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
