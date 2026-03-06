@@ -17,9 +17,10 @@
 <!-- Sweet Alert 2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<link rel="manifest" href="/game/manifest.json">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#7c3aed">
+<<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
   
 <style>
 /* ---------- RESET & DEĞİŞKENLER ---------- */
@@ -1185,36 +1186,7 @@ body.dark-theme .report-btn:hover {
   padding: 0; /* İstediğin değer, sıfır da yapabilirsin */
 }
 
-/* PWA Yükleme Butonu Stili */
-.pwa-install-btn {
-    background: #a78bfa !important;
-    color: white !important;
-    border: none !important;
-    padding: 8px 16px !important;
-    border-radius: 30px !important;
-    font-size: 0.85rem !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3) !important;
-    opacity: 0.9 !important;
-    transition: all 0.2s !important;
-    border: 1px solid #7c3aed !important;
-    white-space: nowrap !important;
-}
 
-.pwa-install-btn:hover {
-    opacity: 1 !important;
-    background: #7c3aed !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4) !important;
-}
-
-#installPwaBtn:hover {
-    opacity: 1;
-    background: #7c3aed;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
-}
 
 
 </style>
@@ -1229,7 +1201,7 @@ body.dark-theme .report-btn:hover {
 <div id="mascot" style="position: fixed;  left: 20px; z-index: 20000; display: flex; align-items: center; gap: 10px;">
   <span id="mascot-eyes">👀</span>
   <div id="pwa-install-container" style="background: transparent;">
-    <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>
+   <!-- <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>-->
   </div>
 </div>
 
@@ -3097,111 +3069,83 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
 
 
-
-(function() {
-  // Uygulama zaten yüklü mü (standalone mod)?
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('PWA zaten yüklü, buton gösterilmeyecek.');
-    return;
-  }
-
-  // Daha önce başarıyla yüklendi mi?
-  if (localStorage.getItem('pwaInstalled') === 'true') {
-    console.log('Daha önce yükleme yapılmış, buton gösterilmeyecek.');
-    return;
-  }
-
-  let deferredPrompt;
-  const installBtn = document.getElementById('installPwaBtn');
-
-  if (!installBtn) return;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'inline-block'; // butonu göster
-    console.log('beforeinstallprompt tetiklendi, buton gösterildi.');
-  });
-
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) {
-      alert('Yükleme şu anda mümkün değil.');
-      return;
-    }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      localStorage.setItem('pwaInstalled', 'true');
-      installBtn.style.display = 'none';
-    }
-    deferredPrompt = null;
-  });
-})();
-
-
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  console.log('beforeinstallprompt yakalandı!');
-  const btn = document.createElement('button');
-  btn.textContent = '📲 Uygulamayı Yükle';
-  btn.style.position = 'fixed';
-  btn.style.top = '10px';
-  btn.style.right = '20px';
-  btn.style.zIndex = '999999';
-  btn.style.padding = '10px 20px';
-  btn.style.background = '#a78bfa';
-  btn.style.color = 'white';
-  btn.style.border = 'none';
-  btn.style.borderRadius = '30px';
-  btn.style.cursor = 'pointer';
-  btn.onclick = () => {
-    e.prompt();
-    e.userChoice.then((result) => {
-      if (result.outcome === 'accepted') {
-        console.log('Kullanıcı uygulamayı yükledi.');
-        btn.remove();
-      }
-    });
-  };
-  document.body.appendChild(btn);
-});
   
 </script>
 
-<script>
+  <div id="pwaBanner" style="
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#7c3aed;
+color:white;
+padding:12px 18px;
+border-radius:40px;
+font-family:Poppins;
+z-index:99999;
+display:none;
+box-shadow:0 8px 20px rgba(0,0,0,0.2);
+">
+
+📲 NEVAFİL'i telefonuna yükle
+<button id="installBtn" style="
+margin-left:10px;
+background:white;
+color:#7c3aed;
+border:none;
+padding:6px 14px;
+border-radius:20px;
+cursor:pointer;
+font-weight:600;
+">Yükle</button>
+
+<span id="closePwa" style="margin-left:10px;cursor:pointer;">✕</span>
+
+</div>
+  <script>
+
+let deferredPrompt;
+
+const banner = document.getElementById("pwaBanner");
+const installBtn = document.getElementById("installBtn");
+const closeBtn = document.getElementById("closePwa");
+
+window.addEventListener("beforeinstallprompt", (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.style.display="block";
+});
+
+installBtn.addEventListener("click", async()=>{
+  banner.style.display="none";
+
+  deferredPrompt.prompt();
+
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if(outcome==="accepted"){
+    console.log("PWA yüklendi");
+  }
+
+  deferredPrompt=null;
+});
+
+closeBtn.onclick=()=>{
+  banner.style.display="none";
+}
+
+</script>
+  <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => {
-        console.log('Service Worker başarıyla kayıt edildi:', reg.scope);
-      })
-      .catch(err => {
-        console.log('Service Worker kayıt hatası:', err);
-      });
+      .then(reg => console.log('SW kayıtlı', reg.scope))
+      .catch(err => console.log('SW hata', err));
   });
 }
 </script>
-
-
-  
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
