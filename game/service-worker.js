@@ -1,40 +1,34 @@
-const CACHE_NAME = 'manevi-oyun-v1';
+const CACHE_NAME = "nevafil-v1";
+
 const urlsToCache = [
-  '/game/',
-  '/game/index.html',
-  '/game/firebase-core.js'
+  "/game/",
+  "/game/index.html"
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Önbellek açıldı');
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener("fetch", event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
-      })
+      .then(response => response || fetch(event.request))
   );
 });
 
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(key => {
+          if(key !== CACHE_NAME){
+            return caches.delete(key);
           }
         })
-      );
-    })
+      )
+    )
   );
 });
