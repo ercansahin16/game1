@@ -2150,6 +2150,46 @@ function sendBugReport() {
   
 
 
+  window.deleteAllQuestions = async () => {
+  const result = await Swal.fire({
+    title: 'Tüm sorular silinecek!',
+    text: 'Bu işlem geri alınamaz. Emin misiniz?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Evet, sil',
+    cancelButtonText: 'İptal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Siliniyor...',
+    html: 'Lütfen bekleyiniz.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Başarılı',
+      text: 'Tüm sorular silindi.',
+      timer: 2000
+    });
+    loadQuestions(); // Listeyi yenile
+  } catch (error) {
+    console.error("Silme hatası:", error);
+    Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
+  }
+};
+
 function updateHintButton() {
   const maxHints = 2;
   const used = gameState.hintsUsed || 0;
@@ -3181,6 +3221,7 @@ font-weight:600;
 
 </body>
 </html>
+
 
 
 
