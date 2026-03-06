@@ -1194,7 +1194,35 @@ body.dark-theme .report-btn:hover {
 </head>
 <body>
 
-  
+  <script>
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+document.getElementById("installBtn").addEventListener("click", async () => {
+
+  if (!deferredPrompt) {
+    alert("Telefonunuzdan menü → Ana ekrana ekle seçebilirsiniz.");
+    return;
+  }
+
+  deferredPrompt.prompt();
+
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === "accepted") {
+    console.log("PWA yüklendi");
+  }
+
+  deferredPrompt = null;
+
+});
+
+</script>
 
 
 
@@ -1205,6 +1233,17 @@ body.dark-theme .report-btn:hover {
    <!-- <button id="installPwaBtn" style="display: none;" class="pwa-install-btn">📲 Uygulamayı Yükle</button>-->
   </div>
 </div>
+  <button id="installBtn" style="
+background:#7c3aed;
+color:white;
+border:none;
+padding:10px 20px;
+border-radius:30px;
+cursor:pointer;
+font-weight:600;
+">
+📲 NEVAFİL'i Telefonuna Yükle
+</button>
 
   
 <!-- ========== INTRO EKRANI ========= -->
@@ -3103,50 +3142,10 @@ font-weight:600;
 <span id="closePwa" style="margin-left:10px;cursor:pointer;">✕</span>
 
 </div>
-  <script>
 
-let deferredPrompt;
-
-const banner = document.getElementById("pwaBanner");
-const installBtn = document.getElementById("installBtn");
-const closeBtn = document.getElementById("closePwa");
-
-window.addEventListener("beforeinstallprompt", (e)=>{
-  e.preventDefault();
-  deferredPrompt = e;
-  banner.style.display="block";
-});
-
-installBtn.addEventListener("click", async()=>{
-  banner.style.display="none";
-
-  deferredPrompt.prompt();
-
-  const { outcome } = await deferredPrompt.userChoice;
-
-  if(outcome==="accepted"){
-    console.log("PWA yüklendi");
-  }
-
-  deferredPrompt=null;
-});
-
-closeBtn.onclick=()=>{
-  banner.style.display="none";
-}
-
-</script>
-  <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('SW kayıtlı', reg.scope))
-      .catch(err => console.log('SW hata', err));
-  });
-}
-</script>
 </body>
 </html>
+
 
 
 
