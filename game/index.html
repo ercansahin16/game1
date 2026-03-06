@@ -1595,108 +1595,6 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 </div>
 <div id="toastContainer"></div>
 
-<script>
-// ========== YENİ: ALT BUTONLAR FONKSİYONELLİĞİ =========
-
-// Ses durumu
-let isSoundOn = true;
-
-// Alt ses butonu
-document.getElementById('bottomSoundBtn').addEventListener('click', function() {
-  isSoundOn = !isSoundOn;
-  const icon = this.querySelector('i');
-  if (isSoundOn) {
-    icon.className = 'fas fa-volume-up';
-    showToast('Ses açıldı', 'info');
-  } else {
-    icon.className = 'fas fa-volume-mute';
-    showToast('Ses kapatıldı', 'info');
-  }
-});
-
-// Alt mascot tıklama
-document.getElementById('bottomMascot').addEventListener('click', function() {
-  const messages = [
-    'Merhaba! 👋',
-    'Başarılar! 🌟',
-    'Soruları dikkatle oku! 📖',
-    'İpucu kullanabilirsin! 💡',
-    'Namaz vakitlerini unutma! 🕌'
-  ];
-  const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-  showToast(randomMsg, 'info');
-  
-  // Animasyon efekti
-  this.style.transform = 'scale(1.2) rotate(10deg)';
-  setTimeout(() => {
-    this.style.transform = 'scale(1) rotate(0deg)';
-  }, 200);
-});
-
-// Alt yükleme butonu
-document.getElementById('bottomInstallBtn').addEventListener('click', async function() {
-  if (!deferredPrompt) {
-    showToast('Telefonunuzdan menü → Ana ekrana ekle seçebilirsiniz.', 'info');
-    return;
-  }
-
-  deferredPrompt.prompt();
-
-  const { outcome } = await deferredPrompt.userChoice;
-
-  if (outcome === "accepted") {
-    showToast('Uygulama yükleniyor...', 'success');
-  }
-
-  deferredPrompt = null;
-});
-
-// Alt çıkış butonu
-document.getElementById('bottomExitBtn').addEventListener('click', function() {
-  Swal.fire({
-    title: 'Oyundan çıkmak istiyor musunuz?',
-    text: 'İlerlemeniz kaydedildi.',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Evet, çık',
-    cancelButtonText: 'Hayır, devam et',
-    confirmButtonColor: '#7c3aed',
-    cancelButtonColor: '#6b7280'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      location.reload();
-    }
-  });
-});
-
-// Oyun başladığında çıkış butonunu aktifleştir
-function activateExitButton() {
-  document.getElementById('bottomExitBtn').classList.add('active');
-}
-
-// Oyun bittiğinde çıkış butonunu pasifleştir (isteğe bağlı)
-function deactivateExitButton() {
-  document.getElementById('bottomExitBtn').classList.remove('active');
-}
-
-// Toast mesajı göster
-function showToast(message, type = 'info') {
-  const toast = document.createElement('div');
-  toast.className = `toast-message toast-${type}`;
-  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
-  document.getElementById('toastContainer').appendChild(toast);
-  
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
-}
-
-// Örnek: Oyun başlatma fonksiyonuna ekle
-// startGame() fonksiyonunun içine activateExitButton() çağrısı ekleyin
-</script>
-
-
-
 <script type="module">
 // ------------------------------------------------------------
 // FIREBASE IMPORTLAR
@@ -1706,7 +1604,7 @@ import {
 collection, getDocs, addDoc, query, orderBy, limit,
 doc, getDoc, updateDoc, deleteDoc, where,
 writeBatch
-} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js ';
 
 // ------------------------------------------------------------
 // SABİTLER
@@ -1728,14 +1626,14 @@ const SAMPLE_QUESTIONS = [
 ];
 
 const AVATAR_LIST = [
-{name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
-{name: 'Koca Ayı', icon: '🐨', img: 'https://cdn-icons-png.flaticon.com/512/616/616412.png'},
-{name: 'Sonic', icon: '🦔', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
-{name: 'Labubi', icon: '🐶', img: 'https://cdn-icons-png.flaticon.com/512/616/616408.png'},
-{name: 'Mickey', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
-{name: 'Minnie', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
-{name: 'Donald', icon: '🦆', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
-{name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
+{name: 'Maşa', icon: '🐻', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
+{name: 'Koca Ayı', icon: '🐨', img: 'https://cdn-icons-png.flaticon.com/512/616/616412.png '},
+{name: 'Sonic', icon: '🦔', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
+{name: 'Labubi', icon: '🐶', img: 'https://cdn-icons-png.flaticon.com/512/616/616408.png '},
+{name: 'Mickey', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
+{name: 'Minnie', icon: '🐭', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
+{name: 'Donald', icon: '🦆', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
+{name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png '},
 ];
 
 // ------------------------------------------------------------
@@ -1743,8 +1641,8 @@ const AVATAR_LIST = [
 // ------------------------------------------------------------
 let soundEnabled = true;
 const sounds = {
-correct: new Howl({src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3']}),
-levelUp: new Howl({src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3']})
+correct: new Howl({src: ['https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3 ']}),
+levelUp: new Howl({src: ['https://cdn.freesound.org/previews/411/411089_5121236-lq.mp3 ']})
 };
 function playBeep(type){
 if(!soundEnabled) return;
@@ -1919,9 +1817,12 @@ const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
 const resetAllUserDataBtn = document.getElementById('resetAllUserDataBtn');
 const bulkAddQuestionsBtn = document.getElementById('bulkAddQuestionsBtn');
 
-const soundToggleBtn = document.getElementById('soundToggleBtn');
-const mascot = document.getElementById('mascot');
-const speechBubble = document.getElementById('speechBubble');
+// YENİ: Alt kontrol butonları
+const bottomMascot = document.getElementById('bottomMascot');
+const bottomSoundBtn = document.getElementById('bottomSoundBtn');
+const bottomInstallBtn = document.getElementById('bottomInstallBtn');
+const bottomExitBtn = document.getElementById('bottomExitBtn');
+
 const settingsBtn = document.getElementById('settingsBtn');
 
 // ------------------------------------------------------------
@@ -1937,6 +1838,9 @@ let gameActive = true;
 let timerInterval = null;
 let timeLeft = 60;
 let eliminatedOptions = [];
+
+// YENİ: PWA Install Prompt
+let deferredPrompt = null;
 
 // ------------------------------------------------------------
 // ÖRNEK SORULARI YÜKLE (seedQuestionsIfNeeded)
@@ -2091,8 +1995,6 @@ if(scoreDisplay) scoreDisplay.innerText = gameState.score;
 if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 }
 
-
-
   //benzersiz kullanıcı adı ve kullanıcı adu-ı değiştirme fonksiyonu 
   // saveSettings fonksiyonunu güncelle (async yap)
 async function saveSettings() {
@@ -2136,7 +2038,6 @@ async function saveSettings() {
     showToast('Profil güncellendi!', 'success');
 }
 
-
 // ------------------------------------------------------------
 // DÜZELTİLMİŞ startGameFromIntro - İLKNU KONTROLÜ EKLENDİ
 // ------------------------------------------------------------
@@ -2149,6 +2050,9 @@ saveGameState();
 updateGameHeader();
 introOverlay.classList.add('hidden');
 gameContainer.style.display = 'block';
+  
+// YENİ: Çıkış butonunu aktifleştir
+activateExitButton();
   
 // startGameFromIntro içinde, gameContainer gösterildikten sonra
 document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
@@ -2180,8 +2084,10 @@ gameContainer.style.display = 'none';
 introOverlay.classList.remove('hidden');
 clearInterval(timerInterval);
 updateIntroUI();
+  
+// YENİ: Çıkış butonunu pasifleştir
+deactivateExitButton();
 }
-
 
 // ------------------------------------------------------------
 async function loadAllQuestions(){
@@ -2751,9 +2657,9 @@ const shareDiv = document.createElement('div');
 shareDiv.style = 'position:fixed; bottom:100px; right:20px; background:white; border-radius:40px; padding:15px; box-shadow:0 10px 0 #ffe0b5; z-index:10002; border:2px solid #ffe0b0;';
 shareDiv.innerHTML = `
 <p style="margin-bottom:10px;"><i class="fas fa-share-alt"></i> Paylaş:</p>
-<a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-whatsapp" style="color:#25D366; font-size:1.8rem;"></i></a>
-<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-twitter" style="color:#1DA1F2; font-size:1.8rem;"></i></a>
-<a href="https://t.me/share/url?url=tr.ee/esahin&text=${encodeURIComponent(text)}" target="_blank"><i class="fab fa-telegram" style="color:#0088cc; font-size:1.8rem;"></i></a>
+<a href="https://wa.me/?text= ${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-whatsapp" style="color:#25D366; font-size:1.8rem;"></i></a>
+<a href="https://twitter.com/intent/tweet?text= ${encodeURIComponent(text)}" target="_blank" style="margin-right:15px;"><i class="fab fa-twitter" style="color:#1DA1F2; font-size:1.8rem;"></i></a>
+<a href="https://t.me/share/url?url=tr.ee/esahin&text= ${encodeURIComponent(text)}" target="_blank"><i class="fab fa-telegram" style="color:#0088cc; font-size:1.8rem;"></i></a>
 <button id="closeShare" style="margin-left:15px; background:none; border:none;"><i class="fas fa-times"></i></button>
 `;
 document.body.appendChild(shareDiv);
@@ -3102,26 +3008,100 @@ adminClickCount++;
 }
 
 // ------------------------------------------------------------
+// YENİ: ALT BUTONLAR FONKSİYONELLİĞİ
+// ------------------------------------------------------------
+
+// Ses durumu
+let isSoundOn = true;
+
+// Alt ses butonu
+bottomSoundBtn.addEventListener('click', function() {
+  isSoundOn = !isSoundOn;
+  soundEnabled = isSoundOn;
+  const icon = this.querySelector('i');
+  if (isSoundOn) {
+    icon.className = 'fas fa-volume-up';
+    showToast('Ses açıldı', 'info');
+  } else {
+    icon.className = 'fas fa-volume-mute';
+    showToast('Ses kapatıldı', 'info');
+  }
+});
+
+// Alt mascot tıklama
+bottomMascot.addEventListener('click', function() {
+  const messages = [
+    'Merhaba! 👋',
+    'Başarılar! 🌟',
+    'Soruları dikkatle oku! 📖',
+    'İpucu kullanabilirsin! 💡',
+    'Namaz vakitlerini unutma! 🕌'
+  ];
+  const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+  showToast(randomMsg, 'info');
+  
+  // Animasyon efekti
+  this.style.transform = 'scale(1.2) rotate(10deg)';
+  setTimeout(() => {
+    this.style.transform = 'scale(1) rotate(0deg)';
+  }, 200);
+});
+
+// Alt yükleme butonu
+bottomInstallBtn.addEventListener('click', async function() {
+  if (!deferredPrompt) {
+    showToast('Telefonunuzdan menü → Ana ekrana ekle seçebilirsiniz.', 'info');
+    return;
+  }
+
+  deferredPrompt.prompt();
+
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === "accepted") {
+    showToast('Uygulama yükleniyor...', 'success');
+  }
+
+  deferredPrompt = null;
+});
+
+// Alt çıkış butonu
+bottomExitBtn.addEventListener('click', function() {
+  Swal.fire({
+    title: 'Oyundan çıkmak istiyor musunuz?',
+    text: 'İlerlemeniz kaydedildi.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Evet, çık',
+    cancelButtonText: 'Hayır, devam et',
+    confirmButtonColor: '#7c3aed',
+    cancelButtonColor: '#6b7280'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      exitToIntro();
+    }
+  });
+});
+
+// Oyun başladığında çıkış butonunu aktifleştir
+function activateExitButton() {
+  bottomExitBtn.classList.add('active');
+}
+
+// Oyun bittiğinde çıkış butonunu pasifleştir (isteğe bağlı)
+function deactivateExitButton() {
+  bottomExitBtn.classList.remove('active');
+}
+
+// PWA beforeinstallprompt olayını dinle
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+// ------------------------------------------------------------
 // MASKOT, SES, DARK MODE
 // ------------------------------------------------------------
-function mascotSpeak(text){
-speechBubble.innerText = text;
-speechBubble.classList.add('active');
-setTimeout(() => speechBubble.classList.remove('active'), 3000);
-}
-
-function toggleSound(){
-soundEnabled = !soundEnabled;
-const icon = soundToggleBtn.querySelector('i');
-if(soundEnabled){
-icon.classList.remove('fa-volume-mute');
-icon.classList.add('fa-volume-up');
-} else {
-icon.classList.remove('fa-volume-up');
-icon.classList.add('fa-volume-mute');
-}
-}
-
 function toggleDarkMode(){
 document.body.classList.toggle('dark-theme');
 gameState.darkMode = document.body.classList.contains('dark-theme');
@@ -3238,158 +3218,17 @@ await bulkAddQuestions();
 
 initAdminTrigger();
 
-soundToggleBtn.addEventListener('click', toggleSound);
 settingsBtn.addEventListener('click', toggleDarkMode);
 
-
-
-/*mascot*/
-const mascot = document.getElementById('mascot');
-const eyes = document.getElementById('mascot-eyes');
-const isDark = document.body.classList.contains('dark-theme');
-
-/* 🎬 Her oyun açılışında Mascot dikkat çeksin */
-function mascotIntro() {
-  mascot.classList.add('mascot-attention');
-
-  // 3 saniye sonra dur
-  setTimeout(() => {
-    mascot.classList.remove('mascot-attention');
-  }, 3000);
-}
-
-/* Sayfa yüklendiğinde de intro yap */
-window.addEventListener('load', mascotIntro);
-
-/* 🎮 Mascot tıklanınca oyun akışı */
-mascot.addEventListener('click', async () => {
-
-  // 1️⃣ HEYECAN
-  const intro = await Swal.fire({
-    title: '🎮 Hazır mısın?',
-    html: `
-      <div style="text-align:center;font-size:0.95rem;line-height:1.6;">
-        <strong>Bilgi • Hız • Eğlence</strong>
-        <p style="margin-top:10px;">
-          Bu modda yalnız değilsin.<br>
-          Eşinle, arkadaşınla ya da ailenle yarışıyorsun!
-        </p>
-        <p>Kim daha hızlı? Kim daha dikkatli? Görelim 😄</p>
-        <div style="
-          background:#ffeaa5;
-          padding:10px;
-          border-radius:14px;
-          font-style:italic;
-          margin-top:10px;
-        ">
-          “Bir soruda ben öndeydim,<br>diğerinde o geçti!”<br>
-          <strong>İşte oyunun keyfi 👏</strong>
-        </div>
-        <p style="margin-top:12px;">
-          Kazanan puan değil, <strong>en çok eğlenen olur ❤️</strong>
-        </p>
-      </div>
-    `,
-    confirmButtonText: '🔥 Devam',
-    confirmButtonColor: '#7c3aed',
-    showCloseButton: true,
-    background: isDark ? '#2c2f33' : '#fff9f0',
-    color: isDark ? '#fff' : '#2d3e50',
-    width: '90%'
-  });
-
-  // 2️⃣ KURALLAR 1
-  if (intro.isConfirmed) {
-    const rules1 = await Swal.fire({
-      title: '🚀 Oyun Kuralları',
-      html: `
-        <div style="font-size:0.9rem;">
-          <div class="rule-card">⏱️ <strong>60 saniyen var.</strong><br>Hızlı düşün.</div>
-          <div class="rule-card">🎯 <strong>İlk cevap doğruysa</strong><br>puanı alırsın.</div>
-          <div class="rule-card">❌ Yanlış mı?<br><strong>Bir şansın daha var.</strong><br>İkinci yanlışta oyun biter 😬</div>
-        </div>
-      `,
-      confirmButtonText: 'Devam',
-      confirmButtonColor: '#7c3aed',
-      showCloseButton: true,
-      background: isDark ? '#2c2f33' : '#fff9f0',
-      color: isDark ? '#fff' : '#2d3e50',
-      width: '90%'
-    });
-
-    // 3️⃣ KURALLAR 2
-    if (rules1.isConfirmed) {
-      Swal.fire({
-        title: '✨ Devamı',
-        html: `
-          <div style="font-size:0.9rem;">
-            <div class="rule-card">💡 <strong>İpucu:</strong><br>2 yanlış şıkkı siler.<br>(Her seviyede max 2)</div>
-            <div class="rule-card">🚀 <strong>Seviye atladıkça</strong><br>sorular artar.</div>
-            <div class="rule-card">🏅 <strong>Rozetleri topla</strong><br>Seriler yap.</div>
-            <div class="rule-final">👑 Hedef: <strong>50. Seviye</strong><br>Sürpriz var 😎</div>
-          </div>
-        `,
-        confirmButtonText: '🎉 Oyunu Başlat',
-        confirmButtonColor: '#7c3aed',
-        showCloseButton: true,
-        background: isDark ? '#2c2f33' : '#fff9f0',
-        color: isDark ? '#fff' : '#2d3e50',
-        width: '90%'
-      });
-
-      // 🐱 Her oyuna girişte Mascot tekrar dikkat çeksin
-      mascotIntro();
-    }
-  }
-});
-            
 window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
-
-
-  
 </script>
 
-  <div id="pwaBanner" style="
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-background:#7c3aed;
-color:white;
-padding:12px 18px;
-border-radius:40px;
-font-family:Poppins;
-z-index:99999;
-display:none;
-box-shadow:0 8px 20px rgba(0,0,0,0.2);
-">
 
-📲 NEVAFİL'i telefonuna yükle
-<button id="installBtn" style="
-margin-left:10px;
-background:white;
-color:#7c3aed;
-border:none;
-padding:6px 14px;
-border-radius:20px;
-cursor:pointer;
-font-weight:600;
-">Yükle</button>
 
-<span id="closePwa" style="margin-left:10px;cursor:pointer;">✕</span>
-
-</div>
 
 </body>
 </html>
-
-
-
-
-
-
-
 
 
 
