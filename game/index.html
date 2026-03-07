@@ -1414,7 +1414,7 @@ document.getElementById("installBtn").addEventListener("click", async () => {
     <button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-trophy"></i><span>Liderlik</span></button>
     <button id="achievementsBtn" class="action-btn" title="Başarımlar"><i class="fas fa-medal"></i><span>Başarımlar</span></button>
     <button id="settingsBtn" class="action-btn" title="Tema"><i class="fas fa-moon"></i><span>Tema</span></button>
-    <button id="exitGameBtn" class="action-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i><span>Çık</span></button>
+   <!-- <button id="exitGameBtn" class="action-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i><span>Çık</span></button>-->
   </div>
 </div>
 
@@ -1973,51 +1973,79 @@ async function saveSettings() {
 
 
 // ------------------------------------------------------------
-// DÜZELTİLMİŞ startGameFromIntro - İLKNU KONTROLÜ EKLENDİ
-// ------------------------------------------------------------
+// Oyun başladığında
 function startGameFromIntro(){
-if(!gameState.username){
-gameState.username = 'Misafir';
-gameState.avatar = AVATAR_LIST[0].icon;
-saveGameState();
-}
-updateGameHeader();
-introOverlay.classList.add('hidden');
-gameContainer.style.display = 'block';
-  
-// startGameFromIntro içinde, gameContainer gösterildikten sonra
-document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
-  document.getElementById('navExitBtn').style.display = 'flex'; // Çıkış butonunu göster
-  
-loadLevelQuestions(gameState.currentLevel);
-renderLevelIndicators();
-unlockAudio();
+    if(!gameState.username){
+        gameState.username = 'Misafir';
+        gameState.avatar = AVATAR_LIST[0].icon;
+        saveGameState();
+    }
+    updateGameHeader();
+    introOverlay.classList.add('hidden');
+    gameContainer.style.display = 'block';
 
-// --- DÜZELTME: İlknur için Sweet Alert ---
-// Kullanıcı adı kontrolü - boşlukları temizle ve küçük harfe çevir
-const userNameClean = gameState.username.trim().toLowerCase();
-if(userNameClean === 'ilknur'){
-Swal.fire({
-title: '❤️ Özel Mesaj ❤️',
-text: 'Ercan seni seviyor!',
-icon: 'success',
-confirmButtonText: 'Ben de seni seviyorum',
-confirmButtonColor: '#ff6b6b',
-background: '#fff5f5',
-timer: 5000,
-timerProgressBar: true
-});
+    // Çıkış butonunu göster
+    const navExitBtn = document.getElementById('navExitBtn');
+    if (navExitBtn) navExitBtn.style.display = 'flex';
+
+    // Rapor butonu event'i (zaten varsa ekleme)
+    document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
+
+    loadLevelQuestions(gameState.currentLevel);
+    renderLevelIndicators();
+    unlockAudio();
+
+    // İlknur kontrolü
+    const userNameClean = gameState.username.trim().toLowerCase();
+    if(userNameClean === 'ilknur'){
+        Swal.fire({
+            title: '❤️ Özel Mesaj ❤️',
+            text: 'Ercan seni seviyor!',
+            icon: 'success',
+            confirmButtonText: 'Ben de seni seviyorum',
+            confirmButtonColor: '#ff6b6b',
+            background: '#fff5f5',
+            timer: 5000,
+            timerProgressBar: true
+        });
+    }
 }
-// --------------------------------------
-}
+
+// Çıkış fonksiyonu (oyundan ana menüye)
 function exitToIntro(){
-gameContainer.style.display = 'none';
-introOverlay.classList.remove('hidden');
-document.getElementById('navExitBtn').style.display = 'none'; // Çıkış butonunu gizle
-clearInterval(timerInterval);
-updateIntroUI();
+    // Önce onay soralım
+    Swal.fire({
+        title: 'Çıkmak istediğinize emin misiniz?',
+        text: 'Oyun ilerlemeniz kaydedilecek.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, çık',
+        cancelButtonText: 'Hayır, kal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            gameContainer.style.display = 'none';
+            introOverlay.classList.remove('hidden');
+            const navExitBtn = document.getElementById('navExitBtn');
+            if (navExitBtn) navExitBtn.style.display = 'none';
+            clearInterval(timerInterval);
+            updateIntroUI();
+        }
+    });
 }
 
+// Sayfa yüklendiğinde event listener'ları ekleyelim
+document.addEventListener('DOMContentLoaded', function() {
+    const navExitBtn = document.getElementById('navExitBtn');
+    if (navExitBtn) {
+        navExitBtn.addEventListener('click', exitToIntro);
+    }
+    // Ses butonu event'i zaten var mı? Eğer yoksa ekleyelim.
+    // Ama toggleSound fonksiyonu zaten tanımlı, onu kullan.
+    const soundBtn = document.getElementById('soundToggleBtn');
+    if (soundBtn) {
+        soundBtn.addEventListener('click', toggleSound);
+    }
+});
  
 
 
@@ -3321,27 +3349,6 @@ font-weight:600;
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
