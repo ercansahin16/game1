@@ -989,26 +989,47 @@ window.deleteAllQuestions = async () => {
 
   if (!result.isConfirmed) return;
 
-  Swal.fire({
+  const swal = Swal.fire({
     title: 'Siliniyor...',
-    html: 'Lütfen bekleyiniz.',
+    html: 'Dokümanlar sayılıyor...',
     allowOutsideClick: false,
+    showConfirmButton: false,
     didOpen: () => Swal.showLoading()
   });
 
   try {
     const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
-    const batch = writeBatch(db);
-    snapshot.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    const docs = snapshot.docs;
+    const total = docs.length;
+
+    if (total === 0) {
+      Swal.fire('Bilgi', 'Silinecek soru bulunamadı.', 'info');
+      return;
+    }
+
+    Swal.update({ html: `0% tamamlandı (0/${total})` });
+
+    const BATCH_LIMIT = 500;
+    let processed = 0;
+
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      const chunk = docs.slice(i, i + BATCH_LIMIT);
+      chunk.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      processed += chunk.length;
+
+      const yuzde = Math.round((processed / total) * 100);
+      Swal.update({ html: `${yuzde}% tamamlandı (${processed}/${total})` });
+    }
 
     Swal.fire({
       icon: 'success',
       title: 'Başarılı',
-      text: 'Tüm sorular silindi.',
+      text: `${total} soru silindi.`,
       timer: 2000
     });
-    loadQuestions(); // Listeyi yenile
+    loadQuestions();
   } catch (error) {
     console.error("Silme hatası:", error);
     Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
@@ -1049,15 +1070,13 @@ window.exportQuestions = async () => {
 window.importQuestions = async (file) => {
   if (!file) return;
 
-  // Yükleme başlangıcı (progress bar aktif)
-  Swal.fire({
-    title: 'Sorular yükleniyor...',
-    html: 'Lütfen bekleyin. <span id="import-progress-text">0%</span>',
+  const totalQuestions = 0; // placeholder
+  const swal = Swal.fire({
+    title: 'Yükleniyor...',
+    html: '0% tamamlandı',
     allowOutsideClick: false,
     showConfirmButton: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
+    didOpen: () => Swal.showLoading()
   });
 
   try {
@@ -1068,27 +1087,9 @@ window.importQuestions = async (file) => {
       throw new Error('Geçersiz JSON formatı. Dizi bekleniyor.');
     }
 
-    const total = questions.length;
     let successCount = 0;
     let failCount = 0;
-
-    // Progress bar'ı güncellemek için yardımcı fonksiyon
-    const updateProgress = (percent) => {
-      const progressText = document.getElementById('import-progress-text');
-      if (progressText) progressText.innerText = `${percent}%`;
-      Swal.getHtmlContainer().innerHTML = `
-        <div style="text-align: center;">
-          <p>Lütfen bekleyin.</p>
-          <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
-            <div id="import-progress-bar" style="width: ${percent}%; background: #7c3aed; height: 100%; transition: width 0.3s;"></div>
-          </div>
-          <span id="import-progress-text">${percent}%</span>
-        </div>
-      `;
-    };
-
-    // İlk güncelleme (henüz 0%)
-    updateProgress(0);
+    const total = questions.length;
 
     for (let i = 0; i < total; i++) {
       const q = questions[i];
@@ -1115,18 +1116,19 @@ window.importQuestions = async (file) => {
         failCount++;
       }
 
-      // İlerleme yüzdesini hesapla ve güncelle
-      const percent = Math.round(((i + 1) / total) * 100);
-      updateProgress(percent);
+      // Progress bar'ı güncelle
+      const yuzde = Math.round(((i + 1) / total) * 100);
+      Swal.update({
+        html: `${yuzde}% tamamlandı<br>${successCount} başarılı, ${failCount} hatalı`
+      });
     }
 
-    // İşlem tamamlandı
     Swal.fire({
       icon: successCount > 0 ? 'success' : 'error',
       title: 'İşlem tamamlandı',
       html: `${successCount} soru eklendi.<br>${failCount} soru atlandı (hatalı format).`
     });
-    loadQuestions(); // Listeyi yenile
+    loadQuestions();
   } catch (error) {
     console.error("Yükleme hatası:", error);
     Swal.fire({ icon: 'error', title: 'Hata', text: 'Dosya okunamadı veya geçersiz JSON.' });
