@@ -1049,12 +1049,15 @@ window.exportQuestions = async () => {
 window.importQuestions = async (file) => {
   if (!file) return;
 
-  // Yükleme başlangıcı
+  // Yükleme başlangıcı (progress bar aktif)
   Swal.fire({
-    title: 'Yükleniyor...',
-    html: 'Dosya işleniyor, lütfen bekleyin.',
+    title: 'Sorular yükleniyor...',
+    html: 'Lütfen bekleyin. <span id="import-progress-text">0%</span>',
     allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+    showConfirmButton: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
   });
 
   try {
@@ -1065,11 +1068,30 @@ window.importQuestions = async (file) => {
       throw new Error('Geçersiz JSON formatı. Dizi bekleniyor.');
     }
 
+    const total = questions.length;
     let successCount = 0;
     let failCount = 0;
-    const total = questions.length;
 
-    for (const q of questions) {
+    // Progress bar'ı güncellemek için yardımcı fonksiyon
+    const updateProgress = (percent) => {
+      const progressText = document.getElementById('import-progress-text');
+      if (progressText) progressText.innerText = `${percent}%`;
+      Swal.getHtmlContainer().innerHTML = `
+        <div style="text-align: center;">
+          <p>Lütfen bekleyin.</p>
+          <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+            <div id="import-progress-bar" style="width: ${percent}%; background: #7c3aed; height: 100%; transition: width 0.3s;"></div>
+          </div>
+          <span id="import-progress-text">${percent}%</span>
+        </div>
+      `;
+    };
+
+    // İlk güncelleme (henüz 0%)
+    updateProgress(0);
+
+    for (let i = 0; i < total; i++) {
+      const q = questions[i];
       try {
         const soru = q.soru || q.question;
         const secenekler = q.secenekler || q.options;
@@ -1079,22 +1101,26 @@ window.importQuestions = async (file) => {
 
         if (!soru || !secenekler || !Array.isArray(secenekler) || secenekler.length !== 4 || dogru === undefined) {
           failCount++;
-          continue;
+        } else {
+          await addDoc(collection(db, QUESTIONS_COLL), {
+            soru: soru,
+            secenekler: secenekler,
+            dogru: Number(dogru),
+            bolum: bolum,
+            zorluk: Number(zorluk)
+          });
+          successCount++;
         }
-
-        await addDoc(collection(db, QUESTIONS_COLL), {
-          soru: soru,
-          secenekler: secenekler,
-          dogru: Number(dogru),
-          bolum: bolum,
-          zorluk: Number(zorluk)
-        });
-        successCount++;
       } catch (e) {
         failCount++;
       }
+
+      // İlerleme yüzdesini hesapla ve güncelle
+      const percent = Math.round(((i + 1) / total) * 100);
+      updateProgress(percent);
     }
 
+    // İşlem tamamlandı
     Swal.fire({
       icon: successCount > 0 ? 'success' : 'error',
       title: 'İşlem tamamlandı',
