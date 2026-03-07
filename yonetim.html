@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>Nevafil Yönetim Paneli</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -30,8 +30,10 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
+            gap: 15px;
         }
         .header h1 {
             color: #2c3e50;
@@ -60,6 +62,7 @@
             border: 1px solid #ddd;
             transition: 0.2s;
             font-weight: 500;
+            flex: 0 1 auto;
         }
         .tab.active {
             background: #3498db;
@@ -81,10 +84,6 @@
             margin-bottom: 20px;
             font-size: 20px;
         }
-
-        /* Panellerdeki butonları düzenle */
-       .panel .btn { margin-right: 10px; margin-bottom: 10px; display: inline-flex; align-items: center;gap: 6px;}
-        
         .btn {
             background: #3498db;
             color: white;
@@ -98,6 +97,11 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
         }
         .btn-danger {
             background: #e74c3c;
@@ -183,176 +187,156 @@
             font-size: 16px;
             color: #666;
         }
-       /* Mobilde butonların alt alta geçmesi için */
-@media (max-width: 600px) {
-    .panel .btn {
-        width: 100%;
-        margin-right: 0;
-        justify-content: center;
-    }
-}
+        /* Tablo yatay kaydırma */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 15px;
+        }
+        /* İstatistik kartları responsive */
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            background: #f0f4f8;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            flex: 1 1 150px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .stat-value.duplicate {
+            color: #e53e3e;
+        }
+        .difficulty-stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        /* Mobil düzenlemeler */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .tabs {
+                flex-direction: column;
+                width: 100%;
+            }
+            .tab {
+                width: 100%;
+                text-align: center;
+            }
+            .panel .btn {
+                width: 100%;
+                margin-right: 0;
+                justify-content: center;
+            }
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-row select,
+            .filter-row button {
+                width: 100%;
+            }
+            .stat-item {
+                flex: 1 1 100%;
+                text-align: center;
+            }
+            .difficulty-stats {
+                justify-content: center;
+            }
+            .table-responsive {
+                margin-top: 10px;
+            }
+            th, td {
+                white-space: nowrap;
+            }
+        }
+        /* Filtre satırı */
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-row > * {
+            flex: 1 1 150px;
+        }
+        .filter-row button {
+            flex: 0 0 auto;
+        }
     </style>
 </head>
 <body>
 
+<div class="container" id="adminPanel" style="display: none;">
+    <div class="header">
+        <h1><i class="fas fa-crown"></i> Nevafil Yönetim Paneli</h1>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+    </div>
 
+    <div class="tabs" id="tabContainer">
+        <div class="tab active" data-tab="licenses">🔑 Lisans Yönetimi</div>
+        <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
+        <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
+        <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
+    </div>
 
-    
-    <div class="container" id="adminPanel" style="display: none;">
-        <div class="header">
-            <h1><i class="fas fa-crown"></i> Nevafil Yönetim Paneli</h1>
-            <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+    <!-- Lisans Yönetimi Paneli -->
+    <div class="panel active" id="licensesPanel">
+        <h2><i class="fas fa-key"></i> Lisanslar</h2>
+        <button class="btn btn-success" id="manualKeyBtn"><i class="fas fa-plus"></i> Manuel Key Üret</button>
+
+        <!-- Arama kutusu -->
+        <div style="margin: 15px 0;">
+            <input type="text" id="licenseSearch" placeholder="İsim, email, telefon veya sipariş no ile ara..." value="" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
         </div>
 
-        <div class="tabs" id="tabContainer">
-            <div class="tab active" data-tab="licenses">🔑 Lisans Yönetimi</div>
-            <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
-            <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
-            <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
-            
+        <div id="licensesList">Yükleniyor...</div>
+    </div>
+
+    <!-- Soru Yönetimi Paneli -->
+    <div class="panel" id="questionsPanel">
+        <h2><i class="fas fa-question-circle"></i> Sorular</h2>
+
+        <!-- İstatistik Kartı -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">📊 Toplam Soru</div>
+                <div class="stat-value" id="totalQuestionCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">⚙️ Zorluk Dağılımı</div>
+                <div class="difficulty-stats" id="difficultyStats">
+                    <span>Kolay: <span id="difficulty1Count">0</span></span>
+                    <span>Orta: <span id="difficulty2Count">0</span></span>
+                    <span>Zor: <span id="difficulty3Count">0</span></span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">🔁 Mükerrer Soru</div>
+                <div class="stat-value duplicate" id="duplicateQuestionCount">0</div>
+            </div>
         </div>
 
-        <!-- Lisans Yönetimi Paneli -->
-     <div class="panel active" id="licensesPanel">
-  <h2><i class="fas fa-key"></i> Lisanslar</h2>
-  <button class="btn btn-success" id="manualKeyBtn"><i class="fas fa-plus"></i> Manuel Key Üret</button>
-  
-  <!-- Arama kutusu -->
-  <div style="margin: 15px 0;">
-   <input type="text" id="licenseSearch" placeholder="İsim, email, telefon veya sipariş no ile ara..." value="" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
-  </div>
-  
-  <div id="licensesList">Yükleniyor...</div>
-</div>
-
-        <!-- Soru Yönetimi Paneli -->
-<!-- Soru Yönetimi Paneli -->
-<div class="panel" id="questionsPanel">
-  <h2><i class="fas fa-question-circle"></i> Sorular</h2>
-  
-  <!-- İstatistik Kartı -->
-  <div style="background: #f0f4f8; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;">
-    <div style="flex: 1; min-width: 150px;">
-      <div style="font-size: 0.9rem; color: #4a5568;">📊 Toplam Soru</div>
-      <div style="font-size: 2rem; font-weight: 700; color: #2c3e50;" id="totalQuestionCount">0</div>
-    </div>
-    <div style="flex: 2; min-width: 250px;">
-      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <div><span style="font-weight:600;">Zorluk 1:</span> <span id="difficulty1Count">0</span></div>
-        <div><span style="font-weight:600;">Zorluk 2:</span> <span id="difficulty2Count">0</span></div>
-        <div><span style="font-weight:600;">Zorluk 3:</span> <span id="difficulty3Count">0</span></div>
-      </div>
-    </div>
-    <div style="flex: 1; min-width: 150px;">
-      <div style="font-size: 0.9rem; color: #4a5568;">🔁 Mükerrer Soru</div>
-      <div style="font-size: 2rem; font-weight: 700; color: #e53e3e;" id="duplicateQuestionCount">0</div>
-    </div>
-  </div>
-
-  <!-- Filtreler ve Yeni Soru Butonu (tek satır) -->
-  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
-    <select id="categoryFilter" style="padding: 8px; border-radius: 6px; flex: 1; min-width: 150px;">
-      <option value="all">Tüm Kategoriler</option>
-      <option value="Kur'an">Kur'an</option>
-      <option value="Namaz">Namaz</option>
-      <option value="Peygamberler">Peygamberler</option>
-      <option value="İslam Dini">İslam Dini</option>
-      <option value="Melekler">Melekler</option>
-      <option value="Cennet-Cehennem">Cennet-Cehennem</option>
-      <option value="Allah">Allah</option>
-      <option value="dini konular">dini konular</option>
-    </select>
-    
-    <select id="difficultyFilter" style="padding: 8px; border-radius: 6px; flex: 1; min-width: 150px;">
-      <option value="all">Tüm Zorluklar</option>
-      <option value="1">Kolay</option>
-      <option value="2">Orta</option>
-      <option value="3">Zor</option>
-    </select>
-
-    <button class="btn btn-success" id="addQuestionBtn" style="white-space: nowrap;">
-      <i class="fas fa-plus"></i> Yeni Soru
-    </button>
-  </div>
-  
-  <div id="questionsList">Yükleniyor...</div>
-</div>
-
-        <!-- Kullanıcı Yönetimi Paneli -->
-        <div class="panel" id="usersPanel">
-            <h2><i class="fas fa-users"></i> Kullanıcılar (Liderlik Tablosu)</h2>
-            <button class="btn btn-danger" id="clearLeaderboardBtn"><i class="fas fa-trash"></i> Liderlik Tablosunu Temizle</button>
-            <div id="usersList">Yükleniyor...</div>
-        </div>
-
-        <!-- Toplu İşlemler Paneli -->
-      <div class="panel" id="bulkPanel">
-  <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
-  
-  <!-- Tüm Kategorileri "dini konular" Yap butonu buraya taşındı -->
-  <button class="btn btn-warning" onclick="bulkUpdateCategory()">
-    <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
-  </button>
-  
-  <button class="btn btn-danger" onclick="deleteAllQuestions()">
-    <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
-  </button>
-  
-  <button class="btn btn-success" onclick="exportQuestions()">
-    <i class="fas fa-download"></i> Soruları Dışa Aktar (JSON)
-  </button>
-  
-  <!-- Gizli file input (JSON yükleme için) -->
-  <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
-  <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
-    <i class="fas fa-upload"></i> JSON'dan Soru Yükle
-  </button>
-  
-  <!-- Tüm Lisansları Sil butonu -->
-  <button class="btn btn-danger" onclick="deleteAllLicenses()">
-    <i class="fas fa-trash-alt"></i> Tüm Lisansları Sil
-  </button>
-  
-  <!-- Mevcut butonlar -->
-  <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla (LocalStorage + Leaderboard)</button>
-  <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
-   <!-- mükerrer -->       
-  <button class="btn btn-warning" onclick="findDuplicateQuestions()"><i class="fas fa-copy"></i> Mükerrer Soruları Bul</button>
-</div>
-    </div>
-
-    <!-- Modal (manuel key üretme, soru ekleme/düzenleme için) -->
-<div class="modal" id="keyModal">
-  <div class="modal-content">
-    <h3 id="keyModalTitle">Manuel Key Üret</h3>
-    <input type="text" id="keyFirstName" placeholder="Ad">
-    <input type="text" id="keyLastName" placeholder="Soyad">
-    <input type="text" id="keyPhone" placeholder="Telefon">
-    <input type="email" id="keyEmail" placeholder="Email">
-    <input type="text" id="keyOrderId" placeholder="Sipariş No">
-    <div class="modal-buttons">
-      <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
-      <button class="btn btn-danger" id="closeKeyModal">İptal</button>
-    </div>
-  </div>
-</div>
-
-    <!-- Soru Modal -->
-    <div class="modal" id="questionModal">
-        <div class="modal-content">
-            <h3 id="questionModalTitle">Yeni Soru Ekle</h3>
-            <input type="text" id="questionText" placeholder="Soru metni">
-            <input type="text" id="option1" placeholder="Şık A">
-            <input type="text" id="option2" placeholder="Şık B">
-            <input type="text" id="option3" placeholder="Şık C">
-            <input type="text" id="option4" placeholder="Şık D">
-            <select id="correctAnswer">
-                <option value="0">Şık A doğru</option>
-                <option value="1">Şık B doğru</option>
-                <option value="2">Şık C doğru</option>
-                <option value="3">Şık D doğru</option>
-            </select>
-            <select id="questionCategory">
+        <!-- Filtreler ve Yeni Soru Butonu -->
+        <div class="filter-row">
+            <select id="categoryFilter">
+                <option value="all">Tüm Kategoriler</option>
                 <option value="Kur'an">Kur'an</option>
                 <option value="Namaz">Namaz</option>
                 <option value="Peygamberler">Peygamberler</option>
@@ -360,18 +344,114 @@
                 <option value="Melekler">Melekler</option>
                 <option value="Cennet-Cehennem">Cennet-Cehennem</option>
                 <option value="Allah">Allah</option>
+                <option value="dini konular">dini konular</option>
             </select>
-            <select id="questionDifficulty">
+
+            <select id="difficultyFilter">
+                <option value="all">Tüm Zorluklar</option>
                 <option value="1">Kolay</option>
                 <option value="2">Orta</option>
                 <option value="3">Zor</option>
             </select>
-            <div class="modal-buttons">
-                <button class="btn btn-success" id="saveQuestionBtn">Kaydet</button>
-                <button class="btn btn-danger" id="closeQuestionModal">İptal</button>
-            </div>
+
+            <button class="btn btn-success" id="addQuestionBtn">
+                <i class="fas fa-plus"></i> Yeni Soru
+            </button>
+        </div>
+
+        <div id="questionsList">Yükleniyor...</div>
+    </div>
+
+    <!-- Kullanıcı Yönetimi Paneli -->
+    <div class="panel" id="usersPanel">
+        <h2><i class="fas fa-users"></i> Kullanıcılar (Liderlik Tablosu)</h2>
+        <button class="btn btn-danger" id="clearLeaderboardBtn"><i class="fas fa-trash"></i> Liderlik Tablosunu Temizle</button>
+        <div id="usersList">Yükleniyor...</div>
+    </div>
+
+    <!-- Toplu İşlemler Paneli -->
+    <div class="panel" id="bulkPanel">
+        <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
+
+        <button class="btn btn-warning" onclick="bulkUpdateCategory()">
+            <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
+        </button>
+
+        <button class="btn btn-danger" onclick="deleteAllQuestions()">
+            <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
+        </button>
+
+        <button class="btn btn-success" onclick="exportQuestions()">
+            <i class="fas fa-download"></i> Soruları Dışa Aktar (JSON)
+        </button>
+
+        <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
+        <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
+            <i class="fas fa-upload"></i> JSON'dan Soru Yükle
+        </button>
+
+        <button class="btn btn-danger" onclick="deleteAllLicenses()">
+            <i class="fas fa-trash-alt"></i> Tüm Lisansları Sil
+        </button>
+
+        <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla</button>
+        <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
+
+        <!-- Mükerrer Soruları Bul Butonu -->
+        <button class="btn btn-warning" onclick="findDuplicateQuestions()"><i class="fas fa-copy"></i> Mükerrer Soruları Bul</button>
+    </div>
+</div>
+
+<!-- Modaller -->
+<div class="modal" id="keyModal">
+    <div class="modal-content">
+        <h3 id="keyModalTitle">Manuel Key Üret</h3>
+        <input type="text" id="keyFirstName" placeholder="Ad">
+        <input type="text" id="keyLastName" placeholder="Soyad">
+        <input type="text" id="keyPhone" placeholder="Telefon">
+        <input type="email" id="keyEmail" placeholder="Email">
+        <input type="text" id="keyOrderId" placeholder="Sipariş No">
+        <div class="modal-buttons">
+            <button class="btn btn-success" id="generateKeyConfirm">Üret</button>
+            <button class="btn btn-danger" id="closeKeyModal">İptal</button>
         </div>
     </div>
+</div>
+
+<div class="modal" id="questionModal">
+    <div class="modal-content">
+        <h3 id="questionModalTitle">Yeni Soru Ekle</h3>
+        <input type="text" id="questionText" placeholder="Soru metni">
+        <input type="text" id="option1" placeholder="Şık A">
+        <input type="text" id="option2" placeholder="Şık B">
+        <input type="text" id="option3" placeholder="Şık C">
+        <input type="text" id="option4" placeholder="Şık D">
+        <select id="correctAnswer">
+            <option value="0">Şık A doğru</option>
+            <option value="1">Şık B doğru</option>
+            <option value="2">Şık C doğru</option>
+            <option value="3">Şık D doğru</option>
+        </select>
+        <select id="questionCategory">
+            <option value="Kur'an">Kur'an</option>
+            <option value="Namaz">Namaz</option>
+            <option value="Peygamberler">Peygamberler</option>
+            <option value="İslam Dini">İslam Dini</option>
+            <option value="Melekler">Melekler</option>
+            <option value="Cennet-Cehennem">Cennet-Cehennem</option>
+            <option value="Allah">Allah</option>
+        </select>
+        <select id="questionDifficulty">
+            <option value="1">Kolay</option>
+            <option value="2">Orta</option>
+            <option value="3">Zor</option>
+        </select>
+        <div class="modal-buttons">
+            <button class="btn btn-success" id="saveQuestionBtn">Kaydet</button>
+            <button class="btn btn-danger" id="closeQuestionModal">İptal</button>
+        </div>
+    </div>
+</div>
 
     <script type="module">
         import { db } from './firebase-core.js';
