@@ -197,6 +197,7 @@
             <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
             <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
             <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
+            
         </div>
 
         <!-- Lisans Yönetimi Paneli -->
@@ -303,6 +304,8 @@
   <!-- Mevcut butonlar -->
   <button class="btn btn-danger" id="resetAllUsersBtn"><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla (LocalStorage + Leaderboard)</button>
   <p style="margin-top: 10px; color: #666;">Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.</p>
+   <!-- mükerrer -->       
+  <button class="btn btn-warning" onclick="findDuplicateQuestions()"><i class="fas fa-copy"></i> Mükerrer Soruları Bul</button>
 </div>
     </div>
 
@@ -1135,6 +1138,134 @@ window.importQuestions = async (file) => {
   }
 };
 
+
+        window.findDuplicateQuestions = async () => {
+  const swal = Swal.fire({
+    title: 'Mükerrer sorular tespit ediliyor...',
+    html: 'Lütfen bekleyin.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const snapshot = await getDocs(collection(db, QUESTIONS_COLL));
+    const questions = [];
+    snapshot.forEach(doc => {
+      questions.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Mükerrerleri bul (soru metnine göre)
+    const map = new Map();
+    const duplicates = [];
+
+    questions.forEach(q => {
+      const soru = q.soru?.trim();
+      if (!soru) return;
+      if (map.has(soru)) {
+        duplicates.push({
+          soru: soru,
+          id1: map.get(soru),
+          id2: q.id,
+          doc1: map.get(soru),
+          doc2: q.id
+        });
+      } else {
+        map.set(soru, q.id);
+      }
+    });
+
+    if (duplicates.length === 0) {
+      Swal.fire('Sonuç', 'Mükerrer soru bulunamadı.', 'success');
+      return;
+    }
+
+    // Sonuçları listele (ilk 10 tanesini göster)
+    let html = `<p>Toplam ${duplicates.length} mükerrer soru grubu bulundu.</p><ul>`;
+    duplicates.slice(0, 10).forEach(d => {
+      html += `<li><b>${d.soru.substring(0, 50)}...</b> (ID: ${d.id1} ve ${d.id2})</li>`;
+    });
+    if (duplicates.length > 10) html += `<li>... ve ${duplicates.length - 10} daha.</li>`;
+    html += '</ul>';
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Mükerrer Sorular',
+      html: html + '<br><b>Ne yapmak istersiniz?</b>',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Hepsini Sil (Sadece Tekrarları)',
+      denyButtonText: 'Listeyi Kopyala',
+      cancelButtonText: 'Vazgeç'
+    });
+
+    if (result.isConfirmed) {
+      // Mükerrerlerden sadece birini bırak, diğerlerini sil
+      // Bunun için her grupta ilk bulunanı tut, diğerlerini sil
+      const keepIds = new Set();
+      const deleteIds = new Set();
+
+      questions.forEach(q => {
+        const soru = q.soru?.trim();
+        if (!soru) return;
+        if (!keepIds.has(soru)) {
+          keepIds.add(soru);
+        } else {
+          deleteIds.add(q.id);
+        }
+      });
+
+      const toDelete = Array.from(deleteIds);
+      if (toDelete.length === 0) {
+        Swal.fire('Bilgi', 'Silinecek soru bulunamadı.', 'info');
+        return;
+      }
+
+      // Silme işlemini batch ile yap (500'er 500'er)
+      const swal2 = Swal.fire({
+        title: 'Siliniyor...',
+        html: `0/${toDelete.length} silindi`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const BATCH_LIMIT = 500;
+      let deleted = 0;
+
+      for (let i = 0; i < toDelete.length; i += BATCH_LIMIT) {
+        const batch = writeBatch(db);
+        const chunk = toDelete.slice(i, i + BATCH_LIMIT);
+        chunk.forEach(id => {
+          const ref = doc(db, QUESTIONS_COLL, id);
+          batch.delete(ref);
+        });
+        await batch.commit();
+        deleted += chunk.length;
+        Swal.update({
+          html: `${deleted}/${toDelete.length} silindi (${Math.round(deleted/toDelete.length*100)}%)`
+        });
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Başarılı',
+        text: `${deleted} mükerrer soru silindi.`
+      });
+      loadQuestions(); // Listeyi yenile
+
+    } else if (result.isDenied) {
+      // JSON listeyi kopyala
+      const jsonStr = JSON.stringify(duplicates, null, 2);
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        Swal.fire('Kopyalandı!', 'Mükerrer listesi panoya kopyalandı.', 'success');
+      }).catch(() => {
+        Swal.fire('Hata', 'Kopyalanamadı.', 'error');
+      });
+    }
+  } catch (error) {
+    console.error('Mükerrer tespit hatası:', error);
+    Swal.fire('Hata', 'Bir hata oluştu.', 'error');
+  }
+};
         
     </script>
 
