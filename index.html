@@ -216,31 +216,105 @@
     }
 
     // Email ile lisans bulup input'a yaz
-    window.recoverLicenseByEmail = async (email) => {
-        if (!email) { 
-            Swal.fire('Dikkat', 'Lütfen e-posta yazın.', 'info'); 
-            return false; 
+  window.recoverLicenseByEmail = async function() {
+    const emailInput = document.getElementById('emailInput');
+    const email = emailInput.value.trim().toLowerCase();
+    
+    if (!email) {
+        Swal.fire({
+            title: 'Uyarı',
+            text: 'Lütfen e-posta adresinizi girin.',
+            icon: 'warning',
+            confirmButtonText: 'Tamam'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Aranıyor...',
+        html: 'Lisansınız kontrol ediliyor.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const q = query(collection(db, "licenses"), where("email", "==", email));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Bulunamadı',
+                text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                confirmButtonText: 'Tamam'
+            });
+            return;
         }
 
-        const q = query(collection(db, "licenses"), where("email", "==", email.toLowerCase()));
-        const snap = await getDocs(q);
+        // İlk bulunan lisansı al (birden fazla varsa ilki)
+        const licenseDoc = snapshot.docs[0];
+        const licenseData = licenseDoc.data();
+        const key = licenseData.key;
+        const currentDevice = getDeviceId();
 
-        if (snap.empty) {
-            Swal.fire('Lisans bulunamadı', 'Bu e-posta adresine ait lisans yok. Lütfen lisans alın.', 'error');
-            return false;
+        // Eğer lisans başka bir cihaza aitse
+        if (licenseData.deviceId && licenseData.deviceId !== currentDevice) {
+            const result = await Swal.fire({
+                title: 'Lisans Başka Cihazda',
+                html: `Bu lisans daha önce başka bir cihazda kullanılmış.<br><br>
+                       <strong>Bu cihaza aktarmak istiyor musunuz?</strong><br>
+                       <small>(Eski cihaz lisansı kaybeder.)</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, aktar',
+                cancelButtonText: 'Hayır'
+            });
+
+            if (result.isConfirmed) {
+                // DeviceId'yi güncelle
+                await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                    deviceId: currentDevice,
+                    used: true
+                });
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Lisans Aktarıldı',
+                    text: 'Lisans artık bu cihazda kullanılabilir.',
+                    confirmButtonText: 'Tamam'
+                });
+            } else {
+                // Vazgeçerse işlemi sonlandır
+                return;
+            }
+        } else if (!licenseData.deviceId) {
+            // Hiç cihaz kaydı yoksa (ilk kez kullanılacak)
+            await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                deviceId: currentDevice,
+                used: true
+            });
         }
-        
-        // Lisansı inputa yaz
-        document.getElementById('licenseInput').value = snap.docs[0].data().key;
+
+        // Input alanına lisans anahtarını yaz
+        const licenseInput = document.getElementById('licenseInput');
+        licenseInput.value = key;
+
         Swal.fire({
             icon: 'success',
-            title: 'Lisans bulundu',
-            text: 'Lisans anahtarı kutucuğa eklendi.',
-            timer: 1500,
-            showConfirmButton: false
+            title: 'Lisansınız Hazır',
+            text: 'Lisans anahtarınız otomatik olarak dolduruldu. "Maceraya Başla" butonuna tıklayarak giriş yapabilirsiniz.',
+            confirmButtonText: 'Tamam'
         });
-        return true;
-    };
+
+    } catch (e) {
+        console.error("E-posta sorgulama hatası:", e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Sorgulama sırasında bir hata oluştu.',
+            confirmButtonText: 'Tamam'
+        });
+    }
+};
 
     // Yeni: email modalını aç
     window.showEmailModal = async () => {
