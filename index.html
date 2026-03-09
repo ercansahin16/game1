@@ -385,29 +385,50 @@
 
 
     // Yardım butonu modalını aç
+// Lisans sayfası yardım butonu
 window.showHelpModal = async () => {
-    const { value: message } = await Swal.fire({
+    const { value: formValues } = await Swal.fire({
         title: 'Yardım / İletişim',
         html: `
-            <p style="margin-bottom:15px;">Sorununuzu veya mesajınızı yazın.</p>
-            <textarea id="helpMessage" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+            <div style="text-align: left;">
+                <input id="swal-firstname" class="swal2-input" placeholder="Adınız">
+                <input id="swal-lastname" class="swal2-input" placeholder="Soyadınız">
+                <input id="swal-email" class="swal2-input" placeholder="E-posta adresiniz">
+                <textarea id="swal-message" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+            </div>
         `,
         focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'Gönder',
         cancelButtonText: 'Vazgeç',
         preConfirm: () => {
-            const msg = document.getElementById('helpMessage').value.trim();
-            if (!msg) {
-                Swal.showValidationMessage('Mesaj boş olamaz');
+            const firstName = document.getElementById('swal-firstname').value.trim();
+            const lastName = document.getElementById('swal-lastname').value.trim();
+            const email = document.getElementById('swal-email').value.trim();
+            const message = document.getElementById('swal-message').value.trim();
+
+            if (!firstName) {
+                Swal.showValidationMessage('Ad alanı boş olamaz');
                 return false;
             }
-            return msg;
+            if (!lastName) {
+                Swal.showValidationMessage('Soyad alanı boş olamaz');
+                return false;
+            }
+            if (!email) {
+                Swal.showValidationMessage('E-posta alanı boş olamaz');
+                return false;
+            }
+            if (!message) {
+                Swal.showValidationMessage('Mesaj alanı boş olamaz');
+                return false;
+            }
+            return { firstName, lastName, email, message };
         }
     });
 
-    if (message) {
-        await saveHelpMessage(message, 'lisans');
+    if (formValues) {
+        await saveLicenseHelpMessage(formValues);
         Swal.fire({
             icon: 'success',
             title: 'Mesajınız Gönderildi',
@@ -417,6 +438,25 @@ window.showHelpModal = async () => {
         });
     }
 };
+
+// Lisans sayfası mesajını Firestore'a kaydet
+async function saveLicenseHelpMessage({ firstName, lastName, email, message }) {
+    try {
+        const helpRef = collection(db, "yardim_mesajlari");
+        await addDoc(helpRef, {
+            ad: firstName,
+            soyad: lastName,
+            email: email,
+            mesaj: message,
+            tarih: new Date(),
+            kaynak: 'lisans',
+            lisans_key: document.getElementById('licenseInput')?.value.trim() || null
+        });
+    } catch (e) {
+        console.error("Mesaj kaydedilemedi:", e);
+        Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+    }
+}
 
 // Mesajı Firestore'a kaydet
 async function saveHelpMessage(message, source) {
