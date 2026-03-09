@@ -158,11 +158,13 @@
         <!-- Lisans anahtarı girişi -->
         <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
         
-        <!-- Yeni: Zaten lisansı olanlar için buton -->
-        <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
+       
         
         <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
 
+         <!-- Yeni: Zaten lisansı olanlar için buton -->
+        <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
+        
         <!-- Lisans alma linki -->
         <p class="footer-text">Lisansın yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank">Buradan Al</a></p>
     </div>
@@ -218,7 +220,12 @@
     // Email ile lisans bulup input'a yaz
 window.recoverLicenseByEmail = async function(email) {
     if (!email) {
-        Swal.fire('Uyarı', 'E-posta adresi gerekli.', 'warning');
+        Swal.fire({
+            title: 'Uyarı',
+            text: 'E-posta adresi gerekli.',
+            icon: 'warning',
+            confirmButtonText: 'Tamam'
+        });
         return;
     }
 
@@ -248,18 +255,21 @@ window.recoverLicenseByEmail = async function(email) {
         const key = licenseData.key;
         const currentDevice = getDeviceId();
 
-        // --- SESSİZ GÜNCELLEME: Her durumda cihazı ata ---
-        // Eğer lisansın deviceId'si yoksa veya farklıysa, direkt güncelle
-        await updateDoc(doc(db, "licenses", licenseDoc.id), {
-            deviceId: currentDevice,
-            used: true
-        });
+        // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
+        if (licenseData.deviceId !== currentDevice) {
+            await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                deviceId: currentDevice,
+                used: true
+            });
+        }
 
         // Lisans anahtarını input alanına yaz
         const licenseInput = document.getElementById('licenseInput');
-        if (licenseInput) licenseInput.value = key;
+        if (licenseInput) {
+            licenseInput.value = key;
+        }
 
-        // Başarılı olduğunu bildiren basit bir toast göster (isteğe bağlı)
+        // Başarılı olduğunu bildiren kısa bir toast göster (1.5 saniye)
         Swal.fire({
             icon: 'success',
             title: 'Lisans Hazır',
@@ -267,6 +277,11 @@ window.recoverLicenseByEmail = async function(email) {
             timer: 1500,
             showConfirmButton: false
         });
+
+        // Toast kapandıktan sonra otomatik giriş yap
+        setTimeout(() => {
+            window.onLicenseSubmit();
+        }, 1500);
 
     } catch (e) {
         console.error("E-posta sorgulama hatası:", e);
