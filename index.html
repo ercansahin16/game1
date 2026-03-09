@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nevafil - Manevi Bilgi Yolculuğu</title>
+    <title>Nevafil -Lisans Girişi</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
         :root {
@@ -217,14 +217,8 @@
 
     // Email ile lisans bulup input'a yaz
 window.recoverLicenseByEmail = async function(email) {
-    // email parametre olarak geliyor
     if (!email) {
-        Swal.fire({
-            title: 'Uyarı',
-            text: 'E-posta adresi gerekli.',
-            icon: 'warning',
-            confirmButtonText: 'Tamam'
-        });
+        Swal.fire('Uyarı', 'E-posta adresi gerekli.', 'warning');
         return;
     }
 
@@ -249,58 +243,29 @@ window.recoverLicenseByEmail = async function(email) {
             return;
         }
 
-        // İlk bulunan lisansı al
         const licenseDoc = snapshot.docs[0];
         const licenseData = licenseDoc.data();
         const key = licenseData.key;
         const currentDevice = getDeviceId();
 
-        // Lisans başka cihazda kullanılıyorsa aktarım onayı al
-        if (licenseData.deviceId && licenseData.deviceId !== currentDevice) {
-            const result = await Swal.fire({
-                title: 'Lisans Başka Cihazda',
-                html: `Bu lisans daha önce başka bir cihazda kullanılmış.<br><br>
-                       <strong>Bu cihaza aktarmak istiyor musunuz?</strong><br>
-                       <small>(Eski cihaz lisansı kaybeder.)</small>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Evet, aktar',
-                cancelButtonText: 'Hayır'
-            });
-
-            if (result.isConfirmed) {
-                await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                    deviceId: currentDevice,
-                    used: true
-                });
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Lisans Aktarıldı',
-                    text: 'Lisans artık bu cihazda kullanılabilir.',
-                    confirmButtonText: 'Tamam'
-                });
-            } else {
-                return; // Vazgeçti
-            }
-        } else if (!licenseData.deviceId) {
-            // İlk kez kullanılıyor
-            await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                deviceId: currentDevice,
-                used: true
-            });
-        }
+        // --- SESSİZ GÜNCELLEME: Her durumda cihazı ata ---
+        // Eğer lisansın deviceId'si yoksa veya farklıysa, direkt güncelle
+        await updateDoc(doc(db, "licenses", licenseDoc.id), {
+            deviceId: currentDevice,
+            used: true
+        });
 
         // Lisans anahtarını input alanına yaz
         const licenseInput = document.getElementById('licenseInput');
-        if (licenseInput) {
-            licenseInput.value = key;
-        }
+        if (licenseInput) licenseInput.value = key;
 
+        // Başarılı olduğunu bildiren basit bir toast göster (isteğe bağlı)
         Swal.fire({
             icon: 'success',
-            title: 'Lisansınız Hazır',
-            text: 'Lisans anahtarınız otomatik olarak dolduruldu. "Maceraya Başla" butonuna tıklayarak giriş yapabilirsiniz.',
-            confirmButtonText: 'Tamam'
+            title: 'Lisans Hazır',
+            text: 'Lisansınız başarıyla yüklendi.',
+            timer: 1500,
+            showConfirmButton: false
         });
 
     } catch (e) {
