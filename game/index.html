@@ -2279,11 +2279,14 @@ function getMaxHintsForLevel(level) {
 
 // Seviyeye göre ipucu maliyeti (puan)
 function getHintCostForLevel(level) {
+  if (level <= 3) return 1; // ilk 3 seviye 1 puan
   if (level <= 5) return 5; // kolay başlangıç
   if (level <= 15) return Math.floor(5 + level * 0.8); // 5-17 arası
   if (level <= 30) return Math.floor(5 + level * 1); // 23-41 arası
   return Math.floor(5 + level * 1.2); // 46-80 arası (50'de 80 puan)
 }
+
+
 
   
   function updateHintButton() {
@@ -2309,12 +2312,10 @@ function getHintCostForLevel(level) {
 }
 
 
+async function useHint() {
+  const maxHints = getMaxHintsForLevel(gameState.currentLevel);
+  const hintCost = getHintCostForLevel(gameState.currentLevel);
 
-  async function useHint() {
-  const maxHints = getMaxHintsForLevel(gameState.currentLevel); // YENİ
-  const hintCost = getHintCostForLevel(gameState.currentLevel); // YENİ
-
-  // Eğer ipucu hakkı yoksa (41+ seviye) direkt uyarı ver
   if (maxHints === 0) {
     showToast('Bu seviyeden itibaren ipucu kullanamazsın!', 'info');
     return;
@@ -2325,40 +2326,47 @@ function getHintCostForLevel(level) {
     return;
   }
 
+  // Puan kontrolü
   if (gameState.score < hintCost) {
+    // Eğer seviye 1 ise seviye düşürme teklifi yapma
+    if (gameState.currentLevel <= 1) {
+      showToast('İpucu için yeterli puanın yok ve seviyen en düşük seviyede!', 'error');
+      return;
+    }
+
     const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
 
-  const result = await Swal.fire({
-  title: '⚡ Puanın Yetersiz',
-  html: `
-    <div style="text-align: center;">
-      <p style="font-size: 0.9rem; margin: 5px 0;">İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
-      <p style="margin: 10px 0; font-size: 1rem;">
-        🔻 <strong>1 seviye düşerek</strong> 🔻<br>
-        <strong style="font-size: 1.1rem;">${earnedPoints} puan</strong> kazan
-      </p>
-      <p style="background: #fff3cd; padding: 6px; border-radius: 6px; color: #856404; font-size: 0.8rem;">
-        ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
-        Soru değişecek, mevcut soru kaybolacak.
-      </p>
-    </div>
-  `,
-  icon: 'warning',
-  showCancelButton: true,
-  confirmButtonText: 'Evet, seviye düşeyim',
-  cancelButtonText: 'Hayır, vazgeç',
-  confirmButtonColor: '#d33',
-  cancelButtonColor: '#3085d6',
-  background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-  color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
-  customClass: {
-    popup: 'swal-popup-mobile',
-    title: 'swal-title-mobile',
-    htmlContainer: 'swal-html-mobile',
-    confirmButton: 'swal-confirm-mobile',
-    cancelButton: 'swal-cancel-mobile'
-  }
-});
+    const result = await Swal.fire({
+      title: '⚡ Puanın Yetersiz',
+      html: `
+        <div style="text-align: center;">
+          <p style="font-size: 0.9rem; margin: 5px 0;">İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
+          <p style="margin: 10px 0; font-size: 1rem;">
+            🔻 <strong>1 seviye düşerek</strong> 🔻<br>
+            <strong style="font-size: 1.1rem;">${earnedPoints} puan</strong> kazan
+          </p>
+          <p style="background: #fff3cd; padding: 6px; border-radius: 6px; color: #856404; font-size: 0.8rem;">
+            ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
+            Soru değişecek, mevcut soru kaybolacak.
+          </p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Evet, seviye düşeyim',
+      cancelButtonText: 'Hayır, vazgeç',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
+      customClass: {
+        popup: 'swal-popup-mobile',
+        title: 'swal-title-mobile',
+        htmlContainer: 'swal-html-mobile',
+        confirmButton: 'swal-confirm-mobile',
+        cancelButton: 'swal-cancel-mobile'
+      }
+    });
 
     if (result.isConfirmed) {
       if (gameState.currentLevel > 1) {
@@ -2378,10 +2386,7 @@ function getHintCostForLevel(level) {
         await saveScoreToLeaderboard();
         await loadLeaderboard();
 
-        showToast(
-          `💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`,
-          'success'
-        );
+        showToast(`💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`, 'success');
         return;
       } else {
         showToast('Zaten en düşük seviyedesin!', 'error');
@@ -2391,8 +2396,6 @@ function getHintCostForLevel(level) {
       return;
     }
   }
-
-
 
   // ---- Normal ipucu kullanımı (puan yeterli) ----
   const correctIndex = currentQuestion.dogru;
@@ -3287,6 +3290,7 @@ font-weight:600;
 
 </body>
 </html>
+
 
 
 
