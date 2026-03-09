@@ -1387,7 +1387,7 @@ window.importQuestions = async (file) => {
 };
 
 
-// YARDIM BUTONU
+  // YARDIM FONSKSİYONU
         
 const HELP_COLL = 'yardim_mesajlari';
 
@@ -1403,14 +1403,19 @@ async function loadHelpMessages() {
         const filter = document.getElementById('helpSourceFilter').value;
         const filtered = filter === 'all' ? messages : messages.filter(m => m.kaynak === filter);
 
-        let html = '<div class="table-responsive"><table><tr><th>Tarih</th><th>Kaynak</th><th>Kullanıcı</th><th>Mesaj</th><th>İşlem</th></tr>';
+        let html = '<div class="table-responsive"><table><tr><th>Tarih</th><th>Kaynak</th><th>Gönderen</th><th>Mesaj</th><th>İşlem</th></tr>';
         filtered.forEach(m => {
             const tarih = m.tarih?.toDate().toLocaleString('tr-TR') || '-';
-            const kullanici = m.kullanici_adi || m.email || m.lisans_key?.substring(0,8) || '-';
+            let gonderen = '-';
+            if (m.kaynak === 'lisans') {
+                gonderen = `${m.ad || ''} ${m.soyad || ''} (${m.email || '-'})`.trim();
+            } else { // oyun
+                gonderen = m.kullanici_adi || m.lisans_key?.substring(0,8) || '-';
+            }
             html += `<tr>
                 <td>${tarih}</td>
                 <td>${m.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</td>
-                <td>${kullanici}</td>
+                <td>${gonderen}</td>
                 <td>${m.mesaj.substring(0, 100)}${m.mesaj.length > 100 ? '…' : ''}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewHelpMessage('${m.id}')">Görüntüle</button>
@@ -1431,12 +1436,22 @@ window.viewHelpMessage = async (id) => {
     if (docSnap.exists()) {
         const data = docSnap.data();
         const tarih = data.tarih?.toDate().toLocaleString('tr-TR') || '-';
+        
+        let gonderenDetay = '';
+        if (data.kaynak === 'lisans') {
+            gonderenDetay = `<p><b>Ad Soyad:</b> ${data.ad || ''} ${data.soyad || ''}</p>
+                             <p><b>E-posta:</b> ${data.email || '-'}</p>`;
+        } else {
+            gonderenDetay = `<p><b>Kullanıcı Adı:</b> ${data.kullanici_adi || '-'}</p>
+                             <p><b>Lisans:</b> ${data.lisans_key || '-'}</p>`;
+        }
+
         Swal.fire({
             title: 'Mesaj Detayı',
             html: `
                 <p><b>Tarih:</b> ${tarih}</p>
-                <p><b>Kaynak:</b> ${data.kaynak}</p>
-                <p><b>Kullanıcı:</b> ${data.kullanici_adi || data.email || data.lisans_key || '-'}</p>
+                <p><b>Kaynak:</b> ${data.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</p>
+                ${gonderenDetay}
                 <p><b>Mesaj:</b> ${data.mesaj}</p>
             `,
             icon: 'info',
