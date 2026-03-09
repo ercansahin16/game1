@@ -279,6 +279,13 @@
         .filter-row button {
             flex: 0 0 auto;
         }
+        .btn-info {
+    background: #3498db;
+    color: white;
+}
+.btn-info:hover {
+    background: #2980b9;
+}
     </style>
 </head>
 <body>
@@ -294,6 +301,7 @@
         <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
         <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
         <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
+        <div class="tab" data-tab="help">❓ Yardımlar</div>
     </div>
 
     <!-- Lisans Yönetimi Paneli -->
@@ -461,6 +469,50 @@
     </div>
 </div>
 
+
+
+    <!-- Yardım Paneli -->
+<div class="panel" id="helpPanel">
+    <h2><i class="fas fa-question-circle"></i> Yardım Yönetimi</h2>
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <!-- Lisans Yardım Kartı -->
+        <div style="flex: 1; min-width: 300px; background: #f8f9fa; border-radius: 12px; padding: 20px;">
+            <h3><i class="fas fa-key" style="color: #3498db;"></i> Lisans Yardım</h3>
+            <p style="margin: 10px 0; color: #666;">Lisans alımı, kullanımı ve sorun giderme hakkında bilgiler.</p>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-info" onclick="showHelp('licenseHelp')" style="margin-right: 10px;">
+                    <i class="fas fa-eye"></i> Görüntüle
+                </button>
+                <button class="btn btn-warning" onclick="editHelp('licenseHelp')">
+                    <i class="fas fa-edit"></i> Düzenle
+                </button>
+            </div>
+            <div id="licenseHelpContent" style="display: none; margin-top: 15px; padding: 10px; background: white; border-radius: 8px;">
+                <!-- İçerik JS ile doldurulacak -->
+            </div>
+        </div>
+
+        <!-- Oyun Yardım Kartı -->
+        <div style="flex: 1; min-width: 300px; background: #f8f9fa; border-radius: 12px; padding: 20px;">
+            <h3><i class="fas fa-gamepad" style="color: #2ecc71;"></i> Oyun Yardım</h3>
+            <p style="margin: 10px 0; color: #666;">Oynanış, ipuçları, puan sistemi ve sık sorulan sorular.</p>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-info" onclick="showHelp('gameHelp')" style="margin-right: 10px;">
+                    <i class="fas fa-eye"></i> Görüntüle
+                </button>
+                <button class="btn btn-warning" onclick="editHelp('gameHelp')">
+                    <i class="fas fa-edit"></i> Düzenle
+                </button>
+            </div>
+            <div id="gameHelpContent" style="display: none; margin-top: 15px; padding: 10px; background: white; border-radius: 8px;">
+                <!-- İçerik JS ile doldurulacak -->
+            </div>
+        </div>
+    </div>
+</div>
+
+    
     <script type="module">
         import { db } from './firebase-core.js';
       import { collection, getDocs, getDoc, addDoc, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
@@ -1366,6 +1418,79 @@ window.importQuestions = async (file) => {
     Swal.fire('Hata', 'Bir hata oluştu.', 'error');
   }
 };
+
+
+
+        // Yardım içeriklerini Firestore'dan yükle
+async function loadHelpContents() {
+    try {
+        const helpRef = collection(db, 'help');
+        const snapshot = await getDocs(helpRef);
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (doc.id === 'licenseHelp') {
+                document.getElementById('licenseHelpContent').innerHTML = data.content || 'İçerik yok.';
+            } else if (doc.id === 'gameHelp') {
+                document.getElementById('gameHelpContent').innerHTML = data.content || 'İçerik yok.';
+            }
+        });
+    } catch (e) {
+        console.error('Yardım içerikleri yüklenemedi:', e);
+    }
+}
+
+// Yardım içeriğini gösterme
+window.showHelp = function(helpId) {
+    const contentDiv = document.getElementById(helpId + 'Content');
+    if (contentDiv.style.display === 'none' || contentDiv.style.display === '') {
+        contentDiv.style.display = 'block';
+    } else {
+        contentDiv.style.display = 'none';
+    }
+};
+
+// Yardım içeriğini düzenleme (SweetAlert ile)
+window.editHelp = async function(helpId) {
+    const currentContent = document.getElementById(helpId + 'Content').innerHTML;
+    
+    const { value: newContent } = await Swal.fire({
+        title: 'Yardım İçeriğini Düzenle',
+        input: 'textarea',
+        inputValue: currentContent,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'İptal',
+        inputPlaceholder: 'HTML içeriğini girin...',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'İçerik boş olamaz!';
+            }
+        }
+    });
+
+    if (newContent) {
+        try {
+            // Firestore'a kaydet
+            const helpRef = doc(db, 'help', helpId);
+            await setDoc(helpRef, { content: newContent }, { merge: true });
+            
+            // Arayüzü güncelle
+            document.getElementById(helpId + 'Content').innerHTML = newContent;
+            Swal.fire('Başarılı', 'Yardım içeriği güncellendi.', 'success');
+        } catch (e) {
+            Swal.fire('Hata', 'Kaydedilemedi: ' + e.message, 'error');
+        }
+    }
+};
+
+// loadAllData içinde loadHelpContents() çağrısını ekle
+async function loadAllData() {
+    loadLicenses();
+    loadQuestions();
+    loadUsers();
+    loadHelpContents(); // YENİ
+}
         
     </script>
 
