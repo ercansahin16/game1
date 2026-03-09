@@ -1149,6 +1149,45 @@ body { padding:8px; }
 /* Aynı stiller 480px sorgusundan alınır, gereksiz tekrarı önlemek için boş bırakıyoruz */
 /* İstersen buraya özel stiller ekleyebilirsin */
 }
+  /* SweetAlert mobil küçültme */
+@media (max-width: 600px) {
+  .swal-popup-mobile {
+    width: 90% !important;
+    padding: 15px !important;
+    font-size: 0.85rem !important;
+  }
+  .swal-title-mobile {
+    font-size: 1.1rem !important;
+    margin-bottom: 10px !important;
+  }
+  .swal-html-mobile {
+    font-size: 0.85rem !important;
+  }
+  .swal-confirm-mobile, .swal-cancel-mobile {
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+    min-width: 100px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .swal-popup-mobile {
+    width: 95% !important;
+    padding: 12px !important;
+    font-size: 0.8rem !important;
+  }
+  .swal-title-mobile {
+    font-size: 1rem !important;
+  }
+  .swal-html-mobile {
+    font-size: 0.8rem !important;
+  }
+  .swal-confirm-mobile, .swal-cancel-mobile {
+    font-size: 0.8rem !important;
+    padding: 6px 10px !important;
+    min-width: 80px !important;
+  }
+}
 
 </style>
 </head>
@@ -2177,12 +2216,7 @@ function sendBugReport() {
   }
 };
 
-function updateHintButton() {
-  const maxHints = 2;
-  const used = gameState.hintsUsed || 0;
-  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
-  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${maxHints - used}`;
-}      
+     
 
 function loadQuestionAtIndex(index) {
   if (!currentLevelQuestions.length) return;
@@ -2235,14 +2269,56 @@ playSound('gameOver');
 }, 1000);
 }
 
+// ---- puan,ipucu ve seviye sistemi ----
+  // Seviyeye göre ipucu hakkı
+function getMaxHintsForLevel(level) {
+  if (level <= 20) return 2;
+  if (level <= 40) return 1;
+  return 0; // 41-50 arası ipucu yok
+}
 
-            
+// Seviyeye göre ipucu maliyeti (puan)
+function getHintCostForLevel(level) {
+  if (level <= 5) return 5; // kolay başlangıç
+  if (level <= 15) return Math.floor(5 + level * 0.8); // 5-17 arası
+  if (level <= 30) return Math.floor(5 + level * 1); // 23-41 arası
+  return Math.floor(5 + level * 1.2); // 46-80 arası (50'de 80 puan)
+}
+
+  
+  function updateHintButton() {
+  const maxHints = getMaxHintsForLevel(gameState.currentLevel); // YENİ
+  const used = gameState.hintsUsed || 0;
+  const hintCost = getHintCostForLevel(gameState.currentLevel); // YENİ
+
+  // Eğer hak yoksa butonu pasif yap ve metni güncelle
+  if (maxHints === 0) {
+    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (kullanılamaz)`;
+    hintBtn.classList.add('disabled');
+    return;
+  }
+
+  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${maxHints - used}`;
+  
+  // Hak kalmamışsa butonu pasif yap
+  if (used >= maxHints) {
+    hintBtn.classList.add('disabled');
+  } else {
+    hintBtn.classList.remove('disabled');
+  }
+}
 
 
 
-async function useHint() {
-  const maxHints = 2;
-  const hintCost = 5 + Math.floor(Math.sqrt(gameState.currentLevel));
+  async function useHint() {
+  const maxHints = getMaxHintsForLevel(gameState.currentLevel); // YENİ
+  const hintCost = getHintCostForLevel(gameState.currentLevel); // YENİ
+
+  // Eğer ipucu hakkı yoksa (41+ seviye) direkt uyarı ver
+  if (maxHints === 0) {
+    showToast('Bu seviyeden itibaren ipucu kullanamazsın!', 'info');
+    return;
+  }
 
   if (gameState.hintsUsed >= maxHints) {
     showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
@@ -2252,30 +2328,37 @@ async function useHint() {
   if (gameState.score < hintCost) {
     const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
 
-    const result = await Swal.fire({
-      title: '⚡ Puanın Yetersiz',
-      html: `
-        <div style="text-align: center;">
-          <p>İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
-          <p style="margin: 15px 0; font-size: 1.1rem;">
-            🔻 <strong>1 seviye düşerek</strong> 🔻<br>
-            <strong>${earnedPoints} puan</strong> kazan
-          </p>
-          <p style="background: #fff3cd; padding: 8px; border-radius: 8px; color: #856404;">
-            ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
-            Soru değişecek, mevcut soru kaybolacak.
-          </p>
-        </div>
-      `,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Evet, seviye düşeyim',
-      cancelButtonText: 'Hayır, vazgeç',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
-    });
+  const result = await Swal.fire({
+  title: '⚡ Puanın Yetersiz',
+  html: `
+    <div style="text-align: center;">
+      <p style="font-size: 0.9rem; margin: 5px 0;">İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
+      <p style="margin: 10px 0; font-size: 1rem;">
+        🔻 <strong>1 seviye düşerek</strong> 🔻<br>
+        <strong style="font-size: 1.1rem;">${earnedPoints} puan</strong> kazan
+      </p>
+      <p style="background: #fff3cd; padding: 6px; border-radius: 6px; color: #856404; font-size: 0.8rem;">
+        ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
+        Soru değişecek, mevcut soru kaybolacak.
+      </p>
+    </div>
+  `,
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonText: 'Evet, seviye düşeyim',
+  cancelButtonText: 'Hayır, vazgeç',
+  confirmButtonColor: '#d33',
+  cancelButtonColor: '#3085d6',
+  background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+  color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
+  customClass: {
+    popup: 'swal-popup-mobile',
+    title: 'swal-title-mobile',
+    htmlContainer: 'swal-html-mobile',
+    confirmButton: 'swal-confirm-mobile',
+    cancelButton: 'swal-cancel-mobile'
+  }
+});
 
     if (result.isConfirmed) {
       if (gameState.currentLevel > 1) {
@@ -2292,14 +2375,13 @@ async function useHint() {
         await loadLevelQuestions(gameState.currentLevel);
         updateGameHeader();
         updateHintButton();
-        await saveScoreToLeaderboard();//aynı zamanda liderlik fonksiyonların yenie.
-        await loadLeaderboard();        // yeni: liderlik verisini güncelle (panel kapalıyken de veri güncellenir)
+        await saveScoreToLeaderboard();
+        await loadLeaderboard();
 
         showToast(
           `💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`,
           'success'
         );
-       
         return;
       } else {
         showToast('Zaten en düşük seviyedesin!', 'error');
@@ -2309,6 +2391,38 @@ async function useHint() {
       return;
     }
   }
+
+  // ---- Normal ipucu kullanımı (puan yeterli) ----
+  const correctIndex = currentQuestion.dogru;
+  const allIndexes = [0, 1, 2, 3];
+  const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
+  const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
+  const eliminateThese = shuffledWrong.slice(0, 2);
+
+  eliminateThese.forEach(idx => {
+    const btn = optionsEl.children[idx];
+    if (btn) {
+      btn.classList.add('eliminated');
+      btn.disabled = true;
+    }
+  });
+
+  eliminatedOptions = eliminateThese;
+  gameState.score -= hintCost;
+  if (gameState.score < 0) gameState.score = 0;
+  gameState.hintsUsed++;
+
+  if (gameState.hintsUsed >= maxHints) {
+    hintBtn.classList.add('disabled');
+  }
+
+  saveGameState();
+  if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+  playSound('hint');
+  showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
+  updateHintButton();
+}
+
 
   // ---- Normal ipucu kullanımı ----
   const correctIndex = currentQuestion.dogru;
@@ -3211,6 +3325,7 @@ font-weight:600;
 
 </body>
 </html>
+
 
 
 
