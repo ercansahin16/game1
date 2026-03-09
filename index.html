@@ -90,6 +90,26 @@
         }
         input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
 
+        /* Yeni buton stili */
+        .link-button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: #94a3b8;
+            padding: 12px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        .link-button:hover {
+            border-color: var(--primary);
+            color: white;
+            background: var(--primary-soft);
+        }
+
         .recover-link {
             font-size: 0.8rem; color: #64748b; text-decoration: none;
             display: block; margin-bottom: 25px; transition: 0.2s;
@@ -119,6 +139,9 @@
         /* SweetAlert Styling */
         .swal2-popup { border-radius: 24px !important; background: #1e293b !important; color: white !important; }
         .swal2-title { color: white !important; }
+        .swal2-html-container { color: #cbd5e1 !important; }
+        .swal2-input { background: #334155 !important; border: 1px solid #475569 !important; color: white !important; border-radius: 40px !important; }
+        .swal2-confirm { background: var(--primary) !important; border-radius: 40px !important; padding: 12px 24px !important; }
     </style>
 </head>
 <body>
@@ -132,13 +155,15 @@
         <h2>Nevafil</h2>
         <p class="subtitle">Manevi bir yolculuğa hazır mısın?</p>
         
-        <input type="email" id="emailInput" placeholder="E-posta ile otomatik doldur">
-        <a href="javascript:void(0)" class="recover-link" onclick="window.recoverLicenseByEmail()">Lisansımı Hatırlat</a>
-        
+        <!-- Lisans anahtarı girişi -->
         <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
+        
+        <!-- Yeni: Zaten lisansı olanlar için buton -->
+        <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
         
         <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
 
+        <!-- Lisans alma linki -->
         <p class="footer-text">Lisansın yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank">Buradan Al</a></p>
     </div>
 </div>
@@ -190,18 +215,62 @@
         } catch (e) { return { ok: false, msg: "Sistem hatası." }; }
     }
 
-    window.recoverLicenseByEmail = async function() {
-        const email = document.getElementById('emailInput').value.trim().toLowerCase();
-        if (!email) { Swal.fire('Dikkat', 'Lütfen e-posta yazın.', 'info'); return; }
+    // Email ile lisans bulup input'a yaz
+    window.recoverLicenseByEmail = async (email) => {
+        if (!email) { 
+            Swal.fire('Dikkat', 'Lütfen e-posta yazın.', 'info'); 
+            return false; 
+        }
 
-        Swal.showLoading();
-        const q = query(collection(db, "licenses"), where("email", "==", email));
+        const q = query(collection(db, "licenses"), where("email", "==", email.toLowerCase()));
         const snap = await getDocs(q);
 
-        if (snap.empty) { Swal.fire('Hata', 'Lisans bulunamadı.', 'error'); return; }
+        if (snap.empty) {
+            Swal.fire('Lisans bulunamadı', 'Bu e-posta adresine ait lisans yok. Lütfen lisans alın.', 'error');
+            return false;
+        }
         
+        // Lisansı inputa yaz
         document.getElementById('licenseInput').value = snap.docs[0].data().key;
-        Swal.fire('Tamam', 'Lisansın bulundu ve kutucuğa yazıldı.', 'success');
+        Swal.fire({
+            icon: 'success',
+            title: 'Lisans bulundu',
+            text: 'Lisans anahtarı kutucuğa eklendi.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+        return true;
+    };
+
+    // Yeni: email modalını aç
+    window.showEmailModal = async () => {
+        const { value: email } = await Swal.fire({
+            title: 'E-posta adresiniz',
+            text: 'Lisansınızın kayıtlı olduğu e-posta',
+            input: 'email',
+            inputPlaceholder: 'ornek@email.com',
+            showCancelButton: true,
+            confirmButtonText: 'Gönder',
+            cancelButtonText: 'Vazgeç',
+            reverseButtons: true,
+            inputValidator: (value) => {
+                if (!value) return 'E-posta gerekli';
+                if (!/^\S+@\S+\.\S+$/.test(value)) return 'Geçerli bir e-posta girin';
+            },
+            didOpen: () => {
+                // Enter tuşunu dinle
+                const input = Swal.getInput();
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        Swal.clickConfirm();
+                    }
+                });
+            }
+        });
+
+        if (email) {
+            await window.recoverLicenseByEmail(email);
+        }
     };
 
     function startGame() {
