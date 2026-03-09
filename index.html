@@ -8,252 +8,138 @@
     <style>
         :root {
             --primary: #6c5ce7;
-            --primary-dark: #5a4ddb;
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --primary-soft: rgba(108, 92, 231, 0.1);
+            --bg-dark: #0f172a;
+            --glass: rgba(30, 41, 59, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-gradient);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent), 
+                              radial-gradient(circle at bottom left, #1e1b4b, transparent);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            color: #fff;
+            color: #f8fafc;
         }
 
-        /* Loading Spinner */
+        /* Spinner */
         #loadingSpinner {
-            position: fixed;
-            inset: 0;
-            background: #0f172a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            position: fixed; inset: 0; background: var(--bg-dark);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
         }
-
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(108, 92, 231, 0.1);
-            border-left-color: var(--primary);
-            border-radius: 50%;
+            width: 40px; height: 40px; border: 3px solid var(--primary-soft);
+            border-top-color: var(--primary); border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Modern Lisans Kutusu */
+        /* Minimalist Card */
         #licensePrompt {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 20px;
+            position: fixed; inset: 0; display: none;
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(20px); z-index: 100;
+            background: rgba(15, 23, 42, 0.4);
         }
 
-        .license-card {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 24px;
-            width: 100%;
-            max-width: 400px;
+        .card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            padding: 40px 30px;
+            border-radius: 32px;
+            width: 90%;
+            max-width: 380px;
             text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .logo-area {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .app-logo {
+            width: 70px; height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 18px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            object-fit: contain;
         }
 
-        .license-card h2 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, #a29bfe, #6c5ce7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
 
-        .license-card p {
-            color: #94a3b8;
-            margin-bottom: 25px;
-            font-size: 0.95rem;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 15px;
-        }
-
-        #licenseInput {
+        input {
             width: 100%;
-            padding: 15px 20px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 2px solid rgba(108, 92, 231, 0.2);
-            border-radius: 12px;
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
             color: #fff;
             font-size: 1rem;
+            margin-bottom: 12px;
+            transition: all 0.3s;
             text-align: center;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
         }
+        input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
 
-        #licenseInput:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
-            background: rgba(15, 23, 42, 0.8);
+        .recover-link {
+            font-size: 0.8rem; color: #64748b; text-decoration: none;
+            display: block; margin-bottom: 25px; transition: 0.2s;
         }
-
-        /* YENİ: Email inputu */
-        #emailInput {
-            width: 100%;
-            padding: 15px 20px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 2px solid rgba(108, 92, 231, 0.2);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            margin-bottom: 10px;
-        }
-
-        #emailInput:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn-secondary {
-            flex: 1;
-            padding: 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateY(-1px);
-        }
+        .recover-link:hover { color: var(--primary); }
 
         .submit-btn {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
+            border-radius: 16px;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
+            transition: 0.3s;
         }
+        .submit-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
 
-        .submit-btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(108, 92, 231, 0.5);
-        }
+        .footer-text { margin-top: 25px; font-size: 0.85rem; color: #64748b; }
+        .footer-text a { color: var(--primary); text-decoration: none; font-weight: 600; }
 
-        /* Iframe */
-        #gameContainer {
-            width: 100%;
-            height: 100vh;
-            display: none;
-        }
+        #gameContainer { width: 100%; height: 100vh; display: none; }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* SweetAlert Custom Style */
-        .swal2-popup {
-            border-radius: 20px !important;
-            padding: 2rem !important;
-        }
+        /* SweetAlert Styling */
+        .swal2-popup { border-radius: 24px !important; background: #1e293b !important; color: white !important; }
+        .swal2-title { color: white !important; }
     </style>
 </head>
 <body>
 
-<div id="loadingSpinner">
-    <div class="spinner"></div>
-</div>
+<div id="loadingSpinner"><div class="spinner"></div></div>
 
 <div id="licensePrompt">
-    <div class="license-card animate__animated animate__zoomIn">
-        <div class="logo-area">🕌</div>
-        <h2>Lisans Doğrulama</h2>
-        <p>Lisans anahtarınızı girin veya e-posta ile kurtarın</p>
+    <div class="card">
+        <img src="game1/favicon.ico" alt="Logo" class="app-logo">
         
-        <!-- YENİ: E-posta kurtarma alanı -->
-        <input type="email" id="emailInput" placeholder="E-posta adresiniz" spellcheck="false">
-        <div class="btn-group">
-            <button class="btn-secondary" onclick="window.recoverLicenseByEmail()">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                Lisansımı Gönder
-            </button>
-        </div>
+        <h2>Nevafil</h2>
+        <p class="subtitle">Manevi bir yolculuğa hazır mısın?</p>
+        
+        <input type="email" id="emailInput" placeholder="E-posta ile otomatik doldur">
+        <a href="javascript:void(0)" class="recover-link" onclick="window.recoverLicenseByEmail()">Lisansımı Hatırlat</a>
+        
+        <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
+        
+        <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
 
-        <div style="position: relative; margin: 15px 0;">
-            <hr style="border: 0.5px solid rgba(255,255,255,0.1);">
-            <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(30,41,59,0.9); padding: 0 10px; color: #94a3b8;">veya</span>
-        </div>
-        
-        <div class="input-group">
-            <input type="text" id="licenseInput" placeholder="GAME-XXXXXX" spellcheck="false">
-        </div>
-        
-        <button class="submit-btn" onclick="window.onLicenseSubmit()">
-            <span>Maceraya Başla</span>
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-        </button>
-
-        <p style="margin-top: 15px; color: #94a3b8;">
-            Lisansınız yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank" style="color: #6c5ce7;">Lisans Al</a>
-        </p>
+        <p class="footer-text">Lisansın yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank">Buradan Al</a></p>
     </div>
 </div>
 
@@ -263,8 +149,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc } 
-    from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
     
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -281,7 +166,7 @@
     function getDeviceId() {
         let id = localStorage.getItem("deviceId");
         if (!id) {
-            id = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            id = 'dev_' + Math.random().toString(36).substring(2, 10);
             localStorage.setItem("deviceId", id);
         }
         return id;
@@ -291,193 +176,66 @@
         try {
             const q = query(collection(db, "licenses"), where("key", "==", key));
             const snapshot = await getDocs(q);
-            
-            if (snapshot.empty) return { ok: false, msg: "Lisans anahtarı geçersiz!" };
+            if (snapshot.empty) return { ok: false, msg: "Geçersiz anahtar!" };
             
             const licenseDoc = snapshot.docs[0];
             const data = licenseDoc.data();
-            const currentDevice = getDeviceId();
+            const device = getDeviceId();
             
-            if (!data.deviceId || data.deviceId === "") {
-                await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                    deviceId: currentDevice,
-                    used: true
-                });
+            if (!data.deviceId) {
+                await updateDoc(doc(db, "licenses", licenseDoc.id), { deviceId: device, used: true });
                 return { ok: true };
             }
-            
-            if (data.deviceId === currentDevice) return { ok: true };
-            
-            return { ok: false, msg: "Bu lisans zaten başka bir cihazda kullanılıyor!" };
-        } catch (e) {
-            return { ok: false, msg: "Bağlantı hatası oluştu." };
-        }
+            return data.deviceId === device ? { ok: true } : { ok: false, msg: "Farklı bir cihazda kayıtlı." };
+        } catch (e) { return { ok: false, msg: "Sistem hatası." }; }
     }
 
-    // YENİ: E-posta ile lisans sorgulama
     window.recoverLicenseByEmail = async function() {
-        const emailInput = document.getElementById('emailInput');
-        const email = emailInput.value.trim().toLowerCase();
+        const email = document.getElementById('emailInput').value.trim().toLowerCase();
+        if (!email) { Swal.fire('Dikkat', 'Lütfen e-posta yazın.', 'info'); return; }
+
+        Swal.showLoading();
+        const q = query(collection(db, "licenses"), where("email", "==", email));
+        const snap = await getDocs(q);
+
+        if (snap.empty) { Swal.fire('Hata', 'Lisans bulunamadı.', 'error'); return; }
         
-        if (!email) {
-            Swal.fire({
-                title: 'Uyarı',
-                text: 'Lütfen e-posta adresinizi girin.',
-                icon: 'warning',
-                confirmButtonText: 'Tamam'
-            });
-            return;
-        }
-
-        Swal.fire({
-            title: 'Aranıyor...',
-            html: 'Lisansınız kontrol ediliyor.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        try {
-            const q = query(collection(db, "licenses"), where("email", "==", email));
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Bulunamadı',
-                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
-                    confirmButtonText: 'Tamam'
-                });
-                return;
-            }
-
-            // İlk bulunan lisansı al (birden fazla varsa ilkini)
-            const licenseData = snapshot.docs[0].data();
-            const key = licenseData.key;
-
-            // Inputa yaz
-            const licenseInput = document.getElementById('licenseInput');
-            licenseInput.value = key;
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Lisansınız Bulundu!',
-                text: 'Lisans anahtarınız otomatik olarak dolduruldu. "Maceraya Başla" butonuna tıklayarak giriş yapabilirsiniz.',
-                confirmButtonText: 'Tamam'
-            });
-        } catch (e) {
-            console.error("E-posta sorgulama hatası:", e);
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata',
-                text: 'Sorgulama sırasında bir hata oluştu.',
-                confirmButtonText: 'Tamam'
-            });
-        }
+        document.getElementById('licenseInput').value = snap.docs[0].data().key;
+        Swal.fire('Tamam', 'Lisansın bulundu ve kutucuğa yazıldı.', 'success');
     };
-    
+
     function startGame() {
         document.getElementById("loadingSpinner").style.display = "none";
         document.getElementById("licensePrompt").style.display = "none";
         const container = document.getElementById("gameContainer");
         container.style.display = "block";
-        
         if (!container.querySelector("iframe")) {
-            const iframe = document.createElement("iframe");
-            iframe.src = "game/index.html";
-            container.appendChild(iframe);
+            const ifr = document.createElement("iframe");
+            ifr.src = "game/index.html";
+            container.appendChild(ifr);
         }
     }
-    
+
     window.addEventListener("load", async () => {
         const saved = localStorage.getItem("nevafilKey");
-        
-        if (saved) {
-            const res = await verifyLicense(saved);
-            if (res.ok) {
-                startGame();
-                return;
-            } else {
-                localStorage.removeItem("nevafilKey");
-            }
-        }
+        if (saved && (await verifyLicense(saved)).ok) { startGame(); return; }
         
         document.getElementById("loadingSpinner").style.display = "none";
-
-        // ÖNCE HOŞGELDİN MESAJI
-        await Swal.fire({
-            title: '✨ Nevafil’e Hoş Geldin!',
-            html: `
-                <div style="text-align: center; color: #4a5568;">
-                    <p style="font-size: 1.1rem; margin-bottom: 15px;">
-                        Manevi bilgilerle dolu, eğlenceli ve huzurlu bir yolculuğa çıkmaya hazır mısın?
-                    </p>
-                    <div style="background: #edf2f7; padding: 15px; border-radius: 12px;">
-                        🔑 Lisans anahtarını girerek macerayı başlatabilirsin.
-                    </div>
-                </div>
-            `,
-            confirmButtonText: 'Başlayalım!',
-            confirmButtonColor: '#6c5ce7',
-            allowOutsideClick: false,
-            showClass: { popup: 'animate__animated animate__fadeInDown' }
-        });
-        
-        // SONRA LİSANS EKRANI
         document.getElementById("licensePrompt").style.display = "flex";
     });
-    
+
     window.onLicenseSubmit = async () => {
-        const input = document.getElementById("licenseInput");
-        const key = input.value.trim().toUpperCase();
-        
-        if (!key) {
-            Swal.fire({
-                title: 'Hata',
-                text: 'Lütfen lisans anahtarınızı girin.',
-                icon: 'warning',
-                confirmButtonText: 'Tamam',
-                showCancelButton: true,
-                cancelButtonText: 'Lisans Al',
-                cancelButtonColor: '#6c5ce7',
-                preConfirm: () => {
-                    window.open('https://www.shopier.com/nevafil/44722560', '_blank');
-                }
-            });
-            return;
-        }
+        const key = document.getElementById("licenseInput").value.trim().toUpperCase();
+        if (!key) { Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); return; }
 
-        Swal.fire({
-            title: 'Doğrulanıyor...',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
+        Swal.fire({ title: 'Giriş Yapılıyor...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const res = await verifyLicense(key);
         
         if (res.ok) {
             localStorage.setItem("nevafilKey", key);
-            Swal.fire({
-                icon: 'success',
-                title: 'Doğrulandı!',
-                text: 'Keyifli oyunlar dileriz...',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            setTimeout(startGame, 1500);
-        } else {
-            Swal.fire({
-                title: 'Başarısız',
-                text: res.msg,
-                icon: 'error',
-                confirmButtonText: 'Tamam',
-                showCancelButton: true,
-                cancelButtonText: 'Lisans Al',
-                cancelButtonColor: '#6c5ce7',
-                preConfirm: () => {
-                    window.open('https://www.shopier.com/nevafil/44722560', '_blank');
-                }
-            });
-        }
+            Swal.close();
+            startGame();
+        } else { Swal.fire('Hata', res.msg, 'error'); }
     };
 </script>
 
