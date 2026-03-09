@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nevafil -Lisans Girişi</title>
+    <title>Nevafil - Manevi Bilgi Yolculuğu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
         :root {
@@ -133,6 +133,24 @@
         .footer-text { margin-top: 25px; font-size: 0.85rem; color: #64748b; }
         .footer-text a { color: var(--primary); text-decoration: none; font-weight: 600; }
 
+        /* Yardım butonu için ayrı stil */
+        .help-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: #94a3b8;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .help-btn:hover {
+            border-color: var(--primary);
+            color: white;
+            background: var(--primary-soft);
+        }
+
         #gameContainer { width: 100%; height: 100vh; display: none; }
         iframe { width: 100%; height: 100%; border: none; }
 
@@ -158,16 +176,16 @@
         <!-- Lisans anahtarı girişi -->
         <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
         
-       
-        
         <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
 
-       
-        
         <!-- Lisans alma linki -->
         <p class="footer-text">Lisansın yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank">Buradan Al</a></p>
-          <!-- Yeni: Zaten lisansı olanlar için buton -->
+        
+        <!-- Zaten lisansı olanlar için buton -->
         <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
+
+        <!-- Yeni: Yardım butonu -->
+        <button class="help-btn" onclick="window.showHelpModal()">❓ Yardım</button>
     </div>
 </div>
 
@@ -219,82 +237,81 @@
     }
 
     // Email ile lisans bulup input'a yaz
-window.recoverLicenseByEmail = async function(email) {
-    if (!email) {
-        Swal.fire({
-            title: 'Uyarı',
-            text: 'E-posta adresi gerekli.',
-            icon: 'warning',
-            confirmButtonText: 'Tamam'
-        });
-        return;
-    }
-
-    Swal.fire({
-        title: 'Aranıyor...',
-        html: 'Lisansınız kontrol ediliyor.',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    try {
-        const q = query(collection(db, "licenses"), where("email", "==", email));
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
+    window.recoverLicenseByEmail = async function(email) {
+        if (!email) {
             Swal.fire({
-                icon: 'error',
-                title: 'Bulunamadı',
-                text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                title: 'Uyarı',
+                text: 'E-posta adresi gerekli.',
+                icon: 'warning',
                 confirmButtonText: 'Tamam'
             });
             return;
         }
 
-        const licenseDoc = snapshot.docs[0];
-        const licenseData = licenseDoc.data();
-        const key = licenseData.key;
-        const currentDevice = getDeviceId();
+        Swal.fire({
+            title: 'Aranıyor...',
+            html: 'Lisansınız kontrol ediliyor.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-        // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
-        if (licenseData.deviceId !== currentDevice) {
-            await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                deviceId: currentDevice,
-                used: true
+        try {
+            const q = query(collection(db, "licenses"), where("email", "==", email));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Bulunamadı',
+                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+            }
+
+            const licenseDoc = snapshot.docs[0];
+            const licenseData = licenseDoc.data();
+            const key = licenseData.key;
+            const currentDevice = getDeviceId();
+
+            // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
+            if (licenseData.deviceId !== currentDevice) {
+                await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                    deviceId: currentDevice,
+                    used: true
+                });
+            }
+
+            // Lisans anahtarını input alanına yaz
+            const licenseInput = document.getElementById('licenseInput');
+            if (licenseInput) {
+                licenseInput.value = key;
+            }
+
+            // Başarılı olduğunu bildiren kısa bir toast göster (1.5 saniye)
+            Swal.fire({
+                icon: 'success',
+                title: 'Lisans Hazır',
+                text: 'Lisansınız başarıyla yüklendi.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // Toast kapandıktan sonra otomatik giriş yap
+            setTimeout(() => {
+                window.onLicenseSubmit();
+            }, 1500);
+
+        } catch (e) {
+            console.error("E-posta sorgulama hatası:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sorgulama sırasında bir hata oluştu.',
+                confirmButtonText: 'Tamam'
             });
         }
-
-        // Lisans anahtarını input alanına yaz
-        const licenseInput = document.getElementById('licenseInput');
-        if (licenseInput) {
-            licenseInput.value = key;
-        }
-
-        // Başarılı olduğunu bildiren kısa bir toast göster (1.5 saniye)
-        Swal.fire({
-            icon: 'success',
-            title: 'Lisans Hazır',
-            text: 'Lisansınız başarıyla yüklendi.',
-            timer: 1500,
-            showConfirmButton: false
-        });
-
-        // Toast kapandıktan sonra otomatik giriş yap
-        setTimeout(() => {
-            window.onLicenseSubmit();
-        }, 1500);
-
-    } catch (e) {
-        console.error("E-posta sorgulama hatası:", e);
-        Swal.fire({
-            icon: 'error',
-            title: 'Hata',
-            text: 'Sorgulama sırasında bir hata oluştu.',
-            confirmButtonText: 'Tamam'
-        });
-    }
-};
-
+    };
 
     // Yeni: email modalını aç
     window.showEmailModal = async () => {
@@ -325,6 +342,27 @@ window.recoverLicenseByEmail = async function(email) {
         if (email) {
             await window.recoverLicenseByEmail(email);
         }
+    };
+
+    // Yeni: Yardım modalını aç
+    window.showHelpModal = () => {
+        Swal.fire({
+            title: 'Yardım',
+            html: `
+                <div style="text-align: left; font-size: 0.9rem;">
+                    <p><strong>📌 Lisans Girişi</strong><br>
+                    Lisans anahtarınızı girip "Oyuna Giriş Yap" butonuna tıklayın.</p>
+                    <p><strong>📧 Lisansımı Unuttum</strong><br>
+                    "Zaten bir lisansım var" butonu ile e-posta adresinizi girerek lisansınızı kurtarabilirsiniz.</p>
+                    <p><strong>🛒 Lisans Almak İçin</strong><br>
+                    "Lisansın yok mu?" bağlantısından satın alabilirsiniz.</p>
+                    <p><strong>📱 Oyun İçi Yardım</strong><br>
+                    Oyun içinde sağ alttaki "Yardım" butonundan oyun kurallarına ulaşabilirsiniz.</p>
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'Anlaşıldı'
+        });
     };
 
     function startGame() {
