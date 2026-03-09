@@ -185,7 +185,10 @@
         <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
 
         <!-- Yeni: Yardım butonu -->
-        <button class="help-btn" onclick="window.showHelpModal()">❓ Yardım</button>
+        <!-- Lisans kartındaki diğer butonların altına -->
+<button class="link-button" onclick="window.showHelpModal()">
+    <i class="fas fa-question-circle"></i> Yardım / İletişim
+</button>
     </div>
 </div>
 
@@ -344,26 +347,7 @@
         }
     };
 
-    // Yeni: Yardım modalını aç
-    window.showHelpModal = () => {
-        Swal.fire({
-            title: 'Yardım',
-            html: `
-                <div style="text-align: left; font-size: 0.9rem;">
-                    <p><strong>📌 Lisans Girişi</strong><br>
-                    Lisans anahtarınızı girip "Oyuna Giriş Yap" butonuna tıklayın.</p>
-                    <p><strong>📧 Lisansımı Unuttum</strong><br>
-                    "Zaten bir lisansım var" butonu ile e-posta adresinizi girerek lisansınızı kurtarabilirsiniz.</p>
-                    <p><strong>🛒 Lisans Almak İçin</strong><br>
-                    "Lisansın yok mu?" bağlantısından satın alabilirsiniz.</p>
-                    <p><strong>📱 Oyun İçi Yardım</strong><br>
-                    Oyun içinde sağ alttaki "Yardım" butonundan oyun kurallarına ulaşabilirsiniz.</p>
-                </div>
-            `,
-            icon: 'info',
-            confirmButtonText: 'Anlaşıldı'
-        });
-    };
+
 
     function startGame() {
         document.getElementById("loadingSpinner").style.display = "none";
@@ -398,6 +382,58 @@
             startGame();
         } else { Swal.fire('Hata', res.msg, 'error'); }
     };
+
+
+    // Yardım butonu modalını aç
+window.showHelpModal = async () => {
+    const { value: message } = await Swal.fire({
+        title: 'Yardım / İletişim',
+        html: `
+            <p style="margin-bottom:15px;">Sorununuzu veya mesajınızı yazın.</p>
+            <textarea id="helpMessage" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Gönder',
+        cancelButtonText: 'Vazgeç',
+        preConfirm: () => {
+            const msg = document.getElementById('helpMessage').value.trim();
+            if (!msg) {
+                Swal.showValidationMessage('Mesaj boş olamaz');
+                return false;
+            }
+            return msg;
+        }
+    });
+
+    if (message) {
+        await saveHelpMessage(message, 'lisans');
+        Swal.fire({
+            icon: 'success',
+            title: 'Mesajınız Gönderildi',
+            text: 'En kısa sürede dönüş yapılacaktır.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+};
+
+// Mesajı Firestore'a kaydet
+async function saveHelpMessage(message, source) {
+    try {
+        const helpRef = collection(db, "yardim_mesajlari");
+        await addDoc(helpRef, {
+            mesaj: message,
+            tarih: new Date(),
+            kaynak: source,
+            email: document.getElementById('emailInput')?.value.trim() || null,
+            lisans_key: document.getElementById('licenseInput')?.value.trim() || null
+        });
+    } catch (e) {
+        console.error("Mesaj kaydedilemedi:", e);
+        Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+    }
+}
 </script>
 
 </body>
