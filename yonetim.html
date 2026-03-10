@@ -811,6 +811,7 @@ function renderQuestions() {
     <div style="overflow-x: auto;">
       <table>
         <tr>
+          <th>ID</th> <!-- YENİ SÜTUN -->
           <th>Soru</th>
           <th>Kategori</th>
           <th>Zorluk</th>
@@ -818,7 +819,9 @@ function renderQuestions() {
         </tr>
   `;
   filtered.forEach(q => {
+    const shortId = q.id.substring(0, 6) + '…'; // İlk 6 karakter
     html += `<tr>
+        <td><code title="${q.id}">${shortId}</code></td> <!-- ID'yi göster, tamamı tooltip'te -->
         <td>${q.soru.substring(0, 50)}${q.soru.length > 50 ? '…' : ''}</td>
         <td>${q.bolum || '-'}</td>
         <td>${q.zorluk || 1}</td>
@@ -1430,6 +1433,8 @@ async function loadHelpMessages() {
     }
 }
 
+        //YARDIM BUTONU
+
 window.viewHelpMessage = async (id) => {
     const docRef = doc(db, HELP_COLL, id);
     const docSnap = await getDoc(docRef);
@@ -1449,6 +1454,7 @@ window.viewHelpMessage = async (id) => {
         Swal.fire({
             title: 'Mesaj Detayı',
             html: `
+                <p><b>ID:</b> ${id}</p>
                 <p><b>Tarih:</b> ${tarih}</p>
                 <p><b>Kaynak:</b> ${data.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</p>
                 ${gonderenDetay}
