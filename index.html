@@ -462,16 +462,17 @@ async function saveLicenseHelpMessage({ firstName, lastName, email, message }) {
 async function saveHelpMessage(message, source) {
     try {
         const helpRef = collection(db, "yardim_mesajlari");
-        await addDoc(helpRef, {
+        const docRef = await addDoc(helpRef, {
             mesaj: message,
             tarih: new Date(),
             kaynak: source,
             email: document.getElementById('emailInput')?.value.trim() || null,
             lisans_key: document.getElementById('licenseInput')?.value.trim() || null
         });
+        console.log("Mesaj kaydedildi, ID:", docRef.id);
     } catch (e) {
         console.error("Mesaj kaydedilemedi:", e);
-        Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+        alert("Hata: " + e.message);
     }
 }
 </script>
