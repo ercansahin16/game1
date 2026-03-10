@@ -2723,16 +2723,21 @@ level45: '🌟 Marifet Sahibi',
 level50: '👑 Manevi Alim'
 };
 
-function unlockAchievement(achievementKey){
-if(!gameState.achievements[achievementKey]){
-gameState.achievements[achievementKey] = true;
-const achievementName = ACHIEVEMENT_NAMES[achievementKey];
-gameState.recentAchievements.unshift(achievementName);
-if(gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
-await saveGameState();
-showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
-triggerConfetti();
-}
+async function unlockAchievement(achievementKey) {
+  if (!gameState.achievements[achievementKey]) {
+    gameState.achievements[achievementKey] = true;  // Başarımı aç
+    const achievementName = ACHIEVEMENT_NAMES[achievementKey]; // Başarım adını al
+    gameState.recentAchievements.unshift(achievementName); // Yeni başarıyı başa ekle
+
+    // Son başarıları sadece 3 tane tut
+    if (gameState.recentAchievements.length > 3) {
+      gameState.recentAchievements.pop(); // Eğer 3'ten fazla varsa, en eski başarıyı kaldır
+    }
+
+    await saveGameState();  // Oyun durumunu kaydet
+    showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');  // Başarıyı kullanıcıya göster
+    triggerConfetti();  // Konfeti efekti göster
+  }
 }
 
 function renderAchievements(){
@@ -3577,6 +3582,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
