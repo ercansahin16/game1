@@ -3277,6 +3277,7 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 
 
   // Oyun içindeki yardım butonu
+// Oyun içindeki yardım butonu
 document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
     const { value: message } = await Swal.fire({
         title: 'Yardım / Geri Bildirim',
@@ -3302,14 +3303,17 @@ document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
         // Oyun içi bilgileri topla
         const user = gameState?.username || 'Misafir';
         const lisansKey = localStorage.getItem('nevafilKey') || null;
-        const email = gameState?.email || null; // Eğer oyun içinde email varsa
+        const email = gameState?.email || null;
+        // Mevcut soru ID'sini al (eğer varsa)
+        const soruId = currentQuestion?.id || null;
 
         await saveGameHelpMessage({
             mesaj: message,
             kaynak: 'oyun',
             kullanici_adi: user,
             lisans_key: lisansKey,
-            email: email
+            email: email,
+            soruId: soruId  // YENİ: soru ID'si eklendi
         });
 
         Swal.fire({
@@ -3335,11 +3339,11 @@ async function saveGameHelpMessage(data) {
         Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
     }
 }
- 
 </script>
 
 </body>
 </html>
+
 
 
 
