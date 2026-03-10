@@ -2519,68 +2519,72 @@ playSound('gameOver');
 }
 }
 
-function onNext(){
-if(!nextBtn.classList.contains('active')) return;
-gameState.currentQuestionIndexInLevel++;
-updateLevelProgress();
-if(gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length){
-const completedLevel = gameState.currentLevel;
-if(completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
-gameState.currentLevel = completedLevel + 1;
-gameState.currentQuestionIndexInLevel = 0;
-gameState.hintUsedInThisLevel = false;
+function onNext() {
+  if (!nextBtn.classList.contains('active')) return;
+  gameState.currentQuestionIndexInLevel++;
+  updateLevelProgress();
 
-if(completedLevel % 5 === 0){
-const levelKey = `level${completedLevel}`;
-if(gameState.achievements[levelKey] === false){
-unlockAchievement(levelKey);
-}
-}
+  if (gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length) {
+    const completedLevel = gameState.currentLevel;
+    if (completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
+    gameState.currentLevel = completedLevel + 1;
+    gameState.currentQuestionIndexInLevel = 0;
+    gameState.hintUsedInThisLevel = false;
 
-saveGameState();
-loadLevelQuestions(gameState.currentLevel);
-if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
-renderLevelIndicators();
+    if (completedLevel % 5 === 0) {
+      const levelKey = `level${completedLevel}`;
+      if (gameState.achievements[levelKey] === false) {
+        unlockAchievement(levelKey);
+      }
+    }
 
-let badgeMessage = '';
-if(completedLevel % 5 === 0 && gameState.achievements[`level${completedLevel}`]){
-const badgeName = ACHIEVEMENT_NAMES[`level${completedLevel}`];
-badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
-}
+    saveGameState();
+    loadLevelQuestions(gameState.currentLevel);
+    if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
+    renderLevelIndicators();
 
-
+    let badgeMessage = '';
+    if (completedLevel % 5 === 0 && gameState.achievements[`level${completedLevel}`]) {
+      const badgeName = ACHIEVEMENT_NAMES[`level${completedLevel}`];
+      badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
+    }
 
     // --- SEVİYE ATLAMA KUTLAMASI ---
-    triggerConfetti();               // ✨ YENİ: konfeti patlat
+    triggerConfetti();
     showToast(`🎉 Tebrikler! Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} geçtiniz. Kendinizle gurur duymalısınız! 🏆`, 'success');
     playSound('levelUp');
     showShareButtons(completedLevel);
-if (completedLevel === 50) {
-    Swal.fire({
+
+    // 50. seviye özel kutlaması
+    if (completedLevel === 50) {
+      Swal.fire({
         title: '🎉 Büyük Başarı!',
         html: `
-            <div style="text-align:center;">
-                <p style="font-size:1.2rem;">✨ 50. seviyeye ulaştınız! ✨</p>
-                <p>Bu büyük başarınızı kutluyoruz! 🥳</p>
-                <p>🎁 <strong>Sürpriz hediyemiz:</strong> Aile ve çocuk maneviyatı üzerine bir kitap!</p>
-                <p>Kitabı kargolayabilmemiz için bize Instagram'dan ulaşın:</p>
-                <p style="font-size:1.5rem;">
-                    <a href="https://www.instagram.com/nevafil.com.tr" target="_blank" style="color:#e1306c; text-decoration:none;">
-                        <i class="fab fa-instagram"></i> @nevafil.com.tr
-                    </a>
-                </p>
-                <p>Adresinizi ve iletişim bilgilerinizi DM'den gönderin. 📩</p>
-                <p style="margin-top:15px;">Ailenizle birlikte keyifli okumalar dileriz! ❤️📚</p>
-            </div>
+          <div style="text-align:center;">
+            <p style="font-size:1.2rem;">✨ 50. seviyeye ulaştınız! ✨</p>
+            <p>Bu büyük başarınızı kutluyoruz! 🥳</p>
+            <p>🎁 <strong>Sürpriz hediyemiz:</strong> Aile ve çocuk maneviyatı üzerine bir kitap!</p>
+            <p>Kitabı kargolayabilmemiz için bize Instagram'dan ulaşın:</p>
+            <p style="font-size:1.5rem;">
+              <a href="https://www.instagram.com/nevafil.com.tr" target="_blank" style="color:#e1306c; text-decoration:none;">
+                <i class="fab fa-instagram"></i> @nevafil.com.tr
+              </a>
+            </p>
+            <p>Adresinizi ve iletişim bilgilerinizi DM'den gönderin. 📩</p>
+            <p style="margin-top:15px;">Ailenizle birlikte keyifli okumalar dileriz! ❤️📚</p>
+          </div>
         `,
         icon: 'success',
         confirmButtonText: 'Harika!',
         confirmButtonColor: '#7c3aed',
         background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
         color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
-    });
-}
-  
+      });
+
+      // Mascot konuşsun (eklenen satır)
+      mascotSpeak('🎁 Instagram: @nevafil.com.tr');
+    }
+
   } else {
     loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
     saveGameState();
@@ -2588,6 +2592,7 @@ if (completedLevel === 50) {
   nextBtn.classList.remove('active');
   nextBtn.classList.add('disabled');
 }
+  
 
 function restartLevelAfterGameOver(){
 gameState.currentQuestionIndexInLevel = 0;
@@ -3067,7 +3072,18 @@ adminClickCount++;
 // ------------------------------------------------------------
 // MASKOT, SES, DARK MODE
 // ------------------------------------------------------------
-function mascotSpeak(text){
+function // Mascot'un konuşması
+function mascotSpeak(text) {
+    const bubble = document.getElementById('speechBubble');
+    bubble.innerText = text;
+    bubble.classList.add('active');
+    setTimeout(() => bubble.classList.remove('active'), 4000);
+}
+
+// 50. seviyede mascot konuşsun
+if (completedLevel === 50) {
+    mascotSpeak('Instagram: @nevafil.com.tr 🎁');
+}(text){
 speechBubble.innerText = text;
 speechBubble.classList.add('active');
 setTimeout(() => speechBubble.classList.remove('active'), 3000);
@@ -3508,6 +3524,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
