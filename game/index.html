@@ -2659,27 +2659,29 @@ if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 }
 
 async function renderLevelIndicators(){
-const maxLevel = gameState.maxUnlockedLevel;
-let html = '';
-for(let i = 1; i <= maxLevel + 2; i++){
-if(i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
-else if(i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock"></i></div>`;
-else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock"></i></div>`;
-}
-levelIndicators.innerHTML = html;
-document.querySelectorAll('.level-badge.active').forEach(badge => {
-badge.addEventListener('click', () => {
-const lvl = parseInt(badge.dataset.level);
-if(lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel){
-gameState.currentLevel = lvl;
-gameState.currentQuestionIndexInLevel = 0;
-gameState.hintUsedInThisLevel = false;
-await saveGameState();
-loadLevelQuestions(lvl);
-if(currentLevelDisplay) currentLevelDisplay.innerText = lvl;
-}
-});
-});
+  const maxLevel = gameState.maxUnlockedLevel;
+  let html = '';
+  for(let i = 1; i <= maxLevel + 2; i++){
+    if(i <= maxLevel) html += `<div class="level-badge active" data-level="${i}">${i}</div>`;
+    else if(i === maxLevel + 1) html += `<div class="level-badge locked" data-level="${i}"><i class="fas fa-lock"></i></div>`;
+    else html += `<div class="level-badge locked" style="opacity:0.4;"><i class="fas fa-lock"></i></div>`;
+  }
+  levelIndicators.innerHTML = html;
+  
+  // async event listener için `async` ekledim
+  document.querySelectorAll('.level-badge.active').forEach(badge => {
+    badge.addEventListener('click', async () => {  // async ekledim
+      const lvl = parseInt(badge.dataset.level);
+      if(lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel){
+        gameState.currentLevel = lvl;
+        gameState.currentQuestionIndexInLevel = 0;
+        gameState.hintUsedInThisLevel = false;
+        await saveGameState(); // `await` burada çalışacak
+        await loadLevelQuestions(lvl); // `loadLevelQuestions` da asenkron olduğundan `await` ekledim
+        if(currentLevelDisplay) currentLevelDisplay.innerText = lvl;
+      }
+    });
+  });
 }
 
 function checkAchievements(action, questionId){
@@ -3569,6 +3571,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
