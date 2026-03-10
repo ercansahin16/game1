@@ -3275,42 +3275,72 @@ window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
 
 
-  
+
+  // Oyun içindeki yardım butonu
+document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
+    const { value: message } = await Swal.fire({
+        title: 'Yardım / Geri Bildirim',
+        html: `
+            <p style="margin-bottom:15px;">Sorununuzu veya önerinizi yazın.</p>
+            <textarea id="helpMessage" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Gönder',
+        cancelButtonText: 'Vazgeç',
+        preConfirm: () => {
+            const msg = document.getElementById('helpMessage').value.trim();
+            if (!msg) {
+                Swal.showValidationMessage('Mesaj boş olamaz');
+                return false;
+            }
+            return msg;
+        }
+    });
+
+    if (message) {
+        // Oyun içi bilgileri topla
+        const user = gameState?.username || 'Misafir';
+        const lisansKey = localStorage.getItem('nevafilKey') || null;
+        const email = gameState?.email || null; // Eğer oyun içinde email varsa
+
+        await saveGameHelpMessage({
+            mesaj: message,
+            kaynak: 'oyun',
+            kullanici_adi: user,
+            lisans_key: lisansKey,
+            email: email
+        });
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Mesajınız Gönderildi',
+            text: 'En kısa sürede dönüş yapılacaktır.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+});
+
+// Oyun içi mesaj kaydetme
+async function saveGameHelpMessage(data) {
+    try {
+        const helpRef = collection(db, "yardim_mesajlari");
+        await addDoc(helpRef, {
+            ...data,
+            tarih: new Date()
+        });
+    } catch (e) {
+        console.error('Mesaj kaydedilemedi:', e);
+        Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+    }
+}
+ 
 </script>
-
-  <div id="pwaBanner" style="
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-background:#7c3aed;
-color:white;
-padding:12px 18px;
-border-radius:40px;
-font-family:Poppins;
-z-index:99999;
-display:none;
-box-shadow:0 8px 20px rgba(0,0,0,0.2);
-">
-
-📲 NEVAFİL'i telefonuna yükle
-<button id="installBtn" style="
-margin-left:10px;
-background:white;
-color:#7c3aed;
-border:none;
-padding:6px 14px;
-border-radius:20px;
-cursor:pointer;
-font-weight:600;
-">Yükle</button>
-
-<span id="closePwa" style="margin-left:10px;cursor:pointer;">✕</span>
-
-</div>
 
 </body>
 </html>
+
 
 
 
