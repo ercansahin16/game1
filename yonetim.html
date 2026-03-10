@@ -1473,36 +1473,179 @@ async function loadHelpMessages() {
         const messages = [];
         snapshot.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
 
-        const filter = document.getElementById('helpSourceFilter').value;
-        const filtered = filter === 'all' ? messages : messages.filter(m => m.kaynak === filter);
+        const kaynakFilter = document.getElementById('helpSourceFilter').value;
+        const durumFilter = document.getElementById('helpStatusFilter').value;
 
-        let html = '<div class="table-responsive"><table><tr><th>Tarih</th><th>Kaynak</th><th>Gönderen</th><th>Mesaj</th><th>İşlem</th></tr>';
+        const filtered = messages.filter(m => {
+            if (kaynakFilter !== 'all' && m.kaynak !== kaynakFilter) return false;
+            if (durumFilter !== 'all' && m.durum !== durumFilter) return false;
+            return true;
+        });
+
+        let html = `
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Kaynak</th>
+                            <th>Gönderen</th>
+                            <th>Mesaj</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
         filtered.forEach(m => {
             const tarih = m.tarih?.toDate().toLocaleString('tr-TR') || '-';
             let gonderen = '-';
             if (m.kaynak === 'lisans') {
                 gonderen = `${m.ad || ''} ${m.soyad || ''} (${m.email || '-'})`.trim();
-            } else { // oyun
+            } else {
                 gonderen = m.kullanici_adi || m.lisans_key?.substring(0,8) || '-';
             }
+            const durumClass = m.durum === 'Beklemede' ? 'beklemede' : (m.durum === 'Okundu' ? 'okundu' : 'cozuldu');
             html += `<tr>
                 <td>${tarih}</td>
                 <td>${m.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</td>
                 <td>${gonderen}</td>
-                <td>${m.mesaj.substring(0, 100)}${m.mesaj.length > 100 ? '…' : ''}</td>
+                <td>${m.mesaj.substring(0, 80)}${m.mesaj.length > 80 ? '…' : ''}</td>
+                <td><span class="status-badge ${durumClass}">${m.durum || 'Beklemede'}</span></td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewHelpMessage('${m.id}')">Görüntüle</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteHelpMessage('${m.id}')">Sil</button>
                 </td>
             </tr>`;
         });
-        html += '</table></div>';
+
+        html += '</tbody></table></div>';
         container.innerHTML = html;
     } catch (e) {
         container.innerHTML = 'Hata: ' + e.message;
     }
 }
 
+
+
+        // Belirli bir kaynaktaki tüm mesajları sil
+window.deleteAllHelpBySource = async (kaynak) => {
+    const result = await Swal.fire({
+        title: 'Emin misiniz?',
+        text: `${kaynak === 'lisans' ? 'Lisans' : 'Oyun'} mesajlarının tamamı silinecek!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, sil',
+        cancelButtonText: 'İptal'
+    });
+    if (!result.isConfirmed) return;
+
+    const swal = Swal.fire({
+        title: 'Siliniyor...',
+        html: 'Dokümanlar sayılıyor...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const q = query(collection(db, HELP_COLL), where("kaynak", "==", kaynak));
+        const snapshot = await getDocs(q);
+        const docs = snapshot.docs;
+        const total = docs.length;
+
+        if (total === 0) {
+            Swal.fire('Bilgi', 'Silinecek mesaj bulunamadı.', 'info');
+            return;
+        }
+
+        const BATCH_LIMIT = 500;
+        let processed = 0;
+
+        for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            const chunk = docs.slice(i, i + BATCH_LIMIT);
+            chunk.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            processed += chunk.length;
+            const yuzde = Math.round((processed / total) * 100);
+            Swal.update({ html: `${yuzde}% tamamlandı (${processed}/${total})` });
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: `${total} mesaj silindi.`,
+            timer: 2000
+        });
+        loadHelpMessages();
+    } catch (error) {
+        console.error("Silme hatası:", error);
+        Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
+    }
+};
+
+// Tüm mesajları sil
+window.deleteAllHelpMessages = async () => {
+    const result = await Swal.fire({
+        title: 'Tüm mesajlar silinecek!',
+        text: 'Bu işlem geri alınamaz. Emin misiniz?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, sil',
+        cancelButtonText: 'İptal'
+    });
+    if (!result.isConfirmed) return;
+
+    const swal = Swal.fire({
+        title: 'Siliniyor...',
+        html: 'Dokümanlar sayılıyor...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const snapshot = await getDocs(collection(db, HELP_COLL));
+        const docs = snapshot.docs;
+        const total = docs.length;
+
+        if (total === 0) {
+            Swal.fire('Bilgi', 'Silinecek mesaj bulunamadı.', 'info');
+            return;
+        }
+
+        const BATCH_LIMIT = 500;
+        let processed = 0;
+
+        for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            const chunk = docs.slice(i, i + BATCH_LIMIT);
+            chunk.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            processed += chunk.length;
+            const yuzde = Math.round((processed / total) * 100);
+            Swal.update({ html: `${yuzde}% tamamlandı (${processed}/${total})` });
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: `${total} mesaj silindi.`,
+            timer: 2000
+        });
+        loadHelpMessages();
+    } catch (error) {
+        console.error("Silme hatası:", error);
+        Swal.fire({ icon: 'error', title: 'Hata', text: 'Silme işlemi başarısız.' });
+    }
+};
+
+
+        
         //YARDIM BUTONU
 
 window.viewHelpMessage = async (id) => {
@@ -1516,7 +1659,7 @@ window.viewHelpMessage = async (id) => {
         if (data.kaynak === 'lisans') {
             gonderenDetay = `<p><b>Ad Soyad:</b> ${data.ad || ''} ${data.soyad || ''}</p>
                              <p><b>E-posta:</b> ${data.email || '-'}</p>`;
-        } else { // oyun
+        } else {
             gonderenDetay = `<p><b>Kullanıcı Adı:</b> ${data.kullanici_adi || '-'}</p>
                              <p><b>Lisans:</b> ${data.lisans_key || '-'}</p>`;
             if (data.soruId) {
@@ -1526,20 +1669,40 @@ window.viewHelpMessage = async (id) => {
             }
         }
 
-        Swal.fire({
+        // Durum seçme dropdown'u
+        const durumOptions = ['Beklemede', 'Okundu', 'Çözüldü'];
+        const durumSelect = `
+            <select id="durumSelect" style="padding:5px; border-radius:4px;">
+                ${durumOptions.map(opt => `<option value="${opt}" ${data.durum === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+            </select>
+        `;
+
+        const result = await Swal.fire({
             title: 'Mesaj Detayı',
             html: `
                 <p><b>Tarih:</b> ${tarih}</p>
                 <p><b>Kaynak:</b> ${data.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</p>
                 ${gonderenDetay}
+                <p><b>Durum:</b> ${durumSelect}</p>
                 <p><b>Mesaj:</b> ${data.mesaj}</p>
             `,
             icon: 'info',
-            confirmButtonText: 'Kapat'
+            showCancelButton: true,
+            confirmButtonText: 'Durumu Güncelle',
+            cancelButtonText: 'Kapat',
+            preConfirm: () => {
+                const yeniDurum = document.getElementById('durumSelect').value;
+                return yeniDurum;
+            }
         });
+
+        if (result.isConfirmed) {
+            await updateDoc(docRef, { durum: result.value });
+            loadHelpMessages();
+            Swal.fire('Güncellendi', 'Mesaj durumu güncellendi.', 'success');
+        }
     }
 };
-
 
         window.goToQuestion = (soruId) => {
     // Önce Soru Yönetimi sekmesine geç
@@ -1571,6 +1734,7 @@ window.deleteHelpMessage = async (id) => {
 
 // Filtre değişince yeniden yükle
 document.getElementById('helpSourceFilter')?.addEventListener('change', loadHelpMessages);
+document.getElementById('helpStatusFilter')?.addEventListener('change', loadHelpMessages);
         
     </script>
 
