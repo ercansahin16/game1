@@ -3196,95 +3196,59 @@ window.addEventListener('load', mascotIntro);
 mascot.addEventListener('click', async () => {
   const isDark = document.body.classList.contains('dark-theme');
 
-  // 1️⃣ HEYECAN – Giriş mesajı
-  const intro = await Swal.fire({
-    title: '🎮 Hazır mısın?',
-    html: `
-      <div style="text-align:center; font-size:0.95rem; line-height:1.6;">
-        <p style="font-size:1.2rem; margin-bottom:8px;">
-          🌸 <strong>Bilgi • Hız • Eğlence</strong> 🌸
-        </p>
-        <p style="margin-top:10px;">
-          Bu modda yalnız değilsin 🥰<br>
-          Eşinle, arkadaşınla ya da ailenle yarışıyorsun!
-        </p>
-        <p>Kim daha hızlı? Kim daha dikkatli? Görelim 😄</p>
-        <div style="
-          background: #ffeaa5;
-          padding: 12px;
-          border-radius: 20px;
-          font-style: italic;
-          margin-top: 12px;
-          border: 2px solid #ffb08c;
-        ">
-          “Bir soruda ben öndeydim,<br>diğerinde o geçti!”<br>
-          <strong>👏 İşte oyunun keyfi!</strong>
-        </div>
-        <p style="margin-top:12px;">
-          🏆 Kazanan puan değil,<br>
-          <strong>❤️ en çok eğlenen olur!</strong>
-        </p>
-      </div>
-    `,
-    confirmButtonText: '🔥 Devam',
-    confirmButtonColor: '#7c3aed',
-    showCloseButton: true,
-    background: isDark ? '#2c2f33' : '#fff9f0',
-    color: isDark ? '#fff' : '#2d3e50',
-    width: '90%'
-  });
-
-  if (!intro.isConfirmed) return;
-
-  // 2️⃣ KURALLAR – İpucu ve diğer özellikler
-  const rules = await Swal.fire({
+  // Tek bir SweetAlert, 5 kartlı kurallar
+  const result = await Swal.fire({
     title: '🐻 Oyun Rehberi',
     html: `
-      <div style="font-size:0.9rem; text-align:left;">
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          ⏱️ <strong>60 saniye</strong> – Süre dolmadan cevapla! ⏳
+      <div style="font-size:0.9rem; text-align:left; max-height:70vh; overflow-y:auto; padding-right:5px;">
+        <!-- 1. Temel Kurallar -->
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
+          <div style="font-weight:700; margin-bottom:4px;">⏳ 1. Süre ve Puan</div>
+          <div>✅ İlk denemede doğru → +1 puan</div>
+          <div>❌ Yanlışta ikinci hakkın var, yine yanlışta oyun biter</div>
+          <div>⏱️ 60 saniye içinde cevapla</div>
         </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          ✅ <strong>İlk denemede doğru</strong> → +1 puan 🎯
+        <!-- 2. İpucu Kullanımı (yeni sistem) -->
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
+          <div style="font-weight:700; margin-bottom:4px;">💡 2. İpucu</div>
+          <div>• 2 yanlış şık elenir</div>
+          <div>• Maliyet: 5 + √seviye (1'de 6, 50'de 12 puan)</div>
+          <div>• Hak: 1-20 → 2, 21-40 → 1, 41+ → ipucu yok</div>
         </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          ❌ Yanlış cevapta <strong>ikinci şansın var</strong>.<br>
-          İkinci yanlışta oyun biter 😬
+        <!-- 3. Seviye Düşme (Acil Durum) -->
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
+          <div style="font-weight:700; margin-bottom:4px;">⚠️ 3. Puanın Yetmezse</div>
+          <div>1 seviye düşerek 15 + seviye×1.5 puan kazanabilirsin</div>
+          <div>Düşünce soru değişir, üst seviyeler kilitlenir</div>
         </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          💡 <strong>İpucu kullanımı</strong><br>
-          • 2 yanlış şık elenir.<br>
-          • Maliyet: <strong>5 + √seviye</strong> puan (1. seviye 6, 50. seviye 12).<br>
-          • <strong>Her seviyede en fazla 2 ipucu</strong> kullanabilirsin.
+        <!-- 4. Seviye Atlama ve Soru Sayısı -->
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
+          <div style="font-weight:700; margin-bottom:4px;">🚀 4. Seviye Atlama</div>
+          <div>Her seviyede (seviye × 2 + 2) soru</div>
+          <div>Örnek: 1→4, 2→6, 3→8 soru</div>
         </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          🚀 <strong>Seviye atlama</strong><br>
-          Her seviyede (seviye × 2 + 2) soru var.<br>
-          (1→4, 2→6, 3→8...) Yükseldikçe heyecan büyür!
-        </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          🏅 <strong>Rozetler</strong><br>
-          İlk doğru, seri yakala, kategori ustası ol.<br>
-          Her 5 seviyede <span style="color:#7c3aed;">özel rozet</span> seni bekliyor!
-        </div>
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:8px 10px; border-radius:16px;">
-          👑 <strong>Hedef 50. seviye</strong><br>
-          Büyük sürpriz ve <strong>Manevi Alim</strong> rozeti! 🎉
+        <!-- 5. Rozetler ve Hedef -->
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
+          <div style="font-weight:700; margin-bottom:4px;">🏅 5. Rozetler</div>
+          <div>İlk doğru, seri, kategori rozetleri</div>
+          <div>Her 5 seviyede özel rozet</div>
+          <div>👑 50. seviyede büyük sürpriz</div>
         </div>
       </div>
-      <p style="margin-top:15px; text-align:center; color:#7c3aed; font-weight:bold;">
-        ✨ Hadi başlayalım, iyi eğlenceler! ✨
-      </p>
     `,
-    confirmButtonText: '🎉 Oyunu Başlat',
+    confirmButtonText: '🎮 Oyuna Başla',
     confirmButtonColor: '#7c3aed',
     showCloseButton: true,
     background: isDark ? '#2c2f33' : '#fff9f0',
     color: isDark ? '#fff' : '#2d3e50',
     width: '90%'
   });
-});
 
+  // Oyun başlatma (zaten ayrı bir fonksiyonla yapılıyordur)
+  if (result.isConfirmed) {
+    startGame(); // veya introStartBtn.click() vb.
+  }
+});
 
             
 window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
@@ -3360,6 +3324,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
