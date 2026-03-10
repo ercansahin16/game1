@@ -2684,19 +2684,25 @@ async function renderLevelIndicators(){
   });
 }
 
-function checkAchievements(action, questionId){
-if(!gameState.achievements.firstCorrect && action === 'correct'){
-unlockAchievement('firstCorrect');
-}
-if(action === 'correct'){
-gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
-if(gameState.achievements.streak === 10 && !gameState.achievements.streak){
-unlockAchievement('streak');
-}
-} else {
-gameState.achievements.streak = 0;
-}
-await saveGameState();
+async function checkAchievements(action, questionId) {
+  // İlk doğru cevabı kontrol et
+  if (!gameState.achievements.firstCorrect && action === 'correct') {
+    unlockAchievement('firstCorrect');
+  }
+
+  // 10 doğru cevap streak'ini kontrol et
+  if (action === 'correct') {
+    gameState.achievements.streak = (gameState.achievements.streak || 0) + 1;
+
+    if (gameState.achievements.streak === 10 && !gameState.achievements.streakUnlocked) {
+      unlockAchievement('streak');
+      gameState.achievements.streakUnlocked = true; // Streak başarıyı sadece bir kez kilitlemek için
+    }
+  } else {
+    gameState.achievements.streak = 0;
+  }
+
+  await saveGameState();
 }
 
 const ACHIEVEMENT_NAMES = {
@@ -3571,6 +3577,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
