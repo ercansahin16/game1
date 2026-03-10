@@ -337,6 +337,7 @@
 
         <!-- Filtreler ve Yeni Soru Butonu -->
         <div class="filter-row">
+            <input type="text" id="questionIdSearch" placeholder="ID ile ara..." style="padding:8px; border-radius:6px; border:1px solid #ddd;">
             <select id="categoryFilter">
                 <option value="all">Tüm Kategoriler</option>
                 <option value="Kur'an">Kur'an</option>
@@ -800,28 +801,32 @@ function updateQuestionStats() {
 function renderQuestions() {
   const category = document.getElementById('categoryFilter').value;
   const difficulty = document.getElementById('difficultyFilter').value;
+  const idSearch = document.getElementById('questionIdSearch').value.toLowerCase().trim();
   
   const filtered = allQuestions.filter(q => {
     if (category !== 'all' && q.bolum !== category) return false;
     if (difficulty !== 'all' && q.zorluk != difficulty) return false;
+    if (idSearch !== '' && !q.id.toLowerCase().includes(idSearch)) return false;
     return true;
   });
   
   let html = `
     <div style="overflow-x: auto;">
-      <table>
-        <tr>
-          <th>ID</th> <!-- YENİ SÜTUN -->
-          <th>Soru</th>
-          <th>Kategori</th>
-          <th>Zorluk</th>
-          <th>İşlem</th>
-        </tr>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="min-width:180px;">ID</th>
+            <th>Soru</th>
+            <th>Kategori</th>
+            <th>Zorluk</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
   `;
   filtered.forEach(q => {
-    const shortId = q.id.substring(0, 6) + '…'; // İlk 6 karakter
     html += `<tr>
-        <td><code title="${q.id}">${shortId}</code></td> <!-- ID'yi göster, tamamı tooltip'te -->
+        <td style="font-family:monospace; font-size:0.85rem; word-break:break-all;">${q.id}</td>
         <td>${q.soru.substring(0, 50)}${q.soru.length > 50 ? '…' : ''}</td>
         <td>${q.bolum || '-'}</td>
         <td>${q.zorluk || 1}</td>
@@ -831,14 +836,18 @@ function renderQuestions() {
         </td>
       </tr>`;
   });
-  html += '</table></div>';
+  html += '</tbody></table></div>';
   document.getElementById('questionsList').innerHTML = html;
 }
+
+
+        
 
         
 // Filtre değişim olaylarını ekleyin (DOMContentLoaded içinde)
 document.getElementById('categoryFilter').addEventListener('change', renderQuestions);
 document.getElementById('difficultyFilter').addEventListener('change', renderQuestions);
+document.getElementById('questionIdSearch')?.addEventListener('input', renderQuestions);
 
         
         window.editQuestion = async (id) => {
@@ -1446,15 +1455,19 @@ window.viewHelpMessage = async (id) => {
         if (data.kaynak === 'lisans') {
             gonderenDetay = `<p><b>Ad Soyad:</b> ${data.ad || ''} ${data.soyad || ''}</p>
                              <p><b>E-posta:</b> ${data.email || '-'}</p>`;
-        } else {
+        } else { // oyun
             gonderenDetay = `<p><b>Kullanıcı Adı:</b> ${data.kullanici_adi || '-'}</p>
                              <p><b>Lisans:</b> ${data.lisans_key || '-'}</p>`;
+            if (data.soruId) {
+                gonderenDetay += `<p><b>Soru ID:</b> <code>${data.soruId}</code> 
+                    <button class="btn btn-sm btn-info" onclick="goToQuestion('${data.soruId}')">Soruyu Bul</button>
+                </p>`;
+            }
         }
 
         Swal.fire({
             title: 'Mesaj Detayı',
             html: `
-                <p><b>ID:</b> ${id}</p>
                 <p><b>Tarih:</b> ${tarih}</p>
                 <p><b>Kaynak:</b> ${data.kaynak === 'lisans' ? '📄 Lisans' : '🎮 Oyun'}</p>
                 ${gonderenDetay}
@@ -1465,6 +1478,21 @@ window.viewHelpMessage = async (id) => {
         });
     }
 };
+
+
+        window.goToQuestion = (soruId) => {
+    // Önce Soru Yönetimi sekmesine geç
+    document.querySelector('.tab[data-tab="questions"]').click();
+    
+    // ID arama kutusuna ID'yi yaz ve filtrelemeyi tetikle
+    const searchInput = document.getElementById('questionIdSearch');
+    if (searchInput) {
+        searchInput.value = soruId;
+        renderQuestions(); // Filtreyi uygula
+    }
+};
+
+        
 
 window.deleteHelpMessage = async (id) => {
     const result = await Swal.fire({
