@@ -22,7 +22,7 @@
 <meta name="theme-color" content="#7c3aed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  
+
 <style>
 /* ---------- RESET & DEĞİŞKENLER ---------- */
 /* ---------- RESET & DEĞİŞKENLER ---------- */
@@ -1083,7 +1083,7 @@ animation:modalSlideIn 0.3s ease;
 .nav-btn:hover .fa-instagram {
     color: #c13584;
 }
-  
+
 @keyframes modalSlideIn {
 from { transform:translateY(-50px); opacity:0; }
 to { transform:translateY(0); opacity:1; }
@@ -1231,10 +1231,10 @@ body { padding:8px; }
         <!-- Çıkış Butonu (Sadece oyundayken görünür) -->
       <button id="settingsBtn" class="nav-btn" title="Tema">
         <i class="fas fa-moon">
-        
+
       </i><span></span>
       </button>
-      
+
         <button id="navExitBtn" class="nav-btn exit-btn" title="Ana Menüye Dön">
             <i class="fas fa-sign-out-alt"></i>
         </button>
@@ -1244,7 +1244,7 @@ body { padding:8px; }
         </button>
     </div>
 </div>
-  
+
 
 
 <!-- 🎭 Mascot + PWA Butonu
@@ -1255,9 +1255,9 @@ body { padding:8px; }
      <button id="installBtn" style="bottom:15%;background:#7c3aed;color:white;border:none;padding:10px 20px;border-radius:30px;cursor:pointer;font-weight:600;">📲 NEVAFİL'i indir</button>
   </div>
 </div> -->
- 
 
-  
+
+
 <!-- ========== INTRO EKRANI ========= -->
 <div id="introOverlay" class="intro-overlay">
 <div class="intro-card">
@@ -1274,7 +1274,7 @@ body { padding:8px; }
 <i class="fas fa-cog"></i>
 <span class="settings-text">Ayarlar</span>
 </button>
-  
+
 </div>
 <div class="intro-stats">
 <!-- DEĞİŞTİ: En İyi Performans bölümü -->
@@ -1354,7 +1354,7 @@ body { padding:8px; }
     <div class="stat-box"><i class="fas fa-crown"></i><span id="currentLevelDisplay">1</span></div>
     <button id="leaderboardBtn" class="action-btn" title="Liderlik"><i class="fas fa-trophy"></i><span>Liderlik</span></button>
     <button id="achievementsBtn" class="action-btn" title="Başarımlar"><i class="fas fa-medal"></i><span>Başarımlar</span></button>
-    
+
    <!-- <button id="exitGameBtn" class="action-btn" title="Oyundan Çık"><i class="fas fa-sign-out-alt"></i><span>Çık</span></button>-->
   </div>
 </div>
@@ -1521,7 +1521,7 @@ const sounds = {
 };
 
 
-  
+
 function playBeep(type){
 if(!soundEnabled) return;
 try{
@@ -1607,6 +1607,25 @@ let gameState = {
   darkMode: false
 };
 
+function loadGameState(){
+const saved = localStorage.getItem(STORAGE_KEY);
+if(saved){
+try{
+const parsed = JSON.parse(saved);
+gameState = { ...gameState, ...parsed};
+if(!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
+if(!gameState.achievements){
+gameState.achievements = {
+firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+level5: false, level10: false, level15: false, level20: false, level25: false,
+level30: false, level35: false, level40: false, level45: false, level50: false
+};
+}
+if(!gameState.recentAchievements) gameState.recentAchievements = [];
+if(!gameState.solvedQuestions) gameState.solvedQuestions = [];
+if(!gameState.lastPlayedQuestions) gameState.lastPlayedQuestions = []; // YENİ
+if(isNaN(gameState.score)) gameState.score = 0;
+}catch(e){}
 
   //Oyun Başlangıcında Veriyi Yükle
   
@@ -1683,6 +1702,7 @@ async function saveGameState() {
     console.error("Firestore'a kaydetme hatası:", e);
   }
 }
+function saveGameState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
 
 // ------------------------------------------------------------
 // DOM ELEMENTLERİ
@@ -1927,7 +1947,7 @@ if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
   // saveSettings fonksiyonunu güncelle (async yap)
 async function saveSettings() {
     const newName = settingsUsername.value.trim();
-    
+
     // Boş veya "Misafir" ismini engelle
     if (!newName || newName.toLowerCase() === 'misafir') {
         showToast('Lütfen geçerli bir kullanıcı adı girin (Misafir kullanılamaz).', 'error');
@@ -2051,7 +2071,7 @@ document.addEventListener('DOMContentLoaded', function() {
         soundBtn.addEventListener('click', toggleSound);
     }
 });
- 
+
 
 
   window.deleteAllQuestions = async () => {
@@ -2106,7 +2126,7 @@ if(allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({
 allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
 }
 }
-            
+
 // Bilgi balonunu gösteren fonksiyon
 function showInfoBubble(message, targetElement) {
   const modal = document.getElementById('infoBubble');
@@ -2124,7 +2144,7 @@ function showInfoBubble(message, targetElement) {
     }, 250); // animasyonun bitmesini bekle
   }, 2000);
 }
- 
+
 // levelProgress elementine tıklama olayı ekle
 document.getElementById('levelProgress')?.addEventListener('click', function(e) {
     const total = getQuestionCountForLevel(gameState.currentLevel);
@@ -2134,7 +2154,7 @@ document.getElementById('levelProgress')?.addEventListener('click', function(e) 
     showInfoBubble(message, this);
 });
 
-            
+
 //function getQuestionCountForLevel(level) {return level * 2 + 5;}   STAR (BUNU KULLAN)
 function getQuestionCountForLevel(level){ return level * 2; }
 
@@ -2153,7 +2173,7 @@ function getQuestionCountForLevel(level){ return level * 2; }
     progressSpan.innerText = `📊 `;
   }
 }
-            
+
 
 function loadLevelQuestions(level) {
   const countNeeded = getQuestionCountForLevel(level);
@@ -2260,7 +2280,7 @@ function sendBugReport() {
   // Mailto linki (kendi mail adresini yaz)
   window.location.href = `mailto:esahin.ast@gmail.com?subject=${subject}&body=${body}`;
 }
-  
+
 
 
   window.deleteAllQuestions = async () => {
@@ -2303,7 +2323,7 @@ function sendBugReport() {
   }
 };
 
-     
+
 
 function loadQuestionAtIndex(index) {
   if (!currentLevelQuestions.length) return;
@@ -2324,7 +2344,7 @@ function loadQuestionAtIndex(index) {
   nextBtn.classList.add('disabled');
   nextBtn.classList.remove('active');
   startTimer(60);
-  
+
   // YENİ: Seviye ilerleme bilgisini güncelle
   updateLevelProgress();
 }
@@ -2375,7 +2395,7 @@ function getHintCostForLevel(level) {
 
 
 
-  
+
   function updateHintButton() {
   const maxHints = getMaxHintsForLevel(gameState.currentLevel); // YENİ
   const used = gameState.hintsUsed || 0;
@@ -2389,7 +2409,7 @@ function getHintCostForLevel(level) {
   }
 
   hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${maxHints - used}`;
-  
+
   // Hak kalmamışsa butonu pasif yap
   if (used >= maxHints) {
     hintBtn.classList.add('disabled');
@@ -2466,7 +2486,7 @@ async function useHint() {
           gameState.maxUnlockedLevel = gameState.currentLevel;
         }
 
-        await saveGameState();
+        saveGameState();
         await loadLevelQuestions(gameState.currentLevel);
         updateGameHeader();
         updateHintButton();
@@ -2514,9 +2534,9 @@ async function useHint() {
   showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
   updateHintButton();
 }
-  
 
-     
+
+
 
 async function handleOptionClick(selectedIdx, btnElement){
 if(!gameActive || answered) return;
@@ -2538,7 +2558,7 @@ gameState.solvedQuestions.push(questionId);
 if(firstAttempt && !gameState.earnedPointsForQuestion[questionId]){
 gameState.score += 1;
 gameState.earnedPointsForQuestion[questionId] = true;
-await saveGameState();
+saveGameState();
 triggerConfetti();
 playSound('correct');
 checkAchievements('correct', questionId);
@@ -2592,8 +2612,8 @@ function onNext() {
       }
     }
 
-    await saveGameState();
-    await loadLevelQuestions(gameState.currentLevel);
+    saveGameState();
+    loadLevelQuestions(gameState.currentLevel);
     if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
     renderLevelIndicators();
 
@@ -2641,12 +2661,12 @@ function onNext() {
 
   } else {
     loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-    await saveGameState();
+    saveGameState();
   }
   nextBtn.classList.remove('active');
   nextBtn.classList.add('disabled');
 }
-  
+
 
 function restartLevelAfterGameOver(){
 gameState.currentQuestionIndexInLevel = 0;
@@ -2674,7 +2694,7 @@ if(lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel){
 gameState.currentLevel = lvl;
 gameState.currentQuestionIndexInLevel = 0;
 gameState.hintUsedInThisLevel = false;
-await saveGameState();
+saveGameState();
 loadLevelQuestions(lvl);
 if(currentLevelDisplay) currentLevelDisplay.innerText = lvl;
 }
@@ -2694,7 +2714,7 @@ unlockAchievement('streak');
 } else {
 gameState.achievements.streak = 0;
 }
-await saveGameState();
+saveGameState();
 }
 
 const ACHIEVEMENT_NAMES = {
@@ -2721,7 +2741,7 @@ gameState.achievements[achievementKey] = true;
 const achievementName = ACHIEVEMENT_NAMES[achievementKey];
 gameState.recentAchievements.unshift(achievementName);
 if(gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
-await saveGameState();
+saveGameState();
 showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
 triggerConfetti();
 }
@@ -2830,7 +2850,7 @@ avatar: AVATAR_LIST[0].icon,
 avatarImg: AVATAR_LIST[0].img,
 darkMode: false
 };
-await saveGameState();
+saveGameState();
 
 await updateIntroUI();
 await loadLeaderboard();
@@ -3062,19 +3082,19 @@ if(!gameAvatar) return;
 
 gameAvatar.addEventListener('click', async () => {
 adminClickCount++;
-    
+
     // İlk tıklamada timer başlat
     if(adminClickCount === 1){
         adminClickTimer = setTimeout(() => {
             adminClickCount = 0;
         }, 3000);
     }
-    
+
     // 5 kere tıklandığında
     if(adminClickCount === 5){
         clearTimeout(adminClickTimer);
         adminClickCount = 0;
-        
+
         // SweetAlert ile şifre sorma
         const {value: password} = await Swal.fire({
             title: 'Soru Ekranı',
@@ -3166,7 +3186,7 @@ icon.classList.add('fa-sun');
 icon.classList.remove('fa-sun');
 icon.classList.add('fa-moon');
 }
-await saveGameState();
+saveGameState();
 }
 
 
@@ -3176,7 +3196,7 @@ await saveGameState();
 // EVENT LİSTENERLAR
 // ------------------------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
-await loadGameState();
+loadGameState();
 await seedQuestionsIfNeeded();
 await loadAllQuestions();
 
@@ -3208,11 +3228,11 @@ settingsModalOverlay.addEventListener('click', (e) => {
  if (e.target === settingsModalOverlay) settingsModalOverlay.classList.remove('active');
 });
 
-            
 
 
 
-            
+
+
 // YENİ: Intro'daki "En İyisini Gör" butonu
 if(viewLeaderboardBtn){
 viewLeaderboardBtn.addEventListener('click', async () => {
@@ -3493,9 +3513,9 @@ mascot.addEventListener('click', async () => {
     mascotIntro(); // isteğe bağlı
   }
 });
-  
 
-            
+
+
 window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
 });
 
@@ -3569,21 +3589,3 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
