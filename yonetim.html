@@ -280,6 +280,44 @@
             flex: 0 0 auto;
         }
 
+        /* Yardım mesajları tablosu için küçük font */
+#helpMessagesList table {
+    font-size: 0.8rem;
+}
+
+#helpMessagesList th,
+#helpMessagesList td {
+    padding: 6px 8px;
+}
+
+/* Durum rozetleri */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+}
+.status-badge.beklemede { background: #fff3cd; color: #856404; }
+.status-badge.okundu { background: #d1ecf1; color: #0c5460; }
+.status-badge.cozuldu { background: #d4edda; color: #155724; }
+
+/* Mobilde daha da küçült */
+@media (max-width: 600px) {
+    #helpMessagesList table {
+        font-size: 0.7rem;
+    }
+    #helpMessagesList th,
+    #helpMessagesList td {
+        padding: 4px 6px;
+    }
+    .btn {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -467,15 +505,38 @@
 
 
 <!-- Yardım Mesajları Paneli -->
+<!-- Yardım Mesajları Paneli -->
 <div class="panel" id="helpPanel">
     <h2><i class="fas fa-envelope"></i> Yardım Mesajları</h2>
-    <div style="margin-bottom: 15px;">
-        <select id="helpSourceFilter" style="padding: 8px; border-radius: 6px;">
-            <option value="all">Tümü</option>
+    
+    <!-- Toplu silme butonları -->
+    <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-danger" onclick="deleteAllHelpBySource('lisans')">
+            <i class="fas fa-trash-alt"></i> Lisans Mesajlarını Sil
+        </button>
+        <button class="btn btn-danger" onclick="deleteAllHelpBySource('oyun')">
+            <i class="fas fa-trash-alt"></i> Oyun Mesajlarını Sil
+        </button>
+        <button class="btn btn-danger" onclick="deleteAllHelpMessages()">
+            <i class="fas fa-trash-alt"></i> Tüm Mesajları Sil
+        </button>
+    </div>
+
+    <!-- Filtreler: kaynak ve durum -->
+    <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="helpSourceFilter" style="padding: 6px; border-radius: 6px; font-size:0.85rem;">
+            <option value="all">Tüm Kaynaklar</option>
             <option value="lisans">📄 Lisans Sayfası</option>
             <option value="oyun">🎮 Oyun İçi</option>
         </select>
+        <select id="helpStatusFilter" style="padding: 6px; border-radius: 6px; font-size:0.85rem;">
+            <option value="all">Tüm Durumlar</option>
+            <option value="Beklemede">⏳ Beklemede</option>
+            <option value="Okundu">👁️ Okundu</option>
+            <option value="Çözüldü">✅ Çözüldü</option>
+        </select>
     </div>
+
     <div id="helpMessagesList">Yükleniyor...</div>
 </div>
 
