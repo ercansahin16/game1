@@ -1076,6 +1076,14 @@ box-shadow:0 20px 0 #ffe0b5;
 border:4px solid #ffe8d9;
 animation:modalSlideIn 0.3s ease;
 }
+
+  .nav-btn .fa-instagram {
+    color: #e1306c;
+}
+.nav-btn:hover .fa-instagram {
+    color: #c13584;
+}
+  
 @keyframes modalSlideIn {
 from { transform:translateY(-50px); opacity:0; }
 to { transform:translateY(0); opacity:1; }
@@ -2547,6 +2555,32 @@ badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
     showToast(`🎉 Tebrikler! Seviye ${completedLevel} tamamlandı! Seviye ${gameState.currentLevel} geçtiniz. Kendinizle gurur duymalısınız! 🏆`, 'success');
     playSound('levelUp');
     showShareButtons(completedLevel);
+if (completedLevel === 50) {
+    Swal.fire({
+        title: '🎉 Büyük Başarı!',
+        html: `
+            <div style="text-align:center;">
+                <p style="font-size:1.2rem;">✨ 50. seviyeye ulaştınız! ✨</p>
+                <p>Bu büyük başarınızı kutluyoruz! 🥳</p>
+                <p>🎁 <strong>Sürpriz hediyemiz:</strong> Aile ve çocuk maneviyatı üzerine bir kitap!</p>
+                <p>Kitabı kargolayabilmemiz için bize Instagram'dan ulaşın:</p>
+                <p style="font-size:1.5rem;">
+                    <a href="https://www.instagram.com/nevafil.com.tr" target="_blank" style="color:#e1306c; text-decoration:none;">
+                        <i class="fab fa-instagram"></i> @nevafil.com.tr
+                    </a>
+                </p>
+                <p>Adresinizi ve iletişim bilgilerinizi DM'den gönderin. 📩</p>
+                <p style="margin-top:15px;">Ailenizle birlikte keyifli okumalar dileriz! ❤️📚</p>
+            </div>
+        `,
+        icon: 'success',
+        confirmButtonText: 'Harika!',
+        confirmButtonColor: '#7c3aed',
+        background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
+        color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
+    });
+}
+  
   } else {
     loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
     saveGameState();
@@ -3193,62 +3227,212 @@ function mascotIntro() {
 /* Sayfa yüklendiğinde de intro yap */
 window.addEventListener('load', mascotIntro);
 
+
+
+
+  //HEYECAN MASKOT
 mascot.addEventListener('click', async () => {
   const isDark = document.body.classList.contains('dark-theme');
-
-  // Tek bir SweetAlert, 5 kartlı kurallar
-  const result = await Swal.fire({
-    title: '🐻 Oyun Rehberi',
-    html: `
-      <div style="font-size:0.9rem; text-align:left; max-height:70vh; overflow-y:auto; padding-right:5px;">
-        <!-- 1. Temel Kurallar -->
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
-          <div style="font-weight:700; margin-bottom:4px;">⏳ 1. Süre ve Puan</div>
-          <div>✅ İlk denemede doğru → +1 puan</div>
-          <div>❌ Yanlışta ikinci hakkın var, yine yanlışta oyun biter</div>
-          <div>⏱️ 60 saniye içinde cevapla</div>
-        </div>
-        <!-- 2. İpucu Kullanımı (yeni sistem) -->
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
-          <div style="font-weight:700; margin-bottom:4px;">💡 2. İpucu</div>
-          <div>• 2 yanlış şık elenir</div>
-          <div>• Maliyet: 5 + √seviye (1'de 6, 50'de 12 puan)</div>
-          <div>• Hak: 1-20 → 2, 21-40 → 1, 41+ → ipucu yok</div>
-        </div>
-        <!-- 3. Seviye Düşme (Acil Durum) -->
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
-          <div style="font-weight:700; margin-bottom:4px;">⚠️ 3. Puanın Yetmezse</div>
-          <div>1 seviye düşerek 15 + seviye×1.5 puan kazanabilirsin</div>
-          <div>Düşünce soru değişir, üst seviyeler kilitlenir</div>
-        </div>
-        <!-- 4. Seviye Atlama ve Soru Sayısı -->
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
-          <div style="font-weight:700; margin-bottom:4px;">🚀 4. Seviye Atlama</div>
-          <div>Her seviyede (seviye × 2 + 2) soru</div>
-          <div>Örnek: 1→4, 2→6, 3→8 soru</div>
-        </div>
-        <!-- 5. Rozetler ve Hedef -->
-        <div style="margin-bottom:12px; background:#f9f3e7; padding:10px; border-radius:16px;">
-          <div style="font-weight:700; margin-bottom:4px;">🏅 5. Rozetler</div>
-          <div>İlk doğru, seri, kategori rozetleri</div>
-          <div>Her 5 seviyede özel rozet</div>
-          <div>👑 50. seviyede büyük sürpriz</div>
-        </div>
-      </div>
-    `,
-    confirmButtonText: '🎮 Oyuna Başla',
+  const commonProps = {
     confirmButtonColor: '#7c3aed',
     showCloseButton: true,
     background: isDark ? '#2c2f33' : '#fff9f0',
     color: isDark ? '#fff' : '#2d3e50',
     width: '90%'
+  };
+
+  // 1. Adım: Giriş ve heyecan
+  const step1 = await Swal.fire({
+    title: '🎮 Hazır mısın?',
+    html: `
+      <div style="text-align:center; font-size:0.95rem; line-height:1.6;">
+        <p style="font-size:1.2rem; margin-bottom:8px;">
+          🌸 <strong>Bilgi • Hız • Eğlence</strong> 🌸
+        </p>
+        <p style="margin-top:10px;">
+          Bu modda yalnız değilsin 🥰<br>
+          Eşinle, arkadaşınla ya da ailenle yarışıyorsun!
+        </p>
+        <p>Kim daha hızlı? Kim daha dikkatli? Görelim 😄</p>
+        <div style="
+          background: #ffeaa5;
+          padding: 12px;
+          border-radius: 20px;
+          font-style: italic;
+          margin-top: 12px;
+          border: 2px solid #ffb08c;
+        ">
+          “Bir soruda ben öndeydim,<br>diğerinde o geçti!”<br>
+          <strong>👏 İşte oyunun keyfi!</strong>
+        </div>
+        <p style="margin-top:12px;">
+          🏆 Kazanan puan değil,<br>
+          <strong>❤️ en çok eğlenen olur!</strong>
+        </p>
+      </div>
+    `,
+    confirmButtonText: '🔥 Devam',
+    ...commonProps
+  });
+  if (!step1.isConfirmed) return;
+
+  // 2. Adım: Süre ve puanlama
+  const step2 = await Swal.fire({
+    title: '⏳ Süre ve Puan',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          ⏱️ <strong>60 saniyen var!</strong> Hızlı düşün, doğruyu yakala.
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          ✅ <strong>İlk denemede doğru</strong> → +1 puan 🎯
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          ❌ Yanlış cevapta <strong>bir şansın daha var</strong>.<br>
+          İkinci yanlışta oyun biter 😬
+        </div>
+      </div>
+    `,
+    confirmButtonText: '➡️ Devam',
+    ...commonProps
+  });
+  if (!step2.isConfirmed) return;
+
+  // 3. Adım: İpucu sistemi (yeni sistem)
+  const step3 = await Swal.fire({
+    title: '💡 İpucu Kullanımı',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🧠 <strong>İpucu nedir?</strong><br>
+          2 yanlış şıkkı eler, doğruya ulaşmanı kolaylaştırır.
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          💰 <strong>Maliyet:</strong> 5 + √seviye puan<br>
+          (1. seviye 6, 10. seviye 8, 50. seviye 12 puan)
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🔢 <strong>Hak sayısı:</strong><br>
+          • 1–20 → 2 hak<br>
+          • 21–40 → 1 hak<br>
+          • 41+ → ipucu kullanılamaz
+        </div>
+        <p style="margin-top:8px; font-style:italic; text-align:center;">💡 İpucunu akıllıca kullan!</p>
+      </div>
+    `,
+    confirmButtonText: '➡️ Devam',
+    ...commonProps
+  });
+  if (!step3.isConfirmed) return;
+
+  // 4. Adım: Seviye düşme (acil durum)
+  const step4 = await Swal.fire({
+    title: '⚠️ Puanın Yetmezse',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          😰 İpucu için puanın yoksa <strong>ümitsizlenme!</strong>
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🔻 <strong>1 seviye düşerek</strong> ek puan kazanabilirsin.<br>
+          Kazanılacak puan: <strong>15 + seviye × 1.5</strong> (yuvarlanır).<br>
+          Örnek: 10. seviyede 30 puan kazanırsın.
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px; color:#856404;">
+          ⚠️ <strong>Uyarı:</strong> Seviye düşünce soru değişir, üst seviyeler kilitlenir.
+        </div>
+      </div>
+    `,
+    confirmButtonText: '➡️ Devam',
+    ...commonProps
+  });
+  if (!step4.isConfirmed) return;
+
+  // 5. Adım: Seviye atlama ve soru sayısı
+  const step5 = await Swal.fire({
+    title: '🚀 Seviye Atlama',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          📈 Her seviyede soru sayısı artar:<br>
+          <strong>Seviye × 2 + 2</strong><br>
+          (1→4, 2→6, 3→8, ...)
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🎯 Seviye atladıkça heyecan katlanır!
+        </div>
+      </div>
+    `,
+    confirmButtonText: '➡️ Devam',
+    ...commonProps
+  });
+  if (!step5.isConfirmed) return;
+
+  // 6. Adım: Rozetler ve hedef
+  const step6 = await Swal.fire({
+    title: '🏅 Rozetler & Hedef',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🌱 İlk doğru → <strong>Yeni Fidan</strong><br>
+          🌿 10 doğru serisi → <strong>Yaprak</strong><br>
+          🍃 Kategori ustalıkları → <strong>Dal, Genç Ağaç...</strong>
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🎁 Her 5 seviyede bir <span style="color:#7c3aed;">özel rozet</span> seni bekliyor!
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          👑 <strong>50. seviye</strong> – Manevi Alim rozeti ve büyük sürpriz! 🎉
+        </div>
+      </div>
+    `,
+    confirmButtonText: '➡️ Devam',
+    ...commonProps
+  });
+  if (!step6.isConfirmed) return;
+
+  // 7. Adım: 50. seviye sürprizi ve Instagram
+  const step7 = await Swal.fire({
+    title: '🎁 50. Seviye Sürprizi',
+    html: `
+      <div style="font-size:0.9rem; text-align:left;">
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          🎉 50. seviyeye ulaştığında seni bir <strong>sürpriz</strong> bekliyor!
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          📚 Aile ve çocuk maneviyatı üzerine <strong>bir kitap</strong> hediye ediyoruz!<br>
+          Kitabı kargolayabilmemiz için bize Instagram'dan ulaşman yeterli.
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px; text-align:center;">
+          <a href="https://www.instagram.com/nevafil.com.tr" target="_blank" style="color:#e1306c; font-size:1.5rem; text-decoration:none;">
+            <i class="fab fa-instagram"></i> @nevafil.com.tr
+          </a>
+          <p style="margin-top:8px;">Buradan bize DM atabilirsin 📩</p>
+        </div>
+        <div style="margin-bottom:12px; background:#f9f3e7; padding:12px; border-radius:20px;">
+          👀 Ayrıca <strong>mascot'un yanında</strong> kalıcı bir Instagram butonu da var.<br>
+          Oyun sırasında istediğin zaman tıklayıp bize ulaşabilirsin.
+        </div>
+        <p style="margin-top:8px; font-style:italic; text-align:center;">✨ Haydi, başarıya doğru! ✨</p>
+      </div>
+    `,
+    confirmButtonText: '🎉 Oyuna Başla',
+    ...commonProps
   });
 
-  // Oyun başlatma (zaten ayrı bir fonksiyonla yapılıyordur)
-  if (result.isConfirmed) {
-    startGame(); // veya introStartBtn.click() vb.
+  if (step7.isConfirmed) {
+    // Oyunu başlat (zaten bir fonksiyon varsa onu çağır)
+    if (typeof startGameFromIntro === 'function') {
+      startGameFromIntro();
+    } else {
+      document.getElementById('introStartGameBtn')?.click();
+    }
+    // Mascot tekrar dikkat çeksin (isteğe bağlı)
+    mascotIntro();
   }
 });
+
+  
 
             
 window.addEventListener('beforeunload', () => { saveScoreToLeaderboard(); });
@@ -3324,20 +3508,6 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
