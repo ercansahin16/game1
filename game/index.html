@@ -2466,7 +2466,7 @@ async function useHint() {
           gameState.maxUnlockedLevel = gameState.currentLevel;
         }
 
-        saveGameState();
+        await saveGameState();
         await loadLevelQuestions(gameState.currentLevel);
         updateGameHeader();
         updateHintButton();
@@ -2538,7 +2538,7 @@ gameState.solvedQuestions.push(questionId);
 if(firstAttempt && !gameState.earnedPointsForQuestion[questionId]){
 gameState.score += 1;
 gameState.earnedPointsForQuestion[questionId] = true;
-saveGameState();
+await saveGameState();
 triggerConfetti();
 playSound('correct');
 checkAchievements('correct', questionId);
@@ -2592,8 +2592,8 @@ function onNext() {
       }
     }
 
-    saveGameState();
-    loadLevelQuestions(gameState.currentLevel);
+    await saveGameState();
+    await loadLevelQuestions(gameState.currentLevel);
     if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
     renderLevelIndicators();
 
@@ -2641,7 +2641,7 @@ function onNext() {
 
   } else {
     loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-    saveGameState();
+    await saveGameState();
   }
   nextBtn.classList.remove('active');
   nextBtn.classList.add('disabled');
@@ -2674,7 +2674,7 @@ if(lvl <= gameState.maxUnlockedLevel && lvl !== gameState.currentLevel){
 gameState.currentLevel = lvl;
 gameState.currentQuestionIndexInLevel = 0;
 gameState.hintUsedInThisLevel = false;
-saveGameState();
+await saveGameState();
 loadLevelQuestions(lvl);
 if(currentLevelDisplay) currentLevelDisplay.innerText = lvl;
 }
@@ -2694,7 +2694,7 @@ unlockAchievement('streak');
 } else {
 gameState.achievements.streak = 0;
 }
-saveGameState();
+await saveGameState();
 }
 
 const ACHIEVEMENT_NAMES = {
@@ -2721,7 +2721,7 @@ gameState.achievements[achievementKey] = true;
 const achievementName = ACHIEVEMENT_NAMES[achievementKey];
 gameState.recentAchievements.unshift(achievementName);
 if(gameState.recentAchievements.length > 3) gameState.recentAchievements.pop();
-saveGameState();
+await saveGameState();
 showToast(`🏆 Başarım kazandınız: ${achievementName}`, 'success');
 triggerConfetti();
 }
@@ -2830,7 +2830,7 @@ avatar: AVATAR_LIST[0].icon,
 avatarImg: AVATAR_LIST[0].img,
 darkMode: false
 };
-saveGameState();
+await saveGameState();
 
 await updateIntroUI();
 await loadLeaderboard();
@@ -3166,7 +3166,7 @@ icon.classList.add('fa-sun');
 icon.classList.remove('fa-sun');
 icon.classList.add('fa-moon');
 }
-saveGameState();
+await saveGameState();
 }
 
 
@@ -3176,7 +3176,7 @@ saveGameState();
 // EVENT LİSTENERLAR
 // ------------------------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
-loadGameState();
+await loadGameState();
 await seedQuestionsIfNeeded();
 await loadAllQuestions();
 
@@ -3569,6 +3569,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
