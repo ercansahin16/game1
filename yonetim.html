@@ -1567,18 +1567,16 @@ function renderLevelButtons() {
 }
 
 // Seviye modalını aç
+// Seviye modalını aç
 async function openLevelModal(level) {
     currentLevelForAssign = level;
     
-    // Tüm soruları çek (eğer daha önce çekilmediyse)
     if (allQuestionsForAssign.length === 0) {
         await loadAllQuestionsForAssign();
     }
 
-    // Gerekli soru sayısını hesapla
-    const requiredCount = level * 2 + 2; // level * 2 + 2
+    const requiredCount = level * 2 + 2;
 
-    // Modal HTML'ini oluştur
     let html = `
         <div style="max-height: 500px; overflow-y: auto;">
             <p style="margin-bottom: 10px;"><strong>Seviye ${level}</strong> için soruları seçin. Gereken soru sayısı: ${requiredCount}</p>
@@ -1588,6 +1586,7 @@ async function openLevelModal(level) {
                         <th>Seç</th>
                         <th>ID</th>
                         <th>Soru</th>
+                        <th>Mevcut Seviye</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1596,11 +1595,13 @@ async function openLevelModal(level) {
     allQuestionsForAssign.forEach(q => {
         const isSelected = (q.atananSeviye === level);
         const rowStyle = isSelected ? 'background-color: #e0e0e0;' : '';
+        const mevcutSeviye = q.atananSeviye ? `Seviye ${q.atananSeviye}` : 'Atanmamış';
         html += `
             <tr style="${rowStyle}">
-                <td><input type="checkbox" data-id="${q.id}" ${isSelected ? 'checked' : ''}></td>
+                <td><input type="checkbox" class="question-checkbox" data-id="${q.id}" ${isSelected ? 'checked' : ''}></td>
                 <td>${q.id.substring(0,6)}…</td>
                 <td>${q.soru.substring(0, 60)}${q.soru.length > 60 ? '…' : ''}</td>
+                <td>${mevcutSeviye}</td>
             </tr>
         `;
     });
@@ -1617,37 +1618,28 @@ async function openLevelModal(level) {
         showCancelButton: true,
         confirmButtonText: 'Kaydet',
         cancelButtonText: 'İptal',
-        width: '800px',
-        didOpen: () => {
-            // Modal açıldığında checkbox'ların stilini ayarlamak için (opsiyonel)
+        width: '900px',
+        preConfirm: () => {
+            // Seçilen checkbox'ları topla
+            const checkboxes = document.querySelectorAll('.swal2-container input.question-checkbox:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+            
+            // Sayı kontrolü
+            if (selectedIds.length !== requiredCount) {
+                Swal.showValidationMessage(`Seviye ${level} için ${requiredCount} soru gerekiyor. Şu an ${selectedIds.length} soru seçtiniz. Lütfen sayıyı düzeltin.`);
+                return false;
+            }
+            return selectedIds;
         }
     });
 
     if (result.isConfirmed) {
-        // Seçilen checkbox'ları topla
-        const checkboxes = document.querySelectorAll('.swal2-container input[type="checkbox"]:checked');
-        const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
-        
-        // Seçilen sayısı kontrol et
-        if (selectedIds.length !== requiredCount) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Uyarı',
-                text: `Seviye ${level} için ${requiredCount} soru gerekiyor. Şu an ${selectedIds.length} soru seçtiniz. Eksik/fazla var. Devam etmek istiyor musunuz?`,
-                showCancelButton: true,
-                confirmButtonText: 'Evet, kaydet',
-                cancelButtonText: 'Hayır, düzelt'
-            }).then(async (secondResult) => {
-                if (secondResult.isConfirmed) {
-                    await saveLevelAssignments(level, selectedIds);
-                }
-            });
-        } else {
-            // Sayı doğru, direkt kaydet
-            await saveLevelAssignments(level, selectedIds);
-        }
+        await saveLevelAssignments(level, result.value);
     }
 }
+
+
+        
 
 // Tüm soruları çek (sadece id, soru, atananSeviye)
 async function loadAllQuestionsForAssign() {
@@ -1668,12 +1660,7 @@ async function loadAllQuestionsForAssign() {
     }
 }
 
-// Seçilen soruların atananSeviye alanını güncelle
 async function saveLevelAssignments(level, selectedIds) {
-    // Tüm soruları dolaş, eğer ID selectedIds içinde varsa atananSeviye = level, yoksa null yap
-    // Ancak bu çok fazla write işlemi olur. Daha verimli: Sadece selectedIds'deki soruları güncelle, diğerlerini boş bırak? Ama daha önce bu seviyede olup da seçilmeyen sorular varsa onların seviyesini null yapmalıyız.
-    // Bunun için önce bu seviyeye atanmış olanları bulup, selectedIds'de yoksa null yapalım.
-    
     Swal.fire({
         title: 'Kaydediliyor...',
         allowOutsideClick: false,
@@ -1684,22 +1671,35 @@ async function saveLevelAssignments(level, selectedIds) {
         // Bu seviyeye atanmış olanları bul
         const q = query(collection(db, QUESTIONS_COLL), where("atananSeviye", "==", level));
         const snapshot = await getDocs(q);
-        const batch = writeBatch(db);
+        
+        // Batch'ler halinde işlem yap (Firestore 500 limiti)
+        const BATCH_LIMIT = 500;
+        let operations = [];
 
         // Önceki atamaları kaldır (atananSeviye'yi null yap)
         snapshot.forEach(doc => {
             if (!selectedIds.includes(doc.id)) {
-                batch.update(doc.ref, { atananSeviye: null });
+                operations.push({ ref: doc.ref, type: 'update', data: { atananSeviye: null } });
             }
         });
 
         // Yeni seçilenleri ata
         for (const id of selectedIds) {
             const ref = doc(db, QUESTIONS_COLL, id);
-            batch.update(ref, { atananSeviye: level });
+            operations.push({ ref: ref, type: 'update', data: { atananSeviye: level } });
         }
 
-        await batch.commit();
+        // Batch'leri uygula
+        for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            const chunk = operations.slice(i, i + BATCH_LIMIT);
+            chunk.forEach(op => {
+                if (op.type === 'update') {
+                    batch.update(op.ref, op.data);
+                }
+            });
+            await batch.commit();
+        }
 
         Swal.fire({
             icon: 'success',
@@ -1708,8 +1708,10 @@ async function saveLevelAssignments(level, selectedIds) {
             timer: 2000
         });
 
-        // İstersek panelde bilgi güncelleyebiliriz
+        // Soru listesini yenile (checkbox'ların güncel hali için)
+        await loadAllQuestionsForAssign();
         document.getElementById('levelAssignInfo').innerText = `Seviye ${level} güncellendi.`;
+
     } catch (e) {
         console.error("Kayıt hatası:", e);
         Swal.fire({
