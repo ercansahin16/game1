@@ -1609,11 +1609,13 @@ let gameState = {
   darkMode: false
 };
 
-console.log('🔥 loadGameState çalıştı, lisans:', localStorage.getItem('nevafilKey'));
-  //Oyun Başlangıcında Veriyi Yükle
+
+
   
+// Oyun Başlangıcında Veriyi Yükle
 async function loadGameState() {
   console.log('🔥 loadGameState çalıştı, lisans:', localStorage.getItem('nevafilKey'));
+  
   // 1. localStorage'dan yükle
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
@@ -1647,7 +1649,10 @@ async function loadGameState() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const remote = docSnap.data();
-        // Remote verileri gameState'e aktar (timestamp varsa onu da kullanabilirsin)
+        // 🔍 Firestore verisini konsola yazdır
+        console.log('📦 Firestore verisi:', remote);
+        
+        // Remote verileri gameState'e aktar
         gameState.score = remote.score ?? gameState.score;
         gameState.currentLevel = remote.currentLevel ?? gameState.currentLevel;
         gameState.maxUnlockedLevel = remote.maxUnlockedLevel ?? gameState.maxUnlockedLevel;
@@ -1656,7 +1661,7 @@ async function loadGameState() {
         gameState.achievements = { ...gameState.achievements, ...remote.achievements };
         gameState.recentAchievements = remote.recentAchievements ?? gameState.recentAchievements;
       } else {
-        console.log("Firestore'da kayıt yok, localStorage'daki veri kullanılacak.");
+        console.log("❌ Firestore'da kayıt yok, localStorage'daki veri kullanılacak.");
       }
     } catch (e) {
       console.error("Firestore'dan yükleme hatası:", e);
@@ -3595,6 +3600,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
