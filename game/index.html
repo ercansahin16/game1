@@ -1613,31 +1613,15 @@ let gameState = {
   //Oyun Başlangıcında Veriyi Yükle
   
 async function loadGameState() {
-//silinecek
-
-  const licenseKey = localStorage.getItem('nevafilKey');
-console.log("License key:", licenseKey);
-if (licenseKey) {
-  try {
-    const docRef = doc(db, "oyun_ilerleme", licenseKey);
-    const docSnap = await getDoc(docRef);
-    console.log("Firestore dokümanı mevcut mu?", docSnap.exists());
-    if (docSnap.exists()) {
-      console.log("Firestore verisi:", docSnap.data());
-    }
-  } catch (e) {
-    console.error("Firestore sorgu hatası:", e);
-  }
-}
-
-  
   // 1. localStorage'dan yükle
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       gameState = { ...gameState, ...parsed };
-    } catch (e) {}
+    } catch (e) {
+      console.warn("LocalStorage verisi bozuk, yok sayılıyor.", e);
+    }
   }
 
   // Varsayılan alanları kontrol et (güvenlik)
@@ -1670,6 +1654,8 @@ if (licenseKey) {
         gameState.lastPlayedQuestions = remote.lastPlayedQuestions ?? gameState.lastPlayedQuestions;
         gameState.achievements = { ...gameState.achievements, ...remote.achievements };
         gameState.recentAchievements = remote.recentAchievements ?? gameState.recentAchievements;
+      } else {
+        console.log("Firestore'da kayıt yok, localStorage'daki veri kullanılacak.");
       }
     } catch (e) {
       console.error("Firestore'dan yükleme hatası:", e);
@@ -3608,6 +3594,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
