@@ -1038,11 +1038,7 @@ max-width:160px;
     z-index: 20000 !important;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-  
+
 
 /* Animasyonlar */
 @keyframes slideDown { from { top:-50px; opacity:0; } to { top:15px; opacity:1; } }
@@ -1328,11 +1324,7 @@ body { padding:8px; }
 
 
 
-<!-- Oyun yüklenirken gösterilecek loader (başlangıçta gizli) -->
-<div id="gameLoadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 120%; height: 120%; background: rgba(255, 255, 255, 0.9); z-index: 20000; justify-content: center; align-items: center; flex-direction: column;">
-    <img src="img/loader.png" alt="Yükleniyor..." style="width: 80px; height: 80px; animation: spin 1s linear infinite;">
-    <p style="margin-top: 10px; color: #7c3aed; font-weight: 600;">Yükleniyor...</p>
-</div>
+
   
 <!-- ========== ANA OYUN KONTEYNERİ – YENİ ÜST PANEL ========= -->
 <div id="gameContainer" class="game-container" style="display: none;">
@@ -2022,15 +2014,10 @@ async function saveSettings() {
 
 // ------------------------------------------------------------
 // Oyun başladığında
+// Oyun başladığında
 function startGameFromIntro(){
     // intro ekranını kapat
     introOverlay.classList.add('hidden');
-
-    // Loader'ı göster (gameContainer henüz gizli)
-    const gameLoader = document.getElementById('gameLoadingSpinner');
-    if (gameLoader) {
-        gameLoader.style.display = 'flex'; // flex ile ortalamak için
-    }
 
     // Kullanıcı girişi yapılmamışsa misafir ayarla
     if(!gameState.username){
@@ -2039,10 +2026,10 @@ function startGameFromIntro(){
         saveGameState();
     }
 
-    // Oyun container'ını GİZLE (zaten başlangıçta gizli, ama emin olalım)
-    gameContainer.style.display = 'none';
+    // Oyun container'ını göster
+    gameContainer.style.display = 'block';
 
-    // startGameFromIntro içinde, event listener'ları ekle (container gizli olsa da çalışır)
+    // startGameFromIntro içinde, gameContainer gösterildikten sonra
     document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
     document.getElementById('navExitBtn').style.display = 'flex'; // Çıkış butonunu göster
 
@@ -2053,12 +2040,6 @@ function startGameFromIntro(){
         loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
         renderLevelIndicators();     // Seviye göstergelerini güncelle
         unlockAudio();
-
-        // Loader'ı gizle
-        if (gameLoader) gameLoader.style.display = 'none';
-
-        // Oyun container'ını göster
-        gameContainer.style.display = 'block';
     })();
 
     // İlknur için özel mesaj (isteğe bağlı)
@@ -3659,6 +3640,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
