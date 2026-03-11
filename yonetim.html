@@ -588,7 +588,7 @@
         async function loadAllData() {
             loadLicenses();
             loadQuestions();
-            loadUsers();
+            ();
             loadHelpMessages();
         }
 
@@ -1015,31 +1015,39 @@ document.getElementById('questionIdSearch')?.addEventListener('input', renderQue
         });*/
 
         // ------------------- KULLANICILAR (Liderlik) -------------------
-        async function loadUsers() {
-            const container = document.getElementById('usersList');
-            container.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            try {
-                const q = query(collection(db, LEADERBOARD_COLL), orderBy('score', 'desc'));
-                const snapshot = await getDocs(q);
-                let html = '<table><tr><th>Kullanıcı</th><th>Puan</th><th>Seviye</th><th>İşlem</th></tr>';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    html += `<tr>
-                        <td>${data.username || 'İsimsiz'}</td>
-                        <td>${data.score || 0}</td>
-                        <td>${data.level || 1}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editUser('${doc.id}', ${data.score || 0}, ${data.level || 1})">Düzenle</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${doc.id}')">Sil</button>
-                        </td>
-                    </tr>`;
-                });
-                html += '</table>';
-                container.innerHTML = html;
-            } catch (e) {
-                container.innerHTML = 'Hata: ' + e.message;
-            }
-        }
+async function loadUsers() {
+    console.log('loadUsers çalıştı');
+    const container = document.getElementById('usersList');
+    container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+    try {
+        const q = query(collection(db, LEADERBOARD_COLL), orderBy('score', 'desc'));
+        const snapshot = await getDocs(q);
+        console.log('Doküman sayısı:', snapshot.size);
+        snapshot.forEach(doc => console.log('Doküman verisi:', doc.data()));
+
+        let html = '<table><tr><th>Kullanıcı</th><th>Puan</th><th>Seviye</th><th>İşlem</th></tr>';
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            html += `<tr>
+                <td>${data.username || 'İsimsiz'}</td>
+                <td>${data.score || 0}</td>
+                <td>${data.level || 1}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="editUser('${doc.id}', ${data.score || 0}, ${data.level || 1})">Düzenle</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${doc.id}')">Sil</button>
+                </td>
+            </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('loadUsers hatası:', e);
+        container.innerHTML = 'Hata: ' + e.message;
+    }
+}
+
+
+        
 
         window.editUser = (id, currentScore, currentLevel) => {
             Swal.fire({
