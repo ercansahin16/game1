@@ -1038,6 +1038,12 @@ max-width:160px;
     z-index: 20000 !important;
 }
 
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+  
+
 /* Animasyonlar */
 @keyframes slideDown { from { top:-50px; opacity:0; } to { top:15px; opacity:1; } }
 @keyframes blink {
@@ -1320,6 +1326,15 @@ body { padding:8px; }
 </div>
 </div>
 
+
+  <!-- Oyun içi loading spinner (başlangıçta gizli) -->
+<!-- Oyun içi loading spinner (başlangıçta gizli) -->
+<div id="gameLoadingSpinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; text-align: center;">
+    <img src="loader.png" alt="Yükleniyor..." style="width: 80px; height: 80px; animation: spin 1s linear infinite;">
+    <p style="margin-top: 10px; color: #7c3aed; font-weight: 600;">Yükleniyor...</p>
+</div>
+
+  
 <!-- ========== ANA OYUN KONTEYNERİ – YENİ ÜST PANEL ========= -->
 <div id="gameContainer" class="game-container" style="display: none;">
 <!-- TEK SATIR ÜST PANEL -->
@@ -2009,40 +2024,51 @@ async function saveSettings() {
 // ------------------------------------------------------------
 // Oyun başladığında
 function startGameFromIntro(){
+    // Oyun içi loader'ı göster
+    const gameLoader = document.getElementById('gameLoadingSpinner');
+    if (gameLoader) gameLoader.style.display = 'block';
+
+    // Kullanıcı girişi yapılmamışsa misafir ayarla
     if(!gameState.username){
         gameState.username = 'Misafir';
         gameState.avatar = AVATAR_LIST[0].icon;
         saveGameState();
     }
-    updateGameHeader();
-    introOverlay.classList.add('hidden');
+
+    // Oyun container'ını göster
     gameContainer.style.display = 'block';
 
-    // Çıkış butonunu göster
-    const navExitBtn = document.getElementById('navExitBtn');
-    if (navExitBtn) navExitBtn.style.display = 'flex';
-
-    // Rapor butonu event'i (zaten varsa ekleme)
+    // startGameFromIntro içinde, gameContainer gösterildikten sonra
     document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
+    document.getElementById('navExitBtn').style.display = 'flex'; // Çıkış butonunu göster
 
-    loadLevelQuestions(gameState.currentLevel);
-    renderLevelIndicators();
-    unlockAudio();
+    // ASENKRON VERİ YÜKLEME
+    (async () => {
+        await loadGameState();       // Firestore ve localStorage'dan veri yükle
+        updateGameHeader();          // Kullanıcı adı, puan, seviye güncelle
+        loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
+        renderLevelIndicators();     // Seviye göstergelerini güncelle
+        unlockAudio();
 
-    // İlknur kontrolü
-    const userNameClean = gameState.username.trim().toLowerCase();
-    if(userNameClean === 'ilknur'){
-        Swal.fire({
-            title: '❤️ Özel Mesaj ❤️',
-            text: 'Ercan seni seviyor!',
-            icon: 'success',
-            confirmButtonText: 'Ben de seni seviyorum',
-            confirmButtonColor: '#ff6b6b',
-            background: '#fff5f5',
-            timer: 5000,
-            timerProgressBar: true
-        });
-    }
+        // Loader'ı gizle
+        if (gameLoader) gameLoader.style.display = 'none';
+    })();
+
+    
+   // İlknur için özel mesaj (isteğe bağlı)
+const userNameClean = gameState.username.trim().toLowerCase().replace(/\s+/g, ' ');
+if (userNameClean === 'ilknur' || userNameClean === 'ilknur turan') {
+    Swal.fire({
+        title: '❤️ Özel Mesaj ❤️',
+        text: 'Ercan seni seviyor!',
+        icon: 'success',
+        confirmButtonText: 'Ben de seni seviyorum',
+        confirmButtonColor: '#ff6b6b',
+        background: '#fff5f5',
+        timer: 5000,
+        timerProgressBar: true
+    });
+}
 }
 
 // Çıkış fonksiyonu (oyundan ana menüye)
@@ -3627,6 +3653,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
