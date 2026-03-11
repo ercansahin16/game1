@@ -1613,6 +1613,24 @@ let gameState = {
   //Oyun Başlangıcında Veriyi Yükle
   
 async function loadGameState() {
+//silinecek
+
+  const licenseKey = localStorage.getItem('nevafilKey');
+console.log("License key:", licenseKey);
+if (licenseKey) {
+  try {
+    const docRef = doc(db, "oyun_ilerleme", licenseKey);
+    const docSnap = await getDoc(docRef);
+    console.log("Firestore dokümanı mevcut mu?", docSnap.exists());
+    if (docSnap.exists()) {
+      console.log("Firestore verisi:", docSnap.data());
+    }
+  } catch (e) {
+    console.error("Firestore sorgu hatası:", e);
+  }
+}
+
+  
   // 1. localStorage'dan yükle
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
@@ -3590,6 +3608,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
