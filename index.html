@@ -281,63 +281,66 @@
     }
 
     // Birden çok lisans var, seçim yapması için liste göster
-    const licenseOptions = snapshot.docs.map(doc => {
-      const data = doc.data();
-      const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
-      return {
-        id: doc.id,
-        key: data.key,
-        fullName: fullName.trim() || 'İsimsiz',
-        doc: doc
-      };
-    });
+   // Birden çok lisans var, seçim yapması için liste göster
+const licenseOptions = snapshot.docs.map(doc => {
+  const data = doc.data();
+  const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
+  return {
+    id: doc.id,
+    key: data.key,
+    fullName: fullName.trim() || 'İsimsiz',
+    doc: doc
+  };
+});
 
-    // Seçim için radio butonlu SweetAlert
-    const { value: selectedKey } = await Swal.fire({
-      title: 'Birden fazla lisans bulundu',
-      html: `
-        <p style="margin-bottom:15px;">Hangi lisansla giriş yapmak istiyorsunuz?</p>
-        <div style="text-align:left;">
-          ${licenseOptions.map((opt, index) => `
-            <label style="display:block; margin-bottom:10px; padding:8px; background:#f3f4f6; border-radius:8px;">
-              <input type="radio" name="license" value="${opt.key}" ${index === 0 ? 'checked' : ''} style="margin-right:8px;">
-              ${opt.fullName}
-            </label>
-          `).join('')}
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Seç',
-      cancelButtonText: 'Vazgeç',
-      preConfirm: () => {
-        const selected = document.querySelector('input[name="license"]:checked');
-        if (!selected) {
-          Swal.showValidationMessage('Bir lisans seçmelisiniz');
-          return false;
+// Seçim için tıklanabilir kartlar
+const { value: selectedKey } = await Swal.fire({
+  title: 'Birden fazla lisans bulundu',
+  html: `
+    <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      ${licenseOptions.map(opt => `
+        <button class="swal2-select-option" data-key="${opt.key}" style="
+          width: 100%;
+          padding: 12px;
+          background: #f3f4f6;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: 500;
+          color: #1f2937;
+          cursor: pointer;
+          transition: 0.2s;
+          text-align: left;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        ">
+          <span style="font-size:1.2rem;">👤</span>
+          <span>${opt.fullName}</span>
+        </button>
+      `).join('')}
+    </div>
+  `,
+  focusConfirm: false,
+  showConfirmButton: false,
+  showCancelButton: true,
+  cancelButtonText: 'Vazgeç',
+  didOpen: () => {
+    // Butonlara tıklama olayı ekle
+    document.querySelectorAll('.swal2-select-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        Swal.close();
+        // Seçilen anahtarı işle
+        const selectedDoc = snapshot.docs.find(doc => doc.data().key === key);
+        if (selectedDoc) {
+          processLicense(selectedDoc);
         }
-        return selected.value;
-      }
-    });
-
-    if (!selectedKey) return; // Vazgeçti
-
-    // Seçilen anahtara ait dokümanı bul
-    const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
-    if (selectedDoc) {
-      await processLicense(selectedDoc);
-    }
-
-  } catch (e) {
-    console.error("E-posta sorgulama hatası:", e);
-    Swal.fire({
-      icon: 'error',
-      title: 'Hata',
-      text: 'Sorgulama sırasında bir hata oluştu.',
-      confirmButtonText: 'Tamam'
+      });
     });
   }
-};
+});
 
 // Ortak işlemleri yapan yardımcı fonksiyon
 async function processLicense(licenseDoc) {
