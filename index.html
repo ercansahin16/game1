@@ -241,16 +241,20 @@
     }
 
     // Email ile lisans bulup input'a yaz
-  window.recoverLicenseByEmail = async function(email) {
+window.recoverLicenseByEmail = async function(email) {
+  // E-posta boş mu kontrol et
   if (!email) {
     Swal.fire({
       title: 'Uyarı',
-      text: 'E-posta adresi gerekli.',
+      text: 'Lütfen e-posta adresinizi girin.',
       icon: 'warning',
       confirmButtonText: 'Tamam'
     });
     return;
   }
+
+  // E-postayı küçük harfe çevir (case-insensitive arama için)
+  const normalizedEmail = email.trim().toLowerCase();
 
   Swal.fire({
     title: 'Aranıyor...',
@@ -260,7 +264,8 @@
   });
 
   try {
-    const q = query(collection(db, "licenses"), where("email", "==", email));
+    // Firestore'da e-posta ile sorgula (küçük harfli)
+    const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
@@ -273,74 +278,120 @@
       return;
     }
 
-    // Eğer tek lisans varsa direkt devam et
+    // Tek lisans varsa direkt devam et
     if (snapshot.size === 1) {
-      const licenseDoc = snapshot.docs[0];
-      await processLicense(licenseDoc);
+      await processLicense(snapshot.docs[0]);
       return;
     }
 
-    // Birden çok lisans var, seçim yapması için liste göster
-   // Birden çok lisans var, seçim yapması için liste göster
-const licenseOptions = snapshot.docs.map(doc => {
-  const data = doc.data();
-  const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
-  return {
-    id: doc.id,
-    key: data.key,
-    fullName: fullName.trim() || 'İsimsiz',
-    doc: doc
-  };
-});
+    // Birden çok lisans var, seçim için tıklanabilir kartlar oluştur
+    const licenseOptions = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const firstName = data.firstName || '';
+      const lastName = data.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
+      return {
+        id: doc.id,
+        key: data.key,
+        fullName: fullName,
+        doc: doc
+      };
+    });
 
-// Seçim için tıklanabilir kartlar
-const { value: selectedKey } = await Swal.fire({
-  title: 'Birden fazla lisans bulundu',
-  html: `
-    <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      ${licenseOptions.map(opt => `
-        <button class="swal2-select-option" data-key="${opt.key}" style="
-          width: 100%;
-          padding: 12px;
-          background: #f3f4f6;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          font-size: 1rem;
-          font-weight: 500;
-          color: #1f2937;
-          cursor: pointer;
-          transition: 0.2s;
-          text-align: left;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        ">
-          <span style="font-size:1.2rem;">👤</span>
-          <span>${opt.fullName}</span>
-        </button>
-      `).join('')}
-    </div>
-  `,
-  focusConfirm: false,
-  showConfirmButton: false,
-  showCancelButton: true,
-  cancelButtonText: 'Vazgeç',
-  didOpen: () => {
-    // Butonlara tıklama olayı ekle
-    document.querySelectorAll('.swal2-select-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.key;
-        Swal.close();
-        // Seçilen anahtarı işle
-        const selectedDoc = snapshot.docs.find(doc => doc.data().key === key);
-        if (selectedDoc) {
-          processLicense(selectedDoc);
-        }
-      });
+    // SweetAlert'te kartları göster (onay butonu yok, direkt kartlar tıklanabilir)
+    await Swal.fire({
+      title: 'Birden fazla hesap bulundu',
+      html: `
+        <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          ${licenseOptions.map(opt => `
+            <button class="swal2-select-option" data-key="${opt.key}" style="
+              width: 100%;
+              padding: 14px;
+              background: #f3f4f6;
+              border: 2px solid #e5e7eb;
+              border-radius: 12px;
+              font-size: 1rem;
+              font-weight: 500;
+              color: #1f2937;
+              cursor: pointer;
+              transition: all 0.2s;
+              text-align: left;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            ">
+              <span style="font-size:1.3rem;">👤</span>
+              <span style="flex:1;">${opt.fullName}</span>
+              <span style="color:#6b7280;">→</span>
+            </button>
+          `).join('')}
+        </div>
+      `,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'Vazgeç',
+      didOpen: () => {
+        // Kartlara tıklama olayı ekle
+        document.querySelectorAll('.swal2-select-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedKey = btn.dataset.key;
+            Swal.close();
+            const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
+            if (selectedDoc) {
+              processLicense(selectedDoc);
+            }
+          });
+        });
+      }
+    });
+
+  } catch (e) {
+    console.error("E-posta sorgulama hatası:", e);
+    Swal.fire({
+      icon: 'error',
+      title: 'Hata',
+      text: 'Sorgulama sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+      confirmButtonText: 'Tamam'
     });
   }
-});
+};
+
+// Lisans işleme fonksiyonu (aynı kalabilir)
+async function processLicense(licenseDoc) {
+  const licenseData = licenseDoc.data();
+  const key = licenseData.key;
+  const currentDevice = getDeviceId();
+
+  // Cihaz ID'sini güncelle (farklıysa)
+  if (licenseData.deviceId !== currentDevice) {
+    await updateDoc(doc(db, "licenses", licenseDoc.id), {
+      deviceId: currentDevice,
+      used: true
+    });
+  }
+
+  // Lisans anahtarını input alanına yaz
+  const licenseInput = document.getElementById('licenseInput');
+  if (licenseInput) {
+    licenseInput.value = key;
+  }
+
+  // Kısa bir başarı mesajı göster
+  Swal.fire({
+    icon: 'success',
+    title: 'Lisans Hazır',
+    text: 'Lisansınız başarıyla yüklendi.',
+    timer: 1500,
+    showConfirmButton: false
+  });
+
+  // Otomatik giriş yap
+  setTimeout(() => {
+    window.onLicenseSubmit();
+  }, 1500);
+}
 
 // Ortak işlemleri yapan yardımcı fonksiyon
 async function processLicense(licenseDoc) {
