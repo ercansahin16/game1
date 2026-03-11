@@ -393,40 +393,7 @@ async function processLicense(licenseDoc) {
   }, 1500);
 }
 
-// Ortak işlemleri yapan yardımcı fonksiyon
-async function processLicense(licenseDoc) {
-  const licenseData = licenseDoc.data();
-  const key = licenseData.key;
-  const currentDevice = getDeviceId();
 
-  // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
-  if (licenseData.deviceId !== currentDevice) {
-    await updateDoc(doc(db, "licenses", licenseDoc.id), {
-      deviceId: currentDevice,
-      used: true
-    });
-  }
-
-  // Lisans anahtarını input alanına yaz
-  const licenseInput = document.getElementById('licenseInput');
-  if (licenseInput) {
-    licenseInput.value = key;
-  }
-
-  // Başarılı mesajı (kısa toast)
-  Swal.fire({
-    icon: 'success',
-    title: 'Lisans Hazır',
-    text: 'Lisansınız başarıyla yüklendi.',
-    timer: 1500,
-    showConfirmButton: false
-  });
-
-  // Otomatik giriş yap
-  setTimeout(() => {
-    window.onLicenseSubmit();
-  }, 1500);
-}
 
     // Yeni: email modalını aç
     window.showEmailModal = async () => {
