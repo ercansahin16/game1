@@ -1327,12 +1327,7 @@ body { padding:8px; }
 </div>
 
 
-  <!-- Oyun içi loading spinner (başlangıçta gizli) -->
-<!-- Oyun içi loading spinner (başlangıçta gizli) -->
-<div id="gameLoadingSpinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20000; text-align: center; background: transparent !important; opacity: 1 !important; visibility: visible !important;">
-    <img src="img/loader.png" alt="Yükleniyor..." style="width: 80px; height: 80px; animation: spin 1s linear infinite;">
-    <p style="margin-top: 10px; color: #7c3aed; font-weight: 600;">Yükleniyor...</p>
-</div>
+
 
   
 <!-- ========== ANA OYUN KONTEYNERİ – YENİ ÜST PANEL ========= -->
@@ -2024,15 +2019,8 @@ async function saveSettings() {
 // ------------------------------------------------------------
 // Oyun başladığında
 function startGameFromIntro(){
-    // Oyun içi loader'ı göster
-    const gameLoader = document.getElementById('gameLoadingSpinner');
-   
-
-  if (gameLoader) {
-    gameLoader.style.display = 'block';
-    gameLoader.style.opacity = '1';
-    gameLoader.style.visibility = 'visible';
-}
+    // intro ekranını kapat
+    introOverlay.classList.add('hidden');
 
     // Kullanıcı girişi yapılmamışsa misafir ayarla
     if(!gameState.username){
@@ -2055,26 +2043,22 @@ function startGameFromIntro(){
         loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
         renderLevelIndicators();     // Seviye göstergelerini güncelle
         unlockAudio();
-
-        // Loader'ı gizle
-        if (gameLoader) gameLoader.style.display = 'none';
     })();
 
-    
-   // İlknur için özel mesaj (isteğe bağlı)
-const userNameClean = gameState.username.trim().toLowerCase().replace(/\s+/g, ' ');
-if (userNameClean === 'ilknur' || userNameClean === 'ilknur turan') {
-    Swal.fire({
-        title: '❤️ Özel Mesaj ❤️',
-        text: 'Ercan seni seviyor!',
-        icon: 'success',
-        confirmButtonText: 'Ben de seni seviyorum',
-        confirmButtonColor: '#ff6b6b',
-        background: '#fff5f5',
-        timer: 5000,
-        timerProgressBar: true
-    });
-}
+    // İlknur için özel mesaj (isteğe bağlı)
+    const userNameClean = gameState.username.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (userNameClean === 'ilknur' || userNameClean === 'ilknur turan') {
+        Swal.fire({
+            title: '❤️ Özel Mesaj ❤️',
+            text: 'Ercan seni seviyor!',
+            icon: 'success',
+            confirmButtonText: 'Ben de seni seviyorum',
+            confirmButtonColor: '#ff6b6b',
+            background: '#fff5f5',
+            timer: 5000,
+            timerProgressBar: true
+        });
+    }
 }
 
 // Çıkış fonksiyonu (oyundan ana menüye)
@@ -3659,6 +3643,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
