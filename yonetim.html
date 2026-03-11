@@ -1577,19 +1577,24 @@ async function openLevelModal(level) {
 
     const requiredCount = level * 2 + 2;
 
+    // Modal içeriğini oluştur
     let html = `
-        <div style="max-height: 500px; overflow-y: auto;">
-            <p style="margin-bottom: 10px;"><strong>Seviye ${level}</strong> için soruları seçin. Gereken soru sayısı: ${requiredCount}</p>
-            <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr>
-                        <th>Seç</th>
-                        <th>ID</th>
-                        <th>Soru</th>
-                        <th>Mevcut Seviye</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span><strong>Gereken soru sayısı:</strong> ${requiredCount}</span>
+                <span><strong>Seçilen soru sayısı:</strong> <span id="selectedCount">0</span></span>
+            </div>
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th>Seç</th>
+                            <th>ID</th>
+                            <th>Soru</th>
+                            <th>Mevcut Seviye</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
 
     allQuestionsForAssign.forEach(q => {
@@ -1598,7 +1603,7 @@ async function openLevelModal(level) {
         const mevcutSeviye = q.atananSeviye ? `Seviye ${q.atananSeviye}` : 'Atanmamış';
         html += `
             <tr style="${rowStyle}">
-                <td><input type="checkbox" class="question-checkbox" data-id="${q.id}" ${isSelected ? 'checked' : ''}></td>
+                <td><input type="checkbox" class="question-checkbox" data-id="${q.id}" ${isSelected ? 'checked' : ''} onchange="updateSelectedCount()"></td>
                 <td>${q.id.substring(0,6)}…</td>
                 <td>${q.soru.substring(0, 60)}${q.soru.length > 60 ? '…' : ''}</td>
                 <td>${mevcutSeviye}</td>
@@ -1607,8 +1612,9 @@ async function openLevelModal(level) {
     });
 
     html += `
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
 
@@ -1619,12 +1625,21 @@ async function openLevelModal(level) {
         confirmButtonText: 'Kaydet',
         cancelButtonText: 'İptal',
         width: '900px',
+        didOpen: () => {
+            // Modal açıldığında sayaç fonksiyonunu tanımla ve ilk değeri hesapla
+            window.updateSelectedCount = function() {
+                const checkboxes = document.querySelectorAll('.swal2-container input.question-checkbox:checked');
+                const count = checkboxes.length;
+                document.getElementById('selectedCount').innerText = count;
+            };
+            // İlk seçili sayısını hesapla
+            const initialChecked = document.querySelectorAll('.swal2-container input.question-checkbox:checked').length;
+            document.getElementById('selectedCount').innerText = initialChecked;
+        },
         preConfirm: () => {
-            // Seçilen checkbox'ları topla
             const checkboxes = document.querySelectorAll('.swal2-container input.question-checkbox:checked');
             const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
             
-            // Sayı kontrolü
             if (selectedIds.length !== requiredCount) {
                 Swal.showValidationMessage(`Seviye ${level} için ${requiredCount} soru gerekiyor. Şu an ${selectedIds.length} soru seçtiniz. Lütfen sayıyı düzeltin.`);
                 return false;
