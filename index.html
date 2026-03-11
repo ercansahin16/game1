@@ -241,81 +241,138 @@
     }
 
     // Email ile lisans bulup input'a yaz
-    window.recoverLicenseByEmail = async function(email) {
-        if (!email) {
-            Swal.fire({
-                title: 'Uyarı',
-                text: 'E-posta adresi gerekli.',
-                icon: 'warning',
-                confirmButtonText: 'Tamam'
-            });
-            return;
+  window.recoverLicenseByEmail = async function(email) {
+  if (!email) {
+    Swal.fire({
+      title: 'Uyarı',
+      text: 'E-posta adresi gerekli.',
+      icon: 'warning',
+      confirmButtonText: 'Tamam'
+    });
+    return;
+  }
+
+  Swal.fire({
+    title: 'Aranıyor...',
+    html: 'Lisansınız kontrol ediliyor.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const q = query(collection(db, "licenses"), where("email", "==", email));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Bulunamadı',
+        text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+        confirmButtonText: 'Tamam'
+      });
+      return;
+    }
+
+    // Eğer tek lisans varsa direkt devam et
+    if (snapshot.size === 1) {
+      const licenseDoc = snapshot.docs[0];
+      await processLicense(licenseDoc);
+      return;
+    }
+
+    // Birden çok lisans var, seçim yapması için liste göster
+    const licenseOptions = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
+      return {
+        id: doc.id,
+        key: data.key,
+        fullName: fullName.trim() || 'İsimsiz',
+        doc: doc
+      };
+    });
+
+    // Seçim için radio butonlu SweetAlert
+    const { value: selectedKey } = await Swal.fire({
+      title: 'Birden fazla lisans bulundu',
+      html: `
+        <p style="margin-bottom:15px;">Hangi lisansla giriş yapmak istiyorsunuz?</p>
+        <div style="text-align:left;">
+          ${licenseOptions.map((opt, index) => `
+            <label style="display:block; margin-bottom:10px; padding:8px; background:#f3f4f6; border-radius:8px;">
+              <input type="radio" name="license" value="${opt.key}" ${index === 0 ? 'checked' : ''} style="margin-right:8px;">
+              ${opt.fullName}
+            </label>
+          `).join('')}
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Seç',
+      cancelButtonText: 'Vazgeç',
+      preConfirm: () => {
+        const selected = document.querySelector('input[name="license"]:checked');
+        if (!selected) {
+          Swal.showValidationMessage('Bir lisans seçmelisiniz');
+          return false;
         }
+        return selected.value;
+      }
+    });
 
-        Swal.fire({
-            title: 'Aranıyor...',
-            html: 'Lisansınız kontrol ediliyor.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
+    if (!selectedKey) return; // Vazgeçti
 
-        try {
-            const q = query(collection(db, "licenses"), where("email", "==", email));
-            const snapshot = await getDocs(q);
+    // Seçilen anahtara ait dokümanı bul
+    const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
+    if (selectedDoc) {
+      await processLicense(selectedDoc);
+    }
 
-            if (snapshot.empty) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Bulunamadı',
-                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
-                    confirmButtonText: 'Tamam'
-                });
-                return;
-            }
+  } catch (e) {
+    console.error("E-posta sorgulama hatası:", e);
+    Swal.fire({
+      icon: 'error',
+      title: 'Hata',
+      text: 'Sorgulama sırasında bir hata oluştu.',
+      confirmButtonText: 'Tamam'
+    });
+  }
+};
 
-            const licenseDoc = snapshot.docs[0];
-            const licenseData = licenseDoc.data();
-            const key = licenseData.key;
-            const currentDevice = getDeviceId();
+// Ortak işlemleri yapan yardımcı fonksiyon
+async function processLicense(licenseDoc) {
+  const licenseData = licenseDoc.data();
+  const key = licenseData.key;
+  const currentDevice = getDeviceId();
 
-            // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
-            if (licenseData.deviceId !== currentDevice) {
-                await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                    deviceId: currentDevice,
-                    used: true
-                });
-            }
+  // Eğer lisans başka bir cihaza aitse veya hiç kayıtlı değilse güncelle
+  if (licenseData.deviceId !== currentDevice) {
+    await updateDoc(doc(db, "licenses", licenseDoc.id), {
+      deviceId: currentDevice,
+      used: true
+    });
+  }
 
-            // Lisans anahtarını input alanına yaz
-            const licenseInput = document.getElementById('licenseInput');
-            if (licenseInput) {
-                licenseInput.value = key;
-            }
+  // Lisans anahtarını input alanına yaz
+  const licenseInput = document.getElementById('licenseInput');
+  if (licenseInput) {
+    licenseInput.value = key;
+  }
 
-            // Başarılı olduğunu bildiren kısa bir toast göster (1.5 saniye)
-            Swal.fire({
-                icon: 'success',
-                title: 'Lisans Hazır',
-                text: 'Lisansınız başarıyla yüklendi.',
-                timer: 1500,
-                showConfirmButton: false
-            });
+  // Başarılı mesajı (kısa toast)
+  Swal.fire({
+    icon: 'success',
+    title: 'Lisans Hazır',
+    text: 'Lisansınız başarıyla yüklendi.',
+    timer: 1500,
+    showConfirmButton: false
+  });
 
-            // Toast kapandıktan sonra otomatik giriş yap
-            setTimeout(() => {
-                window.onLicenseSubmit();
-            }, 1500);
-
-        } catch (e) {
-            console.error("E-posta sorgulama hatası:", e);
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata',
-                text: 'Sorgulama sırasında bir hata oluştu.',
-                confirmButtonText: 'Tamam'
-            });
-        }
-    };
+  // Otomatik giriş yap
+  setTimeout(() => {
+    window.onLicenseSubmit();
+  }, 1500);
+}
 
     // Yeni: email modalını aç
     window.showEmailModal = async () => {
