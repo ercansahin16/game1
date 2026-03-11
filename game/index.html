@@ -1969,27 +1969,12 @@ if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 
 
   //benzersiz kullanıcı adı ve kullanıcı adu-ı değiştirme fonksiyonu 
-  // saveSettings fonksiyonunu güncelle (async yap)
 async function saveSettings() {
     const newName = settingsUsername.value.trim();
     
     // Boş veya "Misafir" ismini engelle
     if (!newName || newName.toLowerCase() === 'misafir') {
         showToast('Lütfen geçerli bir kullanıcı adı girin (Misafir kullanılamaz).', 'error');
-        return;
-    }
-
-    // Firebase'de aynı isim var mı kontrol et
-    try {
-        const q = query(collection(db, LEADERBOARD_COLLECTION), where("username", "==", newName));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
-            return;
-        }
-    } catch (e) {
-        console.error("İsim kontrolü hatası:", e);
-        showToast('İsim kontrolü yapılamadı, lütfen tekrar deneyin.', 'error');
         return;
     }
 
@@ -2002,7 +1987,30 @@ async function saveSettings() {
 
     // Yeni ismi kaydet
     gameState.username = newName;
-    saveGameState();
+
+    // Eğer kullanıcı giriş yapmışsa (lisans anahtarı varsa) lisans kaydını da güncelle
+    const licenseKey = localStorage.getItem('nevafilKey');
+    if (licenseKey) {
+        try {
+            // Önce lisans dokümanını bul (key alanına göre)
+            const q = query(collection(db, "licenses"), where("key", "==", licenseKey));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const licenseDoc = snapshot.docs[0];
+                // Adı boşluktan böl? Basitçe firstName olarak kaydedelim
+                await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                    firstName: newName, // veya ad/soyad olarak ayarlayabilirsin
+                    lastName: ''
+                });
+            }
+        } catch (e) {
+            console.error("Lisans güncellenemedi:", e);
+        }
+    }
+
+    // Oyun durumunu kaydet (hem localStorage hem Firestore)
+    await saveGameState();
+
     updateIntroUI();
     updateGameHeader();
 
@@ -2010,7 +2018,6 @@ async function saveSettings() {
     settingsModalOverlay.classList.remove('active');
     showToast('Profil güncellendi!', 'success');
 }
-
 
 // ------------------------------------------------------------
 // Oyun başladığında
@@ -3640,6 +3647,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
