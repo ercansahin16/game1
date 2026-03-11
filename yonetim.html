@@ -331,11 +331,23 @@
     <div class="tabs" id="tabContainer">
         <div class="tab active" data-tab="licenses">🔑 Lisans Yönetimi</div>
         <div class="tab" data-tab="questions">❓ Soru Yönetimi</div>
+        <div class="tab" data-tab="levelAssign">📊 Seviyeye Soru Atama</div>
         <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
         <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
         <div class="tab" data-tab="help">📬 Yardım Mesajları</div>
     </div>
 
+
+    <!-- Yeni panel (tüm panellerden sonra, örneğin helpPanel'den sonra) -->
+<div class="panel" id="levelAssignPanel">
+    <h2><i class="fas fa-tasks"></i> Seviyeye Soru Atama</h2>
+    <div id="levelButtonsContainer" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <!-- Seviye butonları buraya JavaScript ile doldurulacak -->
+    </div>
+    <div id="levelAssignInfo" style="font-size: 0.9rem; color: #666;"></div>
+</div>
+
+    
     <!-- Lisans Yönetimi Paneli -->
     <div class="panel active" id="licensesPanel">
         <h2><i class="fas fa-key"></i> Lisanslar</h2>
@@ -1534,6 +1546,187 @@ async function loadHelpMessages() {
         container.innerHTML = 'Hata: ' + e.message;
     }
 }
+
+
+
+        // Seviye atama paneli için değişkenler
+let currentLevelForAssign = null; // Şu an hangi seviye ile çalışıyoruz
+let allQuestionsForAssign = [];   // Tüm sorular (id, soru, atananSeviye)
+
+// Seviye butonlarını oluştur
+function renderLevelButtons() {
+    const container = document.getElementById('levelButtonsContainer');
+    container.innerHTML = '';
+    for (let i = 1; i <= 50; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-info'; // veya başka bir class
+        btn.innerHTML = `<i class="fas fa-layer-group"></i> Seviye ${i}`;
+        btn.onclick = () => openLevelModal(i);
+        container.appendChild(btn);
+    }
+}
+
+// Seviye modalını aç
+async function openLevelModal(level) {
+    currentLevelForAssign = level;
+    
+    // Tüm soruları çek (eğer daha önce çekilmediyse)
+    if (allQuestionsForAssign.length === 0) {
+        await loadAllQuestionsForAssign();
+    }
+
+    // Gerekli soru sayısını hesapla
+    const requiredCount = level * 2 + 2; // level * 2 + 2
+
+    // Modal HTML'ini oluştur
+    let html = `
+        <div style="max-height: 500px; overflow-y: auto;">
+            <p style="margin-bottom: 10px;"><strong>Seviye ${level}</strong> için soruları seçin. Gereken soru sayısı: ${requiredCount}</p>
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th>Seç</th>
+                        <th>ID</th>
+                        <th>Soru</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    allQuestionsForAssign.forEach(q => {
+        const isSelected = (q.atananSeviye === level);
+        const rowStyle = isSelected ? 'background-color: #e0e0e0;' : '';
+        html += `
+            <tr style="${rowStyle}">
+                <td><input type="checkbox" data-id="${q.id}" ${isSelected ? 'checked' : ''}></td>
+                <td>${q.id.substring(0,6)}…</td>
+                <td>${q.soru.substring(0, 60)}${q.soru.length > 60 ? '…' : ''}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    const result = await Swal.fire({
+        title: `Seviye ${level} Soru Atama`,
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'İptal',
+        width: '800px',
+        didOpen: () => {
+            // Modal açıldığında checkbox'ların stilini ayarlamak için (opsiyonel)
+        }
+    });
+
+    if (result.isConfirmed) {
+        // Seçilen checkbox'ları topla
+        const checkboxes = document.querySelectorAll('.swal2-container input[type="checkbox"]:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+        
+        // Seçilen sayısı kontrol et
+        if (selectedIds.length !== requiredCount) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı',
+                text: `Seviye ${level} için ${requiredCount} soru gerekiyor. Şu an ${selectedIds.length} soru seçtiniz. Eksik/fazla var. Devam etmek istiyor musunuz?`,
+                showCancelButton: true,
+                confirmButtonText: 'Evet, kaydet',
+                cancelButtonText: 'Hayır, düzelt'
+            }).then(async (secondResult) => {
+                if (secondResult.isConfirmed) {
+                    await saveLevelAssignments(level, selectedIds);
+                }
+            });
+        } else {
+            // Sayı doğru, direkt kaydet
+            await saveLevelAssignments(level, selectedIds);
+        }
+    }
+}
+
+// Tüm soruları çek (sadece id, soru, atananSeviye)
+async function loadAllQuestionsForAssign() {
+    try {
+        const q = query(collection(db, QUESTIONS_COLL));
+        const snapshot = await getDocs(q);
+        allQuestionsForAssign = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allQuestionsForAssign.push({
+                id: doc.id,
+                soru: data.soru,
+                atananSeviye: data.atananSeviye || null // eğer yoksa null
+            });
+        });
+    } catch (e) {
+        console.error("Soru yükleme hatası:", e);
+    }
+}
+
+// Seçilen soruların atananSeviye alanını güncelle
+async function saveLevelAssignments(level, selectedIds) {
+    // Tüm soruları dolaş, eğer ID selectedIds içinde varsa atananSeviye = level, yoksa null yap
+    // Ancak bu çok fazla write işlemi olur. Daha verimli: Sadece selectedIds'deki soruları güncelle, diğerlerini boş bırak? Ama daha önce bu seviyede olup da seçilmeyen sorular varsa onların seviyesini null yapmalıyız.
+    // Bunun için önce bu seviyeye atanmış olanları bulup, selectedIds'de yoksa null yapalım.
+    
+    Swal.fire({
+        title: 'Kaydediliyor...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        // Bu seviyeye atanmış olanları bul
+        const q = query(collection(db, QUESTIONS_COLL), where("atananSeviye", "==", level));
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+
+        // Önceki atamaları kaldır (atananSeviye'yi null yap)
+        snapshot.forEach(doc => {
+            if (!selectedIds.includes(doc.id)) {
+                batch.update(doc.ref, { atananSeviye: null });
+            }
+        });
+
+        // Yeni seçilenleri ata
+        for (const id of selectedIds) {
+            const ref = doc(db, QUESTIONS_COLL, id);
+            batch.update(ref, { atananSeviye: level });
+        }
+
+        await batch.commit();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: `Seviye ${level} için sorular güncellendi.`,
+            timer: 2000
+        });
+
+        // İstersek panelde bilgi güncelleyebiliriz
+        document.getElementById('levelAssignInfo').innerText = `Seviye ${level} güncellendi.`;
+    } catch (e) {
+        console.error("Kayıt hatası:", e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Kayıt sırasında hata oluştu.'
+        });
+    }
+}
+
+// Sekme değiştiğinde butonları render et
+document.querySelector('.tab[data-tab="levelAssign"]').addEventListener('click', () => {
+    // Panel zaten active olduğunda çalışır, ama butonları bir kere oluşturalım
+    if (document.getElementById('levelButtonsContainer').children.length === 0) {
+        renderLevelButtons();
+    }
+});
 
 
 
