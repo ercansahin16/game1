@@ -1366,10 +1366,10 @@ body { padding:8px; }
 
 
    <!-- YENİ: Çıkış / Giriş butonları -->
-  <button id="logoutBtnHeader" class="intro-settings" style="margin-left:5px;" title="Çıkış Yap">
-    <i class="fas fa-sign-out-alt"></i>
-    <span class="settings-text">Çıkış</span>
-  </button>
+ <button id="introLogoutBtn" class="intro-settings" style="display: none;" title="Çıkış Yap">
+  <i class="fas fa-sign-out-alt"></i>
+  <span class="settings-text">Çıkış</span>
+</button>
   <button id="loginBtnHeader" class="intro-settings" style="display: none; margin-left:5px;" title="Giriş Yap">
     <i class="fas fa-sign-in-alt"></i>
     <span class="settings-text">Giriş</span>
@@ -3779,18 +3779,20 @@ async function saveGameHelpMessage(data) {
 
   // Kullanıcı giriş/çıkış butonunu güncelle
 function updateUserSwitchButton() {
-    const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
-    const loginBtn = document.getElementById('introLoginBtn');
-    const logoutBtn = document.getElementById('introLogoutBtn');
-    if (loginBtn && logoutBtn) {
-        if (isLoggedIn) {
-            loginBtn.style.display = 'none';
-            logoutBtn.style.display = 'inline-flex';
-        } else {
-            loginBtn.style.display = 'inline-flex';
-            logoutBtn.style.display = 'none';
-        }
+  console.log('updateUserSwitchButton çalıştı, username:', gameState.username);
+  const loginBtn = document.getElementById('introLoginBtn');
+  const logoutBtn = document.getElementById('introLogoutBtn');
+  if (loginBtn && logoutBtn) {
+    if (gameState.username && gameState.username !== 'Misafir') {
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'inline-flex';
+    } else {
+      loginBtn.style.display = 'inline-flex';
+      logoutBtn.style.display = 'none';
     }
+  } else {
+    console.warn('Butonlardan biri bulunamadı!');
+  }
 }
 
 // Kullanıcı çıkış işlemi
@@ -3862,11 +3864,22 @@ function loginUser() {
 document.getElementById('introLoginBtn').addEventListener('click', loginUser);
 document.getElementById('introLogoutBtn').addEventListener('click', logoutUser);
 
+  // Tüm DOM yüklendikten sonra çalışsın
+document.addEventListener('DOMContentLoaded', function() {
+  const logoutBtn = document.getElementById('introLogoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logoutUser);
+  } else {
+    console.warn('⚠️ introLogoutBtn bulunamadı!');
+  }
+});
+
   
 </script>
 
 </body>
 </html>
+
 
 
 
