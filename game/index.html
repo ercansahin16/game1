@@ -3781,9 +3781,41 @@ async function saveGameHelpMessage(data) {
 
 
 
+  //kullanıcı giriş çıkış işlemleri
+
+  
+window.showEmailModal = async () => {
+    const { value: email } = await Swal.fire({
+        title: 'E-posta adresiniz',
+        text: 'Lisansınızın kayıtlı olduğu e-posta',
+        input: 'email',
+        inputPlaceholder: 'ornek@email.com',
+        showCancelButton: true,
+        confirmButtonText: 'Gönder',
+        cancelButtonText: 'Vazgeç',
+        reverseButtons: true,
+        inputValidator: (value) => {
+            if (!value) return 'E-posta gerekli';
+            if (!/^\S+@\S+\.\S+$/.test(value)) return 'Geçerli bir e-posta girin';
+        },
+        didOpen: () => {
+            const input = Swal.getInput();
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') Swal.clickConfirm();
+            });
+        }
+    });
+
+    if (email) {
+        await window.recoverLicenseByEmail(email.toLowerCase());
+    }
+};
+  
+
 
   // Kullanıcı giriş işlemi (buton "Giriş" iken)
 function loginUser() {
+   console.log('loginUser tıklandı!');
     // Lisans kurtarma modalını aç (e-posta ile)
     if (typeof window.showEmailModal === 'function') {
         window.showEmailModal();
@@ -3888,6 +3920,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
 
 
 
