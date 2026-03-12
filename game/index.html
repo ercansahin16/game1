@@ -4025,6 +4025,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
   async function processLicense(licenseDoc) {
     const licenseData = licenseDoc.data();
     const key = licenseData.key;
@@ -4036,6 +4037,9 @@ document.addEventListener('DOMContentLoaded', function() {
             used: true
         });
     }
+
+    // Lisans anahtarını localStorage'a kaydet (çok önemli!)
+    localStorage.setItem('nevafilKey', key);
 
     const licenseInput = document.getElementById('licenseInput');
     if (licenseInput) {
@@ -4050,18 +4054,18 @@ document.addEventListener('DOMContentLoaded', function() {
         showConfirmButton: false
     });
 
-   setTimeout(() => {
-    if (typeof window.onLicenseSubmit === 'function') {
-        window.onLicenseSubmit();
-    } else {
-        console.error('onLicenseSubmit fonksiyonu bulunamadı!');
-        // Alternatif olarak direkt lisans giriş butonuna tıklama simüle edilebilir:
-        // document.getElementById('licenseInput').value = key;
-        // document.querySelector('.submit-btn').click();
-    }
-}, 1500);
+    setTimeout(() => {
+        if (typeof window.onLicenseSubmit === 'function') {
+            window.onLicenseSubmit();
+        } else {
+            console.error('onLicenseSubmit fonksiyonu bulunamadı!');
+            // Acil durumda direkt startGame() dene (ama önce lisans doğrulaması atlanmış olur)
+            // startGame();
+        }
+    }, 1500);
 }
 
+  
 
 
   function getDeviceId() {
@@ -4074,19 +4078,26 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 
-  window.onLicenseSubmit = async () => {
-    const input = document.getElementById("licenseInput");
-    const key = input.value.trim().toUpperCase();
+window.onLicenseSubmit = async () => {
+    const input = document.getElementById('licenseInput');
+    let key = null;
+
+    if (input) {
+        key = input.value.trim().toUpperCase();
+    } else {
+        console.warn('licenseInput bulunamadı, localStorage kontrol ediliyor...');
+        key = localStorage.getItem('nevafilKey');
+    }
 
     if (!key) {
         Swal.fire({
             title: 'Hata',
-            text: 'Lütfen lisans anahtarınızı girin.',
+            text: 'Lisans anahtarı bulunamadı.',
             icon: 'warning',
+            confirmButtonText: 'Tamam',
             showCancelButton: true,
             cancelButtonText: 'Lisans Al',
-            cancelButtonColor: '#6c5ce7',
-            confirmButtonText: 'Tamam'
+            cancelButtonColor: '#6c5ce7'
         });
         return;
     }
@@ -4100,7 +4111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const res = await verifyLicense(key);
     
     if (res.ok) {
-        localStorage.setItem("nevafilKey", key);
+        localStorage.setItem("nevafilKey", key); // zaten varsa tekrar yaz
         Swal.close();
         startGame();
     } else {
@@ -4137,11 +4148,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+
+  function startGame() {
+    document.getElementById("loadingSpinner").style.display = "none";
+    document.getElementById("licensePrompt").style.display = "none";
+    const container = document.getElementById("gameContainer");
+    container.style.display = "block";
+    
+    if (!container.querySelector("iframe")) {
+        const iframe = document.createElement("iframe");
+        iframe.src = "game/index.html";
+        container.appendChild(iframe);
+    }
+}
   
 </script>
 
 </body>
 </html>
+
 
 
 
