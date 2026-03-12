@@ -1365,14 +1365,16 @@ body { padding:8px; }
 </button>
 
 
-   <!-- YENİ: Çıkış / Giriş butonları -->
- <button id="introLogoutBtn" class="intro-settings" style="display: none;" title="Çıkış Yap">
-  <i class="fas fa-sign-out-alt"></i>
-  <span class="settings-text">Çıkış</span>
-</button>
-  <button id="loginBtnHeader" class="intro-settings" style="display: none; margin-left:5px;" title="Giriş Yap">
+ <!-- YENİ: Giriş butonu (başlangıçta görünür) -->
+  <button id="introLoginBtn" class="intro-settings" title="Giriş Yap">
     <i class="fas fa-sign-in-alt"></i>
     <span class="settings-text">Giriş</span>
+  </button>
+
+  <!-- YENİ: Çıkış butonu (başlangıçta gizli) -->
+  <button id="introLogoutBtn" class="intro-settings" style="display: none;" title="Çıkış Yap">
+    <i class="fas fa-sign-out-alt"></i>
+    <span class="settings-text">Çıkış</span>
   </button>
   
   
@@ -3777,22 +3779,19 @@ async function saveGameHelpMessage(data) {
 }
 
 
-  // Kullanıcı giriş/çıkış butonunu güncelle
-function updateUserSwitchButton() {
-  console.log('updateUserSwitchButton çalıştı, username:', gameState.username);
-  const loginBtn = document.getElementById('introLoginBtn');
-  const logoutBtn = document.getElementById('introLogoutBtn');
-  if (loginBtn && logoutBtn) {
-    if (gameState.username && gameState.username !== 'Misafir') {
-      loginBtn.style.display = 'none';
-      logoutBtn.style.display = 'inline-flex';
+
+
+
+  // Kullanıcı giriş işlemi (buton "Giriş" iken)
+function loginUser() {
+    // Lisans kurtarma modalını aç (e-posta ile)
+    if (typeof window.showEmailModal === 'function') {
+        window.showEmailModal();
     } else {
-      loginBtn.style.display = 'inline-flex';
-      logoutBtn.style.display = 'none';
+        // Eğer showEmailModal tanımlı değilse, lisans input'una odaklan (alternatif)
+        const licenseInput = document.getElementById('licenseInput');
+        if (licenseInput) licenseInput.focus();
     }
-  } else {
-    console.warn('Butonlardan biri bulunamadı!');
-  }
 }
 
 // Kullanıcı çıkış işlemi
@@ -3809,7 +3808,7 @@ async function logoutUser() {
     });
 
     if (result.isConfirmed) {
-        // Lisans anahtarını sil (kullanıcı değişimi için)
+        // Lisans anahtarını sil
         localStorage.removeItem('nevafilKey');
         
         // Oyun durumunu sıfırla (misafir yap)
@@ -3835,50 +3834,61 @@ async function logoutUser() {
             avatarImg: AVATAR_LIST[0].img,
             darkMode: false
         };
-
-        // Oyun durumunu localStorage'a kaydet (Firestore değil, çünkü lisans yok)
-        saveGameState(); // Bu fonksiyon zaten lisans kontrolü yapıyor
+        saveGameState();
 
         // Oyun container'ını kapat, intro ekranını aç
         gameContainer.style.display = 'none';
         introOverlay.classList.remove('hidden');
         clearInterval(timerInterval);
-        updateIntroUI(); // intro'daki kullanıcı bilgilerini güncelle
-        updateUserSwitchButton(); // butonları güncelle
+        updateIntroUI();
+        updateUserSwitchButton();
     }
 }
 
-// Kullanıcı giriş işlemi (buton "Kullanıcı Girişi" iken)
-function loginUser() {
-    // Lisans kurtarma modalını aç (e-posta ile)
-    if (typeof window.showEmailModal === 'function') {
-        window.showEmailModal();
+// Butonların görünürlüğünü güncelle
+function updateUserSwitchButton() {
+    const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
+    const loginBtn = document.getElementById('introLoginBtn');
+    const logoutBtn = document.getElementById('introLogoutBtn');
+    if (loginBtn && logoutBtn) {
+        loginBtn.style.display = isLoggedIn ? 'none' : 'inline-flex';
+        logoutBtn.style.display = isLoggedIn ? 'inline-flex' : 'none';
     } else {
-        // Eğer showEmailModal tanımlı değilse, lisans input'una odaklan (alternatif)
-        const licenseInput = document.getElementById('licenseInput');
-        if (licenseInput) licenseInput.focus();
+        console.warn('Butonlardan biri bulunamadı!');
     }
 }
 
-// Butona tıklama olayı
-document.getElementById('introLoginBtn').addEventListener('click', loginUser);
-document.getElementById('introLogoutBtn').addEventListener('click', logoutUser);
-
-  // Tüm DOM yüklendikten sonra çalışsın
+// Tüm DOM yüklendikten sonra event listener'ları ekle (tek sefer)
 document.addEventListener('DOMContentLoaded', function() {
-  const logoutBtn = document.getElementById('introLogoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', logoutUser);
-  } else {
-    console.warn('⚠️ introLogoutBtn bulunamadı!');
-  }
+    const loginBtn = document.getElementById('introLoginBtn');
+    const logoutBtn = document.getElementById('introLogoutBtn');
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', loginUser);
+    } else {
+        console.warn('⚠️ introLoginBtn bulunamadı!');
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logoutUser);
+    } else {
+        console.warn('⚠️ introLogoutBtn bulunamadı!');
+    }
+
+    // Başlangıçta butonların durumunu ayarla
+    updateUserSwitchButton();
 });
+
+
+
+
 
   
 </script>
 
 </body>
 </html>
+
 
 
 
