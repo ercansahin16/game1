@@ -1363,10 +1363,18 @@ body { padding:8px; }
 <i class="fas fa-cog"></i>
 <span class="settings-text">Ayarlar</span>
 </button>
-  <button id="userSwitchBtn" class="intro-settings">
+
+
+   <!-- YENİ: Çıkış / Giriş butonları -->
+  <button id="logoutBtnHeader" class="intro-settings" style="margin-left:5px;" title="Çıkış Yap">
     <i class="fas fa-sign-out-alt"></i>
-    <span class="settings-text">Kullanıcı Çıkışı</span>
-</button>
+    <span class="settings-text">Çıkış</span>
+  </button>
+  <button id="loginBtnHeader" class="intro-settings" style="display: none; margin-left:5px;" title="Giriş Yap">
+    <i class="fas fa-sign-in-alt"></i>
+    <span class="settings-text">Giriş</span>
+  </button>
+  
   
   
 </div>
@@ -1890,7 +1898,7 @@ const soundToggleBtn = document.getElementById('soundToggleBtn');
 const mascot = document.getElementById('mascot');
 const speechBubble = document.getElementById('speechBubble');
 const settingsBtn = document.getElementById('settingsBtn');
-
+  
 // ------------------------------------------------------------
 // OYUN DEĞİŞKENLERİ
 // ------------------------------------------------------------
@@ -3760,15 +3768,17 @@ async function saveGameHelpMessage(data) {
 
   // Kullanıcı giriş/çıkış butonunu güncelle
 function updateUserSwitchButton() {
-    const btn = document.getElementById('userSwitchBtn');
-    if (!btn) return;
     const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
-    if (isLoggedIn) {
-        btn.innerHTML = '<i class="fas fa-sign-out-alt"></i><span class="settings-text">Kullanıcı Çıkışı</span>';
-        btn.title = 'Oturumu kapat';
-    } else {
-        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span class="settings-text">Kullanıcı Girişi</span>';
-        btn.title = 'Lisans ile giriş yap';
+    const loginBtn = document.getElementById('introLoginBtn');
+    const logoutBtn = document.getElementById('introLogoutBtn');
+    if (loginBtn && logoutBtn) {
+        if (isLoggedIn) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-flex';
+        } else {
+            loginBtn.style.display = 'inline-flex';
+            logoutBtn.style.display = 'none';
+        }
     }
 }
 
@@ -3786,7 +3796,10 @@ async function logoutUser() {
     });
 
     if (result.isConfirmed) {
-        // Oyun verilerini sıfırla
+        // Lisans anahtarını sil (kullanıcı değişimi için)
+        localStorage.removeItem('nevafilKey');
+        
+        // Oyun durumunu sıfırla (misafir yap)
         gameState = {
             maxUnlockedLevel: 1,
             currentLevel: 1,
@@ -3810,45 +3823,40 @@ async function logoutUser() {
             darkMode: false
         };
 
-        // Lisans anahtarını sil (isteğe bağlı, ama kullanıcı değişimi için silelim)
-        localStorage.removeItem('nevafilKey');
-        // Oyun durumunu localStorage'a kaydet
-        saveGameState();
+        // Oyun durumunu localStorage'a kaydet (Firestore değil, çünkü lisans yok)
+        saveGameState(); // Bu fonksiyon zaten lisans kontrolü yapıyor
 
         // Oyun container'ını kapat, intro ekranını aç
         gameContainer.style.display = 'none';
         introOverlay.classList.remove('hidden');
         clearInterval(timerInterval);
-        updateIntroUI();
-        updateUserSwitchButton();
+        updateIntroUI(); // intro'daki kullanıcı bilgilerini güncelle
+        updateUserSwitchButton(); // butonları güncelle
     }
 }
 
 // Kullanıcı giriş işlemi (buton "Kullanıcı Girişi" iken)
 function loginUser() {
-    // Lisans giriş ekranını göster
-    introOverlay.classList.remove('hidden');
-    gameContainer.style.display = 'none';
-    // Eğer lisans kurtarma modalı varsa onu açmak isteyebiliriz, ama direkt lisans girişi yeterli.
-    // İstersek burada doğrudan showEmailModal() çağırabiliriz.
-    document.getElementById('licenseInput').focus();
+    // Lisans kurtarma modalını aç (e-posta ile)
+    if (typeof window.showEmailModal === 'function') {
+        window.showEmailModal();
+    } else {
+        // Eğer showEmailModal tanımlı değilse, lisans input'una odaklan (alternatif)
+        const licenseInput = document.getElementById('licenseInput');
+        if (licenseInput) licenseInput.focus();
+    }
 }
 
 // Butona tıklama olayı
-document.getElementById('userSwitchBtn')?.addEventListener('click', () => {
-    const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
-    if (isLoggedIn) {
-        logoutUser();
-    } else {
-        loginUser();
-    }
-});
+document.getElementById('introLoginBtn').addEventListener('click', loginUser);
+document.getElementById('introLogoutBtn').addEventListener('click', logoutUser);
 
   
 </script>
 
 </body>
 </html>
+
 
 
 
