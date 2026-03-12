@@ -1812,6 +1812,7 @@ let gameActive = true;
 let timerInterval = null;
 let timeLeft = 60;
 let eliminatedOptions = [];
+const QUESTIONS_COLL = 'manevi_sorular'; // Sabit ekle
 
 // ------------------------------------------------------------
 // ÖRNEK SORULARI YÜKLE (seedQuestionsIfNeeded)
@@ -2042,6 +2043,8 @@ function startGameFromIntro(){
 
     // ASENKRON VERİ YÜKLEME
     (async () => {
+      // Önce soruları yükle
+        await loadAllQuestions();
         await loadGameState();       // Firestore ve localStorage'dan veri yükle
         updateGameHeader();          // Kullanıcı adı, puan, seviye güncelle
         loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
@@ -2156,7 +2159,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ------------------------------------------------------------
 async function loadAllQuestions() {
   try {
-    const q = query(collection(db, QUESTIONS_COLL)); // QUESTIONS_COLL = 'manevi_sorular'
+    const q = query(collection(db, "manevi_sorular")); // QUESTIONS_COLL yerine direkt yaz
     const snapshot = await getDocs(q);
     allQuestions = [];
     snapshot.forEach(doc => {
@@ -2164,12 +2167,12 @@ async function loadAllQuestions() {
       allQuestions.push({
         id: doc.id,
         ...data,
-        atananSeviye: data.atananSeviye || null // 🟢 bu satır çok önemli!
+        atananSeviye: data.atananSeviye || null
       });
     });
+    console.log("Tüm sorular yüklendi, sayı:", allQuestions.length);
   } catch (e) {
     console.error("Soru yüklenemedi:", e);
-    allQuestions = [];
   }
 }
             
@@ -2295,6 +2298,7 @@ function loadLevelQuestions(level) {
   saveGameState();
   updateHintButton();
   renderLevelIndicators();
+  console.log("Seviye 2 için sorular:", allQuestions.filter(q => q.atananSeviye === 2));
 }
 //hatalı soru bildirimi
   // Hatalı soru bildir
@@ -3664,6 +3668,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
