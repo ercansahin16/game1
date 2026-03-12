@@ -1363,6 +1363,11 @@ body { padding:8px; }
 <i class="fas fa-cog"></i>
 <span class="settings-text">Ayarlar</span>
 </button>
+  <button id="userSwitchBtn" class="intro-settings">
+    <i class="fas fa-sign-out-alt"></i>
+    <span class="settings-text">Kullanıcı Çıkışı</span>
+</button>
+  
   
 </div>
 <div class="intro-stats">
@@ -2029,6 +2034,7 @@ introUserName.innerText = gameState.username || 'Misafir';
 introLevel.innerText = gameState.currentLevel;
 introScore.innerText = gameState.score;
 updateAchievementsPreview();
+updateUserSwitchButton();
 }
 
 function updateAchievementsPreview(){
@@ -2137,6 +2143,7 @@ function startGameFromIntro(){
         loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
         renderLevelIndicators();     // Seviye göstergelerini güncelle
         unlockAudio();
+        updateUserSwitchButton();
     })();
 
     // İlknur için özel mesaj (isteğe bağlı)
@@ -3749,40 +3756,99 @@ async function saveGameHelpMessage(data) {
         Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
     }
 }
+
+
+  // Kullanıcı giriş/çıkış butonunu güncelle
+function updateUserSwitchButton() {
+    const btn = document.getElementById('userSwitchBtn');
+    if (!btn) return;
+    const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
+    if (isLoggedIn) {
+        btn.innerHTML = '<i class="fas fa-sign-out-alt"></i><span class="settings-text">Kullanıcı Çıkışı</span>';
+        btn.title = 'Oturumu kapat';
+    } else {
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span class="settings-text">Kullanıcı Girişi</span>';
+        btn.title = 'Lisans ile giriş yap';
+    }
+}
+
+// Kullanıcı çıkış işlemi
+async function logoutUser() {
+    const result = await Swal.fire({
+        title: 'Çıkış yapmak istediğinize emin misiniz?',
+        text: 'Oyun verileriniz silinecek, ancak lisansınız kaybolmayacak. Tekrar giriş yapabilirsiniz.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, çık',
+        cancelButtonText: 'Vazgeç',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+    });
+
+    if (result.isConfirmed) {
+        // Oyun verilerini sıfırla
+        gameState = {
+            maxUnlockedLevel: 1,
+            currentLevel: 1,
+            currentQuestionIndexInLevel: 0,
+            score: 0,
+            earnedPointsForQuestion: {},
+            hintUsedInThisLevel: false,
+            hintsUsed: 0,
+            levelTradeUsed: false,
+            achievements: {
+                firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+                level5: false, level10: false, level15: false, level20: false, level25: false,
+                level30: false, level35: false, level40: false, level45: false, level50: false
+            },
+            recentAchievements: [],
+            solvedQuestions: [],
+            lastPlayedQuestions: [],
+            username: 'Misafir',
+            avatar: AVATAR_LIST[0].icon,
+            avatarImg: AVATAR_LIST[0].img,
+            darkMode: false
+        };
+
+        // Lisans anahtarını sil (isteğe bağlı, ama kullanıcı değişimi için silelim)
+        localStorage.removeItem('nevafilKey');
+        // Oyun durumunu localStorage'a kaydet
+        saveGameState();
+
+        // Oyun container'ını kapat, intro ekranını aç
+        gameContainer.style.display = 'none';
+        introOverlay.classList.remove('hidden');
+        clearInterval(timerInterval);
+        updateIntroUI();
+        updateUserSwitchButton();
+    }
+}
+
+// Kullanıcı giriş işlemi (buton "Kullanıcı Girişi" iken)
+function loginUser() {
+    // Lisans giriş ekranını göster
+    introOverlay.classList.remove('hidden');
+    gameContainer.style.display = 'none';
+    // Eğer lisans kurtarma modalı varsa onu açmak isteyebiliriz, ama direkt lisans girişi yeterli.
+    // İstersek burada doğrudan showEmailModal() çağırabiliriz.
+    document.getElementById('licenseInput').focus();
+}
+
+// Butona tıklama olayı
+document.getElementById('userSwitchBtn')?.addEventListener('click', () => {
+    const isLoggedIn = gameState.username && gameState.username !== 'Misafir';
+    if (isLoggedIn) {
+        logoutUser();
+    } else {
+        loginUser();
+    }
+});
+
+  
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
