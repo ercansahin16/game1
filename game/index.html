@@ -4050,9 +4050,16 @@ document.addEventListener('DOMContentLoaded', function() {
         showConfirmButton: false
     });
 
-    setTimeout(() => {
+   setTimeout(() => {
+    if (typeof window.onLicenseSubmit === 'function') {
         window.onLicenseSubmit();
-    }, 1500);
+    } else {
+        console.error('onLicenseSubmit fonksiyonu bulunamadı!');
+        // Alternatif olarak direkt lisans giriş butonuna tıklama simüle edilebilir:
+        // document.getElementById('licenseInput').value = key;
+        // document.querySelector('.submit-btn').click();
+    }
+}, 1500);
 }
 
 
@@ -4067,12 +4074,75 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 
+  window.onLicenseSubmit = async () => {
+    const input = document.getElementById("licenseInput");
+    const key = input.value.trim().toUpperCase();
+
+    if (!key) {
+        Swal.fire({
+            title: 'Hata',
+            text: 'Lütfen lisans anahtarınızı girin.',
+            icon: 'warning',
+            showCancelButton: true,
+            cancelButtonText: 'Lisans Al',
+            cancelButtonColor: '#6c5ce7',
+            confirmButtonText: 'Tamam'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Giriş Yapılıyor...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    const res = await verifyLicense(key);
+    
+    if (res.ok) {
+        localStorage.setItem("nevafilKey", key);
+        Swal.close();
+        startGame();
+    } else {
+        Swal.fire({
+            title: 'Başarısız',
+            text: res.msg,
+            icon: 'error',
+            confirmButtonText: 'Tamam',
+            showCancelButton: true,
+            cancelButtonText: 'Lisans Al',
+            cancelButtonColor: '#6c5ce7'
+        });
+    }
+};
+
+
+  async function verifyLicense(key) {
+    try {
+        const q = query(collection(db, "licenses"), where("key", "==", key));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return { ok: false, msg: "Geçersiz anahtar!" };
+        
+        const licenseDoc = snapshot.docs[0];
+        const data = licenseDoc.data();
+        const device = getDeviceId();
+        
+        if (!data.deviceId) {
+            await updateDoc(doc(db, "licenses", licenseDoc.id), { deviceId: device, used: true });
+            return { ok: true };
+        }
+        return data.deviceId === device ? { ok: true } : { ok: false, msg: "Farklı bir cihazda kayıtlı." };
+    } catch (e) { 
+        return { ok: false, msg: "Sistem hatası." }; 
+    }
+}
 
   
 </script>
 
 </body>
 </html>
+
 
 
 
