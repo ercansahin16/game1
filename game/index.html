@@ -2154,16 +2154,23 @@ document.addEventListener('DOMContentLoaded', function() {
 };
 
 // ------------------------------------------------------------
-async function loadAllQuestions(){
-try{
-const q = query(collection(db, QUESTIONS_COLLECTION));
-const snapshot = await getDocs(q);
-allQuestions = [];
-snapshot.forEach(doc => allQuestions.push({id: doc.id, ...doc.data()}));
-if(allQuestions.length === 0) allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
-}catch(e){
-allQuestions = SAMPLE_QUESTIONS.map((q, idx) => ({id: `sample-${idx}`, ...q}));
-}
+async function loadAllQuestions() {
+  try {
+    const q = query(collection(db, QUESTIONS_COLL)); // QUESTIONS_COLL = 'manevi_sorular'
+    const snapshot = await getDocs(q);
+    allQuestions = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      allQuestions.push({
+        id: doc.id,
+        ...data,
+        atananSeviye: data.atananSeviye || null // 🟢 bu satır çok önemli!
+      });
+    });
+  } catch (e) {
+    console.error("Soru yüklenemedi:", e);
+    allQuestions = [];
+  }
 }
             
 // Bilgi balonunu gösteren fonksiyon
@@ -2215,26 +2222,39 @@ function getQuestionCountForLevel(level){ return level * 2; }
             
 
 function loadLevelQuestions(level) {
-  const countNeeded = getQuestionCountForLevel(level);
+  const countNeeded = getQuestionCountForLevel(level); // level*2+2
 
-  // Önce çözülmemiş soruları filtrele
-  let unsolved = allQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
+  // Seviyeye atanmış soruları filtrele (atananSeviye === level)
+  let levelQuestions = allQuestions.filter(q => q.atananSeviye === level);
 
-  // Son oynanan soruları da filtrele (tüm seviyelerden)
+  // Eğer bu seviyede hiç soru yoksa, uyarı ver ve eski sisteme dön (isteğe bağlı)
+  if (levelQuestions.length === 0) {
+    console.warn(`Seviye ${level} için atanmış soru bulunamadı! Eski sistem kullanılıyor.`);
+    // Eski sistemdeki gibi tüm sorulardan seç (ama seviyeye göre filtre yok)
+    levelQuestions = allQuestions;
+  }
+
+  // Eğer seviyeye atanmış soru sayısı ihtiyaçtan azsa, uyarı ver (ama yine de seç)
+  if (levelQuestions.length < countNeeded) {
+    console.warn(`Seviye ${level} için sadece ${levelQuestions.length} soru atanmış, ${countNeeded} gerekiyor.`);
+  }
+
+  // Çözülmemiş soruları filtrele (eğer istenirse)
+  let unsolved = levelQuestions.filter(q => !gameState.solvedQuestions.includes(q.id));
+
+  // Son oynanan soruları filtrele
   let availableQuestions = unsolved.filter(q => !gameState.lastPlayedQuestions.includes(q.id));
 
   // Eğer yeterli soru kalmadıysa, son oynananları sıfırla
   if (availableQuestions.length < countNeeded) {
-    // Son oynananlardan en eskilerini kaldır
     const removeCount = Math.max(5, countNeeded - availableQuestions.length);
     gameState.lastPlayedQuestions = gameState.lastPlayedQuestions.slice(removeCount);
 
-    // Tekrar filtrele
     availableQuestions = unsolved.filter(q => !gameState.lastPlayedQuestions.includes(q.id));
 
     // Hâlâ yetersizse çözülmüş sorulardan da seç (ama son oynananlar hariç)
     if (availableQuestions.length < countNeeded) {
-      const solvedButNotRecent = allQuestions.filter(q =>
+      const solvedButNotRecent = levelQuestions.filter(q =>
         gameState.solvedQuestions.includes(q.id) &&
         !gameState.lastPlayedQuestions.includes(q.id)
       );
@@ -2242,12 +2262,13 @@ function loadLevelQuestions(level) {
     }
   }
 
-  // Eğer hâlâ yetersizse (çok az soru varsa), son oynananları tamamen sıfırla
+  // Hâlâ yetersizse (çok az soru varsa), son oynananları tamamen sıfırla ve tüm seviye sorularını kullan
   if (availableQuestions.length < countNeeded) {
     gameState.lastPlayedQuestions = [];
-    availableQuestions = unsolved.length > 0 ? unsolved : allQuestions;
+    availableQuestions = levelQuestions;
   }
 
+  // Rastgele karıştır ve ihtiyaç kadar seç
   const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5);
   currentLevelQuestions = shuffled.slice(0, countNeeded);
 
@@ -2258,27 +2279,23 @@ function loadLevelQuestions(level) {
     }
   });
 
-  // En fazla son 50 soruyu tut (performans için)
+  // En fazla son 50 soruyu tut
   if (gameState.lastPlayedQuestions.length > 50) {
     gameState.lastPlayedQuestions = gameState.lastPlayedQuestions.slice(-50);
   }
-gameState.currentQuestionIndexInLevel = 0;
-gameState.hintUsedInThisLevel = false;
-gameState.hintsUsed = 0;        // <-- YENİ: ipucu sayacını sıfırla
-gameState.levelTradeUsed = false; // YENİ
-hintBtn.classList.remove('disabled');
-loadQuestionAtIndex(0);
 
-  // YENİ: Seviye ilerleme bilgisini güncelle
+  gameState.currentQuestionIndexInLevel = 0;
+  gameState.hintUsedInThisLevel = false;
+  gameState.hintsUsed = 0;
+  gameState.levelTradeUsed = false;
+  hintBtn.classList.remove('disabled');
+  loadQuestionAtIndex(0);
+
   updateLevelProgress();
-
-  // YENİ: Son oynananları kaydet
   saveGameState();
- updateHintButton();// İpucu butonunda kalan hakkı göstermek isterseniz (opsiyonel)
-   // Seviye göstergelerini güncelle
+  updateHintButton();
   renderLevelIndicators();
 }
-
 //hatalı soru bildirimi
   // Hatalı soru bildir
 function sendBugReport() {
@@ -3647,6 +3664,7 @@ async function saveGameHelpMessage(data) {
 
 </body>
 </html>
+
 
 
 
