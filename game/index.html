@@ -4025,8 +4025,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-
-  async function processLicense(licenseDoc) {
+async function processLicense(licenseDoc) {
     const licenseData = licenseDoc.data();
     const key = licenseData.key;
     const currentDevice = getDeviceId();
@@ -4038,13 +4037,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Lisans anahtarını localStorage'a kaydet (çok önemli!)
+    // Lisans anahtarını localStorage'a kaydet
     localStorage.setItem('nevafilKey', key);
 
+    // Lisans input'una anahtarı yaz (opsiyonel, görmek isteyebilir)
     const licenseInput = document.getElementById('licenseInput');
     if (licenseInput) {
         licenseInput.value = key;
-    }  
+    }
+
+    // Oyun state'ini güncelle (loadGameState'i çağırarak verileri yükle)
+    await loadGameState(); // Bu, Firestore'dan verileri çeker ve gameState'i günceller
+
+    // Intro bilgilerini güncelle (isim, puan, seviye)
+    updateIntroUI();
+    updateUserSwitchButton(); // Butonları güncelle (giriş/çıkış)
+
+    // Başarılı mesajı göster
+    Swal.fire({
+        icon: 'success',
+        title: 'Giriş başarılı',
+        text: 'Hoş geldiniz! "BAŞLA" butonuna tıklayarak oyuna başlayabilirsiniz.',
+        timer: 2000,
+        showConfirmButton: false
+    });
+
+    // Oyunu hemen başlatma, sadece hazır hale getir
 }
 
   
@@ -4161,6 +4179,7 @@ function startGame() {
 
 </body>
 </html>
+
 
 
 
