@@ -1721,52 +1721,21 @@ let gameState = {
 
   
 // Oyun Başlangıcında Veriyi Yükle
-// Oyun Başlangıcında Veriyi Yükle
 async function loadGameState() {
   console.log('🔥 loadGameState çalıştı, lisans:', localStorage.getItem('nevafilKey'));
-
-  const licenseKey = localStorage.getItem('nevafilKey');
   
-  // 1. Hızlı kullanıcı adı yükleme (lisans koleksiyonundan)
-  if (licenseKey) {
-    try {
-      let licenseSnap = await getDoc(doc(db, "licenses", licenseKey));
-      if (!licenseSnap.exists()) {
-        const q = query(collection(db, "licenses"), where("key", "==", licenseKey));
-        const querySnap = await getDocs(q);
-        if (!querySnap.empty) {
-          licenseSnap = querySnap.docs[0];
-        }
-      }
-      if (licenseSnap && licenseSnap.exists()) {
-        const licenseData = licenseSnap.data();
-        const firstName = licenseData.firstName || '';
-        const lastName = licenseData.lastName || '';
-        gameState.username = (firstName + ' ' + lastName).trim() || 'Misafir';
-        console.log('👤 Kullanıcı adı yüklendi (hızlı):', gameState.username);
-      } else {
-        gameState.username = 'Misafir';
-      }
-    } catch (e) {
-      console.error("Lisans adı yüklenirken hata:", e);
-      gameState.username = 'Misafir';
-    }
-  } else {
-    gameState.username = 'Misafir';
-  }
-
-  // 2. localStorage'dan oyun verilerini yükle (varsa)
+  // 1. localStorage'dan yükle
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       gameState = { ...gameState, ...parsed };
     } catch (e) {
-      console.warn("LocalStorage verisi bozuk", e);
+      console.warn("LocalStorage verisi bozuk, yok sayılıyor.", e);
     }
   }
 
-  // Varsayılan alanları kontrol et
+  // Varsayılan alanları kontrol et (güvenlik)
   if (!gameState.earnedPointsForQuestion) gameState.earnedPointsForQuestion = {};
   if (!gameState.achievements) {
     gameState.achievements = {
@@ -1780,31 +1749,59 @@ async function loadGameState() {
   if (!gameState.lastPlayedQuestions) gameState.lastPlayedQuestions = [];
   if (isNaN(gameState.score)) gameState.score = 0;
 
-  // 3. Firestore'dan oyun ilerlemesini yükle (arka planda)
-  if (licenseKey) {
-    // Oyun ilerlemesini beklemeden yükle, ama sonuçları gameState'e ata
-    (async () => {
-      try {
-        const gameRef = doc(db, "oyun_ilerleme", licenseKey);
-        const gameSnap = await getDoc(gameRef);
-        if (gameSnap.exists()) {
-          const remote = gameSnap.data();
-          gameState.score = remote.score ?? gameState.score;
-          gameState.currentLevel = remote.currentLevel ?? gameState.currentLevel;
-          gameState.maxUnlockedLevel = remote.maxUnlockedLevel ?? gameState.maxUnlockedLevel;
-          gameState.solvedQuestions = remote.solvedQuestions ?? gameState.solvedQuestions;
-          gameState.lastPlayedQuestions = remote.lastPlayedQuestions ?? gameState.lastPlayedQuestions;
-          gameState.achievements = { ...gameState.achievements, ...remote.achievements };
-          gameState.recentAchievements = remote.recentAchievements ?? gameState.recentAchievements;
-          console.log('📦 Oyun ilerlemesi yüklendi');
-        } else {
-          console.log("❌ Oyun ilerlemesi bulunamadı");
-        }
-      } catch (e) {
-        console.error("Firestore oyun ilerlemesi hatası:", e);
+  const licenseKey = localStorage.getItem('nevafilKey');
+  if (!licenseKey) return;
+
+  try {
+    // 2. Firestore'dan oyun ilerlemesini yükle
+    const gameRef = doc(db, "oyun_ilerleme", licenseKey);
+    const gameSnap = await getDoc(gameRef);
+    if (gameSnap.exists()) {
+      const remote = gameSnap.data();
+      console.log('📦 Firestore oyun verisi:', remote);
+      
+      gameState.score = remote.score ?? gameState.score;
+      gameState.currentLevel = remote.currentLevel ?? gameState.currentLevel;
+      gameState.maxUnlockedLevel = remote.maxUnlockedLevel ?? gameState.maxUnlockedLevel;
+      gameState.solvedQuestions = remote.solvedQuestions ?? gameState.solvedQuestions;
+      gameState.lastPlayedQuestions = remote.lastPlayedQuestions ?? gameState.lastPlayedQuestions;
+      gameState.achievements = { ...gameState.achievements, ...remote.achievements };
+      gameState.recentAchievements = remote.recentAchievements ?? gameState.recentAchievements;
+    } else {
+      console.log("❌ Oyun ilerlemesi bulunamadı, localStorage kullanılacak.");
+    }
+
+    // 3. Lisans kaydından kullanıcı adını al
+    // Önce direkt ID ile dene (eğer doküman ID'si lisans anahtarı ise)
+    const licenseRef = doc(db, "licenses", licenseKey);
+    let licenseSnap = await getDoc(licenseRef);
+    
+    if (!licenseSnap.exists()) {
+      // ID ile bulunamazsa, key alanına göre sorgula
+      const q = query(collection(db, "licenses"), where("key", "==", licenseKey));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        licenseSnap = querySnap.docs[0];
       }
-    })();
+    }
+
+    if (licenseSnap && licenseSnap.exists) {
+      const licenseData = licenseSnap.data();
+      const firstName = licenseData.firstName || '';
+      const lastName = licenseData.lastName || '';
+      gameState.username = (firstName + ' ' + lastName).trim() || 'Misafir';
+      console.log('👤 Kullanıcı adı yüklendi:', gameState.username);
+    } else {
+      console.log("❌ Lisans kaydı bulunamadı, username 'Misafir' olarak kalacak.");
+      gameState.username = 'Misafir';
+    }
+
+  } catch (e) {
+    console.error("Firestore'dan yükleme hatası:", e);
   }
+
+  // Son durumu görmek için
+  console.log('🎯 gameState güncellendi:', gameState);
 }
 
 
@@ -2060,7 +2057,6 @@ introLevel.innerText = gameState.currentLevel;
 introScore.innerText = gameState.score;
 updateAchievementsPreview();
 updateUserSwitchButton();
-  console.log('loadGameState sonrası gameState:', gameState);
 }
 
 function updateAchievementsPreview(){
@@ -2141,20 +2137,50 @@ async function saveSettings() {
 
 // ------------------------------------------------------------
 // Oyun başladığında
-async function startGameFromIntro() {
+function startGameFromIntro() {
+    // intro ekranını kapat
     introOverlay.classList.add('hidden');
+
+    // Kullanıcı girişi yapılmamışsa misafir ayarla
+    if(!gameState.username){
+        gameState.username = 'Misafir';
+        gameState.avatar = AVATAR_LIST[0].icon;
+        saveGameState();
+    }
+
+    // Oyun container'ını göster
     gameContainer.style.display = 'block';
 
-    // Eğer daha önce yüklenmediyse (misafir girişi) yükle
-    if (gameState.username === 'Misafir' || !gameState.username) {
-        await loadGameState();
+    // startGameFromIntro içinde, gameContainer gösterildikten sonra
+    document.getElementById('reportBugBtn')?.addEventListener('click', sendBugReport);
+    document.getElementById('navExitBtn').style.display = 'flex'; // Çıkış butonunu göster
+
+    // ASENKRON VERİ YÜKLEME
+    (async () => {
+        // Önce soruları yükle
+        await loadAllQuestions();
+        await loadGameState();       // Firestore ve localStorage'dan veri yükle
+        updateGameHeader();          // Kullanıcı adı, puan, seviye güncelle
+        loadLevelQuestions(gameState.currentLevel); // Seviyeyi yükle
+        renderLevelIndicators();     // Seviye göstergelerini güncelle
+        unlockAudio();
+        updateUserSwitchButton();    // Butonları güncelle (giriş/çıkış)
+    })();
+
+    // İlknur için özel mesaj (isteğe bağlı)
+    const userNameClean = gameState.username.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (userNameClean === 'ilknur' || userNameClean === 'ilknur turan') {
+        Swal.fire({
+            title: '❤️ Özel Mesaj ❤️',
+            text: 'Ercan seni seviyor!',
+            icon: 'success',
+            confirmButtonText: 'Ben de seni seviyorum',
+            confirmButtonColor: '#ff6b6b',
+            background: '#fff5f5',
+            timer: 5000,
+            timerProgressBar: true
+        });
     }
-    
-    updateGameHeader();
-    loadLevelQuestions(gameState.currentLevel);
-    renderLevelIndicators();
-    unlockAudio();
-    updateUserSwitchButton();
 }
 
 // Çıkış fonksiyonu (oyundan ana menüye)
@@ -3808,31 +3834,45 @@ async function logoutUser() {
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Evet, çık',
-        cancelButtonText: 'Vazgeç'
+        cancelButtonText: 'Vazgeç',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
     });
 
     if (result.isConfirmed) {
+        // Lisans anahtarını sil
         localStorage.removeItem('nevafilKey');
         
-        // gameState'i sıfırla (misafir)
+        // Oyun durumunu sıfırla (misafir yap)
         gameState = {
-            ...gameState,
-            username: 'Misafir',
-            avatar: AVATAR_LIST[0].icon,
-            score: 0,
-            currentLevel: 1,
             maxUnlockedLevel: 1,
+            currentLevel: 1,
+            currentQuestionIndexInLevel: 0,
+            score: 0,
+            earnedPointsForQuestion: {},
+            hintUsedInThisLevel: false,
+            hintsUsed: 0,
+            levelTradeUsed: false,
+            achievements: {
+                firstCorrect: false, streak: 0, quranMaster: false, namazkar: false, peygamberSever: false,
+                level5: false, level10: false, level15: false, level20: false, level25: false,
+                level30: false, level35: false, level40: false, level45: false, level50: false
+            },
+            recentAchievements: [],
             solvedQuestions: [],
             lastPlayedQuestions: [],
-            hintsUsed: 0,
-            recentAchievements: []
+            username: 'Misafir',
+            avatar: AVATAR_LIST[0].icon,
+            avatarImg: AVATAR_LIST[0].img,
+            darkMode: false
         };
-        saveGameState(); // localStorage'a kaydet
+        saveGameState();
 
+        // Oyun container'ını kapat, intro ekranını aç
         gameContainer.style.display = 'none';
         introOverlay.classList.remove('hidden');
         clearInterval(timerInterval);
-        updateIntroUI(); // intro'yu misafir olarak güncelle
+        updateIntroUI();
         updateUserSwitchButton();
     }
 }
@@ -3984,7 +4024,7 @@ document.addEventListener('DOMContentLoaded', function() {
 };
 
 
-//
+
 async function processLicense(licenseDoc) {
     const licenseData = licenseDoc.data();
     const key = licenseData.key;
@@ -3997,19 +4037,23 @@ async function processLicense(licenseDoc) {
         });
     }
 
+    // Lisans anahtarını localStorage'a kaydet
     localStorage.setItem('nevafilKey', key);
 
+    // Lisans input'una anahtarı yaz (opsiyonel, görmek isteyebilir)
     const licenseInput = document.getElementById('licenseInput');
-    if (licenseInput) licenseInput.value = key;
+    if (licenseInput) {
+        licenseInput.value = key;
+    }
 
-    // Oyun verilerini yükle (burada username hemen atanır)
-    await loadGameState();
+    // Oyun state'ini güncelle (loadGameState'i çağırarak verileri yükle)
+    await loadGameState(); // Bu, Firestore'dan verileri çeker ve gameState'i günceller
 
-    // Intro'yu güncelle (kullanıcı adı hemen görünür)
+    // Intro bilgilerini güncelle (isim, puan, seviye)
     updateIntroUI();
-    updateUserSwitchButton();
+    updateUserSwitchButton(); // Butonları güncelle (giriş/çıkış)
 
-    // Başarılı mesajı
+    // Başarılı mesajı göster
     Swal.fire({
         icon: 'success',
         title: 'Giriş başarılı',
@@ -4017,7 +4061,10 @@ async function processLicense(licenseDoc) {
         timer: 2000,
         showConfirmButton: false
     });
+
+    // Oyunu hemen başlatma, sadece hazır hale getir
 }
+
   
 
 
@@ -4132,24 +4179,6 @@ function startGame() {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
