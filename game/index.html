@@ -1746,6 +1746,56 @@ const AVATAR_LIST = [
 {name: 'Goofy', icon: '🐕', img: 'https://cdn-icons-png.flaticon.com/512/1995/1995575.png'},
 ];
 
+  const GOREVLER = [
+  { seviye: 3, metin: "Eşinin elini tut ve 10 saniye bırakma." },
+  { seviye: 4, metin: "Çocuğuna sarıl ve onu ne kadar sevdiğini söyle." },
+  { seviye: 5, metin: "Eşine 'Seni seviyorum' de." },
+  { seviye: 6, metin: "Ailece birlikte kısa bir dua edin." },
+  { seviye: 7, metin: "Çocuğunun başını okşa ve ona bir övgü söyle." },
+  { seviye: 8, metin: "Eşine bugün için teşekkür et." },
+  { seviye: 9, metin: "Ailecek birbirinize gülümseyin." },
+  { seviye: 10, metin: "Eşine 'İyi ki varsın' de." },
+  { seviye: 11, metin: "Çocuğuna bir hikaye anlat veya birlikte okuyun." },
+  { seviye: 12, metin: "Eşine onu neden sevdiğini anlatan bir cümle söyle." },
+  { seviye: 13, metin: "Ailece birlikte bir bardak çay/kahve içip sohbet edin." },
+  { seviye: 14, metin: "Çocuğuna 'Sen benim için değerlisin' de." },
+  { seviye: 15, metin: "Eşine sarıl ve bir süre öylece durun." },
+  { seviye: 16, metin: "Ailece birlikte bir şükür duası yapın." },
+  { seviye: 17, metin: "Çocuğuna ona güvendiğini söyle." },
+  { seviye: 18, metin: "Eşine küçük bir not yaz veya sürpriz yap." },
+  { seviye: 19, metin: "Ailece birlikte eski güzel bir anınızı anlatın." },
+  { seviye: 20, metin: "Eşine teşekkür et ve ona bir iyilik yap." },
+  { seviye: 21, metin: "Çocuğunla birlikte bir oyun oyna." },
+  { seviye: 22, metin: "Eşine 'Seninle gurur duyuyorum' de." },
+  { seviye: 23, metin: "Ailece birlikte bir iyilik yapın (örneğin birine yardım)." },
+  { seviye: 24, metin: "Çocuğuna bir becerisi için takdir et." },
+  { seviye: 25, metin: "Eşine romantik bir söz söyle." },
+  { seviye: 26, metin: "Ailece birlikte kısa bir yürüyüşe çıkın." },
+  { seviye: 27, metin: "Çocuğuna ona her zaman destek olacağını söyle." },
+  { seviye: 28, metin: "Eşine onu ne kadar takdir ettiğini anlat." },
+  { seviye: 29, metin: "Ailece birlikte gülmek için bir şaka yapın." },
+  { seviye: 30, metin: "Eşine 'Hayatımı güzelleştiriyorsun' de." },
+  { seviye: 31, metin: "Çocuğuna onun yeteneklerine inandığını söyle." },
+  { seviye: 32, metin: "Eşine bir özrün varsa dile getir veya bir konuda anlayış göster." },
+  { seviye: 33, metin: "Ailece birlikte bir hedef belirleyin." },
+  { seviye: 34, metin: "Çocuğuna onun özel olduğunu hissettir." },
+  { seviye: 35, metin: "Eşine seni mutlu eden bir anını hatırlat." },
+  { seviye: 36, metin: "Ailece birlikte bir dua edin ve birbirinize hayır dua edin." },
+  { seviye: 37, metin: "Çocuğuna onun karakterindeki güzel bir özelliği söyle." },
+  { seviye: 38, metin: "Eşine bir fincan çay/kahve ikram et." },
+  { seviye: 39, metin: "Ailece birlikte bir film veya belgesel izleyin." },
+  { seviye: 40, metin: "Eşine 'Sen benim en büyük şansımsın' de." },
+  { seviye: 41, metin: "Çocuğuna ona güvendiğini bir kez daha söyle." },
+  { seviye: 42, metin: "Eşine ona olan sevgini bir cümleyle ifade et." },
+  { seviye: 43, metin: "Ailece birlikte bir kitap okuyun veya bir hikaye paylaşın." },
+  { seviye: 44, metin: "Çocuğuna ona hayran olduğun bir yönünü söyle." },
+  { seviye: 45, metin: "Eşine 'Seninle her şey daha güzel' de." },
+  { seviye: 46, metin: "Ailece birlikte bir iyilik projesi planlayın." },
+  { seviye: 47, metin: "Çocuğuna onun geleceği için bir dua et." },
+  { seviye: 48, metin: "Eşine ona minnettar olduğun bir şeyi söyle." },
+  { seviye: 49, metin: "Ailece birlikte Allah'a şükredin ve birbirinize dua edin." }
+];
+
 // ------------------------------------------------------------
 // SES SİSTEMİ
 // ------------------------------------------------------------
@@ -1841,6 +1891,7 @@ let gameState = {
   username: '',
   avatar: AVATAR_LIST[0].icon,
   avatarImg: AVATAR_LIST[0].img,
+  tamamlananGorevler: [], // tamamlanan görevlerin seviyeleri
   darkMode: false
 };
 
@@ -2640,9 +2691,17 @@ function loadQuestionAtIndex(index) {
   eliminatedOptions = [];
   nextBtn.classList.add('disabled');
   nextBtn.classList.remove('active');
+
+  // YENİ: Seviyenin ilk sorusu yüklenirken görev kontrolü
+  if (index === 0) {
+    const mevcutSeviye = gameState.currentLevel;
+    // Görev 3-49 arası seviyelerde ve daha önce tamamlanmamışsa
+    if (mevcutSeviye >= 3 && mevcutSeviye <= 49 && !gameState.tamamlananGorevler.includes(mevcutSeviye)) {
+      gorevGoster(mevcutSeviye);
+    }
+  }
+
   startTimer(60);
-  
-  // YENİ: Seviye ilerleme bilgisini güncelle
   updateLevelProgress();
 }
 
@@ -4391,6 +4450,47 @@ function startGame() {
     } else {
         console.error("❌ gameContainer bulunamadı!");
     }
+}
+
+
+
+//görev sağlayıcıv
+  async function gorevGoster(seviye) {
+  const gorev = GOREVLER.find(g => g.seviye === seviye);
+  if (!gorev) return; // bu seviye için görev yoksa çık
+  const puan = seviye * 2;
+  const result = await Swal.fire({
+    title: '🎁 Gönül Görevi',
+    html: `<p style="font-size:1.1rem;">${gorev.metin}</p><p style="color:#7c3aed; font-weight:bold;">Kazanacağın Puan: ${puan}</p>`,
+    icon: 'info',
+    showCancelButton: true,
+    confirmButtonText: '✔ Tamamladım',
+    cancelButtonText: '✖ Sonra',
+    confirmButtonColor: '#7c3aed',
+    cancelButtonColor: '#a78bfa',
+    reverseButtons: true,
+    width: '300px',
+    customClass: { popup: 'swal-popup-mini' }
+  });
+
+  if (result.isConfirmed) {
+    // Görev tamamlandı
+    gameState.score += puan;
+    gameState.tamamlananGorevler.push(seviye);
+    saveGameState();
+    if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+    // Küçük bir kutlama mesajı
+    Swal.fire({
+      icon: 'success',
+      title: 'Maşallah! 🌿',
+      text: `${puan} puan kazandın. Evine muhabbet olsun!`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } else {
+    // Sonra yapacağım denirse, bir şey yapma, görev daha sonra tekrar sorulabilir mi? Belki bir bayrak eklenebilir ama şimdilik pas geçelim.
+    // İstersek "sonra" diyenler için görevi daha sonra tekrar gösterebiliriz. Bunu düşünmek lazım.
+  }
 }
   
 </script>
