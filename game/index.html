@@ -2691,18 +2691,30 @@ function loadQuestionAtIndex(index) {
   eliminatedOptions = [];
   nextBtn.classList.add('disabled');
   nextBtn.classList.remove('active');
+  
+  // Timer'ı başlatacak fonksiyon (hem timer hem level progress)
+  const startTimerAndProgress = () => {
+    startTimer(60);
+    updateLevelProgress();
+  };
 
-  // YENİ: Seviyenin ilk sorusu yüklenirken görev kontrolü
+  // Eğer bu seviyenin ilk sorusuysa ve görev varsa
   if (index === 0) {
     const mevcutSeviye = gameState.currentLevel;
-    // Görev 3-49 arası seviyelerde ve daha önce tamamlanmamışsa
     if (mevcutSeviye >= 3 && mevcutSeviye <= 49 && !gameState.tamamlananGorevler.includes(mevcutSeviye)) {
-      gorevGoster(mevcutSeviye);
+      // Görev popup'ını göster, bittiğinde timer'ı başlat
+      gorevGoster(mevcutSeviye).then(() => {
+        startTimerAndProgress();
+      }).catch(() => {
+        // Hata olursa yine de timer başlasın
+        startTimerAndProgress();
+      });
+      return; // Burada return ederek fonksiyonu bitiriyoruz, timer daha sonra başlayacak
     }
   }
-
-  startTimer(60);
-  updateLevelProgress();
+  
+  // Görev yoksa veya index 0 değilse direkt timer'ı başlat
+  startTimerAndProgress();
 }
 
 function startTimer(seconds){
