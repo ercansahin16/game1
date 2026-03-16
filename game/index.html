@@ -1301,44 +1301,126 @@ body { padding:8px; }
     box-shadow: 0 3px 0 rgba(0,0,0,0.25);
 }
 
-  .share-btn{
-width:42px;
-height:42px;
-border-radius:12px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:20px;
-color:white;
-text-decoration:none;
-transition:.2s;
+
+
+  .share-popup {
+    position: fixed;
+    right: 16px;
+    bottom: 90px;
+    width: 220px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    z-index: 15002;
+    animation: fadeInShare 0.25s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.share-btn:hover{
-transform:scale(1.12);
+.share-popup.closing {
+    opacity: 0;
+    transform: translateY(10px);
 }
 
-.share-btn:nth-child(1){
-background:#25D366;
+.share-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
-.share-btn:nth-child(2){
-background:#1DA1F2;
+.share-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.share-btn:nth-child(3){
-background:#0088cc;
+.share-close-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
-@keyframes fadeInShare{
-from{
-opacity:0;
-transform:translateY(15px);
+.share-close-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #111827;
 }
-to{
-opacity:1;
-transform:translateY(0);
+
+.share-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
 }
+
+.share-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #fff;
+    font-size: 21px;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.share-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    opacity: 0.95;
+}
+
+.whatsapp-btn {
+    background: #25D366;
+}
+
+.twitter-btn {
+    background: #1DA1F2;
+}
+
+.telegram-btn {
+    background: #0088cc;
+}
+
+@keyframes fadeInShare {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .share-popup {
+        right: 12px;
+        bottom: 82px;
+        width: 200px;
+        padding: 12px;
+        border-radius: 16px;
+    }
+
+    .share-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 19px;
+        border-radius: 12px;
+    }
+
+    .share-title {
+        font-size: 13px;
+    }
 }
 
 </style>
@@ -3015,65 +3097,51 @@ achievementsList.innerHTML = html;
 // ------------------------------------------------------------
 // SOSYAL MEDYA PAYLAŞIMI
 // ------------------------------------------------------------
-function showShareButtons(level){
+function showShareButtons(level) {
+    const text = `Manevi Bilgi Oyunu'nda Seviye ${level} tamamladım! Yarışmayı sen de dene 🌙 nevafil.com.tr`;
 
-const text = `Manevi Bilgi Oyunu'nda Seviye ${level} tamamladım! Yarışmayı sen de dene 🌙 nevafil.com.tr`;
+    const oldBox = document.querySelector('.share-popup');
+    if (oldBox) oldBox.remove();
 
-const shareDiv = document.createElement('div');
+    const shareDiv = document.createElement('div');
+    shareDiv.className = 'share-popup';
 
-shareDiv.style = `
-position:fixed;
-bottom:90px;
-right:20px;
-width:220px;
-background:rgba(255,255,255,0.95);
-backdrop-filter:blur(10px);
-border-radius:18px;
-padding:16px;
-box-shadow:0 15px 40px rgba(0,0,0,0.2);
-z-index:15002;
-font-family:system-ui;
-animation:fadeInShare .35s ease;
-`;
+    shareDiv.innerHTML = `
+        <div class="share-header">
+            <span class="share-title"><i class="fas fa-share-alt"></i> Paylaş</span>
+            <button id="closeShare" class="share-close-btn" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
-shareDiv.innerHTML = `
+        <div class="share-actions">
+            <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" class="share-btn whatsapp-btn" aria-label="WhatsApp'ta paylaş">
+                <i class="fab fa-whatsapp"></i>
+            </a>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-<span style="font-weight:600; font-size:14px;">Paylaş</span>
-<button id="closeShare" style="background:none;border:none;font-size:16px;cursor:pointer;color:#555;">
-<i class="fas fa-times"></i>
-</button>
-</div>
+            <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" class="share-btn twitter-btn" aria-label="X'te paylaş">
+                <i class="fab fa-twitter"></i>
+            </a>
 
-<div style="display:flex; justify-content:space-around;">
+            <a href="https://t.me/share/url?url=https://nevafil.com.tr&text=${encodeURIComponent(text)}" target="_blank" class="share-btn telegram-btn" aria-label="Telegram'da paylaş">
+                <i class="fab fa-telegram"></i>
+            </a>
+        </div>
+    `;
 
-<a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" class="share-btn">
-<i class="fab fa-whatsapp"></i>
-</a>
+    document.body.appendChild(shareDiv);
 
-<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" class="share-btn">
-<i class="fab fa-twitter"></i>
-</a>
+    document.getElementById('closeShare')?.addEventListener('click', () => {
+        shareDiv.classList.add('closing');
+        setTimeout(() => shareDiv.remove(), 220);
+    });
 
-<a href="https://t.me/share/url?url=https://nevafil.com.tr&text=${encodeURIComponent(text)}" target="_blank" class="share-btn">
-<i class="fab fa-telegram"></i>
-</a>
-
-</div>
-`;
-
-document.body.appendChild(shareDiv);
-
-document.getElementById('closeShare')?.addEventListener('click', () => {
-shareDiv.style.opacity="0";
-setTimeout(()=>shareDiv.remove(),200);
-});
-
-setTimeout(() => {
-shareDiv.style.opacity="0";
-setTimeout(()=>shareDiv.remove(),200);
-}, 10000);
-
+    setTimeout(() => {
+        if (document.body.contains(shareDiv)) {
+            shareDiv.classList.add('closing');
+            setTimeout(() => shareDiv.remove(), 220);
+        }
+    }, 10000);
 }
 
 // ------------------------------------------------------------
