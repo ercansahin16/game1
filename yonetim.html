@@ -1112,18 +1112,64 @@ async function loadUsers() {
             Swal.fire('Temizlendi', '', 'success');
         });
 
-        // Tüm kullanıcı verilerini sıfırla (localStorage + leaderboard) - sadece leaderboard'u siler, localStorage kullanıcıya ait.
-        document.getElementById('resetAllUsersBtn').addEventListener('click', async () => {
-            const result = await Swal.fire({ title: 'TÜM KULLANICI VERİLERİ SIFIRLANSIN MI?', text: 'Liderlik tablosu tamamen silinecek!', icon: 'warning', showCancelButton: true });
-            if (!result.isConfirmed) return;
-            const q = query(collection(db, LEADERBOARD_COLL));
-            const snapshot = await getDocs(q);
-            const batch = writeBatch(db);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            loadUsers();
-            Swal.fire('Tüm veriler silindi', '', 'success');
+   // Tüm kullanıcı verilerini sıfırla (leaderboard + oyun_ilerleme + localStorage)
+document.getElementById('resetAllUsersBtn').addEventListener('click', async () => {
+    const result = await Swal.fire({
+        title: 'TÜM KULLANICI VERİLERİ SIFIRLANSIN MI?',
+        text: 'Liderlik tablosu, tüm oyun ilerlemeleri ve localStorage verileri silinecek!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, sıfırla',
+        cancelButtonText: 'İptal'
+    });
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Siliniyor...',
+        html: 'Lütfen bekleyin.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        // 1. Leaderboard koleksiyonunu sil
+        const leaderboardSnapshot = await getDocs(collection(db, LEADERBOARD_COLL));
+        const batch1 = writeBatch(db);
+        leaderboardSnapshot.docs.forEach(doc => batch1.delete(doc.ref));
+        await batch1.commit();
+
+        // 2. Oyun ilerleme koleksiyonunu sil (oyun_ilerleme)
+        const progressSnapshot = await getDocs(collection(db, "oyun_ilerleme"));
+        const batch2 = writeBatch(db);
+        progressSnapshot.docs.forEach(doc => batch2.delete(doc.ref));
+        await batch2.commit();
+
+        // 3. localStorage'daki oyun verilerini temizle
+        localStorage.removeItem('nevafilKey');
+        localStorage.removeItem(STORAGE_KEY); // STORAGE_KEY değişkenin tanımlı olmalı
+        localStorage.removeItem('deviceId'); // İstersen deviceId'yi de silebilirsin
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: 'Tüm kullanıcı verileri sıfırlandı.',
+            timer: 2000
         });
+
+        // Sayfayı yenile (isteğe bağlı)
+        // location.reload();
+        loadUsers(); // liderlik tablosunu yeniden yükle
+    } catch (error) {
+        console.error("Silme hatası:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Silme işlemi başarısız.'
+        });
+    }
+});
 
         // Çıkış
         document.getElementById('logoutBtn').addEventListener('click', () => {
