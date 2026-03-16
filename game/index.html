@@ -3730,8 +3730,21 @@ document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
         `,
         focusConfirm: false,
         showCancelButton: true,
-        confirmButtonText: 'Gönder',
-        cancelButtonText: 'Vazgeç',
+        confirmButtonText: '✔ Gönder',
+        cancelButtonText: '✖ Vazgeç',
+        reverseButtons: true,
+
+        width: '260px',
+        padding: '0.8em',
+
+        customClass: {
+            popup: 'swal-popup-mini',
+            confirmButton: 'swal-confirm-custom',
+            cancelButton: 'swal-cancel-custom'
+        },
+
+        buttonsStyling: false,
+
         preConfirm: () => {
             const msg = document.getElementById('helpMessage').value.trim();
             if (!msg) {
@@ -3743,11 +3756,9 @@ document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
     });
 
     if (message) {
-        // Oyun içi bilgileri topla
         const user = gameState?.username || 'Misafir';
         const lisansKey = localStorage.getItem('nevafilKey') || null;
         const email = gameState?.email || null;
-        // Mevcut soru ID'sini al (eğer varsa)
         const soruId = currentQuestion?.id || null;
 
         await saveGameHelpMessage({
@@ -3756,7 +3767,7 @@ document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
             kullanici_adi: user,
             lisans_key: lisansKey,
             email: email,
-            soruId: soruId  // YENİ: soru ID'si eklendi
+            soruId: soruId
         });
 
         Swal.fire({
@@ -3764,7 +3775,14 @@ document.getElementById('helpGameBtn')?.addEventListener('click', async () => {
             title: 'Mesajınız Gönderildi',
             text: 'En kısa sürede dönüş yapılacaktır.',
             timer: 2000,
-            showConfirmButton: false
+            showConfirmButton: false,
+
+            width: '260px',
+            padding: '0.8em',
+
+            customClass: {
+                popup: 'swal-popup-mini'
+            }
         });
     }
 });
