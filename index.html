@@ -8,159 +8,449 @@
     <style>
         :root {
             --primary: #6c5ce7;
-            --primary-soft: rgba(108, 92, 231, 0.1);
+            --primary-hover: #5a49da;
+            --primary-soft: rgba(108, 92, 231, 0.10);
             --bg-dark: #0f172a;
-            --glass: rgba(30, 41, 59, 0.6);
+            --bg-layer: #131c31;
+            --glass: rgba(17, 24, 39, 0.82);
+            --glass-2: rgba(30, 41, 59, 0.78);
             --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.12);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --muted-2: #64748b;
+            --shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+            --radius-xl: 28px;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --transition: 0.25s ease;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100%;
+        }
 
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg-dark);
-            background-image: radial-gradient(circle at top right, #1e1b4b, transparent), 
-                              radial-gradient(circle at bottom left, #1e1b4b, transparent);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(circle at top right, rgba(76, 29, 149, 0.35), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(30, 41, 59, 0.9), transparent 35%),
+                linear-gradient(180deg, #0b1120 0%, #0f172a 100%);
+            color: var(--text);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            color: #f8fafc;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
         }
 
         /* Spinner */
         #loadingSpinner {
-            position: fixed; inset: 0; background: var(--bg-dark);
-            display: flex; justify-content: center; align-items: center; z-index: 9999;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
-        .spinner {
-            width: 40px; height: 40px; border: 3px solid var(--primary-soft);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Minimalist Card */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* License Overlay */
         #licensePrompt {
-            position: fixed; inset: 0; display: none;
-            justify-content: center; align-items: center;
-            backdrop-filter: blur(20px); z-index: 100;
-            background: rgba(15, 23, 42, 0.4);
+            position: fixed;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            background: rgba(10, 15, 28, 0.55);
+            z-index: 100;
         }
 
         .card {
-            background: var(--glass);
+            width: 100%;
+            max-width: 400px;
+            padding: 28px 24px 24px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(180deg, var(--glass) 0%, var(--glass-2) 100%);
             border: 1px solid var(--border);
-            padding: 40px 30px;
-            border-radius: 32px;
-            width: 90%;
-            max-width: 380px;
+            box-shadow: var(--shadow);
             text-align: center;
-            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
-            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent 35%);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
 
         .app-logo {
-            width: 180px; height: 180px;
-            margin: 0 auto 20px;
-            border-radius: 18px;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
+            width: 108px;
+            height: 108px;
+            margin: 0 auto 18px;
+            display: block;
             object-fit: contain;
+            border-radius: 24px;
+            padding: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
 
-        h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
+        h2 {
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .form-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
         input {
             width: 100%;
-            padding: 16px;
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--border);
+            height: 52px;
+            padding: 0 16px;
             border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(2, 6, 23, 0.34);
             color: #fff;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            transition: all 0.3s;
+            font-size: 0.98rem;
             text-align: center;
+            transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), transform var(--transition);
         }
-        input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
 
-        /* Yeni buton stili */
+        input::placeholder {
+            color: #7c8aa1;
+        }
+
+        input:focus {
+            border-color: rgba(108, 92, 231, 0.9);
+            background: rgba(2, 6, 23, 0.55);
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14);
+        }
+
+        .submit-btn,
         .link-button {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: #94a3b8;
-            padding: 12px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
             width: 100%;
-            margin-bottom: 12px;
-        }
-        .link-button:hover {
-            border-color: var(--primary);
-            color: white;
-            background: var(--primary-soft);
-        }
-
-        .recover-link {
-            font-size: 0.8rem; color: #64748b; text-decoration: none;
-            display: block; margin-bottom: 25px; transition: 0.2s;
-        }
-        .recover-link:hover { color: var(--primary); }
-
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
+            min-height: 50px;
             border-radius: 16px;
-            font-size: 1rem;
+            font-size: 0.96rem;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.3s;
-             margin-bottom: 12px;
+            transition: transform var(--transition), background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 16px;
         }
-        .submit-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
 
-        .footer-text { margin-top: 25px; font-size: 0.85rem; color: #64748b; }
-        .footer-text a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .submit-btn {
+            border: none;
+            background: linear-gradient(180deg, var(--primary) 0%, #5f50dc 100%);
+            color: #fff;
+            box-shadow: 0 14px 28px rgba(108, 92, 231, 0.28);
+        }
 
-        /* Yardım butonu için ayrı stil */
-        .help-btn {
-            background: transparent;
+        .submit-btn:hover {
+            background: linear-gradient(180deg, var(--primary-hover) 0%, #5645d7 100%);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active,
+        .link-button:active {
+            transform: scale(0.99);
+        }
+
+        .link-button {
+            background: rgba(255,255,255,0.02);
             border: 1px solid var(--border);
-            color: #94a3b8;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
+            color: var(--muted);
         }
-        .help-btn:hover {
-            border-color: var(--primary);
-            color: white;
+
+        .link-button:hover {
             background: var(--primary-soft);
+            border-color: rgba(108, 92, 231, 0.35);
+            color: #fff;
         }
 
-        #gameContainer { width: 100%; height: 100vh; display: none; }
-        iframe { width: 100%; height: 100%; border: none; }
+        .link-button.primary-link {
+            color: #dbe3f3;
+        }
 
-        /* SweetAlert Styling */
-        .swal2-popup { border-radius: 24px !important; background: #1e293b !important; color: white !important; }
-        .swal2-title { color: white !important; }
-        .swal2-html-container { color: #cbd5e1 !important; }
-        .swal2-input { background: #334155 !important; border: 1px solid #475569 !important; color: white !important; border-radius: 40px !important; }
-        .swal2-confirm { background: var(--primary) !important; border-radius: 40px !important; padding: 12px 24px !important; }
+        .small-text {
+            margin-top: 14px;
+            font-size: 0.8rem;
+            color: var(--muted-2);
+            line-height: 1.45;
+        }
+
+        #gameContainer {
+            width: 100%;
+            height: 100vh;
+            display: none;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* SweetAlert */
+        .swal2-popup {
+            width: min(92vw, 360px) !important;
+            border-radius: 22px !important;
+            background: #141d30 !important;
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45) !important;
+            padding: 1.1rem !important;
+        }
+
+        .swal2-title {
+            color: #f8fafc !important;
+            font-size: 1.12rem !important;
+            font-weight: 700 !important;
+            line-height: 1.3 !important;
+            padding: 0.2rem 0 0 !important;
+        }
+
+        .swal2-html-container {
+            color: #cbd5e1 !important;
+            font-size: 0.92rem !important;
+            line-height: 1.5 !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        .swal2-input,
+        .swal2-textarea {
+            width: 100% !important;
+            margin: 10px auto 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            background: rgba(2, 6, 23, 0.36) !important;
+            color: #fff !important;
+            font-size: 0.95rem !important;
+            box-shadow: none !important;
+        }
+
+        .swal2-input {
+            height: 46px !important;
+            padding: 0 14px !important;
+        }
+
+        .swal2-textarea {
+            min-height: 96px !important;
+            padding: 12px 14px !important;
+            resize: vertical !important;
+        }
+
+        .swal2-input:focus,
+        .swal2-textarea:focus {
+            border-color: rgba(108, 92, 231, 0.9) !important;
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14) !important;
+        }
+
+        .swal2-actions {
+            gap: 8px !important;
+            margin-top: 1rem !important;
+            width: 100% !important;
+        }
+
+        .swal2-confirm,
+        .swal2-cancel {
+            border-radius: 14px !important;
+            min-height: 42px !important;
+            padding: 0 16px !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            margin: 0 !important;
+        }
+
+        .swal2-confirm {
+            background: var(--primary) !important;
+        }
+
+        .swal2-confirm:hover {
+            background: var(--primary-hover) !important;
+        }
+
+        .swal2-cancel {
+            background: rgba(255,255,255,0.06) !important;
+            color: #e2e8f0 !important;
+            border: 1px solid rgba(255,255,255,0.07) !important;
+        }
+
+        .swal2-validation-message {
+            border-radius: 12px !important;
+            background: rgba(239, 68, 68, 0.12) !important;
+            color: #fecaca !important;
+            font-size: 0.86rem !important;
+            padding: 10px 12px !important;
+            margin-top: 10px !important;
+        }
+
+        .swal2-loader {
+            border-color: rgba(108, 92, 231, 0.3) transparent rgba(108, 92, 231, 0.3) transparent !important;
+        }
+
+        .swal2-select-option:hover {
+            background: #ebeef6 !important;
+            border-color: #cfd7ea !important;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 480px) {
+            body {
+                align-items: stretch;
+            }
+
+            #licensePrompt {
+                padding: 14px;
+            }
+
+            .card {
+                max-width: 100%;
+                padding: 22px 16px 18px;
+                border-radius: 24px;
+            }
+
+            .app-logo {
+                width: 88px;
+                height: 88px;
+                margin-bottom: 14px;
+                border-radius: 20px;
+            }
+
+            h2 {
+                font-size: 1.35rem;
+            }
+
+            .subtitle {
+                font-size: 0.88rem;
+                margin-bottom: 18px;
+            }
+
+            input {
+                height: 46px;
+                font-size: 0.93rem;
+                border-radius: 14px;
+                padding: 0 14px;
+            }
+
+            .submit-btn,
+            .link-button {
+                min-height: 46px;
+                border-radius: 14px;
+                font-size: 0.9rem;
+                padding: 0 12px;
+            }
+
+            .small-text {
+                font-size: 0.75rem;
+                margin-top: 12px;
+            }
+
+            .swal2-popup {
+                width: min(94vw, 330px) !important;
+                border-radius: 18px !important;
+                padding: 1rem !important;
+            }
+
+            .swal2-title {
+                font-size: 1rem !important;
+            }
+
+            .swal2-html-container {
+                font-size: 0.86rem !important;
+            }
+
+            .swal2-input {
+                height: 42px !important;
+                font-size: 0.9rem !important;
+            }
+
+            .swal2-textarea {
+                min-height: 84px !important;
+                font-size: 0.9rem !important;
+            }
+
+            .swal2-confirm,
+            .swal2-cancel {
+                min-height: 40px !important;
+                font-size: 0.86rem !important;
+                border-radius: 12px !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .card {
+                padding: 20px 14px 16px;
+            }
+
+            .app-logo {
+                width: 78px;
+                height: 78px;
+            }
+
+            h2 {
+                font-size: 1.24rem;
+            }
+
+            .subtitle {
+                font-size: 0.84rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -172,26 +462,25 @@
 <div id="licensePrompt">
     <div class="card">
         <img src="https://raw.githubusercontent.com/ercansahin16/game1/refs/heads/main/favicon.ico" alt="Logo" class="app-logo">
-        
+
         <h2>Nevafil</h2>
         <p class="subtitle">Manevi bir yolculuğa hazır mısın?</p>
-        
-        <!-- Lisans anahtarı girişi -->
-        <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
-        
-        <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
 
-        <!-- Lisans alma linki -->
-        <button class="link-button">Lisansın yok mu? <a href="https://www.shopier.com/nevafil/44722560" target="_blank">Buradan Al</a></button>
-        
-        <!-- Zaten lisansı olanlar için buton -->
-        <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
+        <div class="form-stack">
+            <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
 
-        <!-- Yeni: Yardım butonu -->
-        <!-- Lisans kartındaki diğer butonların altına -->
-<button class="link-button" onclick="window.showHelpModal()">
-    <i class="fas fa-question-circle"></i> Yardım / İletişim
-</button>
+            <button class="submit-btn" onclick="window.onLicenseSubmit()">Oyuna Giriş Yap</button>
+
+            <a class="link-button primary-link" href="https://www.shopier.com/nevafil/44722560" target="_blank" rel="noopener noreferrer">
+                Lisansın yok mu? Buradan Al
+            </a>
+
+            <button class="link-button" onclick="window.showEmailModal()">🔑 Zaten bir lisansım var</button>
+
+            <button class="link-button" onclick="window.showHelpModal()">❔ Yardım / İletişim</button>
+        </div>
+
+        <p class="small-text">Giriş yapmak için lisans anahtarınızı kullanın veya mevcut lisansınızı e-posta adresinizle yükleyin.</p>
     </div>
 </div>
 
@@ -202,7 +491,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-    
+
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -211,10 +500,10 @@
         messagingSenderId: "450775848659",
         appId: "1:450775848659:web:ca192a401da3f887e1e626"
     };
-    
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
+
     function getDeviceId() {
         let id = localStorage.getItem("deviceId");
         if (!id) {
@@ -223,17 +512,17 @@
         }
         return id;
     }
-    
+
     async function verifyLicense(key) {
         try {
             const q = query(collection(db, "licenses"), where("key", "==", key));
             const snapshot = await getDocs(q);
             if (snapshot.empty) return { ok: false, msg: "Geçersiz anahtar!" };
-            
+
             const licenseDoc = snapshot.docs[0];
             const data = licenseDoc.data();
             const device = getDeviceId();
-            
+
             if (!data.deviceId) {
                 await updateDoc(doc(db, "licenses", licenseDoc.id), { deviceId: device, used: true });
                 return { ok: true };
@@ -242,163 +531,146 @@
         } catch (e) { return { ok: false, msg: "Sistem hatası." }; }
     }
 
-    // Email ile lisans bulup input'a yaz
-window.recoverLicenseByEmail = async function(email) {
-  
-  // E-posta boş mu kontrol et
-  if (!email) {
-    Swal.fire({
-      title: 'Uyarı',
-      text: 'Lütfen e-posta adresinizi girin.',
-      icon: 'warning',
-      confirmButtonText: 'Tamam'
-    });
-    return;
-  }
+    window.recoverLicenseByEmail = async function(email) {
+        if (!email) {
+            Swal.fire({
+                title: 'Uyarı',
+                text: 'Lütfen e-posta adresinizi girin.',
+                icon: 'warning',
+                confirmButtonText: 'Tamam'
+            });
+            return;
+        }
 
-  // E-postayı küçük harfe çevir (case-insensitive arama için)
-  const normalizedEmail = email.trim().toLowerCase();
+        const normalizedEmail = email.trim().toLowerCase();
 
-  Swal.fire({
-    title: 'Aranıyor...',
-    html: 'Lisansınız kontrol ediliyor.',
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  try {
-    // Firestore'da e-posta ile sorgula (küçük harfli)
-    const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Bulunamadı',
-        text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
-        confirmButtonText: 'Tamam'
-      });
-      return;
-    }
-
-    // Tek lisans varsa direkt devam et
-    if (snapshot.size === 1) {
-      await processLicense(snapshot.docs[0]);
-      return;
-    }
-
-    // Birden çok lisans var, seçim için tıklanabilir kartlar oluştur
-    const licenseOptions = snapshot.docs.map(doc => {
-      const data = doc.data();
-      const firstName = data.firstName || '';
-      const lastName = data.lastName || '';
-      const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
-      return {
-        id: doc.id,
-        key: data.key,
-        fullName: fullName,
-        doc: doc
-      };
-    });
-
-    // SweetAlert'te kartları göster (onay butonu yok, direkt kartlar tıklanabilir)
-    await Swal.fire({
-      title: 'Birden fazla hesap bulundu',
-      html: `
-        <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          ${licenseOptions.map(opt => `
-            <button class="swal2-select-option" data-key="${opt.key}" style="
-              width: 100%;
-              padding: 14px;
-              background: #f3f4f6;
-              border: 2px solid #e5e7eb;
-              border-radius: 12px;
-              font-size: 1rem;
-              font-weight: 500;
-              color: #1f2937;
-              cursor: pointer;
-              transition: all 0.2s;
-              text-align: left;
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            ">
-              <span style="font-size:1.3rem;">👤</span>
-              <span style="flex:1;">${opt.fullName}</span>
-              <span style="color:#6b7280;">→</span>
-            </button>
-          `).join('')}
-        </div>
-      `,
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: 'Vazgeç',
-      didOpen: () => {
-        // Kartlara tıklama olayı ekle
-        document.querySelectorAll('.swal2-select-option').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const selectedKey = btn.dataset.key;
-            Swal.close();
-            const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
-            if (selectedDoc) {
-              processLicense(selectedDoc);
-            }
-          });
+        Swal.fire({
+            title: 'Aranıyor...',
+            html: 'Lisansınız kontrol ediliyor.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
         });
-      }
-    });
 
-  } catch (e) {
-    console.error("E-posta sorgulama hatası:", e);
-    Swal.fire({
-      icon: 'error',
-      title: 'Hata',
-      text: 'Sorgulama sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
-      confirmButtonText: 'Tamam'
-    });
-  }
-};
+        try {
+            const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
+            const snapshot = await getDocs(q);
 
-// Lisans işleme fonksiyonu (aynı kalabilir)
-async function processLicense(licenseDoc) {
-  const licenseData = licenseDoc.data();
-  const key = licenseData.key;
-  const currentDevice = getDeviceId();
+            if (snapshot.empty) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Bulunamadı',
+                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+            }
 
-  // Cihaz ID'sini güncelle (farklıysa)
-  if (licenseData.deviceId !== currentDevice) {
-    await updateDoc(doc(db, "licenses", licenseDoc.id), {
-      deviceId: currentDevice,
-      used: true
-    });
-  }
+            if (snapshot.size === 1) {
+                await processLicense(snapshot.docs[0]);
+                return;
+            }
 
-  // Lisans anahtarını input alanına yaz
-  const licenseInput = document.getElementById('licenseInput');
-  if (licenseInput) {
-    licenseInput.value = key;
-  }
+            const licenseOptions = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const firstName = data.firstName || '';
+                const lastName = data.lastName || '';
+                const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
+                return {
+                    id: doc.id,
+                    key: data.key,
+                    fullName: fullName,
+                    doc: doc
+                };
+            });
 
-  // Kısa bir başarı mesajı göster
-  Swal.fire({
-    icon: 'success',
-    title: 'Lisans Hazır',
-    text: 'Lisansınız başarıyla yüklendi.',
-    timer: 1500,
-    showConfirmButton: false
-  });
+            await Swal.fire({
+                title: 'Birden fazla hesap bulundu',
+                html: `
+                    <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        ${licenseOptions.map(opt => `
+                            <button class="swal2-select-option" data-key="${opt.key}" style="
+                                width:100%;
+                                padding:14px;
+                                background:#f3f4f6;
+                                border:2px solid #e5e7eb;
+                                border-radius:14px;
+                                font-size:0.96rem;
+                                font-weight:600;
+                                color:#1f2937;
+                                cursor:pointer;
+                                transition:all 0.2s;
+                                text-align:left;
+                                display:flex;
+                                align-items:center;
+                                gap:12px;
+                                box-shadow:0 2px 4px rgba(0,0,0,0.05);
+                            ">
+                                <span style="font-size:1.2rem;">👤</span>
+                                <span style="flex:1;">${opt.fullName}</span>
+                                <span style="color:#6b7280;">→</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Vazgeç',
+                didOpen: () => {
+                    document.querySelectorAll('.swal2-select-option').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const selectedKey = btn.dataset.key;
+                            Swal.close();
+                            const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
+                            if (selectedDoc) {
+                                processLicense(selectedDoc);
+                            }
+                        });
+                    });
+                }
+            });
 
-  // Otomatik giriş yap
-  setTimeout(() => {
-    window.onLicenseSubmit();
-  }, 1500);
-}
+        } catch (e) {
+            console.error("E-posta sorgulama hatası:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sorgulama sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+                confirmButtonText: 'Tamam'
+            });
+        }
+    };
 
+    async function processLicense(licenseDoc) {
+        const licenseData = licenseDoc.data();
+        const key = licenseData.key;
+        const currentDevice = getDeviceId();
 
+        if (licenseData.deviceId !== currentDevice) {
+            await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                deviceId: currentDevice,
+                used: true
+            });
+        }
 
-    // Yeni: email modalını aç
+        const licenseInput = document.getElementById('licenseInput');
+        if (licenseInput) {
+            licenseInput.value = key;
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Lisans Hazır',
+            text: 'Lisansınız başarıyla yüklendi.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        setTimeout(() => {
+            window.onLicenseSubmit();
+        }, 1500);
+    }
+
     window.showEmailModal = async () => {
         const { value: email } = await Swal.fire({
             title: 'E-posta adresiniz',
@@ -414,7 +686,6 @@ async function processLicense(licenseDoc) {
                 if (!/^\S+@\S+\.\S+$/.test(value)) return 'Geçerli bir e-posta girin';
             },
             didOpen: () => {
-                // Enter tuşunu dinle
                 const input = Swal.getInput();
                 input.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
@@ -425,12 +696,9 @@ async function processLicense(licenseDoc) {
         });
 
         if (email) {
-            
-             await window.recoverLicenseByEmail(email.toLowerCase());
+            await window.recoverLicenseByEmail(email.toLowerCase());
         }
     };
-
-
 
     function startGame() {
         document.getElementById("loadingSpinner").style.display = "none";
@@ -447,7 +715,7 @@ async function processLicense(licenseDoc) {
     window.addEventListener("load", async () => {
         const saved = localStorage.getItem("nevafilKey");
         if (saved && (await verifyLicense(saved)).ok) { startGame(); return; }
-        
+
         document.getElementById("loadingSpinner").style.display = "none";
         document.getElementById("licensePrompt").style.display = "flex";
     });
@@ -456,93 +724,93 @@ async function processLicense(licenseDoc) {
         const key = document.getElementById("licenseInput").value.trim().toUpperCase();
         if (!key) { Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); return; }
 
-        Swal.fire({ title: 'Giriş Yapılıyor...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({
+            title: 'Giriş Yapılıyor...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
         const res = await verifyLicense(key);
-        
+
         if (res.ok) {
             localStorage.setItem("nevafilKey", key);
             Swal.close();
             startGame();
-        } else { Swal.fire('Hata', res.msg, 'error'); }
+        } else {
+            Swal.fire('Hata', res.msg, 'error');
+        }
     };
 
+    window.showHelpModal = async () => {
+        const { value: formValues } = await Swal.fire({
+            title: 'Yardım / İletişim',
+            html: `
+                <div style="text-align:left;">
+                    <input id="swal-firstname" class="swal2-input" placeholder="Adınız">
+                    <input id="swal-lastname" class="swal2-input" placeholder="Soyadınız">
+                    <input id="swal-email" class="swal2-input" placeholder="E-posta adresiniz">
+                    <textarea id="swal-message" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Gönder',
+            cancelButtonText: 'Vazgeç',
+            preConfirm: () => {
+                const firstName = document.getElementById('swal-firstname').value.trim();
+                const lastName = document.getElementById('swal-lastname').value.trim();
+                const email = document.getElementById('swal-email').value.trim();
+                const message = document.getElementById('swal-message').value.trim();
 
-    // Yardım butonu modalını aç
-// Lisans sayfası yardım butonu
-window.showHelpModal = async () => {
-    const { value: formValues } = await Swal.fire({
-        title: 'Yardım / İletişim',
-        html: `
-            <div style="text-align: left;">
-                <input id="swal-firstname" class="swal2-input" placeholder="Adınız">
-                <input id="swal-lastname" class="swal2-input" placeholder="Soyadınız">
-                <input id="swal-email" class="swal2-input" placeholder="E-posta adresiniz">
-                <textarea id="swal-message" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
-            </div>
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Gönder',
-        cancelButtonText: 'Vazgeç',
-        preConfirm: () => {
-            const firstName = document.getElementById('swal-firstname').value.trim();
-            const lastName = document.getElementById('swal-lastname').value.trim();
-            const email = document.getElementById('swal-email').value.trim();
-            const message = document.getElementById('swal-message').value.trim();
+                if (!firstName) {
+                    Swal.showValidationMessage('Ad alanı boş olamaz');
+                    return false;
+                }
+                if (!lastName) {
+                    Swal.showValidationMessage('Soyad alanı boş olamaz');
+                    return false;
+                }
+                if (!email) {
+                    Swal.showValidationMessage('E-posta alanı boş olamaz');
+                    return false;
+                }
+                if (!message) {
+                    Swal.showValidationMessage('Mesaj alanı boş olamaz');
+                    return false;
+                }
+                return { firstName, lastName, email, message };
+            }
+        });
 
-            if (!firstName) {
-                Swal.showValidationMessage('Ad alanı boş olamaz');
-                return false;
-            }
-            if (!lastName) {
-                Swal.showValidationMessage('Soyad alanı boş olamaz');
-                return false;
-            }
-            if (!email) {
-                Swal.showValidationMessage('E-posta alanı boş olamaz');
-                return false;
-            }
-            if (!message) {
-                Swal.showValidationMessage('Mesaj alanı boş olamaz');
-                return false;
-            }
-            return { firstName, lastName, email, message };
+        if (formValues) {
+            await saveLicenseHelpMessage(formValues);
+            Swal.fire({
+                icon: 'success',
+                title: 'Mesajınız Gönderildi',
+                text: 'En kısa sürede dönüş yapılacaktır.',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
-    });
+    };
 
-    if (formValues) {
-        await saveLicenseHelpMessage(formValues);
-        Swal.fire({
-            icon: 'success',
-            title: 'Mesajınız Gönderildi',
-            text: 'En kısa sürede dönüş yapılacaktır.',
-            timer: 2000,
-            showConfirmButton: false
-        });
+    async function saveLicenseHelpMessage({ firstName, lastName, email, message }) {
+        try {
+            const helpRef = collection(db, "yardim_mesajlari");
+            await addDoc(helpRef, {
+                ad: firstName,
+                soyad: lastName,
+                email: email,
+                mesaj: message,
+                tarih: new Date(),
+                kaynak: 'lisans',
+                durum: 'Beklemede'
+            });
+        } catch (e) {
+            console.error("Mesaj kaydedilemedi:", e);
+            Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+        }
     }
-};
-
-// Lisans sayfası mesajını Firestore'a kaydet
-async function saveLicenseHelpMessage({ firstName, lastName, email, message }) {
-    try {
-        const helpRef = collection(db, "yardim_mesajlari");
-        await addDoc(helpRef, {
-            ad: firstName,
-            soyad: lastName,
-            email: email,
-            mesaj: message,
-            tarih: new Date(),
-            kaynak: 'lisans',
-            durum: 'Beklemede'   // YENİ
-        
-        });
-    } catch (e) {
-        console.error("Mesaj kaydedilemedi:", e);
-        Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
-    }
-}
-
-
 </script>
 
 </body>
