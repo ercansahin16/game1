@@ -334,6 +334,7 @@
         <div class="tab" data-tab="levelAssign">📊 Seviyeye Soru Atama</div>
         <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
         <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
+        <div class="tab" data-tab="tasks">📋 Görev Yönetimi</div>
         <div class="tab" data-tab="help">📬 Yardım Mesajları</div>
     </div>
 
@@ -550,6 +551,14 @@
     </div>
 
     <div id="helpMessagesList">Yükleniyor...</div>
+</div>
+
+
+    <!-- Görev Yönetimi Paneli -->
+<div class="panel" id="tasksPanel">
+    <h2><i class="fas fa-tasks"></i> Görev Yönetimi</h2>
+    <button class="btn btn-success" id="addTaskBtn"><i class="fas fa-plus"></i> Yeni Görev</button>
+    <div id="tasksList">Yükleniyor...</div>
 </div>
 
     
@@ -1996,6 +2005,150 @@ window.deleteHelpMessage = async (id) => {
 // Filtre değişince yeniden yükle
 document.getElementById('helpSourceFilter')?.addEventListener('change', loadHelpMessages);
 document.getElementById('helpStatusFilter')?.addEventListener('change', loadHelpMessages);
+
+
+
+
+
+         //Görevleri Listeleyen Fonksiyon
+        const TASKS_COLL = 'gorevler';
+
+async function loadTasks() {
+    const container = document.getElementById('tasksList');
+    container.innerHTML = '<div class="loading">Yükleniyor...</div>';
+    try {
+        const q = query(collection(db, TASKS_COLL), orderBy('seviye', 'asc'));
+        const snapshot = await getDocs(q);
+        let html = '<div class="table-responsive"><table><tr><th>Seviye</th><th>Görev Metni</th><th>Puan Çarpanı</th><th>İşlem</th></tr>';
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            html += `<tr>
+                <td>${data.seviye}</td>
+                <td>${data.metin}</td>
+                <td>${data.puanCarpani || 2}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="editTask('${doc.id}')">Düzenle</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTask('${doc.id}')">Sil</button>
+                </td>
+            </tr>`;
+        });
+        html += '</table></div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = 'Hata: ' + e.message;
+    }
+}
+
+
+        
+        //Yeni Görev Ekleme Modalı
+        document.getElementById('addTaskBtn').addEventListener('click', () => {
+    Swal.fire({
+        title: 'Yeni Görev Ekle',
+        html: `
+            <input id="taskSeviye" class="swal2-input" placeholder="Seviye (3-49)">
+            <textarea id="taskMetin" class="swal2-textarea" placeholder="Görev metni"></textarea>
+            <input id="taskCarpan" class="swal2-input" placeholder="Puan çarpanı (varsayılan 2)">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'İptal',
+        preConfirm: () => {
+            const seviye = parseInt(document.getElementById('taskSeviye').value);
+            const metin = document.getElementById('taskMetin').value.trim();
+            const carpan = parseInt(document.getElementById('taskCarpan').value) || 2;
+            if (isNaN(seviye) || seviye < 3 || seviye > 49) {
+                Swal.showValidationMessage('Seviye 3-49 arasında olmalıdır');
+                return false;
+            }
+            if (!metin) {
+                Swal.showValidationMessage('Görev metni boş olamaz');
+                return false;
+            }
+            return { seviye, metin, puanCarpani: carpan };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await addDoc(collection(db, TASKS_COLL), result.value);
+            loadTasks();
+            Swal.fire('Eklendi', 'Yeni görev kaydedildi.', 'success');
+        }
+    });
+});
+
+
+
+        //Görev Düzenleme Fonksiyonu
+        window.editTask = async (id) => {
+    const docRef = doc(db, TASKS_COLL, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        Swal.fire({
+            title: 'Görevi Düzenle',
+            html: `
+                <input id="taskSeviye" class="swal2-input" placeholder="Seviye" value="${data.seviye}">
+                <textarea id="taskMetin" class="swal2-textarea" placeholder="Görev metni">${data.metin}</textarea>
+                <input id="taskCarpan" class="swal2-input" placeholder="Puan çarpanı" value="${data.puanCarpani || 2}">
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Güncelle',
+            cancelButtonText: 'İptal',
+            preConfirm: () => {
+                const seviye = parseInt(document.getElementById('taskSeviye').value);
+                const metin = document.getElementById('taskMetin').value.trim();
+                const carpan = parseInt(document.getElementById('taskCarpan').value) || 2;
+                if (isNaN(seviye) || seviye < 3 || seviye > 49) {
+                    Swal.showValidationMessage('Seviye 3-49 arasında olmalıdır');
+                    return false;
+                }
+                if (!metin) {
+                    Swal.showValidationMessage('Görev metni boş olamaz');
+                    return false;
+                }
+                return { seviye, metin, puanCarpani: carpan };
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await updateDoc(docRef, result.value);
+                loadTasks();
+                Swal.fire('Güncellendi', 'Görev güncellendi.', 'success');
+            }
+        });
+    }
+};
+
+        //Görev Silme Fonksiyonu
+        window.deleteTask = async (id) => {
+    const result = await Swal.fire({
+        title: 'Emin misiniz?',
+        text: 'Bu görev silinecek!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, sil',
+        cancelButtonText: 'İptal'
+    });
+    if (result.isConfirmed) {
+        await deleteDoc(doc(db, TASKS_COLL, id));
+        loadTasks();
+        Swal.fire('Silindi', 'Görev silindi.', 'success');
+    }
+};
+
+        //Sekme Değiştiğinde Görevleri Yükle
+        // Sekme geçişlerinde, tasksPanel aktif olduğunda loadTasks çağır
+document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () => {
+    if (document.getElementById('tasksList').children.length === 0) {
+        loadTasks();
+    }
+});
+
+
+    
         
     </script>
 
