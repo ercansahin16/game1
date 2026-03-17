@@ -2964,16 +2964,25 @@ playSound('gameOver');
 
 async function onNext() {
   if (!nextBtn.classList.contains('active')) return;
+
   gameState.currentQuestionIndexInLevel++;
   updateLevelProgress();
 
+  // Seviye tamamlandı mı?
   if (gameState.currentQuestionIndexInLevel >= currentLevelQuestions.length) {
     const completedLevel = gameState.currentLevel;
-    if (completedLevel === gameState.maxUnlockedLevel) gameState.maxUnlockedLevel++;
+
+    // Kilitli seviye kontrolü
+    if (completedLevel === gameState.maxUnlockedLevel) {
+      gameState.maxUnlockedLevel++;
+    }
+
+    // Yeni seviyeye geç
     gameState.currentLevel = completedLevel + 1;
     gameState.currentQuestionIndexInLevel = 0;
     gameState.hintUsedInThisLevel = false;
 
+    // Her 5 seviyede rozet kontrolü
     if (completedLevel % 5 === 0) {
       const levelKey = `level${completedLevel}`;
       if (gameState.achievements[levelKey] === false) {
@@ -2981,20 +2990,24 @@ async function onNext() {
       }
     }
 
-    await saveGameState();  // Burada await kullanılabilir çünkü fonksiyon async oldu
+    // Oyun durumunu ve yeni seviye sorularını kaydet
+    await saveGameState();
     await loadLevelQuestions(gameState.currentLevel);
+
+    // Ekranı güncelle
     if (currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
     renderLevelIndicators();
 
+    // Rozet mesajı (opsiyonel)
     let badgeMessage = '';
     if (completedLevel % 5 === 0 && gameState.achievements[`level${completedLevel}`]) {
       const badgeName = ACHIEVEMENT_NAMES[`level${completedLevel}`];
       badgeMessage = ` ve ${badgeName} rozeti kazandınız!`;
     }
 
-    // --- SEVİYE ATLAMA KUTLAMASI ---
+    // Seviye atlama kutlaması
     triggerConfetti();
-    showToast(`🎉 Tebrikler! Seviye ${completedLevel} tamamlandı!🏆 Seviye ${gameState.currentLevel} geçtiniz.`, 'success');
+    showToast(`🎉 Tebrikler! 🏆 Seviye ${gameState.currentLevel} geçtiniz.`, 'success');
     playSound('levelUp');
     showShareButtons(completedLevel);
 
@@ -3023,15 +3036,16 @@ async function onNext() {
         background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
         color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
       });
-
-      // Mascot konuşsun (eklenen satır)
       mascotSpeak('🎁 Instagram: @nevafil.com.tr');
     }
 
   } else {
+    // Aynı seviyede bir sonraki soruya geç
     loadQuestionAtIndex(gameState.currentQuestionIndexInLevel);
-    await saveGameState();  // Burada await kullanılabilir çünkü fonksiyon async oldu
+    await saveGameState(); // İlerleme kaydedilsin
   }
+
+  // İleri butonunu pasif yap
   nextBtn.classList.remove('active');
   nextBtn.classList.add('disabled');
 }
