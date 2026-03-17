@@ -2335,7 +2335,8 @@ function startGameFromIntro() {
 
     // ASENKRON VERİ YÜKLEME
     (async () => {
- await loadGameState();                    // Firestore'dan kullanıcının oyun verilerini (puan, seviye, rozetler) getir
+loadAllTasks();
+await loadGameState();                    // Firestore'dan kullanıcının oyun verilerini (puan, seviye, rozetler) getir
 updateGameHeader();                        // Oyun içi üst paneldeki kullanıcı adı, puan ve seviyeyi güncelle
 updateUserSwitchButton();                  // Giriş/çıkış butonlarının görünürlüğünü kullanıcı durumuna göre ayarla
 await loadAllQuestions();                  // Tüm soruları Firestore'dan getir (soru havuzunu oluştur)
@@ -4504,6 +4505,67 @@ function startGame() {
     // İstersek "sonra" diyenler için görevi daha sonra tekrar gösterebiliriz. Bunu düşünmek lazım.
   }
 }
+
+
+
+
+
+  let allTasks = []; // tüm görevler burada saklanacak
+
+async function loadAllTasks() {
+    try {
+        const q = query(collection(db, "gorevler"), orderBy('seviye', 'asc'));
+        const snapshot = await getDocs(q);
+        allTasks = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allTasks.push({
+                seviye: data.seviye,
+                metin: data.metin,
+                puanCarpani: data.puanCarpani || 2
+            });
+        });
+        console.log('✅ Görevler yüklendi:', allTasks.length);
+    } catch (e) {
+        console.error("Görevler yüklenemedi:", e);
+        allTasks = [];
+    }
+}
+
+
+  async function gorevGoster(seviye) {
+    const gorev = allTasks.find(g => g.seviye === seviye);
+    if (!gorev) return; // bu seviye için görev yoksa çık
+    const puan = seviye * (gorev.puanCarpani || 2);
+    const result = await Swal.fire({
+        title: '🎁 Gönül Görevi',
+        html: `<p style="font-size:1.1rem;">${gorev.metin}</p><p style="color:#7c3aed; font-weight:bold;">Kazanacağın Puan: ${puan}</p>`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '✔ Tamamladım',
+        cancelButtonText: '✖ Sonra',
+        confirmButtonColor: '#7c3aed',
+        cancelButtonColor: '#a78bfa',
+        reverseButtons: true,
+        width: '300px',
+        customClass: { popup: 'swal-popup-mini' }
+    });
+
+    if (result.isConfirmed) {
+        gameState.score += puan;
+        gameState.tamamlananGorevler.push(seviye);
+        await saveGameState();
+        if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+        Swal.fire({
+            icon: 'success',
+            title: 'Maşallah! 🌿',
+            text: `${puan} puan kazandın. Evine muhabbet olsun!`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+}
+
   
 </script>
 
