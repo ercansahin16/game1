@@ -1861,6 +1861,7 @@ document.addEventListener('click', resume, {once: true});
 // ------------------------------------------------------------
 let gameState = {
   levelTradeUsed: false,
+  extraHints: 0, // ek ipucu hakları
   hintsUsed: 0,
   maxUnlockedLevel: 1,
   currentLevel: 1,
@@ -2765,26 +2766,22 @@ function getHintCostForLevel(level) {
 
 
   
-  function updateHintButton() {
-  const maxHints = getMaxHintsForLevel(gameState.currentLevel); // YENİ
+function updateHintButton() {
+  const maxHints = getMaxHintsForLevel(gameState.currentLevel);
   const used = gameState.hintsUsed || 0;
-  const hintCost = getHintCostForLevel(gameState.currentLevel); // YENİ
+  const extra = gameState.extraHints || 0;
+  const totalRemaining = (maxHints - used) + extra;  // kalan toplam hak
+  const hintCost = getHintCostForLevel(gameState.currentLevel);
 
-  // Eğer hak yoksa butonu pasif yap ve metni güncelle
-  if (maxHints === 0) {
+  // Toplam hak yoksa butonu pasif yap
+  if (totalRemaining <= 0) {
     hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (kullanılamaz)`;
     hintBtn.classList.add('disabled');
     return;
   }
 
-  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${maxHints - used}`;
-  
-  // Hak kalmamışsa butonu pasif yap
-  if (used >= maxHints) {
-    hintBtn.classList.add('disabled');
-  } else {
-    hintBtn.classList.remove('disabled');
-  }
+  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${totalRemaining}`;
+  hintBtn.classList.remove('disabled');
 }
 
 
@@ -2792,88 +2789,72 @@ async function useHint() {
   const maxHints = getMaxHintsForLevel(gameState.currentLevel);
   const hintCost = getHintCostForLevel(gameState.currentLevel);
 
-  if (maxHints === 0) {
-    showToast('Bu seviyeden itibaren ipucu kullanamazsın!', 'info');
+  // Önce normal hakları kontrol et
+  if (gameState.hintsUsed < maxHints) {
+    // Normal ipucu kullanımı
+    await useHintNormal(hintCost);
     return;
   }
 
-  if (gameState.hintsUsed >= maxHints) {
-    showToast(`Bu seviyede en fazla ${maxHints} ipucu kullanabilirsin!`, 'info');
+  // Normal hak bitti, ek hak kontrolü
+  if (gameState.extraHints > 0) {
+    // Ek hak kullan
+    await useHintExtra(hintCost);
     return;
   }
 
-  // Puan kontrolü
-  if (gameState.score < hintCost) {
-    // Eğer seviye 1 ise seviye düşürme teklifi yapma
-    if (gameState.currentLevel <= 1) {
-      showToast('İpucu için yeterli puanın yok ve seviyen en düşük seviyede!', 'error');
+  // Ek hak da yok, satın alma teklifi (sadece seviye >= 10)
+  if (gameState.currentLevel >= 10) {
+    const cost = Math.floor(gameState.score / 3); // puanın 1/3'ü (aşağı yuvarla)
+    if (cost < 1) {
+      showToast('Yeterli puanın yok!', 'info');
       return;
     }
 
-    const earnedPoints = Math.floor(15 + gameState.currentLevel * 1.5);
-
     const result = await Swal.fire({
-      title: '⚡ Puanın Yetersiz',
+      title: '⚡ Ek İpucu Hakkı',
       html: `
         <div style="text-align: center;">
-          <p style="font-size: 0.9rem; margin: 5px 0;">İpucu için <strong>${hintCost} puan</strong> gerekli.</p>
-          <p style="margin: 10px 0; font-size: 1rem;">
-            🔻 <strong>1 seviye düşerek</strong> 🔻<br>
-            <strong style="font-size: 1.1rem;">${earnedPoints} puan</strong> kazan
-          </p>
-          <p style="background: #fff3cd; padding: 6px; border-radius: 6px; color: #856404; font-size: 0.8rem;">
-            ⚠️ <strong>Uyarı:</strong> Bir alt seviyeye (seviye ${gameState.currentLevel - 1}) iniyorsun.<br>
-            Soru değişecek, mevcut soru kaybolacak.
-          </p>
+          <p>Normal ipucu hakların bitti.</p>
+          <p><strong>${cost} puan</strong> karşılığında <strong>2 ek ipucu hakkı</strong> almak ister misin?</p>
+          <p style="color: #856404;">(Her ipucu normal maliyetle puan harcar)</p>
         </div>
       `,
-      icon: 'warning',
+      icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Evet, seviye düşeyim',
-      cancelButtonText: 'Hayır, vazgeç',
+      confirmButtonText: 'Evet, al',
+      cancelButtonText: 'Hayır',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
       background: document.body.classList.contains('dark-theme') ? '#2c2f33' : '#fff9f0',
-      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50',
-      customClass: {
-        popup: 'swal-popup-mobile',
-        title: 'swal-title-mobile',
-        htmlContainer: 'swal-html-mobile',
-        confirmButton: 'swal-confirm-mobile',
-        cancelButton: 'swal-cancel-mobile'
-      }
+      color: document.body.classList.contains('dark-theme') ? '#fff' : '#2d3e50'
     });
 
     if (result.isConfirmed) {
-      if (gameState.currentLevel > 1) {
-        gameState.currentLevel--;
-        gameState.score += earnedPoints;
-        gameState.currentQuestionIndexInLevel = 0;
-        gameState.hintsUsed = 0;
-
-        if (gameState.maxUnlockedLevel > gameState.currentLevel) {
-          gameState.maxUnlockedLevel = gameState.currentLevel;
-        }
-
-        await saveGameState();
-        await loadLevelQuestions(gameState.currentLevel);
-        updateGameHeader();
-        updateHintButton();
-        await saveScoreToLeaderboard();
-        await loadLeaderboard();
-
-        showToast(`💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`, 'success');
-        return;
-      } else {
-        showToast('Zaten en düşük seviyedesin!', 'error');
-        return;
-      }
-    } else {
-      return;
+      gameState.score -= cost;
+      gameState.extraHints = 2;
+      await saveGameState();
+      showToast(`💰 ${cost} puan karşılığı 2 ek ipucu hakkı kazandın!`, 'success');
+      updateHintButton();
     }
+    return;
   }
 
-  // ---- Normal ipucu kullanımı (puan yeterli) ----
+  // Seviye 10'dan küçükse veya puan yetersizse
+  showToast('Bu seviyede ipucu hakkın kalmadı!', 'info');
+}
+
+// Normal ipucu kullanımı (yardımcı fonksiyon)
+async function useHintNormal(hintCost) {
+  if (gameState.score < hintCost) {
+    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
+    return;
+  }
+  if (answered) {
+    showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info');
+    return;
+  }
+
   const correctIndex = currentQuestion.dogru;
   const allIndexes = [0, 1, 2, 3];
   const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
@@ -2890,19 +2871,50 @@ async function useHint() {
 
   eliminatedOptions = eliminateThese;
   gameState.score -= hintCost;
-  if (gameState.score < 0) gameState.score = 0;
   gameState.hintsUsed++;
 
-  if (gameState.hintsUsed >= maxHints) {
-    hintBtn.classList.add('disabled');
-  }
-
-  saveGameState();
+  await saveGameState();
   if (scoreDisplay) scoreDisplay.innerText = gameState.score;
   playSound('hint');
-  showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${maxHints - gameState.hintsUsed}`, 'info');
+  showToast(`💡 İpucu kullanıldı! Kalan hakkın: ${getMaxHintsForLevel(gameState.currentLevel) - gameState.hintsUsed + (gameState.extraHints || 0)}`, 'info');
   updateHintButton();
 }
+
+// Ek ipucu kullanımı (yardımcı fonksiyon)
+async function useHintExtra(hintCost) {
+  if (gameState.score < hintCost) {
+    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
+    return;
+  }
+  if (answered) {
+    showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info');
+    return;
+  }
+
+  const correctIndex = currentQuestion.dogru;
+  const allIndexes = [0, 1, 2, 3];
+  const wrongIndexes = allIndexes.filter(i => i !== correctIndex);
+  const shuffledWrong = wrongIndexes.sort(() => Math.random() - 0.5);
+  const eliminateThese = shuffledWrong.slice(0, 2);
+
+  eliminateThese.forEach(idx => {
+    const btn = optionsEl.children[idx];
+    if (btn) {
+      btn.classList.add('eliminated');
+      btn.disabled = true;
+    }
+  });
+
+  eliminatedOptions = eliminateThese;
+  gameState.score -= hintCost;
+  gameState.extraHints--;
+
+  await saveGameState();
+  if (scoreDisplay) scoreDisplay.innerText = gameState.score;
+  playSound('hint');
+  showToast(`💡 Ek ipucu kullanıldı! Kalan ek hak: ${gameState.extraHints}`, 'info');
+  updateHintButton();
+}v
   
 
      
