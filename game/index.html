@@ -2879,11 +2879,8 @@ async function useHintNormal(hintCost) {
 }
 
 // Ek ipucu kullanımı (yardımcı fonksiyon)
+// Ek ipucu kullanımı (yardımcı fonksiyon)
 async function useHintExtra(hintCost) {
-  if (gameState.score < hintCost) {
-    showToast(`İpucu için ${hintCost} puana ihtiyacın var!`, 'info');
-    return;
-  }
   if (answered) {
     showToast('Soruyu cevapladın, ipucu kullanamazsın!', 'info');
     return;
@@ -2904,11 +2901,9 @@ async function useHintExtra(hintCost) {
   });
 
   eliminatedOptions = eliminateThese;
-  gameState.score -= hintCost;
-  gameState.extraHints--;
+  gameState.extraHints--; // Sadece ek hakkı azalt, puan düşürme!
 
   await saveGameState();
-  if (scoreDisplay) scoreDisplay.innerText = gameState.score;
   playSound('hint');
   showToast(`💡 Ek ipucu kullanıldı! Kalan ek hak: ${gameState.extraHints}`, 'info');
   updateHintButton();
