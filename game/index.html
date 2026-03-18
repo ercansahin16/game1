@@ -1862,6 +1862,7 @@ document.addEventListener('click', resume, {once: true});
 let gameState = {
   levelTradeUsed: false,
   extraHints: 0, // ek ipucu hakları
+  extraHintPurchasedThisLevel: false, // bu seviyede ek ipucu satın alındı mı?
   hintsUsed: 0,
   maxUnlockedLevel: 1,
   currentLevel: 1,
@@ -2775,7 +2776,7 @@ function updateHintButton() {
 
   // Toplam hak sıfır olsa bile butonu pasif yapma, tıklanabilir kalsın
   if (totalRemaining <= 0) {
-    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu al (puanla)`;
+    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu al`;
     hintBtn.classList.remove('disabled');
     return;
   }
@@ -2787,21 +2788,24 @@ function updateHintButton() {
 
 
 
-  async function useHint() {
+async function useHint() {
   const maxHints = getMaxHintsForLevel(gameState.currentLevel);
   const hintCost = getHintCostForLevel(gameState.currentLevel);
 
+  // Normal hak varsa kullan
   if (gameState.hintsUsed < maxHints) {
     await useHintNormal(hintCost);
     return;
   }
 
+  // Ek hak varsa kullan
   if (gameState.extraHints > 0) {
     await useHintExtra(hintCost);
     return;
   }
 
-  if (gameState.currentLevel >= 10) {
+  // Ek hak yok ve seviye >= 10 ise satın alma teklifi göster (ama daha önce satın alınmamışsa)
+  if (gameState.currentLevel >= 10 && !gameState.extraHintsPurchased) {
     const cost = Math.floor(gameState.score / 3);
     if (cost < 1) {
       showToast('Yeterli puanın yok!', 'info');
@@ -2812,9 +2816,7 @@ function updateHintButton() {
       title: '⚡ Ek İpucu Hakkı',
       html: `
         <div style="text-align: center;">
-          <p>Normal ipucu hakların bitti.</p>
           <p><strong>${cost} puan</strong> karşılığında <strong>2 ek ipucu hakkı</strong> satın almak ister misin?</p>
-          <p style="color: #856404;">(Her ipucu normal maliyetle puan harcar)</p>
         </div>
       `,
       icon: 'question',
@@ -2830,6 +2832,7 @@ function updateHintButton() {
     if (result.isConfirmed) {
       gameState.score -= cost;
       gameState.extraHints = 2;
+      gameState.extraHintsPurchased = true; // satın alındı olarak işaretle
       await saveGameState();
       if (scoreDisplay) scoreDisplay.innerText = gameState.score;
       showToast(`💰 ${cost} puan karşılığı 2 ek ipucu hakkı kazandın!`, 'success');
@@ -2838,6 +2841,7 @@ function updateHintButton() {
     return;
   }
 
+  // Ne normal hak, ne ek hak, ne de satın alma imkanı yoksa
   showToast('Bu seviyede ipucu hakkın kalmadı!', 'info');
 }
 
