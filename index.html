@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#6c5ce7">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Nevafil">
-<link rel="apple-touch-icon" href="/game/icons/icon-192.png">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Nevafil">
+    <link rel="apple-touch-icon" href="/game/icons/icon-192.png">
+
     <style>
         :root {
             --primary: #6c5ce7;
@@ -64,6 +65,94 @@
         a {
             color: inherit;
             text-decoration: none;
+        }
+
+        /* PWA Banner */
+        .pwa-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 56px;
+            padding: 10px 12px;
+            background: linear-gradient(135deg, rgba(108, 92, 231, 0.98), rgba(90, 73, 218, 0.98));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            z-index: 10001;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: bannerSlideDown 0.35s ease;
+        }
+
+        .pwa-banner.hidden {
+            display: none;
+        }
+
+        .pwa-banner-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.92rem;
+            line-height: 1.35;
+            font-weight: 500;
+        }
+
+        .pwa-banner-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .pwa-banner-install,
+        .pwa-banner-close {
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pwa-banner-install {
+            background: #fff;
+            color: #5a49da;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 8px 14px;
+            min-height: 38px;
+            font-size: 0.9rem;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+        }
+
+        .pwa-banner-install:hover {
+            transform: translateY(-1px);
+            filter: brightness(0.98);
+        }
+
+        .pwa-banner-close {
+            background: rgba(255,255,255,0.14);
+            color: #fff;
+            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            font-size: 0.95rem;
+        }
+
+        .pwa-banner-close:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        @keyframes bannerSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Spinner */
@@ -357,6 +446,31 @@
             transform: translateY(-1px);
         }
 
+        @media (max-width: 640px) {
+            .pwa-banner {
+                padding: 10px 10px;
+                min-height: 54px;
+            }
+
+            .pwa-banner-text {
+                font-size: 0.82rem;
+                line-height: 1.3;
+            }
+
+            .pwa-banner-install {
+                padding: 7px 10px;
+                min-height: 34px;
+                font-size: 0.82rem;
+                border-radius: 10px;
+            }
+
+            .pwa-banner-close {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+        }
+
         @media (max-width: 480px) {
             body {
                 align-items: stretch;
@@ -462,6 +576,17 @@
 </head>
 <body>
 
+<div id="pwaBanner" class="pwa-banner hidden">
+    <div class="pwa-banner-text">
+        <span>📲</span>
+        <span>Nevafil'i telefonuna yükle, uygulama gibi kullan</span>
+    </div>
+    <div class="pwa-banner-actions">
+        <button id="installBtn" class="pwa-banner-install" type="button">Yükle</button>
+        <button id="closeBanner" class="pwa-banner-close" type="button" aria-label="Kapat">✕</button>
+    </div>
+</div>
+
 <div id="loadingSpinner">
     <img src="img/loader.png" alt="Yükleniyor..." style="width: 60px; height: 60px; animation: spin 1s linear infinite;">
 </div>
@@ -511,6 +636,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let deferredPrompt = null;
+
     function getDeviceId() {
         let id = localStorage.getItem("deviceId");
         if (!id) {
@@ -518,6 +645,22 @@
             localStorage.setItem("deviceId", id);
         }
         return id;
+    }
+
+    function showPWABanner() {
+        if (!deferredPrompt) return;
+        if (localStorage.getItem('pwaBannerClosed') === 'true') return;
+
+        const banner = document.getElementById('pwaBanner');
+        if (banner) banner.classList.remove('hidden');
+    }
+
+    function hidePWABanner(saveChoice = false) {
+        const banner = document.getElementById('pwaBanner');
+        if (banner) banner.classList.add('hidden');
+        if (saveChoice) {
+            localStorage.setItem('pwaBannerClosed', 'true');
+        }
     }
 
     async function verifyLicense(key) {
@@ -535,7 +678,9 @@
                 return { ok: true };
             }
             return data.deviceId === device ? { ok: true } : { ok: false, msg: "Farklı bir cihazda kayıtlı." };
-        } catch (e) { return { ok: false, msg: "Sistem hatası." }; }
+        } catch (e) { 
+            return { ok: false, msg: "Sistem hatası." }; 
+        }
     }
 
     window.recoverLicenseByEmail = async function(email) {
@@ -712,6 +857,7 @@
         document.getElementById("licensePrompt").style.display = "none";
         const container = document.getElementById("gameContainer");
         container.style.display = "block";
+
         if (!container.querySelector("iframe")) {
             const ifr = document.createElement("iframe");
             ifr.src = "game/index.html";
@@ -721,7 +867,11 @@
 
     window.addEventListener("load", async () => {
         const saved = localStorage.getItem("nevafilKey");
-        if (saved && (await verifyLicense(saved)).ok) { startGame(); return; }
+        if (saved && (await verifyLicense(saved)).ok) {
+            startGame();
+            setTimeout(() => showPWABanner(), 2000);
+            return;
+        }
 
         document.getElementById("loadingSpinner").style.display = "none";
         document.getElementById("licensePrompt").style.display = "flex";
@@ -729,7 +879,10 @@
 
     window.onLicenseSubmit = async () => {
         const key = document.getElementById("licenseInput").value.trim().toUpperCase();
-        if (!key) { Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); return; }
+        if (!key) { 
+            Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); 
+            return; 
+        }
 
         Swal.fire({
             title: 'Giriş Yapılıyor...',
@@ -743,6 +896,7 @@
             localStorage.setItem("nevafilKey", key);
             Swal.close();
             startGame();
+            setTimeout(() => showPWABanner(), 2000);
         } else {
             Swal.fire('Hata', res.msg, 'error');
         }
@@ -818,10 +972,36 @@
             Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
         }
     }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        hidePWABanner(true);
+    });
+
+    document.getElementById('installBtn')?.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+
+        if (choiceResult.outcome === 'accepted') {
+            hidePWABanner(true);
+        }
+
+        deferredPrompt = null;
+    });
+
+    document.getElementById('closeBanner')?.addEventListener('click', () => {
+        hidePWABanner(true);
+    });
 </script>
 
-
-    <script>
+<script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -830,6 +1010,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-    
+
 </body>
 </html>
