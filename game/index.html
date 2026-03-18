@@ -2765,7 +2765,6 @@ function getHintCostForLevel(level) {
 }
 
 
-
 function updateHintButton() {
   const maxHints = getMaxHintsForLevel(gameState.currentLevel);
   const used = gameState.hintsUsed || 0;
@@ -2774,17 +2773,22 @@ function updateHintButton() {
   const totalRemaining = normalRemaining + extra;
   const hintCost = getHintCostForLevel(gameState.currentLevel);
 
-  // Toplam hak sıfır olsa bile butonu pasif yapma, tıklanabilir kalsın
   if (totalRemaining <= 0) {
-    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu al`;
-    hintBtn.classList.remove('disabled');
+    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (kullanılamaz)`;
+    hintBtn.classList.add('disabled');
     return;
   }
 
-  hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${totalRemaining}`;
+  // Eğer normal hak kalmışsa puanlı metni göster
+  if (normalRemaining > 0) {
+    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> İpucu (${hintCost} puan)<br> Kalan: ${totalRemaining}`;
+  } else {
+    // Sadece ek hak kalmışsa, puan yazısını kaldır
+    hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Ek ipucu kullan<br> Kalan: ${extra}`;
+  }
+
   hintBtn.classList.remove('disabled');
 }
-
 
 
 
