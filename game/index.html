@@ -2816,15 +2816,15 @@ function updateHintButton() {
     return;
   }
 
-  // 3. Ek ipucu satın alma teklifi (sadece seviye >= 10 ve daha önce alınmamışsa)
-  if (gameState.currentLevel >= 10 && !gameState.extraPurchasedThisLevel) {
-    await offerExtraPurchase();
+  // 3. Puan yetersizse seviye düşürme teklifi (önce bu kontrol edilmeli)
+  if (gameState.score < hintCost) {
+    await offerLevelDowngrade();
     return;
   }
 
-  // 4. Puan yetersizse seviye düşürme teklifi
-  if (gameState.score < hintCost) {
-    await offerLevelDowngrade();
+  // 4. Ek ipucu satın alma teklifi (seviye >= 10 ve daha önce alınmamışsa)
+  if (gameState.currentLevel >= 10 && !gameState.extraPurchasedThisLevel) {
+    await offerExtraPurchase();
     return;
   }
 
@@ -2832,8 +2832,7 @@ function updateHintButton() {
   showToast('Bu seviyede ipucu hakkın kalmadı!', 'info');
 }
 
-  //offerExtraPurchase (ek ipucu satın alma teklifi)
-  async function offerExtraPurchase() {
+async function offerExtraPurchase() {
   const cost = Math.floor(gameState.score / 3);
   if (cost < 1) {
     showToast('Yeterli puanın yok!', 'info');
@@ -2869,11 +2868,7 @@ function updateHintButton() {
   }
 }
 
-
-
-
-  //offerLevelDowngrade (seviye düşürme teklifi)
-  async function offerLevelDowngrade() {
+async function offerLevelDowngrade() {
   if (gameState.currentLevel <= 1) {
     showToast('Zaten en düşük seviyedesin!', 'error');
     return;
@@ -2911,7 +2906,7 @@ function updateHintButton() {
     gameState.score += earnedPoints;
     gameState.currentQuestionIndexInLevel = 0;
     gameState.hintsUsed = 0;
-    gameState.extraHints = 0; // ek haklar sıfırlansın mı? bence sıfırlansın.
+    gameState.extraHints = 0;
     gameState.extraPurchasedThisLevel = false;
 
     if (gameState.maxUnlockedLevel > gameState.currentLevel) {
@@ -2928,7 +2923,6 @@ function updateHintButton() {
     showToast(`💰 ${earnedPoints} puan kazandın! Şimdi ${gameState.currentLevel}. seviyedesin.`, 'success');
   }
 }
-  
 
   
 
