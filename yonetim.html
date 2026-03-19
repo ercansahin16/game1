@@ -2158,120 +2158,11 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 
 
         //oyun yedekleme bölümü Tüm Verileri Dışa Aktar
-        const BACKUP_COLLECTIONS = [
-  'leaderboard',
-  'oyun_ilerleme',
-  'licenses',
-  'yardim_mesajlari',
-  'manevi_sorular'   // soruları da yedeklemek istersen
-];
-
-async function exportAllData() {
-  Swal.fire({
-    title: 'Yedekleniyor...',
-    html: 'Koleksiyonlar okunuyor.',
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  const backup = {};
-
-  try {
-    for (const coll of BACKUP_COLLECTIONS) {
-      const snapshot = await getDocs(collection(db, coll));
-      backup[coll] = [];
-      snapshot.forEach(doc => {
-        backup[coll].push({ id: doc.id, ...doc.data() });
-      });
-    }
-
-    const dataStr = JSON.stringify(backup, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `nevafil_yedek_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Yedek alındı',
-      text: 'Tüm veriler JSON dosyasına kaydedildi.',
-      timer: 2000
-    });
-  } catch (e) {
-    console.error("Yedekleme hatası:", e);
-    Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
-  }
-}
-
-        //Yedekten Geri Yükle
-        async function importAllData(file) {
-  if (!file) return;
-
-  const result = await Swal.fire({
-    title: '⚠️ Emin misiniz?',
-    text: 'Bu işlem mevcut tüm verileri silip yedekteki verilerle değiştirecek. Bu işlem geri alınamaz!',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Evet, yükle',
-    cancelButtonText: 'İptal'
-  });
-  if (!result.isConfirmed) return;
-
-  Swal.fire({
-    title: 'Yükleniyor...',
-    html: 'Dosya okunuyor.',
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  try {
-    const text = await file.text();
-    const backup = JSON.parse(text);
-
-    // Her koleksiyon için mevcut tüm dokümanları sil (batch ile)
-    for (const coll of BACKUP_COLLECTIONS) {
-      if (!backup[coll]) continue;
-
-      const snapshot = await getDocs(collection(db, coll));
-      const deleteBatch = writeBatch(db);
-      snapshot.docs.forEach(doc => deleteBatch.delete(doc.ref));
-      await deleteBatch.commit();
-
-      // Yeni verileri ekle
-      const addBatch = writeBatch(db);
-      for (const docData of backup[coll]) {
-        const { id, ...data } = docData;
-        const ref = doc(db, coll, id); // ID korunarak eklenir
-        addBatch.set(ref, data);
-      }
-      await addBatch.commit();
-    }
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Geri yükleme tamamlandı',
-      text: 'Tüm veriler başarıyla yüklendi.',
-      timer: 2000
-    });
-
-    // İsteğe bağlı: listeleri yenile
-    if (typeof loadAllData === 'function') loadAllData();
-
-  } catch (e) {
-    console.error("Yükleme hatası:", e);
-    Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
-  }
-}
-
-
-        //
-        window.exportUsers = async () => {
+       window.exportUsers = async () => {
+    // Loading başlat
     Swal.fire({
         title: 'Dışa aktarılıyor...',
-        html: 'Veriler hazırlanıyor, lütfen bekleyin.',
+        html: 'Lisanslar, oyun ilerlemeleri ve liderlik verileri toplanıyor.',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     });
@@ -2306,8 +2197,7 @@ async function exportAllData() {
             icon: 'success',
             title: 'Başarılı',
             text: 'Tüm kullanıcı verileri dışa aktarıldı.',
-            timer: 2000,
-            showConfirmButton: false
+            timer: 2000
         });
     } catch (error) {
         console.error('Dışa aktarma hatası:', error);
@@ -2319,10 +2209,12 @@ async function exportAllData() {
     }
 };
 
-        //window.importUsers = async (file) => {
+
+        //importUsers – Yedekten kullanıcı verilerini yükle
+        window.importUsers = async (file) => {
     if (!file) return;
 
-    const result = await Swal.fire({
+    const confirm = await Swal.fire({
         title: 'Uyarı',
         text: 'Bu işlem mevcut tüm kullanıcı verilerini (lisanslar, oyun ilerlemeleri, liderlik) silip yedekteki verilerle değiştirecektir. Devam etmek istiyor musunuz?',
         icon: 'warning',
@@ -2331,7 +2223,7 @@ async function exportAllData() {
         cancelButtonText: 'İptal'
     });
 
-    if (!result.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
     Swal.fire({
         title: 'Yükleniyor...',
@@ -2362,7 +2254,7 @@ async function exportAllData() {
             const batch = writeBatch(db);
             for (let docData of collData) {
                 const docRef = doc(db, collName, docData.id);
-                const { id, ...data } = docData;
+                const { id, ...data } = docData; // id'yi ayır, sadece veri
                 batch.set(docRef, data);
             }
             await batch.commit();
@@ -2372,11 +2264,10 @@ async function exportAllData() {
             icon: 'success',
             title: 'Başarılı',
             text: 'Kullanıcı verileri yedekten geri yüklendi.',
-            timer: 2000,
-            showConfirmButton: false
+            timer: 2000
         });
 
-        // İlgili panelleri yenile
+        // Panelleri yenile
         if (typeof loadLicenses === 'function') loadLicenses();
         if (typeof loadUsers === 'function') loadUsers();
 
