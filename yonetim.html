@@ -335,6 +335,7 @@
         <div class="tab" data-tab="users">👥 Kullanıcı Yönetimi</div>
         <div class="tab" data-tab="bulk">⚡ Toplu İşlemler</div>
         <div class="tab" data-tab="tasks">📋 Görev Yönetimi</div>
+        <div class="tab" data-tab="settings">⚙️ Ayarlar</div>
         <div class="tab" data-tab="help">📬 Yardım Mesajları</div>
     </div>
 
@@ -569,6 +570,31 @@
     <button class="btn btn-success" id="addTaskBtn"><i class="fas fa-plus"></i> Yeni Görev</button>
     <div id="tasksList">Yükleniyor...</div>
 </div>
+
+
+<!-- Ayarlar Paneli -->
+<div class="panel" id="settingsPanel">
+    <h2><i class="fas fa-cog"></i> Admin Ayarları</h2>
+    
+    <div style="max-width: 400px; margin: 0 auto;">
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Mevcut Şifre</label>
+            <input type="password" id="currentPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Yeni Şifre</label>
+            <input type="password" id="newPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Yeni Şifre (Tekrar)</label>
+            <input type="password" id="confirmPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+        <button class="btn btn-success" id="changePasswordBtn" style="width: 100%;">
+            <i class="fas fa-key"></i> Şifreyi Değiştir
+        </button>
+    </div>
+</div>
+    
 
     
     <script type="module">
@@ -2281,7 +2307,109 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
     }
 };
         
-    
+
+
+        // Admin giriş kontrolü (mevcut kodun yerine bunu kullanın)
+(async function() {
+    // Firestore'dan admin şifresini al
+    let adminPassword = null;
+    try {
+        const docRef = doc(db, "admin", "settings");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            adminPassword = docSnap.data().password;
+        } else {
+            // Doküman yoksa oluştur ve varsayılan şifreyi ata (kodda görünmez)
+            await setDoc(docRef, { password: "admin123" });
+            adminPassword = "admin123";
+        }
+    } catch (e) {
+        console.error("Admin şifresi alınamadı:", e);
+        Swal.fire('Hata', 'Sunucu hatası, lütfen daha sonra tekrar deneyin.', 'error').then(() => {
+            window.location.href = 'index.html';
+        });
+        return;
+    }
+
+    const { value: password } = await Swal.fire({
+        title: 'Yönetici Girişi',
+        input: 'password',
+        inputPlaceholder: 'Şifre',
+        showCancelButton: true,
+        confirmButtonText: 'Giriş',
+        cancelButtonText: 'İptal',
+        allowOutsideClick: false
+    });
+
+    if (password !== adminPassword) {
+        Swal.fire('Hata', 'Geçersiz şifre', 'error').then(() => {
+            window.location.href = 'index.html';
+        });
+        return;
+    }
+
+    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('licenseSearch').value = '';
+    loadAllData();
+})();
+
+// Şifre değiştirme butonu
+document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+    const current = document.getElementById('currentPassword').value;
+    const newPwd = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+
+    if (!current || !newPwd || !confirm) {
+        Swal.fire('Uyarı', 'Tüm alanları doldurun.', 'warning');
+        return;
+    }
+
+    if (newPwd !== confirm) {
+        Swal.fire('Hata', 'Yeni şifreler eşleşmiyor.', 'error');
+        return;
+    }
+
+    if (newPwd.length < 6) {
+        Swal.fire('Uyarı', 'Yeni şifre en az 6 karakter olmalıdır.', 'warning');
+        return;
+    }
+
+    // Mevcut şifreyi doğrula
+    let adminPassword;
+    try {
+        const docRef = doc(db, "admin", "settings");
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            Swal.fire('Hata', 'Sistem hatası, admin kaydı bulunamadı.', 'error');
+            return;
+        }
+        adminPassword = docSnap.data().password;
+    } catch (e) {
+        console.error("Şifre okuma hatası:", e);
+        Swal.fire('Hata', 'Şifre okunamadı.', 'error');
+        return;
+    }
+
+    if (current !== adminPassword) {
+        Swal.fire('Hata', 'Mevcut şifre yanlış.', 'error');
+        return;
+    }
+
+    // Yeni şifreyi kaydet
+    try {
+        const docRef = doc(db, "admin", "settings");
+        await updateDoc(docRef, { password: newPwd });
+        Swal.fire('Başarılı', 'Şifre değiştirildi.', 'success');
+
+        // Inputları temizle
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+    } catch (e) {
+        console.error("Şifre güncelleme hatası:", e);
+        Swal.fire('Hata', 'Şifre değiştirilemedi.', 'error');
+    }
+});
         
     </script>
 
