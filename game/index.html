@@ -2277,6 +2277,20 @@ async function saveSettings() {
         return;
     }
 
+    // Firebase'de aynı isim var mı kontrol et (kendi ismi hariç? Aslında kontrol edelim, ama eski ismi değiştiriyoruz, yeni isim başkasında varsa hata ver)
+    try {
+        const q = query(collection(db, LEADERBOARD_COLL), where("username", "==", newName));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
+            return;
+        }
+    } catch (e) {
+        console.error("İsim kontrolü hatası:", e);
+        showToast('İsim kontrolü yapılamadı, lütfen tekrar deneyin.', 'error');
+        return;
+    }
+
     // Seçilen avatarı al
     const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
     if (selectedAvatar) {
@@ -2284,32 +2298,31 @@ async function saveSettings() {
         gameState.avatarImg = selectedAvatar.dataset.avatarImg;
     }
 
-    // Yeni ismi kaydet
+    // Yeni ismi kaydet (gameState'i güncelle)
+    const oldName = gameState.username; // eski ismi sakla
     gameState.username = newName;
+    
+    // Oyun durumunu kaydet (localStorage ve Firestore)
+    await saveGameState();
 
-    // Eğer kullanıcı giriş yapmışsa (lisans anahtarı varsa) lisans kaydını da güncelle
-    const licenseKey = localStorage.getItem('nevafilKey');
-    if (licenseKey) {
+    // Eski isimle liderlik kayıtlarını sil
+    if (oldName && oldName !== 'Misafir') {
         try {
-            // Önce lisans dokümanını bul (key alanına göre)
-            const q = query(collection(db, "licenses"), where("key", "==", licenseKey));
+            const q = query(collection(db, LEADERBOARD_COLL), where("username", "==", oldName));
             const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const licenseDoc = snapshot.docs[0];
-                // Adı boşluktan böl? Basitçe firstName olarak kaydedelim
-                await updateDoc(doc(db, "licenses", licenseDoc.id), {
-                    firstName: newName, // veya ad/soyad olarak ayarlayabilirsin
-                    lastName: ''
-                });
-            }
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            console.log(`Eski isim (${oldName}) liderlik kayıtları silindi.`);
         } catch (e) {
-            console.error("Lisans güncellenemedi:", e);
+            console.error("Eski liderlik kayıtları silinirken hata:", e);
         }
     }
 
-    // Oyun durumunu kaydet (hem localStorage hem Firestore)
-    await saveGameState();
+    // Yeni isimle liderliğe kaydet (mevcut skorla)
+    await saveScoreToLeaderboard();
 
+    // Arayüzü güncelle
     updateIntroUI();
     updateGameHeader();
 
