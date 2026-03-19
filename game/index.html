@@ -2179,33 +2179,82 @@ console.error("Liderlik kaydedilemedi:", e);
 }
 
 async function loadLeaderboard(){
-try{
-const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
-const snapshot = await getDocs(q);
-let html = '<ol style="list-style:none; padding:0;">';
-snapshot.forEach((doc, idx) => {
-const data = doc.data();
-let scoreVal = Number(data.score);
-if(isNaN(scoreVal)) scoreVal = 0;
-const username = data.username?.trim() || 'İsimsiz';
-let levelVal = Number(data.level);
-if(isNaN(levelVal) || levelVal < 1) levelVal = 1;
-const rank = idx + 1;
-html += `
-<li style="display:flex;align-items:center;padding:8px 10px;background:#fef9e0;margin-bottom:6px; border-radius:30px;  font-size:13px;  gap:6px;">
- <i class="fas fa-user-circle" style="font-size:16px;"></i>
- <span style="   white-space:nowrap;    overflow:hidden;    text-overflow:ellipsis;    max-width:100px;  ">${username} </span>
- <!-- ✅ Sağ grup -->
-<div style="margin-left:auto; display:flex; gap:6px;"><span style="   background:#ffd966;     padding:3px 10px;      border-radius:20px;      font-size:12px;    ">      ${scoreVal} puan    </span>
-<span style="      background:#ffd966;      padding:3px 10px;      border-radius:20px;      font-size:12px;    ">      ${levelVal} seviye    </span>  </div>
+  try{
+    const q = query(collection(db, LEADERBOARD_COLLECTION), orderBy('score', 'desc'), limit(10));
+    const snapshot = await getDocs(q);
 
-</li>`;
-});
-html += '</ol>';
-leaderboardList.innerHTML = html;
-}catch(e){
-leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
-}
+    let html = '<ol style="list-style:none; padding:0;">';
+
+    snapshot.forEach((doc, idx) => {
+      const data = doc.data();
+
+      let scoreVal = Number(data.score);
+      if(isNaN(scoreVal)) scoreVal = 0;
+
+      const username = data.username?.trim() || 'İsimsiz';
+
+      let levelVal = Number(data.level);
+      if(isNaN(levelVal) || levelVal < 1) levelVal = 1;
+
+      html += `
+      <li style="
+        display:flex;
+        align-items:center;
+        padding:8px 10px;
+        background:#fef9e0;
+        margin-bottom:6px;
+        border-radius:30px;
+        font-size:13px;
+        gap:8px;
+      ">
+        
+        <i class="fas fa-user-circle" style="font-size:16px;"></i>
+
+        <!-- ✅ USERNAME GENİŞ -->
+        <span style="
+          flex:1;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+        ">
+          ${username}
+        </span>
+
+        <!-- ⭐ PUAN -->
+        <span style="
+          display:flex;
+          align-items:center;
+          gap:4px;
+          background:#ffd966;
+          padding:3px 8px;
+          border-radius:20px;
+          font-size:12px;
+        ">
+          <i class="fas fa-star"></i> ${scoreVal}
+        </span>
+
+        <!-- 👑 SEVİYE -->
+        <span style="
+          display:flex;
+          align-items:center;
+          gap:4px;
+          background:#ffd966;
+          padding:3px 8px;
+          border-radius:20px;
+          font-size:12px;
+        ">
+          <i class="fas fa-crown"></i> ${levelVal}
+        </span>
+
+      </li>`;
+    });
+
+    html += '</ol>';
+    leaderboardList.innerHTML = html;
+
+  }catch(e){
+    leaderboardList.innerHTML = 'Liderlik yüklenemedi.';
+  }
 }
 
 // ------------------------------------------------------------
