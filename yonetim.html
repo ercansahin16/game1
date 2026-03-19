@@ -577,18 +577,39 @@
     <h2><i class="fas fa-cog"></i> Admin Ayarları</h2>
     
     <div style="max-width: 400px; margin: 0 auto;">
+        <!-- Mevcut Şifre -->
         <div style="margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 5px; font-weight: 600;">Mevcut Şifre</label>
-            <input type="password" id="currentPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            <div style="display: flex; align-items: center;">
+                <input type="password" id="currentPassword" class="settings-input" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px 0 0 6px; border-right: none;">
+                <button class="toggle-password" data-target="currentPassword" style="padding: 10px; border: 1px solid #ddd; border-radius: 0 6px 6px 0; background: white; cursor: pointer;">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
         </div>
+
+        <!-- Yeni Şifre -->
         <div style="margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 5px; font-weight: 600;">Yeni Şifre</label>
-            <input type="password" id="newPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            <div style="display: flex; align-items: center;">
+                <input type="password" id="newPassword" class="settings-input" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px 0 0 6px; border-right: none;">
+                <button class="toggle-password" data-target="newPassword" style="padding: 10px; border: 1px solid #ddd; border-radius: 0 6px 6px 0; background: white; cursor: pointer;">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
         </div>
+
+        <!-- Yeni Şifre (Tekrar) -->
         <div style="margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 5px; font-weight: 600;">Yeni Şifre (Tekrar)</label>
-            <input type="password" id="confirmPassword" class="settings-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            <div style="display: flex; align-items: center;">
+                <input type="password" id="confirmPassword" class="settings-input" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px 0 0 6px; border-right: none;">
+                <button class="toggle-password" data-target="confirmPassword" style="padding: 10px; border: 1px solid #ddd; border-radius: 0 6px 6px 0; background: white; cursor: pointer;">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
         </div>
+
         <button class="btn btn-success" id="changePasswordBtn" style="width: 100%;">
             <i class="fas fa-key"></i> Şifreyi Değiştir
         </button>
@@ -596,18 +617,6 @@
 </div>
 
 
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-    <button class="btn btn-primary" onclick="setAdminPassword()">
-        <i class="fas fa-save"></i> Firestore'a Admin Şifresi Kaydet
-    </button>
-    <p style="font-size: 12px; color: #666; margin-top: 8px;">
-        Bu buton, girdiğiniz şifreyi Firestore'daki admin/settings dokümanına kaydeder. Koleksiyon yoksa oluşturur.
-    </p>
-</div>
-
-    <button class="btn btn-primary" id="setAdminPasswordBtn">
-    <i class="fas fa-save"></i> Firestore'a Admin Şifresi Kaydet
-</button>
     
 
     
@@ -2324,7 +2333,7 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 };
         
 
-/*
+
         // Admin giriş kontrolü (mevcut kodun yerine bunu kullanın)
 (async function() {
     // Firestore'dan admin şifresini al
@@ -2473,52 +2482,10 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
             window.location.href = 'index.html';
         });
     }
-})();*/
+})();
 
 
-     window.setAdminPassword = async function() {
-    const { value: password } = await Swal.fire({
-        title: 'Admin Şifresi Belirle',
-        text: 'Firestore\'a kaydedilecek yeni şifreyi girin',
-        input: 'password',
-        inputPlaceholder: 'Yeni şifre',
-        showCancelButton: true,
-        confirmButtonText: 'Kaydet',
-        cancelButtonText: 'İptal'
-    });
 
-    if (!password) return;
-
-    if (password.length < 6) {
-        Swal.fire('Uyarı', 'Şifre en az 6 karakter olmalıdır.', 'warning');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Kaydediliyor...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    try {
-        const docRef = doc(db, "admin", "settings");
-        await setDoc(docRef, { password: password }, { merge: true });
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'Başarılı',
-            text: 'Şifre Firestore\'a kaydedildi.',
-            timer: 2000
-        });
-    } catch (e) {
-        console.error("Şifre kaydedilemedi:", e);
-        Swal.fire({
-            icon: 'error',
-            title: 'Hata',
-            text: 'Kayıt başarısız: ' + e.message
-        });
-    }
-};
         document.getElementById('setAdminPasswordBtn').addEventListener('click', setAdminPassword);
         console.log(setAdminPassword);
     </script>
