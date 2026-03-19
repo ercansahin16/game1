@@ -2335,87 +2335,8 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 
 
 
-       // Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
-// Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
-(async function() {
-    try {
-        console.log('1. Admin giriş başladı');
-        const docRef = doc(db, "admin", "settings");
-        const docSnap = await getDoc(docRef);
-        let adminPassword;
-        
-        if (docSnap.exists()) {
-            adminPassword = docSnap.data().password;
-            console.log('2. Firestore\'dan gelen şifre:', adminPassword);
-            if (!docSnap.data().email) {
-                await updateDoc(docRef, { email: "esahin.ast@gmail.com" });
-                console.log('E-posta adresi eklendi.');
-            }
-        } else {
-            await setDoc(docRef, { password: "admin123", email: "esahin.ast@gmail.com" });
-            adminPassword = "admin123";
-            console.log('3. Yeni doküman oluşturuldu, şifre:', adminPassword);
-        }
 
-        const result = await Swal.fire({
-            title: 'Yönetici Girişi',
-            html: `
-                <input type="password" id="swal-password" class="swal2-input" placeholder="Şifre">
-                <div style="margin-top: 10px;">
-                    <button id="forgot-password-btn" class="swal2-cancel" style="background: transparent; border: none; color: #3498db; text-decoration: underline; cursor: pointer;">Şifremi Unuttum</button>
-                </div>
-            `,
-            showConfirmButton: true,
-            showCancelButton: true,
-            confirmButtonText: 'Giriş',
-            cancelButtonText: 'İptal',
-            allowOutsideClick: false,
-            didOpen: () => {
-                // "Şifremi Unuttum" butonuna tıklanınca
-                document.getElementById('forgot-password-btn').addEventListener('click', async (e) => {
-                    e.preventDefault(); // Sayfa yenilenmesini engelle
-                    Swal.close(); // Mevcut SweetAlert'i kapat
-                    await handleForgotPassword(); // Şifre kurtarma fonksiyonunu çağır
-                });
-            },
-            preConfirm: () => {
-                const password = document.getElementById('swal-password').value;
-                if (!password) {
-                    Swal.showValidationMessage('Şifre girin');
-                    return false;
-                }
-                return password;
-            }
-        });
-
-        if (result.isDismissed) {
-            console.log('4. Kullanıcı iptal etti');
-            window.location.href = 'index.html';
-            return;
-        }
-
-        const password = result.value;
-        console.log('5. Kullanıcının girdiği şifre:', password);
-
-        if (password !== adminPassword) {
-            console.log('6. Şifre yanlış! Girdi:', password, 'Doğru:', adminPassword);
-            await Swal.fire('Hata', 'Geçersiz şifre', 'error');
-            window.location.href = 'index.html';
-            return;
-        }
-
-        console.log('7. Giriş başarılı');
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('licenseSearch').value = '';
-        loadAllData();
-    } catch (e) {
-        console.error('8. Admin giriş hatası:', e);
-        await Swal.fire('Hata', 'Sistem hatası: ' + e.message, 'error');
-        window.location.href = 'index.html';
-    }
-})();
-
-// Şifre kurtarma fonksiyonu (ayrı olarak tanımlandı)
+        // Şifre kurtarma fonksiyonu (tek ve sabit isim)
 async function handleForgotPassword() {
     const { value: email } = await Swal.fire({
         title: 'Şifre Kurtarma',
@@ -2462,6 +2383,90 @@ async function handleForgotPassword() {
         Swal.fire('Hata', 'Bir sorun oluştu.', 'error');
     }
 }
+
+
+        
+
+       // Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
+// Admin giriş kontrolü
+(async function() {
+    try {
+        console.log('1. Admin giriş başladı');
+        const docRef = doc(db, "admin", "settings");
+        const docSnap = await getDoc(docRef);
+        let adminPassword;
+        
+        if (docSnap.exists()) {
+            adminPassword = docSnap.data().password;
+            console.log('2. Firestore\'dan gelen şifre:', adminPassword);
+            // Eğer email alanı yoksa ekle
+            if (!docSnap.data().email) {
+                await updateDoc(docRef, { email: "esahin.ast@gmail.com" });
+                console.log('E-posta adresi eklendi.');
+            }
+        } else {
+            // Eğer doküman yoksa (ilk kez), oluştur
+            await setDoc(docRef, { password: "admin123", email: "esahin.ast@gmail.com" });
+            adminPassword = "admin123";
+            console.log('3. Yeni doküman oluşturuldu, şifre:', adminPassword);
+        }
+
+        const result = await Swal.fire({
+            title: 'Yönetici Girişi',
+            html: `
+                <input type="password" id="swal-password" class="swal2-input" placeholder="Şifre">
+                <div style="margin-top: 10px;">
+                    <button id="forgot-password-btn" class="swal2-cancel" style="background: transparent; border: none; color: #3498db; text-decoration: underline; cursor: pointer;">Şifremi Unuttum</button>
+                </div>
+            `,
+            showConfirmButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Giriş',
+            cancelButtonText: 'İptal',
+            allowOutsideClick: false,
+            didOpen: () => {
+                // "Şifremi Unuttum" butonuna tıklanınca
+                document.getElementById('forgot-password-btn').addEventListener('click', async () => {
+                    Swal.close(); // SweetAlert'i kapat
+                    await handleForgotPassword(); // Doğrudan fonksiyonu çağır
+                });
+            },
+            preConfirm: () => {
+                const password = document.getElementById('swal-password').value;
+                if (!password) {
+                    Swal.showValidationMessage('Şifre girin');
+                    return false;
+                }
+                return password;
+            }
+        });
+
+        // Kullanıcı iptal ederse sadece modal kapansın, index'e yönlenmesin
+        if (result.isDismissed) {
+            console.log('4. Kullanıcı iptal etti');
+            return; // Hiçbir yere yönlendirme yapma
+        }
+
+        const password = result.value;
+        console.log('5. Kullanıcının girdiği şifre:', password);
+
+        if (password !== adminPassword) {
+            console.log('6. Şifre yanlış! Girdi:', password, 'Doğru:', adminPassword);
+            await Swal.fire('Hata', 'Geçersiz şifre', 'error');
+            return; // Index'e yönlendirme yok
+        }
+
+        console.log('7. Giriş başarılı');
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('licenseSearch').value = '';
+        loadAllData();
+    } catch (e) {
+        console.error('8. Admin giriş hatası:', e);
+        await Swal.fire('Hata', 'Sistem hatası: ' + e.message, 'error');
+    }
+})();
+
+
 
 // Şifre değiştirme butonu (ayarlar panelinde)
 const changePasswordBtn = document.getElementById('changePasswordBtn');
