@@ -2353,18 +2353,19 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 // Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
 (async function() {
     try {
-        console.log('Admin giriş başladı');
+        console.log('1. Admin giriş başladı');
         const docRef = doc(db, "admin", "settings");
         const docSnap = await getDoc(docRef);
         let adminPassword;
+        
         if (docSnap.exists()) {
             adminPassword = docSnap.data().password;
-            console.log('Şifre alındı:', adminPassword);
+            console.log('2. Firestore\'dan gelen şifre:', adminPassword);
         } else {
             // Eğer doküman yoksa (ilk kez), oluştur ve varsayılan ata
             await setDoc(docRef, { password: "admin123" });
             adminPassword = "admin123";
-            console.log('Yeni doküman oluşturuldu, şifre:', adminPassword);
+            console.log('3. Yeni doküman oluşturuldu, şifre:', adminPassword);
         }
 
         const { value: password } = await Swal.fire({
@@ -2378,24 +2379,26 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
         });
 
         if (!password) {
-            // İptal edildi
+            console.log('4. Kullanıcı iptal etti');
             window.location.href = 'index.html';
             return;
         }
 
+        console.log('5. Kullanıcının girdiği şifre:', password);
+
         if (password !== adminPassword) {
-            console.log('Şifre yanlış:', password, 'beklenen:', adminPassword);
+            console.log('6. Şifre yanlış! Girdi:', password, 'Doğru:', adminPassword);
             await Swal.fire('Hata', 'Geçersiz şifre', 'error');
             window.location.href = 'index.html';
             return;
         }
 
-        console.log('Giriş başarılı');
+        console.log('7. Giriş başarılı');
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('licenseSearch').value = '';
         loadAllData();
     } catch (e) {
-        console.error('Admin giriş hatası:', e);
+        console.error('8. Admin giriş hatası:', e);
         await Swal.fire('Hata', 'Sistem hatası: ' + e.message, 'error');
         window.location.href = 'index.html';
     }
@@ -2432,6 +2435,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
             return;
         }
         adminPassword = docSnap.data().password;
+        console.log('Mevcut Firestore şifresi:', adminPassword);
     } catch (e) {
         console.error("Şifre okuma hatası:", e);
         Swal.fire('Hata', 'Şifre okunamadı.', 'error');
@@ -2439,6 +2443,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
     }
 
     if (current !== adminPassword) {
+        console.log('Girilen mevcut şifre:', current, 'Firestore\'daki:', adminPassword);
         Swal.fire('Hata', 'Mevcut şifre yanlış.', 'error');
         return;
     }
@@ -2447,6 +2452,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
     try {
         const docRef = doc(db, "admin", "settings");
         await updateDoc(docRef, { password: newPwd });
+        console.log('Yeni şifre kaydedildi:', newPwd);
         Swal.fire('Başarılı', 'Şifre değiştirildi.', 'success');
 
         // Inputları temizle
