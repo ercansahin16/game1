@@ -424,44 +424,53 @@
     </div>
 
     <!-- Toplu İşlemler Paneli -->
-    <div class="panel" id="bulkPanel">
-        <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
+ <!-- Toplu İşlemler Paneli -->
+<div class="panel" id="bulkPanel">
+    <h2><i class="fas fa-tools"></i> Toplu İşlemler</h2>
 
-        <button class="btn btn-warning" onclick="bulkUpdateCategory()">
-            <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
-        </button>
+    <!-- Mevcut butonlar (sabit) -->
+    <button class="btn btn-warning" onclick="bulkUpdateCategory()">
+        <i class="fas fa-tag"></i> Tüm Kategorileri "dini konular" Yap
+    </button>
 
-        <button class="btn btn-danger" onclick="deleteAllQuestions()">
-            <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
-        </button>
+    <button class="btn btn-danger" onclick="deleteAllQuestions()">
+        <i class="fas fa-trash-alt"></i> Tüm Soruları Sil
+    </button>
 
-        <button class="btn btn-success" onclick="exportQuestions()">
-            <i class="fas fa-download"></i> Soruları Dışa Aktar (JSON)
-        </button>
+    <button class="btn btn-success" onclick="exportQuestions()">
+        <i class="fas fa-download"></i> Soruları Dışa Aktar (JSON)
+    </button>
 
-        <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
-        <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
-            <i class="fas fa-upload"></i> JSON'dan Soru Yükle
-        </button>
+    <input type="file" id="importFile" accept=".json,application/json" style="display: none;" onchange="importQuestions(this.files[0])">
+    <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
+        <i class="fas fa-upload"></i> JSON'dan Soru Yükle
+    </button>
 
-        <button class="btn btn-danger" onclick="deleteAllLicenses()">
-            <i class="fas fa-trash-alt"></i> Tüm Lisansları Sil
-        </button>
+    <button class="btn btn-danger" onclick="deleteAllLicenses()">
+        <i class="fas fa-trash-alt"></i> Tüm Lisansları Sil
+    </button>
 
-        <button class="btn btn-danger" id="resetAllUsersBtn" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-  
-  <span><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla</span>
+    <!-- YENİ: Kullanıcı Verileri Yedekleme -->
+    <button class="btn btn-success" onclick="exportUsers()">
+        <i class="fas fa-download"></i> Tüm Kullanıcı Verilerini Dışa Aktar (JSON)
+    </button>
 
-  <p style="color:#000;font-size:8px;margin:0;">
-    Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.
-  </p>
+    <input type="file" id="importUsersFile" accept=".json,application/json" style="display: none;" onchange="importUsers(this.files[0])">
+    <button class="btn btn-warning" onclick="document.getElementById('importUsersFile').click()">
+        <i class="fas fa-upload"></i> Yedekten Kullanıcı Verilerini Yükle
+    </button>
 
-</button>
-        
+    <!-- Eski "Tüm Kullanıcı Verilerini Sıfırla" butonu (uyarı: sadece liderlik tablosunu siler) -->
+    <button class="btn btn-danger" id="resetAllUsersBtn" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span><i class="fas fa-eraser"></i> Tüm Kullanıcı Verilerini Sıfırla</span>
+        <p style="color:#000;font-size:9px;margin:0;">
+            Bu işlem oyunu baştan başlatır, tüm puanları ve seviyeleri siler.
+        </p>
+    </button>
 
-        <!-- Mükerrer Soruları Bul Butonu -->
-        <button class="btn btn-warning" onclick="findDuplicateQuestions()"><i class="fas fa-copy"></i> Mükerrer Soruları Bul</button>
-    </div>
+    <!-- Mükerrer Soruları Bul Butonu -->
+    <button class="btn btn-warning" onclick="findDuplicateQuestions()"><i class="fas fa-copy"></i> Mükerrer Soruları Bul</button>
+</div>
 </div>
 
 <!-- Modaller -->
@@ -2147,6 +2156,115 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
     }
 });
 
+
+        //oyun yedekleme bölümü Tüm Verileri Dışa Aktar
+        const BACKUP_COLLECTIONS = [
+  'leaderboard',
+  'oyun_ilerleme',
+  'licenses',
+  'yardim_mesajlari',
+  'manevi_sorular'   // soruları da yedeklemek istersen
+];
+
+async function exportAllData() {
+  Swal.fire({
+    title: 'Yedekleniyor...',
+    html: 'Koleksiyonlar okunuyor.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  const backup = {};
+
+  try {
+    for (const coll of BACKUP_COLLECTIONS) {
+      const snapshot = await getDocs(collection(db, coll));
+      backup[coll] = [];
+      snapshot.forEach(doc => {
+        backup[coll].push({ id: doc.id, ...doc.data() });
+      });
+    }
+
+    const dataStr = JSON.stringify(backup, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nevafil_yedek_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Yedek alındı',
+      text: 'Tüm veriler JSON dosyasına kaydedildi.',
+      timer: 2000
+    });
+  } catch (e) {
+    console.error("Yedekleme hatası:", e);
+    Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
+  }
+}
+
+        //Yedekten Geri Yükle
+        async function importAllData(file) {
+  if (!file) return;
+
+  const result = await Swal.fire({
+    title: '⚠️ Emin misiniz?',
+    text: 'Bu işlem mevcut tüm verileri silip yedekteki verilerle değiştirecek. Bu işlem geri alınamaz!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Evet, yükle',
+    cancelButtonText: 'İptal'
+  });
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Yükleniyor...',
+    html: 'Dosya okunuyor.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+
+    // Her koleksiyon için mevcut tüm dokümanları sil (batch ile)
+    for (const coll of BACKUP_COLLECTIONS) {
+      if (!backup[coll]) continue;
+
+      const snapshot = await getDocs(collection(db, coll));
+      const deleteBatch = writeBatch(db);
+      snapshot.docs.forEach(doc => deleteBatch.delete(doc.ref));
+      await deleteBatch.commit();
+
+      // Yeni verileri ekle
+      const addBatch = writeBatch(db);
+      for (const docData of backup[coll]) {
+        const { id, ...data } = docData;
+        const ref = doc(db, coll, id); // ID korunarak eklenir
+        addBatch.set(ref, data);
+      }
+      await addBatch.commit();
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Geri yükleme tamamlandı',
+      text: 'Tüm veriler başarıyla yüklendi.',
+      timer: 2000
+    });
+
+    // İsteğe bağlı: listeleri yenile
+    if (typeof loadAllData === 'function') loadAllData();
+
+  } catch (e) {
+    console.error("Yükleme hatası:", e);
+    Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
+  }
+}
 
     
         
