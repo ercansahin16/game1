@@ -594,6 +594,16 @@
         </button>
     </div>
 </div>
+
+
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+    <button class="btn btn-primary" onclick="setAdminPassword()">
+        <i class="fas fa-save"></i> Firestore'a Admin Şifresi Kaydet
+    </button>
+    <p style="font-size: 12px; color: #666; margin-top: 8px;">
+        Bu buton, girdiğiniz şifreyi Firestore'daki admin/settings dokümanına kaydeder. Koleksiyon yoksa oluşturur.
+    </p>
+</div>
     
 
     
@@ -2308,7 +2318,7 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 };
         
 
-
+/*
         // Admin giriş kontrolü (mevcut kodun yerine bunu kullanın)
 (async function() {
     // Firestore'dan admin şifresini al
@@ -2457,7 +2467,52 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
             window.location.href = 'index.html';
         });
     }
-})();
+})();*/
+
+
+        async function setAdminPassword() {
+    const { value: password } = await Swal.fire({
+        title: 'Admin Şifresi Belirle',
+        text: 'Firestore\'a kaydedilecek yeni şifreyi girin',
+        input: 'password',
+        inputPlaceholder: 'Yeni şifre',
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'İptal'
+    });
+
+    if (!password) return;
+
+    if (password.length < 6) {
+        Swal.fire('Uyarı', 'Şifre en az 6 karakter olmalıdır.', 'warning');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Kaydediliyor...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const docRef = doc(db, "admin", "settings");
+        await setDoc(docRef, { password: password }, { merge: true });
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: 'Şifre Firestore\'a kaydedildi.',
+            timer: 2000
+        });
+    } catch (e) {
+        console.error("Şifre kaydedilemedi:", e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Kayıt başarısız: ' + e.message
+        });
+    }
+}
     </script>
 
     
