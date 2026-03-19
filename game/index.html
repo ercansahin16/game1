@@ -2268,6 +2268,7 @@ if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 
 
   //benzersiz kullanıcı adı ve kullanıcı adu-ı değiştirme fonksiyonu 
+// saveSettings fonksiyonunu güncelle
 async function saveSettings() {
     const newName = settingsUsername.value.trim();
     
@@ -2277,16 +2278,22 @@ async function saveSettings() {
         return;
     }
 
-    // Firebase'de aynı isim var mı kontrol et (kendi ismi hariç? Aslında kontrol edelim, ama eski ismi değiştiriyoruz, yeni isim başkasında varsa hata ver)
     try {
+        // Firebase'de aynı isim var mı kontrol et (kendi adın hariç)
         const q = query(collection(db, LEADERBOARD_COLL), where("username", "==", newName));
         const snapshot = await getDocs(q);
+        
+        // Eğer aynı isimde başka bir kayıt varsa ve bu kayıt şu anki kullanıcıya ait değilse uyarı ver
         if (!snapshot.empty) {
-            showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
-            return;
+            // Şu anki kullanıcının eski adını kontrol et (gameState.username)
+            const otherUser = snapshot.docs.find(doc => doc.data().username !== gameState.username);
+            if (otherUser) {
+                showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
+                return;
+            }
         }
     } catch (e) {
-        console.error("İsim kontrolü hatası:", e);
+        console.error("İsim kontrolü hatası:", e);  // Hata detayını konsola yaz
         showToast('İsim kontrolü yapılamadı, lütfen tekrar deneyin.', 'error');
         return;
     }
@@ -2298,29 +2305,29 @@ async function saveSettings() {
         gameState.avatarImg = selectedAvatar.dataset.avatarImg;
     }
 
-    // Yeni ismi kaydet (gameState'i güncelle)
-    const oldName = gameState.username; // eski ismi sakla
+    // Eski kullanıcı adını kaydet (liderlikten silmek için)
+    const oldUsername = gameState.username;
+
+    // Yeni ismi kaydet
     gameState.username = newName;
     
-    // Oyun durumunu kaydet (localStorage ve Firestore)
+    // Oyun durumunu kaydet (hem localStorage hem Firestore)
     await saveGameState();
 
-    // Eski isimle liderlik kayıtlarını sil
-    if (oldName && oldName !== 'Misafir') {
-        try {
-            const q = query(collection(db, LEADERBOARD_COLL), where("username", "==", oldName));
-            const snapshot = await getDocs(q);
-            const batch = writeBatch(db);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            console.log(`Eski isim (${oldName}) liderlik kayıtları silindi.`);
-        } catch (e) {
-            console.error("Eski liderlik kayıtları silinirken hata:", e);
-        }
-    }
+    // 🆕 Liderlik tablosunu güncelle: eski kaydı sil, yeni kaydı ekle
+    try {
+        // Eski kullanıcı adına ait kaydı sil (eğer varsa)
+        const oldQ = query(collection(db, LEADERBOARD_COLL), where("username", "==", oldUsername));
+        const oldSnapshot = await getDocs(oldQ);
+        const batch = writeBatch(db);
+        oldSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
 
-    // Yeni isimle liderliğe kaydet (mevcut skorla)
-    await saveScoreToLeaderboard();
+        // Yeni kullanıcı adıyla skoru kaydet
+        await saveScoreToLeaderboard();  // Bu fonksiyon zaten en yüksek skoru koruyor
+    } catch (e) {
+        console.error("Liderlik güncellenirken hata:", e);
+    }
 
     // Arayüzü güncelle
     updateIntroUI();
