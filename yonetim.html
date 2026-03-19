@@ -2384,66 +2384,71 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
     }
 })();
 
-// Şifre değiştirme butonu (ayarlar panelinde)
-document.getElementById('changePasswordBtn').addEventListener('click', async () => {
-    const current = document.getElementById('currentPassword').value;
-    const newPwd = document.getElementById('newPassword').value;
-    const confirm = document.getElementById('confirmPassword').value;
+// Şifre değiştirme butonu (ayarlar panelinde) - GÜVENLİ VERSİYON
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+if (changePasswordBtn) {
+    changePasswordBtn.addEventListener('click', async () => {
+        const current = document.getElementById('currentPassword').value;
+        const newPwd = document.getElementById('newPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
 
-    if (!current || !newPwd || !confirm) {
-        Swal.fire('Uyarı', 'Tüm alanları doldurun.', 'warning');
-        return;
-    }
-
-    if (newPwd !== confirm) {
-        Swal.fire('Hata', 'Yeni şifreler eşleşmiyor.', 'error');
-        return;
-    }
-
-    if (newPwd.length < 6) {
-        Swal.fire('Uyarı', 'Yeni şifre en az 6 karakter olmalıdır.', 'warning');
-        return;
-    }
-
-    // Mevcut şifreyi doğrula
-    let adminPassword;
-    try {
-        const docRef = doc(db, "admin", "settings");
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-            Swal.fire('Hata', 'Sistem hatası, admin kaydı bulunamadı.', 'error');
+        if (!current || !newPwd || !confirm) {
+            Swal.fire('Uyarı', 'Tüm alanları doldurun.', 'warning');
             return;
         }
-        adminPassword = docSnap.data().password;
-        console.log('Mevcut Firestore şifresi:', adminPassword);
-    } catch (e) {
-        console.error("Şifre okuma hatası:", e);
-        Swal.fire('Hata', 'Şifre okunamadı.', 'error');
-        return;
-    }
 
-    if (current !== adminPassword) {
-        console.log('Girilen mevcut şifre:', current, 'Firestore\'daki:', adminPassword);
-        Swal.fire('Hata', 'Mevcut şifre yanlış.', 'error');
-        return;
-    }
+        if (newPwd !== confirm) {
+            Swal.fire('Hata', 'Yeni şifreler eşleşmiyor.', 'error');
+            return;
+        }
 
-    // Yeni şifreyi kaydet
-    try {
-        const docRef = doc(db, "admin", "settings");
-        await updateDoc(docRef, { password: newPwd });
-        console.log('Yeni şifre kaydedildi:', newPwd);
-        Swal.fire('Başarılı', 'Şifre değiştirildi.', 'success');
+        if (newPwd.length < 6) {
+            Swal.fire('Uyarı', 'Yeni şifre en az 6 karakter olmalıdır.', 'warning');
+            return;
+        }
 
-        // Inputları temizle
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-    } catch (e) {
-        console.error("Şifre güncelleme hatası:", e);
-        Swal.fire('Hata', 'Şifre değiştirilemedi.', 'error');
-    }
-});
+        // Mevcut şifreyi doğrula
+        let adminPassword;
+        try {
+            const docRef = doc(db, "admin", "settings");
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) {
+                Swal.fire('Hata', 'Sistem hatası, admin kaydı bulunamadı.', 'error');
+                return;
+            }
+            adminPassword = docSnap.data().password;
+            console.log('Mevcut Firestore şifresi:', adminPassword);
+        } catch (e) {
+            console.error("Şifre okuma hatası:", e);
+            Swal.fire('Hata', 'Şifre okunamadı.', 'error');
+            return;
+        }
+
+        if (current !== adminPassword) {
+            console.log('Girilen mevcut şifre:', current, 'Firestore\'daki:', adminPassword);
+            Swal.fire('Hata', 'Mevcut şifre yanlış.', 'error');
+            return;
+        }
+
+        // Yeni şifreyi kaydet
+        try {
+            const docRef = doc(db, "admin", "settings");
+            await updateDoc(docRef, { password: newPwd });
+            console.log('Yeni şifre kaydedildi:', newPwd);
+            Swal.fire('Başarılı', 'Şifre değiştirildi.', 'success');
+
+            // Inputları temizle
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } catch (e) {
+            console.error("Şifre güncelleme hatası:", e);
+            Swal.fire('Hata', 'Şifre değiştirilemedi.', 'error');
+        }
+    });
+} else {
+    console.warn('Uyarı: "changePasswordBtn" id\'li buton bulunamadı. Şifre değiştirme özelliği çalışmayacak.');
+}
 
 
         document.getElementById('setAdminPasswordBtn').addEventListener('click', setAdminPassword);
