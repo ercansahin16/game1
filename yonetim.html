@@ -634,12 +634,7 @@
 
 
 
-    <!-- Şifremi Unuttum Butonu (onclick kaldırıldı) -->
-<div style="margin-top: 15px; text-align: center;">
-    <button class="btn btn-warning" id="forgotPassword">
-        <i class="fas fa-question-circle"></i> Şifremi Unuttum
-    </button>
-</div>
+
 
 
     
@@ -2341,6 +2336,7 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 
 
        // Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
+// Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
 (async function() {
     try {
         console.log('1. Admin giriş başladı');
@@ -2351,13 +2347,11 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
         if (docSnap.exists()) {
             adminPassword = docSnap.data().password;
             console.log('2. Firestore\'dan gelen şifre:', adminPassword);
-            // Eğer email alanı yoksa ekle (opsiyonel)
             if (!docSnap.data().email) {
                 await updateDoc(docRef, { email: "esahin.ast@gmail.com" });
                 console.log('E-posta adresi eklendi.');
             }
         } else {
-            // Eğer doküman yoksa (ilk kez), oluştur ve varsayılan ata
             await setDoc(docRef, { password: "admin123", email: "esahin.ast@gmail.com" });
             adminPassword = "admin123";
             console.log('3. Yeni doküman oluşturuldu, şifre:', adminPassword);
@@ -2378,9 +2372,10 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
             allowOutsideClick: false,
             didOpen: () => {
                 // "Şifremi Unuttum" butonuna tıklanınca
-                document.getElementById('forgot-password-btn').addEventListener('click', async () => {
-                    Swal.close(); // SweetAlert'i kapat
-                    await window.forgotPassword(); // window üzerinden çağır
+                document.getElementById('forgot-password-btn').addEventListener('click', async (e) => {
+                    e.preventDefault(); // Sayfa yenilenmesini engelle
+                    Swal.close(); // Mevcut SweetAlert'i kapat
+                    await handleForgotPassword(); // Şifre kurtarma fonksiyonunu çağır
                 });
             },
             preConfirm: () => {
@@ -2412,7 +2407,7 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
         console.log('7. Giriş başarılı');
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('licenseSearch').value = '';
-        loadAllData(); // Bu fonksiyon zaten tanımlı olmalı
+        loadAllData();
     } catch (e) {
         console.error('8. Admin giriş hatası:', e);
         await Swal.fire('Hata', 'Sistem hatası: ' + e.message, 'error');
@@ -2420,8 +2415,8 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
     }
 })();
 
-// Şifre kurtarma fonksiyonu (window'a eklendi)
-window.forgotPassword = async function() {
+// Şifre kurtarma fonksiyonu (ayrı olarak tanımlandı)
+async function handleForgotPassword() {
     const { value: email } = await Swal.fire({
         title: 'Şifre Kurtarma',
         text: 'Kayıtlı e-posta adresinizi girin',
@@ -2466,9 +2461,9 @@ window.forgotPassword = async function() {
         console.error("Şifre kurtarma hatası:", e);
         Swal.fire('Hata', 'Bir sorun oluştu.', 'error');
     }
-};
+}
 
-// Şifre değiştirme butonu (ayarlar panelinde) - GÜVENLİ VERSİYON
+// Şifre değiştirme butonu (ayarlar panelinde)
 const changePasswordBtn = document.getElementById('changePasswordBtn');
 if (changePasswordBtn) {
     changePasswordBtn.addEventListener('click', async () => {
@@ -2491,7 +2486,6 @@ if (changePasswordBtn) {
             return;
         }
 
-        // Mevcut şifreyi doğrula
         let adminPassword;
         try {
             const docRef = doc(db, "admin", "settings");
@@ -2514,14 +2508,12 @@ if (changePasswordBtn) {
             return;
         }
 
-        // Yeni şifreyi kaydet
         try {
             const docRef = doc(db, "admin", "settings");
             await updateDoc(docRef, { password: newPwd });
             console.log('Yeni şifre kaydedildi:', newPwd);
             Swal.fire('Başarılı', 'Şifre değiştirildi.', 'success');
 
-            // Inputları temizle
             document.getElementById('currentPassword').value = '';
             document.getElementById('newPassword').value = '';
             document.getElementById('confirmPassword').value = '';
@@ -2531,10 +2523,8 @@ if (changePasswordBtn) {
         }
     });
 } else {
-    console.warn('Uyarı: "changePasswordBtn" id\'li buton bulunamadı. Şifre değiştirme özelliği çalışmayacak.');
+    console.warn('Uyarı: "changePasswordBtn" id\'li buton bulunamadı.');
 }
-
-
         
 
 
