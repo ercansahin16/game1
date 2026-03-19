@@ -2342,29 +2342,55 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
         if (docSnap.exists()) {
             adminPassword = docSnap.data().password;
             console.log('2. Firestore\'dan gelen şifre:', adminPassword);
+            // Eğer email alanı yoksa ekle (opsiyonel)
+            if (!docSnap.data().email) {
+                await updateDoc(docRef, { email: "esahin.ast@gmail.com" });
+                console.log('E-posta adresi eklendi.');
+            }
         } else {
             // Eğer doküman yoksa (ilk kez), oluştur ve varsayılan ata
-            await setDoc(docRef, { password: "admin123" });
+            await setDoc(docRef, { password: "admin123", email: "esahin.ast@gmail.com" });
             adminPassword = "admin123";
             console.log('3. Yeni doküman oluşturuldu, şifre:', adminPassword);
         }
 
-        const { value: password } = await Swal.fire({
+        const result = await Swal.fire({
             title: 'Yönetici Girişi',
-            input: 'password',
-            inputPlaceholder: 'Şifre',
+            html: `
+                <input type="password" id="swal-password" class="swal2-input" placeholder="Şifre">
+                <div style="margin-top: 10px;">
+                    <button id="forgot-password-btn" class="swal2-cancel" style="background: transparent; border: none; color: #3498db; text-decoration: underline; cursor: pointer;">Şifremi Unuttum</button>
+                </div>
+            `,
+            showConfirmButton: true,
             showCancelButton: true,
             confirmButtonText: 'Giriş',
             cancelButtonText: 'İptal',
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            didOpen: () => {
+                // "Şifremi Unuttum" butonuna tıklanınca
+                document.getElementById('forgot-password-btn').addEventListener('click', async () => {
+                    Swal.close(); // SweetAlert'i kapat
+                    await forgotPassword(); // Şifre kurtarma fonksiyonunu çağır
+                });
+            },
+            preConfirm: () => {
+                const password = document.getElementById('swal-password').value;
+                if (!password) {
+                    Swal.showValidationMessage('Şifre girin');
+                    return false;
+                }
+                return password;
+            }
         });
 
-        if (!password) {
+        if (result.isDismissed) {
             console.log('4. Kullanıcı iptal etti');
             window.location.href = 'index.html';
             return;
         }
 
+        const password = result.value;
         console.log('5. Kullanıcının girdiği şifre:', password);
 
         if (password !== adminPassword) {
@@ -2384,6 +2410,49 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
         window.location.href = 'index.html';
     }
 })();
+
+// Şifre kurtarma fonksiyonu (daha önce yazdığımız)
+async function forgotPassword() {
+    const { value: email } = await Swal.fire({
+        title: 'Şifre Kurtarma',
+        text: 'Kayıtlı e-posta adresinizi girin',
+        input: 'email',
+        inputPlaceholder: 'ornek@email.com',
+        showCancelButton: true,
+        confirmButtonText: 'Gönder',
+        cancelButtonText: 'Vazgeç'
+    });
+
+    if (!email) return;
+
+    try {
+        const docRef = doc(db, "admin", "settings");
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            Swal.fire('Hata', 'Admin ayarları bulunamadı.', 'error');
+            return;
+        }
+
+        const adminEmail = docSnap.data().email;
+        const adminPassword = docSnap.data().password;
+
+        if (email.toLowerCase() !== adminEmail.toLowerCase()) {
+            Swal.fire('Hata', 'Bu e-posta admin kayıtlarında bulunamadı.', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Şifreniz',
+            text: `Şifreniz: ${adminPassword}`,
+            icon: 'info',
+            confirmButtonText: 'Tamam'
+        });
+
+    } catch (e) {
+        console.error("Şifre kurtarma hatası:", e);
+        Swal.fire('Hata', 'Bir sorun oluştu.', 'error');
+    }
+}
 
         //Şifre Değiştirme Butonu (Güvenli Versiyon)
         // Şifre değiştirme butonu (ayarlar panelinde) - GÜVENLİ VERSİYON
