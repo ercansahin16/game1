@@ -2350,50 +2350,58 @@ document.querySelector('.tab[data-tab="tasks"]').addEventListener('click', () =>
 
 
         // Admin giriş kontrolü (mevcut kodun yerine bunu kullanın)
+// Admin giriş kontrolü (TEK VE DOĞRU VERSİYON)
 (async function() {
-    // Firestore'dan admin şifresini al
-    let adminPassword = null;
     try {
+        console.log('Admin giriş başladı');
         const docRef = doc(db, "admin", "settings");
         const docSnap = await getDoc(docRef);
+        let adminPassword;
         if (docSnap.exists()) {
             adminPassword = docSnap.data().password;
+            console.log('Şifre alındı:', adminPassword);
         } else {
-            // Doküman yoksa oluştur ve varsayılan şifreyi ata (kodda görünmez)
+            // Eğer doküman yoksa (ilk kez), oluştur ve varsayılan ata
             await setDoc(docRef, { password: "admin123" });
             adminPassword = "admin123";
+            console.log('Yeni doküman oluşturuldu, şifre:', adminPassword);
         }
+
+        const { value: password } = await Swal.fire({
+            title: 'Yönetici Girişi',
+            input: 'password',
+            inputPlaceholder: 'Şifre',
+            showCancelButton: true,
+            confirmButtonText: 'Giriş',
+            cancelButtonText: 'İptal',
+            allowOutsideClick: false
+        });
+
+        if (!password) {
+            // İptal edildi
+            window.location.href = 'index.html';
+            return;
+        }
+
+        if (password !== adminPassword) {
+            console.log('Şifre yanlış:', password, 'beklenen:', adminPassword);
+            await Swal.fire('Hata', 'Geçersiz şifre', 'error');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        console.log('Giriş başarılı');
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('licenseSearch').value = '';
+        loadAllData();
     } catch (e) {
-        console.error("Admin şifresi alınamadı:", e);
-        Swal.fire('Hata', 'Sunucu hatası, lütfen daha sonra tekrar deneyin.', 'error').then(() => {
-            window.location.href = 'index.html';
-        });
-        return;
+        console.error('Admin giriş hatası:', e);
+        await Swal.fire('Hata', 'Sistem hatası: ' + e.message, 'error');
+        window.location.href = 'index.html';
     }
-
-    const { value: password } = await Swal.fire({
-        title: 'Yönetici Girişi',
-        input: 'password',
-        inputPlaceholder: 'Şifre',
-        showCancelButton: true,
-        confirmButtonText: 'Giriş',
-        cancelButtonText: 'İptal',
-        allowOutsideClick: false
-    });
-
-    if (password !== adminPassword) {
-        Swal.fire('Hata', 'Geçersiz şifre', 'error').then(() => {
-            window.location.href = 'index.html';
-        });
-        return;
-    }
-
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('licenseSearch').value = '';
-    loadAllData();
 })();
 
-// Şifre değiştirme butonu
+// Şifre değiştirme butonu (ayarlar panelinde)
 document.getElementById('changePasswordBtn').addEventListener('click', async () => {
     const current = document.getElementById('currentPassword').value;
     const newPwd = document.getElementById('newPassword').value;
@@ -2450,55 +2458,6 @@ document.getElementById('changePasswordBtn').addEventListener('click', async () 
         Swal.fire('Hata', 'Şifre değiştirilemedi.', 'error');
     }
 });
-
-
-
-
-        (async function() {
-    try {
-        console.log('Admin giriş başladı');
-        const docRef = doc(db, "admin", "settings");
-        const docSnap = await getDoc(docRef);
-        let adminPassword;
-        if (docSnap.exists()) {
-            adminPassword = docSnap.data().password;
-            console.log('Şifre alındı:', adminPassword);
-        } else {
-            await setDoc(docRef, { password: "admin123" });
-            adminPassword = "admin123";
-            console.log('Yeni doküman oluşturuldu, şifre:', adminPassword);
-        }
-
-        const { value: password } = await Swal.fire({
-            title: 'Yönetici Girişi',
-            input: 'password',
-            inputPlaceholder: 'Şifre',
-            showCancelButton: true,
-            confirmButtonText: 'Giriş',
-            cancelButtonText: 'İptal',
-            allowOutsideClick: false
-        });
-
-        if (password !== adminPassword) {
-            console.log('Şifre yanlış:', password, 'beklenen:', adminPassword);
-            Swal.fire('Hata', 'Geçersiz şifre', 'error').then(() => {
-                window.location.href = 'index.html';
-            });
-            return;
-        }
-
-        console.log('Giriş başarılı');
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('licenseSearch').value = '';
-        loadAllData();
-    } catch (e) {
-        console.error('Admin giriş hatası:', e);
-        Swal.fire('Hata', 'Sistem hatası', 'error').then(() => {
-            window.location.href = 'index.html';
-        });
-    }
-})();
-
 
 
         document.getElementById('setAdminPasswordBtn').addEventListener('click', setAdminPassword);
