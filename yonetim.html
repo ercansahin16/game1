@@ -2266,6 +2266,130 @@ async function exportAllData() {
   }
 }
 
+
+        //
+        window.exportUsers = async () => {
+    Swal.fire({
+        title: 'Dışa aktarılıyor...',
+        html: 'Veriler hazırlanıyor, lütfen bekleyin.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const collections = [
+            { name: 'licenses', data: [] },
+            { name: 'oyun_ilerleme', data: [] },
+            { name: 'leaderboard', data: [] }
+        ];
+
+        for (let coll of collections) {
+            const snapshot = await getDocs(collection(db, coll.name));
+            coll.data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        const exportObj = {
+            exportDate: new Date().toISOString(),
+            collections: collections.reduce((acc, cur) => ({ ...acc, [cur.name]: cur.data }), {})
+        };
+
+        const dataStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kullanici_yedek_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: 'Tüm kullanıcı verileri dışa aktarıldı.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } catch (error) {
+        console.error('Dışa aktarma hatası:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Dışa aktarma başarısız.'
+        });
+    }
+};
+
+        //window.importUsers = async (file) => {
+    if (!file) return;
+
+    const result = await Swal.fire({
+        title: 'Uyarı',
+        text: 'Bu işlem mevcut tüm kullanıcı verilerini (lisanslar, oyun ilerlemeleri, liderlik) silip yedekteki verilerle değiştirecektir. Devam etmek istiyor musunuz?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, yükle',
+        cancelButtonText: 'İptal'
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Yükleniyor...',
+        html: 'Veriler işleniyor, lütfen bekleyin.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const text = await file.text();
+        const backup = JSON.parse(text);
+
+        const collections = ['licenses', 'oyun_ilerleme', 'leaderboard'];
+
+        // Mevcut tüm dokümanları sil
+        for (let collName of collections) {
+            const snapshot = await getDocs(collection(db, collName));
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        }
+
+        // Yedekteki verileri yaz
+        for (let collName of collections) {
+            const collData = backup.collections[collName];
+            if (!collData) continue;
+
+            const batch = writeBatch(db);
+            for (let docData of collData) {
+                const docRef = doc(db, collName, docData.id);
+                const { id, ...data } = docData;
+                batch.set(docRef, data);
+            }
+            await batch.commit();
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Başarılı',
+            text: 'Kullanıcı verileri yedekten geri yüklendi.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        // İlgili panelleri yenile
+        if (typeof loadLicenses === 'function') loadLicenses();
+        if (typeof loadUsers === 'function') loadUsers();
+
+    } catch (error) {
+        console.error('Yükleme hatası:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata',
+            text: 'Dosya okunamadı veya geçersiz format.'
+        });
+    }
+};
+        
     
         
     </script>
