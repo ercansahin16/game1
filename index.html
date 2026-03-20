@@ -3,346 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nevafil - Ailede Muhabbet Yolculuğu</title>
+    <title>Nevafil - Gönül Yolculuğu</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
     
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1a2a44">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Nevafil">
-    <link rel="apple-touch-icon" href="/game/icons/icon-192.png">
-
     <style>
         :root {
-            --gold: #c5a059;
-            --navy: #1a2a44;
-            --cream: #fdfbf7;
-            --text-dark: #2c3e50;
-            --text-muted: #7f8c8d;
-            --glass-white: rgba(255, 255, 255, 0.95);
-            --border-gold: rgba(197, 160, 89, 0.3);
-            --shadow-soft: 0 20px 60px rgba(0, 0, 0, 0.08);
-            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            --gold: #d4af37;
+            --gold-soft: rgba(212, 175, 55, 0.4);
+            --navy-deep: #0a192f;
+            --spiritual-bg: #fdf8f2;
+            --text-main: #34495e;
+            --transition-slow: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: 
-                radial-gradient(circle at top right, rgba(197, 160, 89, 0.12), transparent 40%),
-                radial-gradient(circle at bottom left, rgba(26, 42, 68, 0.05), transparent 40%),
-                linear-gradient(135deg, #fdfbf7 0%, #f5f0e6 100%);
-            color: var(--text-dark);
+            font-family: 'Quicksand', sans-serif;
+            background: var(--spiritual-bg);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            -webkit-font-smoothing: antialiased;
+            perspective: 1000px;
         }
 
-        /* Ses Kontrolü */
-        #audioControl {
-            position: fixed;
-            top: 25px;
-            right: 25px;
-            cursor: pointer;
-            z-index: 1001;
-            background: white;
-            padding: 12px;
-            border-radius: 50%;
-            border: 1px solid var(--border-gold);
-            box-shadow: var(--shadow-soft);
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #audioControl:hover { transform: scale(1.1); }
-
-        /* PWA Banner */
-        .pwa-mini {
-            position: fixed;
-            top: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--glass-white);
-            padding: 10px 18px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: var(--shadow-soft);
-            z-index: 1000;
-            border: 1px solid var(--border-gold);
-            backdrop-filter: blur(8px);
-        }
-        .pwa-mini.hidden { display: none; }
-        .pwa-mini-btn {
-            border: none;
-            background: var(--gold);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        /* Yükleme Ekranı */
-        #loadingSpinner {
+        /* Ruhani Arka Plan Animasyonu */
+        .ambient-bg {
             position: fixed;
             inset: 0;
-            background: var(--cream);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(10, 25, 47, 0.05) 0%, transparent 40%);
+            z-index: -1;
+            animation: pulseBg 10s ease-in-out infinite alternate;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Lisans Paneli */
-        #licensePrompt {
+        @keyframes pulseBg {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* Hareket Eden Işık Parçacıkları */
+        .particles {
             position: fixed;
-            inset: 0;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            backdrop-filter: blur(12px);
-            background: rgba(253, 251, 247, 0.4);
-            z-index: 100;
-        }
-
-        .card {
             width: 100%;
-            max-width: 420px;
-            padding: 45px 35px;
-            border-radius: 35px;
-            background: var(--glass-white);
-            border: 1px solid var(--border-gold);
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            height: 100%;
+            background-image: radial-gradient(circle, var(--gold-soft) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            animation: drift 20s linear infinite;
+            z-index: -1;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes drift {
+            from { transform: translateY(0); }
+            to { transform: translateY(-500px); }
+        }
+
+        /* Ana Kart: Zarif ve Şeffaf */
+        .spiritual-card {
+            width: 90%;
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 40px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: cardFadeIn 1.5s ease-out;
+            position: relative;
+        }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(50px) rotateX(-5deg); }
+            to { opacity: 1; transform: translateY(0) rotateX(0); }
+        }
+
+        .logo-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+
+        /* Logoya Ruhani Bir Işıltı (Glow) */
+        .logo-wrap::after {
+            content: "";
+            position: absolute;
+            inset: -15px;
+            background: radial-gradient(circle, var(--gold-soft) 0%, transparent 70%);
+            z-index: -1;
+            border-radius: 50%;
+            animation: glow 4s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
         }
 
         .app-logo {
-            width: 95px;
-            height: 95px;
-            margin: 0 auto 25px;
-            display: block;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            padding: 5px;
             border: 2px solid var(--gold);
-            background: white;
-            box-shadow: 0 10px 25px rgba(197, 160, 89, 0.2);
+            padding: 5px;
+            background: #fff;
         }
 
         h2 {
             font-family: 'Cinzel', serif;
-            font-size: 1.8rem;
-            color: var(--navy);
-            margin-bottom: 8px;
-            letter-spacing: 3px;
+            font-size: 2.2rem;
+            letter-spacing: 5px;
+            color: var(--navy-deep);
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .subtitle {
+        .spiritual-motto {
             font-family: 'Playfair Display', serif;
             font-style: italic;
-            color: var(--text-muted);
-            font-size: 1.05rem;
-            margin-bottom: 30px;
+            color: var(--text-main);
+            font-size: 1.15rem;
+            margin-bottom: 35px;
+            opacity: 0.8;
         }
 
-        .form-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        /* Giriş Alanları */
+        .input-group {
+            margin-bottom: 20px;
         }
 
         input {
             width: 100%;
-            height: 54px;
-            padding: 0 20px;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            color: var(--navy);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 18px;
+            border-radius: 20px;
             font-size: 1rem;
             text-align: center;
-            transition: var(--transition);
-        }
-        input:focus {
-            border-color: var(--gold);
-            box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+            color: var(--navy-deep);
+            transition: var(--transition-slow);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
         }
 
-        .submit-btn {
-            background: var(--navy);
+        input:focus {
+            background: #fff;
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+        }
+
+        /* Butonlar: Yumuşak ve Davetkar */
+        .btn-main {
+            background: var(--navy-deep);
             color: white;
             border: none;
-            height: 54px;
-            border-radius: 16px;
+            width: 100%;
+            padding: 18px;
+            border-radius: 20px;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 10px 20px rgba(26, 42, 68, 0.15);
+            transition: var(--transition-slow);
+            box-shadow: 0 10px 25px rgba(10, 25, 47, 0.2);
         }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(26, 42, 68, 0.2); }
 
-        .buy-license-btn {
-            background: linear-gradient(135deg, var(--gold) 0%, #b38b43 100%);
-            color: white;
+        .btn-main:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(10, 25, 47, 0.3);
+            background: #142a4a;
+        }
+
+        .btn-buy {
+            background: white;
+            color: var(--gold);
+            border: 1px solid var(--gold);
             text-decoration: none;
-            height: 54px;
-            border-radius: 16px;
+            width: 100%;
+            padding: 16px;
+            border-radius: 20px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            transition: var(--transition);
-            animation: pulse-gold 3s infinite;
-        }
-        @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(197, 160, 89, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0); }
+            gap: 10px;
+            margin-top: 15px;
+            transition: var(--transition-slow);
         }
 
-        .link-button {
-            background: transparent;
-            border: 1px solid #f1f5f9;
+        .btn-buy:hover {
+            background: var(--gold);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .links-secondary {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
             color: var(--text-muted);
-            padding: 12px;
-            border-radius: 14px;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: var(--transition);
-        }
-        .link-button:hover { background: #f8fafc; color: var(--navy); border-color: var(--gold); }
-
-        .small-text {
-            margin-top: 25px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-family: 'Playfair Display', serif;
-            line-height: 1.5;
+            text-decoration: underline;
+            opacity: 0.6;
+            transition: 0.3s;
         }
 
-        #gameContainer { width: 100%; height: 100vh; display: none; }
-        iframe { width: 100%; height: 100%; border: none; }
+        .btn-text:hover { opacity: 1; color: var(--gold); }
 
-        /* SweetAlert Tasarımı (Sertifika ile uyumlu) */
-        .swal2-popup { border-radius: 25px !important; background: var(--cream) !important; border: 1px solid var(--gold) !important; }
-        .swal2-title { color: var(--navy) !important; font-family: 'Cinzel', serif !important; }
-        .swal2-confirm { background: var(--navy) !important; border-radius: 12px !important; }
+        /* Ses Butonu */
+        #soundToggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--gold-soft);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            z-index: 1000;
+            transition: 0.3s;
+        }
+
+        #soundToggle:hover { transform: rotate(15deg) scale(1.1); }
 
         @media (max-width: 480px) {
-            .card { padding: 35px 20px; border-radius: 30px; }
-            h2 { font-size: 1.5rem; }
+            .spiritual-card { padding: 40px 25px; }
+            h2 { font-size: 1.8rem; letter-spacing: 3px; }
         }
     </style>
 </head>
 <body>
 
-<div id="audioControl" onclick="toggleAudio()">
-    <span id="audioIcon">🔇</span>
-    <audio id="bgMusic" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    <div class="ambient-bg"></div>
+    <div class="particles"></div>
+
+    <button id="soundToggle" onclick="toggleManeviMusic()">🔇</button>
+    <audio id="maneviAudio" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
     </audio>
-</div>
 
-<div id="pwaBanner" class="pwa-mini hidden">
-    <span>📲 Nevafil'i</span>
-    <button id="installBtn" class="pwa-mini-btn">Yükle</button>
-</div>
-
-<div id="loadingSpinner">
-    <img src="img/loader.png" alt="Nevafil" style="width: 70px; height: 70px; animation: spin 3s linear infinite; opacity: 0.7;">
-    <p style="margin-top: 15px; font-family: 'Playfair Display', serif; color: var(--gold); font-style: italic;">Huzura hazırlanıyor...</p>
-</div>
-
-<div id="licensePrompt">
-    <div class="card">
-        <img src="https://raw.githubusercontent.com/ercansahin16/game1/refs/heads/main/favicon.ico" alt="Logo" class="app-logo">
-
-        <h2>NEVAFİL</h2>
-        <p class="subtitle">Manevi bir yolculuğa hazır mısınız?</p>
-
-        <div class="form-stack">
-            <input type="text" id="licenseInput" placeholder="Lisans Anahtarı (GAME-XXXX)">
-
-            <button class="submit-btn" onclick="window.onLicenseSubmit()">Yolculuğa Başla</button>
-
-            <a class="buy-license-btn" href="https://www.shopier.com/nevafil/44722560" target="_blank">
-                <span>🕊️ Lisans Anahtarı Al</span>
-            </a>
-
-            <button class="link-button" onclick="window.showEmailModal()">🔑 Lisansımı Hatırlat</button>
-            <button class="link-button" onclick="window.showHelpModal()">❔ Yardım / İletişim</button>
+    <div class="spiritual-card">
+        <div class="logo-wrap">
+            <img src="https://raw.githubusercontent.com/ercansahin16/game1/refs/heads/main/favicon.ico" alt="Nevafil" class="app-logo">
         </div>
 
-        <p class="small-text">Sizin için hazırlanan manevi dünyaya hoş geldiniz.<br>Muhabbetiniz daim olsun.</p>
+        <h2>NEVAFİL</h2>
+        <p class="spiritual-motto">Gönül kapısını muhabbetle açmaya hazır mısın?</p>
+
+        <div class="input-group">
+            <input type="text" id="licenseInput" placeholder="Lisans Anahtarınız">
+        </div>
+
+        <button class="btn-main" onclick="onLicenseSubmit()">Bismillah, Başla</button>
+
+        <a class="btn-buy" href="https://www.shopier.com/nevafil/44722560" target="_blank">
+            🕊️ Yolculuğa Katıl (Lisans Al)
+        </a>
+
+        <div class="links-secondary">
+            <button class="btn-text" onclick="showEmailModal()">Lisansımı Hatırlat</button>
+            <button class="btn-text" onclick="showHelpModal()">Yardım ve İletişim</button>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 0.75rem; color: #95a5a6; font-family: 'Playfair Display', serif;">
+            Muhabbetle kurulan her cümle, aile saadetinin birer tuğlasıdır.
+        </p>
     </div>
-</div>
 
-<div id="gameContainer"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
-        authDomain: "duapro-a7d7e.firebaseapp.com",
-        projectId: "duapro-a7d7e",
-        storageBucket: "duapro-a7d7e.appspot.com",
-        messagingSenderId: "450775848659",
-        appId: "1:450775848659:web:ca192a401da3f887e1e626"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // [Eski mantığın tüm fonksiyonları burada aynen korunuyor...]
-    // Not: verifyLicense, recoverLicenseByEmail, processLicense vb. fonksiyonlarını buraya ekleyebilirsin.
-    // (Yer darlığından sadece en kritik kısımları bırakıyorum, firebase yapın değişmedi)
-
-    window.toggleAudio = function() {
-        const audio = document.getElementById('bgMusic');
-        const icon = document.getElementById('audioIcon');
-        if (audio.paused) {
-            audio.play();
-            icon.innerText = "🔊";
-        } else {
-            audio.pause();
-            icon.innerText = "🔇";
+    <script>
+        function toggleManeviMusic() {
+            const audio = document.getElementById('maneviAudio');
+            const btn = document.getElementById('soundToggle');
+            if (audio.paused) {
+                audio.play();
+                btn.innerText = "🔊";
+                btn.style.borderColor = "#d4af37";
+            } else {
+                audio.pause();
+                btn.innerText = "🔇";
+                btn.style.borderColor = "rgba(212, 175, 55, 0.4)";
+            }
         }
-    };
 
-    // Firebase tabanlı fonksiyonlarını buraya (import'un altına) yapıştırabilirsin.
-    // Başlatma mantığı:
-    window.addEventListener("load", async () => {
-        const saved = localStorage.getItem("nevafilKey");
-        // ... verifyLicense kontrolü ...
-        document.getElementById("loadingSpinner").style.display = "none";
-        document.getElementById("licensePrompt").style.display = "flex";
-    });
-</script>
+        // Giriş yapıldığında hafif bir sarsıntı efekti (hata durumunda) veya parlama (başarıda) ekleyebilirsin.
+    </script>
 </body>
 </html>
