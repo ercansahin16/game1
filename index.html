@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
     
-    <!-- SweetAlert2 -->
+    <!-- SweetAlert2 CSS ve JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -111,6 +111,7 @@
             animation: cardWarpIn 1.5s cubic-bezier(0.165, 0.84, 0.44, 1);
             position: relative;
             overflow: visible;
+            z-index: 10;
         }
 
         @keyframes cardWarpIn {
@@ -318,6 +319,7 @@
         }
 
         .loading-spinner {
+            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
@@ -370,9 +372,7 @@
     <div class="ambient-bg"></div>
 
     <button id="soundToggle">🔇</button>
-    <audio id="maneviAudio" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="maneviAudio" style="display: none;"></audio>
 
     <!-- Ana Kart -->
     <div class="spiritual-card" id="mainCard">
@@ -392,15 +392,15 @@
             <input type="text" id="licenseInput" placeholder="Lisans Anahtarınızı Giriniz">
         </div>
 
-        <button class="btn-start animate__animated animate__fadeInUp animate__delay-1s" onclick="onLicenseSubmit()">Bismillah, Yolculuğa Başla</button>
+        <button class="btn-start animate__animated animate__fadeInUp animate__delay-1s" id="startBtn">Bismillah, Yolculuğa Başla</button>
 
         <a class="btn-join animate__animated animate__fadeInUp animate__delay-1s" href="https://www.shopier.com/nevafil/44722560" target="_blank">
             🕊️ Yolculuğa Katıl (Lisans Al)
         </a>
 
         <div class="secondary-links animate__animated animate__fadeInUp animate__delay-2s">
-            <button class="btn-recover" onclick="showEmailModal()">Lisansımı Hatırlat</button>
-            <button class="btn-recover" onclick="showHelpModal()">Yardım ve İletişim</button>
+            <button class="btn-recover" id="recoverBtn">Lisansımı Hatırlat</button>
+            <button class="btn-recover" id="helpBtn">Yardım ve İletişim</button>
         </div>
 
         <p style="margin-top: 30px; font-size: 0.72rem; color: #7f8c8d; font-family: 'Playfair Display', serif; line-height: 1.4; opacity: 0.6;">
@@ -410,7 +410,7 @@
 
     <!-- Oyun Konteyneri -->
     <div id="gameContainer"></div>
-    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+    <div id="loadingSpinner" class="loading-spinner">
         <div class="spinner"></div>
         <p>Yolculuk başlıyor...</p>
     </div>
@@ -602,7 +602,7 @@
             }
         };
 
-        window.showEmailModal = async () => {
+        window.showEmailModal = async function() {
             const { value: email } = await Swal.fire({
                 title: 'E-posta adresiniz',
                 text: 'Lisansınızın kayıtlı olduğu e-posta',
@@ -623,7 +623,7 @@
             }
         };
 
-        window.showHelpModal = async () => {
+        window.showHelpModal = async function() {
             const { value: formValues } = await Swal.fire({
                 title: 'Yardım / İletişim',
                 html: `
@@ -639,10 +639,10 @@
                 confirmButtonText: 'Gönder',
                 cancelButtonText: 'Vazgeç',
                 preConfirm: () => {
-                    const firstName = document.getElementById('swal-firstname').value.trim();
-                    const lastName = document.getElementById('swal-lastname').value.trim();
-                    const email = document.getElementById('swal-email').value.trim();
-                    const message = document.getElementById('swal-message').value.trim();
+                    const firstName = document.getElementById('swal-firstname')?.value.trim() || '';
+                    const lastName = document.getElementById('swal-lastname')?.value.trim() || '';
+                    const email = document.getElementById('swal-email')?.value.trim() || '';
+                    const message = document.getElementById('swal-message')?.value.trim() || '';
 
                     if (!firstName) {
                         Swal.showValidationMessage('Ad alanı boş olamaz');
@@ -711,7 +711,7 @@
             }
         }
 
-        window.onLicenseSubmit = async () => {
+        window.onLicenseSubmit = async function() {
             const keyInput = document.getElementById("licenseInput");
             if (!keyInput) return;
             
@@ -720,6 +720,9 @@
                 Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); 
                 return; 
             }
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            if (loadingSpinner) loadingSpinner.style.display = 'block';
 
             Swal.fire({
                 title: 'Giriş Yapılıyor...',
@@ -732,21 +735,28 @@
             if (res.ok) {
                 localStorage.setItem("nevafilKey", key);
                 Swal.close();
+                if (loadingSpinner) loadingSpinner.style.display = 'none';
                 startGame();
             } else {
+                Swal.close();
+                if (loadingSpinner) loadingSpinner.style.display = 'none';
                 Swal.fire('Hata', res.msg, 'error');
             }
         };
 
-        // Müzik Kontrolü - Ney Sesi
-        const neyAudio = new Audio('https://www.asharpmusic.com/wp-content/uploads/2022/01/Ney-Sample.mp3');
-        neyAudio.loop = true;
-        neyAudio.volume = 0.3;
-        
+        // Ney Sesi
         let isMusicPlaying = false;
+        let neyAudio = null;
         
         window.toggleManeviMusic = function() {
             const btn = document.getElementById('soundToggle');
+            
+            if (!neyAudio) {
+                neyAudio = new Audio('https://www.asharpmusic.com/wp-content/uploads/2022/01/Ney-Sample.mp3');
+                neyAudio.loop = true;
+                neyAudio.volume = 0.3;
+            }
+            
             if (isMusicPlaying) {
                 neyAudio.pause();
                 if (btn) btn.innerHTML = '🔇';
@@ -771,6 +781,17 @@
             
             const mainCard = document.getElementById('mainCard');
             if (mainCard) mainCard.style.display = 'block';
+            
+            // Buton eventlerini ata
+            const startBtn = document.getElementById('startBtn');
+            const recoverBtn = document.getElementById('recoverBtn');
+            const helpBtn = document.getElementById('helpBtn');
+            const soundBtn = document.getElementById('soundToggle');
+            
+            if (startBtn) startBtn.onclick = () => window.onLicenseSubmit();
+            if (recoverBtn) recoverBtn.onclick = () => window.showEmailModal();
+            if (helpBtn) helpBtn.onclick = () => window.showHelpModal();
+            if (soundBtn) soundBtn.onclick = () => window.toggleManeviMusic();
         });
 
         // PWA kurulumu
@@ -778,12 +799,6 @@
             e.preventDefault();
             deferredPrompt = e;
         });
-
-        // Ses butonu event listener
-        const soundBtn = document.getElementById('soundToggle');
-        if (soundBtn) {
-            soundBtn.onclick = () => toggleManeviMusic();
-        }
     </script>
 </body>
 </html>
