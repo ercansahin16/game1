@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nevafil - Gönül Yolculuğu</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -10,14 +10,16 @@
     
     <style>
         :root {
-            /* Daha Sıcak ve Tok Manevi Renkler */
-            --antique-gold: #b38b43;
-            --gold-light: rgba(179, 139, 67, 0.2);
-            --gold-glow: rgba(179, 139, 67, 0.05);
-            --navy-spiritual: #142a4a;
-            --spiritual-bg: #fcf6eb; /* Daha sıcak krem */
-            --text-main: #3e4e5e;
-            --transition-slow: all 1s cubic-bezier(0.23, 1, 0.32, 1);
+            /* Sonbahar ve Manevi Renk Paleti */
+            --autumn-gold: #b38b43;
+            --autumn-leaf: #d35400;
+            --autumn-leaf-light: #f39c12;
+            --navy-deep: #0a192f;
+            --spiritual-bg: #fdfaf5;
+            --text-main: #34495e;
+            --glass-white: rgba(255, 255, 255, 0.9);
+            --border-gold: rgba(179, 139, 67, 0.3);
+            --transition-smooth: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
@@ -32,243 +34,317 @@
             align-items: center;
             overflow: hidden;
             perspective: 1000px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* 1. MANEVİ AMBİYANS: TEZHİP MOTİFLİ ARKA PLAN */
+        /* Ruhani Arka Plan Animasyonu */
         .ambient-bg {
             position: fixed;
             inset: 0;
-            background-color: var(--spiritual-bg);
-            /* Şeffaf motifli arka plan (Tezhip/Osmanlı dokusu) */
-            background-image: 
-                radial-gradient(circle at 50% 10%, var(--gold-glow) 0%, transparent 40%),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><g fill="%23b38b43" fill-opacity="0.015"><path d="M50 0 L60 10 L50 20 L40 10 Z M0 50 L10 40 L20 50 L10 60 Z M100 50 L90 60 L80 50 L90 40 Z M50 100 L40 90 L50 80 L60 90 Z M25 25 L35 35 M75 25 L65 35 M25 75 L35 65 M75 75 L65 65" stroke="%23b38b43" stroke-width="0.5"/></g></svg>');
+            background: 
+                radial-gradient(circle at 15% 15%, rgba(179, 139, 67, 0.1) 0%, transparent 35%),
+                radial-gradient(circle at 85% 85%, rgba(10, 25, 47, 0.04) 0%, transparent 35%);
             z-index: -1;
-            animation: bgAtmosphere 20s linear infinite alternate;
+            animation: pulseBg 12s ease-in-out infinite alternate;
         }
 
-        @keyframes bgAtmosphere {
-            0% { background-position: 0 0; opacity: 0.8; }
-            100% { background-position: 50px 50px; opacity: 1; }
+        @keyframes pulseBg {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.08); opacity: 1; }
         }
 
-        /* 2. ANA KART: MOTİFLİ ÇERÇEVE VE DERİNLİK */
+        /* ----------------------------------------------------------- */
+        /* 1. KÖŞE SÜSLEMELERİ (Tradition and Prestige) */
+        /* ----------------------------------------------------------- */
+        .spiritual-card::before, .spiritual-card::after {
+            content: "";
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.5;
+            transition: var(--transition-smooth);
+            z-index: 10;
+        }
+        /* Sol Üst Köşe */
+        .spiritual-card::before {
+            top: 25px;
+            left: 25px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="%23b38b43" fill-opacity="0.6"><path d="M0 0 L10 10 L20 0 L10 20 L0 10 Z M10 10 L15 15 L20 10 Z"/></g></svg>');
+        }
+        /* Sağ Alt Köşe */
+        .spiritual-card::after {
+            bottom: 25px;
+            right: 25px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="%23b38b43" fill-opacity="0.6"><path d="M100 100 L90 90 L80 100 L90 80 L100 90 Z M90 90 L85 85 L80 90 Z"/></g></svg>');
+        }
+
+        /* ----------------------------------------------------------- */
+        /* 2. SONBAHAR YAPRAKLARI (Natural Peace) */
+        /* ----------------------------------------------------------- */
+        .leaf {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 50% 0 50% 0; /* Basit bir yaprak şekli */
+            z-index: 5;
+            opacity: 0.7;
+            animation: drift 15s linear infinite;
+        }
+        .leaf-1 { top: 10px; left: 60%; background: var(--autumn-leaf-light); animation-delay: 2s; }
+        .leaf-2 { top: 70%; right: -10px; background: var(--autumn-leaf); animation-delay: 5s; }
+        .leaf-3 { bottom: 10px; left: 30%; background: var(--autumn-leaf-light); animation-delay: 1s; }
+        .leaf-4 { top: 40%; left: -5px; background: var(--autumn-leaf); animation-delay: 7s; }
+
+        @keyframes drift {
+            0% { transform: translateY(0) rotate(0); opacity: 0.7; }
+            20% { opacity: 0.9; }
+            100% { transform: translateY(-300px) rotate(360deg); opacity: 0; }
+        }
+
+        /* ----------------------------------------------------------- */
+        /* 3. ANA KART (Ferah ve Güven Veren) */
+        /* ----------------------------------------------------------- */
         .spiritual-card {
             width: 90%;
-            max-width: 460px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(15px);
-            /* Zarif ve tam dolanan altın çerçeve */
-            border: 3px solid var(--gold-light);
-            border-image: linear-gradient(135deg, var(--gold-light) 0%, var(--antique-gold) 50%, var(--gold-light) 100%) 1;
-            border-radius: 45px;
-            padding: 70px 50px 60px;
+            max-width: 440px;
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-gold);
+            border-radius: 35px;
+            padding: 50px 35px 40px;
             text-align: center;
-            box-shadow: 
-                0 40px 120px rgba(179, 139, 67, 0.1),
-                inset 0 0 30px rgba(255, 255, 255, 0.6);
-            animation: cardWarpIn 1.8s ease-out;
+            box-shadow: 0 25px 80px rgba(179, 139, 67, 0.06), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: cardWarpIn 1.5s cubic-bezier(0.165, 0.84, 0.44, 1);
             position: relative;
+            overflow: visible; /* Yaprakların dışarı taşmasını sağla */
         }
-
-        /* Köşe Süsleri (Gelenekselsonsuzluk düğümü benzeri) */
-        .spiritual-card::before, .spiritual-card::after {
-            content: "♾️"; /* Manevi sonsuzluk sembolü */
-            position: absolute;
-            color: var(--antique-gold);
-            font-size: 18px;
-            opacity: 0.4;
-        }
-        .spiritual-card::before { top: 20px; left: 20px; }
-        .spiritual-card::after { bottom: 20px; right: 20px; }
 
         @keyframes cardWarpIn {
-            from { opacity: 0; transform: translateY(60px) scale(0.95) rotateX(-10deg); }
-            to { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
+            from { opacity: 0; transform: translateY(50px) rotateX(-5deg); }
+            to { opacity: 1; transform: translateY(0) rotateX(0); }
         }
 
-        /* 3. LOGO VE IŞIMA (KANDİL) */
         .logo-section {
             position: relative;
             display: inline-block;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            transition: var(--transition-smooth);
         }
 
-        /* Logonun etrafında sıcak bir parıltı (Kandil hissi) */
+        /* Logoya Ruhani Bir Işıltı (Glow) */
         .logo-section::after {
             content: "";
             position: absolute;
-            inset: -25px;
-            background: radial-gradient(circle, rgba(179, 139, 67, 0.2) 0%, transparent 70%);
+            inset: -15px;
+            background: radial-gradient(circle, rgba(179, 139, 67, 0.15) 0%, transparent 70%);
             z-index: -1;
             border-radius: 50%;
             animation: spiritualGlow 5s ease-in-out infinite;
         }
 
         @keyframes spiritualGlow {
-            0%, 100% { transform: scale(1); opacity: 0.6; }
-            50% { transform: scale(1.15); opacity: 0.9; }
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.15); opacity: 0.8; }
         }
 
         .app-logo {
-            width: 110px;
-            height: 110px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            border: 3px solid var(--antique-gold);
-            padding: 7px;
+            border: 2px solid var(--autumn-gold);
+            padding: 5px;
             background: #fff;
-            box-shadow: 0 10px 30px rgba(179, 139, 67, 0.2);
+            transition: 0.3s;
         }
 
         h2 {
             font-family: 'Cinzel', serif;
-            font-size: 2.4rem;
-            letter-spacing: 6px;
-            color: var(--navy-spiritual);
-            margin-bottom: 15px;
-            text-shadow: 0 3px 6px rgba(0,0,0,0.06);
-            position: relative;
+            font-size: 1.6rem; /* Biraz küçüldü */
+            letter-spacing: 4px;
+            color: var(--navy-deep);
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: var(--transition-smooth);
         }
         
-        /* Başlık Altı Manevi Parıltı Sembolü */
+        /* Başlık Altı Süs Çizgisi */
         h2::after {
-            content: "✦✦✦"; /* Üçlü manevi parıltı */
+            content: "✦";
             position: absolute;
-            bottom: -20px;
+            bottom: -10px;
             left: 50%;
             transform: translateX(-50%);
-            color: var(--antique-gold);
-            font-size: 16px;
-            letter-spacing: 2px;
-            opacity: 0.6;
+            color: var(--autumn-gold);
+            font-size: 12px;
+            opacity: 0.7;
         }
 
         .spiritual-motto {
             font-family: 'Playfair Display', serif;
             font-style: italic;
             color: var(--text-main);
-            font-size: 1.2rem;
-            margin-top: 35px;
-            margin-bottom: 45px;
-            opacity: 0.9;
-            line-height: 1.6;
+            font-size: 0.95rem; /* Biraz küçüldü */
+            margin-top: 20px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+            transition: var(--transition-smooth);
         }
 
         /* GİRİŞ ALANLARI VE BUTONLAR */
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
 
         input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            border: 2px solid rgba(179, 139, 67, 0.1);
-            padding: 20px;
-            border-radius: 22px;
-            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 16px;
+            border-radius: 18px;
+            font-size: 0.9rem; /* Biraz küçüldü */
             text-align: center;
-            color: var(--navy-spiritual);
-            transition: var(--transition-slow);
+            color: var(--navy-deep);
+            transition: var(--transition-smooth);
         }
 
         input:focus {
             background: #fff;
-            border-color: var(--antique-gold);
-            transform: translateY(-3px) scale(1.01);
-            box-shadow: 0 15px 40px rgba(179, 139, 67, 0.15);
+            border-color: var(--autumn-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(179, 139, 67, 0.12);
         }
 
         .btn-start {
-            background: var(--navy-spiritual);
+            background: var(--navy-deep);
             color: white;
             border: none;
             width: 100%;
-            padding: 20px;
-            border-radius: 22px;
+            padding: 16px;
+            border-radius: 18px;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 0.9rem; /* Biraz küçüldü */
             cursor: pointer;
-            transition: var(--transition-slow);
-            box-shadow: 0 15px 30px rgba(10, 25, 47, 0.2);
+            transition: var(--transition-smooth);
+            box-shadow: 0 10px 20px rgba(10, 25, 47, 0.15);
             letter-spacing: 1px;
         }
 
         .btn-start:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 45px rgba(10, 25, 47, 0.3);
-            background: #1a3a61;
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(10, 25, 47, 0.25);
+            background: #142a4a;
         }
 
-        /* LİSANS SATIN AL: GÜVEN VERİCİ VE SICAK */
+        /* LİSANS SATIN AL: SICAK VE DAVETKAR */
         .btn-join {
-            background: linear-gradient(135deg, var(--antique-gold) 0%, #a67c3b 100%);
+            background: linear-gradient(135deg, var(--autumn-gold) 0%, #a67c3b 100%);
             color: white;
             text-decoration: none;
             width: 100%;
-            padding: 18px;
-            border-radius: 22px;
+            padding: 14px;
+            border-radius: 18px;
             font-weight: 600;
+            font-size: 0.85rem; /* Biraz küçüldü */
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-top: 20px;
-            transition: var(--transition-slow);
-            box-shadow: 0 10px 25px rgba(179, 139, 67, 0.2);
+            gap: 8px;
+            margin-top: 10px;
+            transition: var(--transition-smooth);
+            animation: pulseGold 3s infinite;
+        }
+        @keyframes pulseGold {
+            0% { box-shadow: 0 0 0 0 rgba(179, 139, 67, 0.3); }
+            70% { box-shadow: 0 0 0 8px rgba(179, 139, 67, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(179, 139, 67, 0); }
         }
 
         .btn-join:hover {
-            transform: scale(1.03);
-            box-shadow: 0 15px 35px rgba(179, 139, 67, 0.3);
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(179, 139, 67, 0.25);
         }
 
         .secondary-links {
-            margin-top: 30px;
+            margin-top: 20px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
 
         .btn-recover {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.8rem; /* Biraz küçüldü */
             cursor: pointer;
-            opacity: 0.7;
+            opacity: 0.6;
             transition: 0.3s;
             text-decoration: underline;
         }
 
-        .btn-recover:hover { opacity: 1; color: var(--antique-gold); }
+        .btn-recover:hover { opacity: 1; color: var(--autumn-gold); }
 
-        /* SES VE PWA BANNER (Eski kodunuzdan alınmıştır) */
-        #maneviSoundControl {
+        /* SES BUTONU (Daha Sade ve Küçük) */
+        #soundToggle {
             position: fixed;
-            bottom: 35px;
-            left: 35px;
+            bottom: 20px;
+            right: 20px;
             background: rgba(255, 255, 255, 0.8);
-            border: 2px solid var(--antique-gold);
-            width: 55px;
-            height: 55px;
+            border: 1px solid var(--border-gold);
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 16px;
             z-index: 1000;
-            transition: 0.4s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
-        #maneviSoundControl:hover { transform: scale(1.1) rotate(10deg); }
 
-        /* Mobil Düzenlemeler */
+        #soundToggle:hover { transform: scale(1.1); }
+
+        /* ----------------------------------------------------------- */
+        /* 4. RESPONSIVE AYARLARI (Mobile and Tablet) */
+        /* ----------------------------------------------------------- */
         @media (max-width: 480px) {
-            .spiritual-card { padding: 50px 30px; border-radius: 35px; }
-            h2 { font-size: 1.9rem; letter-spacing: 4px; }
-            input, .btn-start, .btn-join { padding: 16px; border-radius: 18px; }
-            .spiritual-card::before, .spiritual-card::after { font-size: 14px; }
+            .ambient-bg { opacity: 0.6; } /* Mobilde daha sade arka plan */
+            
+            .spiritual-card { 
+                width: 95%; 
+                padding: 40px 20px; 
+                border-radius: 30px; 
+            }
+            
+            /* Mobilde süslemeleri küçült ve daha şeffaf yap */
+            .spiritual-card::before, .spiritual-card::after { 
+                width: 30px; height: 30px; opacity: 0.3; 
+            }
+            .corner-tl { top: 15px; left: 15px; }
+            .corner-br { bottom: 15px; right: 15px; }
+            
+            /* Mobilde fontları küçült */
+            .app-logo { width: 70px; height: 70px; }
+            h2 { font-size: 1.3rem; letter-spacing: 2px; }
+            .spiritual-motto { font-size: 0.85rem; margin-top: 15px; margin-bottom: 25px; }
+            input, .btn-start { padding: 14px; border-radius: 15px; font-size: 0.85rem; }
+            .btn-join { padding: 12px; border-radius: 15px; font-size: 0.8rem; }
+            .secondary-links { margin-top: 15px; }
+            .btn-recover { font-size: 0.75rem; }
+            
+            /* Mobilde ses butonunu daha köşeye çek */
+            #soundToggle { bottom: 15px; right: 15px; width: 35px; height: 35px; font-size: 14px; }
+        }
+
+        /* Tabletler İçin (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .spiritual-card { max-width: 400px; padding: 45px 30px; }
+            h2 { font-size: 1.45rem; }
+            .spiritual-motto { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -276,18 +352,23 @@
 
     <div class="ambient-bg"></div>
 
-    <button id="maneviSoundControl" onclick="toggleSpiritualMusic()">🔇</button>
+    <button id="soundToggle" onclick="toggleManeviMusic()">🔇</button>
     <audio id="maneviAudio" loop>
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
     </audio>
 
     <div class="spiritual-card">
+        <div class="leaf leaf-1"></div>
+        <div class="leaf leaf-2"></div>
+        <div class="leaf leaf-3"></div>
+        <div class="leaf leaf-4"></div>
+
         <div class="logo-section">
             <img src="https://raw.githubusercontent.com/ercansahin16/game1/refs/heads/main/favicon.ico" alt="Nevafil" class="app-logo">
         </div>
 
         <h2>NEVAFİL</h2>
-        <p class="spiritual-motto">Gönül kapısını muhabbetle açmaya hazır mısın?</p>
+        <p class="spiritual-motto animate__animated animate__fadeInUp">Gönül kapısını muhabbetle açmaya hazır mısın?</p>
 
         <div class="form-group animate__animated animate__fadeInUp animate__delay-1s">
             <input type="text" id="licenseInput" placeholder="Lisans Anahtarınızı Giriniz">
@@ -304,25 +385,23 @@
             <button class="btn-recover" onclick="showHelpModal()">Yardım ve İletişim</button>
         </div>
 
-        <p style="margin-top: 35px; font-size: 0.78rem; color: #7f8c8d; font-family: 'Playfair Display', serif; line-height: 1.5;">
+        <p style="margin-top: 30px; font-size: 0.72rem; color: #7f8c8d; font-family: 'Playfair Display', serif; line-height: 1.4; opacity: 0.6;">
             "Muhabbetle kurulan her cümle, aile saadetinin birer tuğlasıdır."
         </p>
     </div>
 
     <script>
-        function toggleSpiritualMusic() {
+        function toggleManeviMusic() {
             const audio = document.getElementById('maneviAudio');
-            const btn = document.getElementById('maneviSoundControl');
+            const btn = document.getElementById('soundToggle');
             if (audio.paused) {
                 audio.play();
                 btn.innerText = "🔊";
-                btn.style.backgroundColor = "#fffcf5";
                 btn.style.borderColor = "#b38b43";
             } else {
                 audio.pause();
                 btn.innerText = "🔇";
-                btn.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
-                btn.style.borderColor = "rgba(179, 139, 67, 0.2)";
+                btn.style.borderColor = "rgba(179, 139, 67, 0.3)";
             }
         }
         // Firebase ve diğer eski mantıksal kodların buraya (script etiketinin içine) yapıştırılmalıdır.
