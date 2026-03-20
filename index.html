@@ -390,7 +390,7 @@
         </p>
     </div>
 
-    <script>
+   <script type="module">
         function toggleManeviMusic() {
             const audio = document.getElementById('maneviAudio');
             const btn = document.getElementById('soundToggle');
@@ -404,7 +404,386 @@
                 btn.style.borderColor = "rgba(179, 139, 67, 0.3)";
             }
         }
-        // Firebase ve diğer eski mantıksal kodların buraya (script etiketinin içine) yapıştırılmalıdır.
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+        authDomain: "duapro-a7d7e.firebaseapp.com",
+        projectId: "duapro-a7d7e",
+        storageBucket: "duapro-a7d7e.appspot.com",
+        messagingSenderId: "450775848659",
+        appId: "1:450775848659:web:ca192a401da3f887e1e626"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let deferredPrompt = null;
+
+    function getDeviceId() {
+        let id = localStorage.getItem("deviceId");
+        if (!id) {
+            id = 'dev_' + Math.random().toString(36).substring(2, 10);
+            localStorage.setItem("deviceId", id);
+        }
+        return id;
+    }
+
+function showPWABanner() {
+    if (!deferredPrompt) return;
+
+    const banner = document.getElementById('pwaBanner');
+    if (banner) banner.classList.remove('hidden');
+}
+
+function hidePWABanner() {
+    const banner = document.getElementById('pwaBanner');
+    if (banner) banner.classList.add('hidden');
+}
+
+    async function verifyLicense(key) {
+        try {
+            const q = query(collection(db, "licenses"), where("key", "==", key));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return { ok: false, msg: "Geçersiz anahtar!" };
+
+            const licenseDoc = snapshot.docs[0];
+            const data = licenseDoc.data();
+            const device = getDeviceId();
+
+            if (!data.deviceId) {
+                await updateDoc(doc(db, "licenses", licenseDoc.id), { deviceId: device, used: true });
+                return { ok: true };
+            }
+            return data.deviceId === device ? { ok: true } : { ok: false, msg: "Farklı bir cihazda kayıtlı." };
+        } catch (e) { 
+            return { ok: false, msg: "Sistem hatası." }; 
+        }
+    }
+
+    window.recoverLicenseByEmail = async function(email) {
+        if (!email) {
+            Swal.fire({
+                title: 'Uyarı',
+                text: 'Lütfen e-posta adresinizi girin.',
+                icon: 'warning',
+                confirmButtonText: 'Tamam'
+            });
+            return;
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        Swal.fire({
+            title: 'Aranıyor...',
+            html: 'Lisansınız kontrol ediliyor.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Bulunamadı',
+                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+            }
+
+            if (snapshot.size === 1) {
+                await processLicense(snapshot.docs[0]);
+                return;
+            }
+
+            const licenseOptions = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const firstName = data.firstName || '';
+                const lastName = data.lastName || '';
+                const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
+                return {
+                    id: doc.id,
+                    key: data.key,
+                    fullName: fullName,
+                    doc: doc
+                };
+            });
+
+            await Swal.fire({
+                title: 'Birden fazla hesap bulundu',
+                html: `
+                    <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        ${licenseOptions.map(opt => `
+                            <button class="swal2-select-option" data-key="${opt.key}" style="
+                                width:100%;
+                                padding:14px;
+                                background:#f3f4f6;
+                                border:2px solid #e5e7eb;
+                                border-radius:14px;
+                                font-size:0.96rem;
+                                font-weight:600;
+                                color:#1f2937;
+                                cursor:pointer;
+                                transition:all 0.2s;
+                                text-align:left;
+                                display:flex;
+                                align-items:center;
+                                gap:12px;
+                                box-shadow:0 2px 4px rgba(0,0,0,0.05);
+                            ">
+                                <span style="font-size:1.2rem;">👤</span>
+                                <span style="flex:1;">${opt.fullName}</span>
+                                <span style="color:#6b7280;">→</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Vazgeç',
+                didOpen: () => {
+                    document.querySelectorAll('.swal2-select-option').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const selectedKey = btn.dataset.key;
+                            Swal.close();
+                            const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
+                            if (selectedDoc) {
+                                processLicense(selectedDoc);
+                            }
+                        });
+                    });
+                }
+            });
+
+        } catch (e) {
+            console.error("E-posta sorgulama hatası:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sorgulama sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+                confirmButtonText: 'Tamam'
+            });
+        }
+    };
+
+    async function processLicense(licenseDoc) {
+        const licenseData = licenseDoc.data();
+        const key = licenseData.key;
+        const currentDevice = getDeviceId();
+
+        if (licenseData.deviceId !== currentDevice) {
+            await updateDoc(doc(db, "licenses", licenseDoc.id), {
+                deviceId: currentDevice,
+                used: true
+            });
+        }
+
+        const licenseInput = document.getElementById('licenseInput');
+        if (licenseInput) {
+            licenseInput.value = key;
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Lisans Hazır',
+            text: 'Lisansınız başarıyla yüklendi.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        setTimeout(() => {
+            window.onLicenseSubmit();
+        }, 1500);
+    }
+
+    window.showEmailModal = async () => {
+        const { value: email } = await Swal.fire({
+            title: 'E-posta adresiniz',
+            text: 'Lisansınızın kayıtlı olduğu e-posta',
+            input: 'email',
+            inputPlaceholder: 'ornek@email.com',
+            showCancelButton: true,
+            confirmButtonText: 'Gönder',
+            cancelButtonText: 'Vazgeç',
+            reverseButtons: true,
+            inputValidator: (value) => {
+                if (!value) return 'E-posta gerekli';
+                if (!/^\S+@\S+\.\S+$/.test(value)) return 'Geçerli bir e-posta girin';
+            },
+            didOpen: () => {
+                const input = Swal.getInput();
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        Swal.clickConfirm();
+                    }
+                });
+            }
+        });
+
+        if (email) {
+            await window.recoverLicenseByEmail(email.toLowerCase());
+        }
+    };
+
+    function startGame() {
+        document.getElementById("loadingSpinner").style.display = "none";
+        document.getElementById("licensePrompt").style.display = "none";
+        const container = document.getElementById("gameContainer");
+        container.style.display = "block";
+
+        if (!container.querySelector("iframe")) {
+            const ifr = document.createElement("iframe");
+            ifr.src = "game/index.html";
+            container.appendChild(ifr);
+        }
+    }
+
+    window.addEventListener("load", async () => {
+        const saved = localStorage.getItem("nevafilKey");
+        if (saved && (await verifyLicense(saved)).ok) {
+            startGame();
+            setTimeout(() => showPWABanner(), 2000);
+            return;
+        }
+
+        document.getElementById("loadingSpinner").style.display = "none";
+        document.getElementById("licensePrompt").style.display = "flex";
+    });
+
+    window.onLicenseSubmit = async () => {
+        const key = document.getElementById("licenseInput").value.trim().toUpperCase();
+        if (!key) { 
+            Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); 
+            return; 
+        }
+
+        Swal.fire({
+            title: 'Giriş Yapılıyor...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        const res = await verifyLicense(key);
+
+        if (res.ok) {
+            localStorage.setItem("nevafilKey", key);
+            Swal.close();
+            startGame();
+            setTimeout(() => showPWABanner(), 2000);
+        } else {
+            Swal.fire('Hata', res.msg, 'error');
+        }
+    };
+
+    window.showHelpModal = async () => {
+        const { value: formValues } = await Swal.fire({
+            title: 'Yardım / İletişim',
+            html: `
+                <div style="text-align:left;">
+                    <input id="swal-firstname" class="swal2-input" placeholder="Adınız">
+                    <input id="swal-lastname" class="swal2-input" placeholder="Soyadınız">
+                    <input id="swal-email" class="swal2-input" placeholder="E-posta adresiniz">
+                    <textarea id="swal-message" class="swal2-textarea" placeholder="Mesajınız..." rows="4"></textarea>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Gönder',
+            cancelButtonText: 'Vazgeç',
+            preConfirm: () => {
+                const firstName = document.getElementById('swal-firstname').value.trim();
+                const lastName = document.getElementById('swal-lastname').value.trim();
+                const email = document.getElementById('swal-email').value.trim();
+                const message = document.getElementById('swal-message').value.trim();
+
+                if (!firstName) {
+                    Swal.showValidationMessage('Ad alanı boş olamaz');
+                    return false;
+                }
+                if (!lastName) {
+                    Swal.showValidationMessage('Soyad alanı boş olamaz');
+                    return false;
+                }
+                if (!email) {
+                    Swal.showValidationMessage('E-posta alanı boş olamaz');
+                    return false;
+                }
+                if (!message) {
+                    Swal.showValidationMessage('Mesaj alanı boş olamaz');
+                    return false;
+                }
+                return { firstName, lastName, email, message };
+            }
+        });
+
+        if (formValues) {
+            await saveLicenseHelpMessage(formValues);
+            Swal.fire({
+                icon: 'success',
+                title: 'Mesajınız Gönderildi',
+                text: 'En kısa sürede dönüş yapılacaktır.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    };
+
+    async function saveLicenseHelpMessage({ firstName, lastName, email, message }) {
+        try {
+            const helpRef = collection(db, "yardim_mesajlari");
+            await addDoc(helpRef, {
+                ad: firstName,
+                soyad: lastName,
+                email: email,
+                mesaj: message,
+                tarih: new Date(),
+                kaynak: 'lisans',
+                durum: 'Beklemede'
+            });
+        } catch (e) {
+            console.error("Mesaj kaydedilemedi:", e);
+            Swal.fire('Hata', 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'error');
+        }
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+   window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    hidePWABanner();
+});
+
+document.getElementById('installBtn')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    hidePWABanner();
+});
+
+document.getElementById('closeBanner')?.addEventListener('click', () => {
+    hidePWABanner();
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('SW kayıtlı:', reg.scope))
+      .catch(err => console.error('SW hatası:', err));
+  });
+}
     </script>
 </body>
 </html>
