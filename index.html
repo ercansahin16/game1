@@ -11,7 +11,8 @@
     <style>
         :root {
             --gold: #d4af37;
-            --gold-soft: rgba(212, 175, 55, 0.4);
+            --gold-light: rgba(212, 175, 55, 0.4);
+            --gold-extra-light: rgba(212, 175, 55, 0.1);
             --navy-deep: #0a192f;
             --spiritual-bg: #fdf8f2;
             --text-main: #34495e;
@@ -53,7 +54,7 @@
             position: fixed;
             width: 100%;
             height: 100%;
-            background-image: radial-gradient(circle, var(--gold-soft) 1px, transparent 1px);
+            background-image: radial-gradient(circle, var(--gold-light) 1px, transparent 1px);
             background-size: 50px 50px;
             opacity: 0.3;
             animation: drift 20s linear infinite;
@@ -65,20 +66,35 @@
             to { transform: translateY(-500px); }
         }
 
-        /* Ana Kart: Zarif ve Şeffaf */
+        /* Ana Kart: Zarif, Şeffaf ve Süslü */
         .spiritual-card {
             width: 90%;
             max-width: 450px;
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(212, 175, 55, 0.2);
+            border: 1px solid var(--gold-light);
             border-radius: 40px;
-            padding: 50px 40px;
+            padding: 60px 45px 50px;
             text-align: center;
             box-shadow: 0 30px 100px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.5);
             animation: cardFadeIn 1.5s ease-out;
             position: relative;
+            overflow: hidden; /* Süslemelerin taşmasını engelle */
         }
+
+        /* Köşe Süslemeleri */
+        .card-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--gold);
+            opacity: 0.6;
+            transition: 0.3s;
+        }
+        .corner-tl { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 15px; right: 15px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 15px; left: 15px; border-right: none; border-top: none; }
+        .corner-br { bottom: 15px; right: 15px; border-left: none; border-top: none; }
 
         @keyframes cardFadeIn {
             from { opacity: 0; transform: translateY(50px) rotateX(-5deg); }
@@ -96,7 +112,7 @@
             content: "";
             position: absolute;
             inset: -15px;
-            background: radial-gradient(circle, var(--gold-soft) 0%, transparent 70%);
+            background: radial-gradient(circle, var(--gold-light) 0%, transparent 70%);
             z-index: -1;
             border-radius: 50%;
             animation: glow 4s ease-in-out infinite;
@@ -123,6 +139,19 @@
             color: var(--navy-deep);
             margin-bottom: 10px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        /* Başlık Altı Süs Çizgisi */
+        h2::after {
+            content: "✦";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--gold);
+            font-size: 14px;
+            opacity: 0.8;
         }
 
         .spiritual-motto {
@@ -130,6 +159,7 @@
             font-style: italic;
             color: var(--text-main);
             font-size: 1.15rem;
+            margin-top: 25px;
             margin-bottom: 35px;
             opacity: 0.8;
         }
@@ -229,7 +259,7 @@
             bottom: 30px;
             right: 30px;
             background: rgba(255, 255, 255, 0.8);
-            border: 1px solid var(--gold-soft);
+            border: 1px solid var(--gold-light);
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -245,8 +275,9 @@
         #soundToggle:hover { transform: rotate(15deg) scale(1.1); }
 
         @media (max-width: 480px) {
-            .spiritual-card { padding: 40px 25px; }
+            .spiritual-card { padding: 50px 25px; }
             h2 { font-size: 1.8rem; letter-spacing: 3px; }
+            .card-corner { width: 30px; height: 30px; }
         }
     </style>
 </head>
@@ -261,6 +292,11 @@
     </audio>
 
     <div class="spiritual-card">
+        <div class="card-corner corner-tl"></div>
+        <div class="card-corner corner-tr"></div>
+        <div class="card-corner corner-bl"></div>
+        <div class="card-corner corner-br"></div>
+
         <div class="logo-wrap">
             <img src="https://raw.githubusercontent.com/ercansahin16/game1/refs/heads/main/favicon.ico" alt="Nevafil" class="app-logo">
         </div>
@@ -302,8 +338,7 @@
                 btn.style.borderColor = "rgba(212, 175, 55, 0.4)";
             }
         }
-
-        // Giriş yapıldığında hafif bir sarsıntı efekti (hata durumunda) veya parlama (başarıda) ekleyebilirsin.
+        // Firebase fonksiyonlarını buraya ekleyebilirsin.
     </script>
 </body>
 </html>
