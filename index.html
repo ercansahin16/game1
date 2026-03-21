@@ -822,45 +822,26 @@ await Swal.fire('Hata', 'Mesaj gönderilemedi.', 'error');
 };
 
 function startGame() {
-    console.log("🎮 Oyun başlatılıyor...");
-    
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const mainCard = document.getElementById('mainCard');
-    const gameContainer = document.getElementById('gameContainer');
-
-    // Yükleme spinner'ını gizle
-    if (loadingSpinner) {
-        loadingSpinner.style.display = 'none';
-    }
-
-    // Ana kartı gizle
-    if (mainCard) {
-        mainCard.style.display = 'none';
-    }
-
-    // Oyun konteynerini GÖSTER (display: block yerine flex veya önemli!)
-    if (gameContainer) {
-        gameContainer.style.display = 'block';
-        
-        // Eğer iframe yoksa oluştur
-        if (!gameContainer.querySelector("iframe")) {
-            console.log("📦 iframe oluşturuluyor...");
-            const ifr = document.createElement("iframe");
-            ifr.src = "game/index.html";
-            ifr.style.width = "100%";
-            ifr.style.height = "100%";
-            ifr.style.border = "none";
-            ifr.style.position = "absolute"; // Önemli!
-            ifr.style.top = "0";
-            ifr.style.left = "0";
-            gameContainer.appendChild(ifr);
-            console.log("✅ iframe eklendi:", ifr.src);
-        } else {
-            console.log("ℹ️ iframe zaten var");
-        }
-    } else {
-        console.error("❌ gameContainer bulunamadı!");
-    }
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const mainCard = document.getElementById('mainCard');
+    const gameContainer = document.getElementById('gameContainer');
+    
+    if (loadingSpinner) loadingSpinner.style.display = 'none';
+    if (mainCard) mainCard.style.display = 'none';
+    if (gameContainer) {
+        gameContainer.style.display = 'block';
+        if (!gameContainer.querySelector("iframe")) {
+            const ifr = document.createElement("iframe");
+            // Önce /game/index.html dene, olmazsa /game1/game/index.html dene
+            ifr.src = "/game/index.html";  // 1. deneme: kök dizindeki game klasörü
+            // ifr.src = "game/index.html"; // 2. deneme: göreceli yol (aynı dizin altında game varsa)
+            // ifr.src = "game1/game/index.html"; // 3. deneme: eğer game1 içinde game varsa
+            ifr.style.width = "100%";
+            ifr.style.height = "100%";
+            ifr.style.border = "none";
+            gameContainer.appendChild(ifr);
+        }
+    }
 }
 
 window.onLicenseSubmit = async function() {
