@@ -897,27 +897,21 @@ await Swal.fire('Hata', res.msg, 'error');
 }
 };
 
-// Ney Sesi - GitHub raw URL
+// Ney Sesi - GitHub raw URL - Kullanıcı tıklayınca çalar
 let isMusicPlaying = false;
 let neyAudio = null;
 let audioError = false;
 let audioLoaded = false;
 
-window.toggleManeviMusic = function() {
+function initAudio() {
 const btn = document.getElementById('soundToggle');
 if (!btn) return;
-
-if (audioError && !audioLoaded) {
-audioError = false;
-neyAudio = null;
-}
 
 if (!neyAudio) {
 neyAudio = new Audio();
 neyAudio.loop = true;
 neyAudio.volume = 0.3;
 
-// GitHub raw URL
 const audioUrl = 'https://raw.githubusercontent.com/ercansahin16/game1/main/tools/ney.mp3';
 console.log('Müzik URL:', audioUrl);
 
@@ -933,28 +927,56 @@ console.error('❌ Müzik yüklenemedi:', audioUrl);
 audioError = true;
 btn.classList.add('error');
 btn.innerHTML = '❌';
-btn.title = 'Müzik dosyası bulunamadı: ' + audioUrl;
+btn.title = 'Müzik dosyası bulunamadı';
 }, { once: true });
 
 neyAudio.src = audioUrl;
 }
+}
+
+function playAudio() {
+const btn = document.getElementById('soundToggle');
+if (!btn || !neyAudio || !audioLoaded || audioError) return;
+
+const playPromise = neyAudio.play();
+if (playPromise !== undefined) {
+playPromise.then(() => {
+isMusicPlaying = true;
+btn.innerHTML = '🔊';
+btn.title = 'Ney Sesi (Çalıyor)';
+console.log('▶️ Müzik çalıyor');
+}).catch(e => {
+console.error("⛔ Çalma hatası:", e);
+isMusicPlaying = false;
+btn.innerHTML = '🔇';
+btn.title = 'Ney Sesi (Başlatmak için tıklayın)';
+});
+}
+}
+
+window.toggleManeviMusic = function() {
+const btn = document.getElementById('soundToggle');
+if (!btn) return;
+
+if (!neyAudio) {
+initAudio();
+}
 
 if (audioError) {
-console.log('Audio error state, tekrar deneniyor...');
 audioError = false;
 audioLoaded = false;
 neyAudio = null;
-window.toggleManeviMusic();
+initAudio();
+setTimeout(() => {
+if (audioLoaded) playAudio();
+}, 1000);
 return;
 }
 
 if (!audioLoaded) {
-console.log('Müzik henüz yüklenmedi, bekleniyor...');
 btn.innerHTML = '⏳';
 setTimeout(() => {
-if (!audioLoaded) {
-btn.innerHTML = '🔇';
-}
+if (!audioLoaded) btn.innerHTML = '🔇';
 }, 2000);
 return;
 }
@@ -965,31 +987,24 @@ btn.innerHTML = '🔇';
 btn.title = 'Ney Sesi';
 isMusicPlaying = false;
 } else {
-const playPromise = neyAudio.play();
-if (playPromise !== undefined) {
-playPromise.then(() => {
-btn.innerHTML = '🔊';
-btn.title = 'Ney Sesi (Çalıyor)';
-isMusicPlaying = true;
-}).catch(e => {
-console.error("⛔ Çalma hatası:", e);
-btn.classList.add('error');
-btn.innerHTML = '❌';
-btn.title = 'Çalma hatası: ' + e.message;
-setTimeout(() => {
-if (!isMusicPlaying) {
-btn.classList.remove('error');
-btn.innerHTML = '🔇';
-btn.title = 'Ney Sesi';
-}
-}, 2000);
-});
-}
+playAudio();
 }
 };
 
 // Sayfa yüklendiğinde
 document.addEventListener("DOMContentLoaded", async () => {
+// URL'den lisans parametresini al ve input'a yaz
+const urlParams = new URLSearchParams(window.location.search);
+const licenseFromUrl = urlParams.get('license');
+
+if (licenseFromUrl) {
+const licenseInput = document.getElementById('licenseInput');
+if (licenseInput) {
+licenseInput.value = licenseFromUrl.toUpperCase();
+console.log('✅ URL\'den lisans yüklendi:', licenseFromUrl);
+}
+}
+
 const saved = localStorage.getItem("nevafilKey");
 if (saved) {
 const res = await verifyLicense(saved);
