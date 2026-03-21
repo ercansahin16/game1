@@ -822,80 +822,124 @@ await Swal.fire('Hata', 'Mesaj gönderilemedi.', 'error');
 };
 
 function startGame() {
-const loadingSpinner = document.getElementById('loadingSpinner');
-const mainCard = document.getElementById('mainCard');
-const gameContainer = document.getElementById('gameContainer');
+    console.log("🎮 Oyun başlatılıyor...");
+    
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const mainCard = document.getElementById('mainCard');
+    const gameContainer = document.getElementById('gameContainer');
 
-if (loadingSpinner && loadingSpinner.style) {
-loadingSpinner.style.display = 'none';
-}
+    // Yükleme spinner'ını gizle
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'none';
+    }
 
-if (mainCard && mainCard.style) {
-mainCard.style.display = 'none';
-}
+    // Ana kartı gizle
+    if (mainCard) {
+        mainCard.style.display = 'none';
+    }
 
-if (gameContainer && gameContainer.style) {
-gameContainer.style.display = 'block';
-
-if (!gameContainer.querySelector("iframe")) {
-const ifr = document.createElement("iframe");
-ifr.src = "game/index.html";
-ifr.style.width = "100%";
-ifr.style.height = "100%";
-ifr.style.border = "none";
-gameContainer.appendChild(ifr);
-}
-}
+    // Oyun konteynerini GÖSTER (display: block yerine flex veya önemli!)
+    if (gameContainer) {
+        gameContainer.style.display = 'block';
+        
+        // Eğer iframe yoksa oluştur
+        if (!gameContainer.querySelector("iframe")) {
+            console.log("📦 iframe oluşturuluyor...");
+            const ifr = document.createElement("iframe");
+            ifr.src = "game/index.html";
+            ifr.style.width = "100%";
+            ifr.style.height = "100%";
+            ifr.style.border = "none";
+            ifr.style.position = "absolute"; // Önemli!
+            ifr.style.top = "0";
+            ifr.style.left = "0";
+            gameContainer.appendChild(ifr);
+            console.log("✅ iframe eklendi:", ifr.src);
+        } else {
+            console.log("ℹ️ iframe zaten var");
+        }
+    } else {
+        console.error("❌ gameContainer bulunamadı!");
+    }
 }
 
 window.onLicenseSubmit = async function() {
-const keyInput = document.getElementById("licenseInput");
-if (!keyInput) return;
+    const keyInput = document.getElementById("licenseInput");
+    if (!keyInput) return;
 
-const key = keyInput.value.trim().toUpperCase();
-if (!key) {
-if (typeof Swal !== 'undefined') {
-await Swal.fire('Hata', 'Anahtar girilmedi.', 'warning');
-}
-return;
-}
+    const key = keyInput.value.trim().toUpperCase();
+    if (!key) {
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire('Hata', 'Anahtar girilmedi.', 'warning');
+        }
+        return;
+    }
 
-const loadingSpinner = document.getElementById('loadingSpinner');
-if (loadingSpinner && loadingSpinner.style) {
-loadingSpinner.style.display = 'block';
-}
+    // Yükleme göstergesini göster
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'block';
+    }
 
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-title: 'Giriş Yapılıyor...',
-allowOutsideClick: false,
-didOpen: () => Swal.showLoading()
-});
-}
+    // SweetAlert loading modalını göster
+    let swalInstance = null;
+    if (typeof Swal !== 'undefined') {
+        swalInstance = Swal.fire({
+            title: 'Giriş Yapılıyor...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
 
-const res = await verifyLicense(key);
+    try {
+        const res = await verifyLicense(key);
 
-if (res.ok) {
-localStorage.setItem("nevafilKey", key);
-if (typeof Swal !== 'undefined') {
-Swal.close();
-}
-if (loadingSpinner && loadingSpinner.style) {
-loadingSpinner.style.display = 'none';
-}
-startGame();
-} else {
-if (typeof Swal !== 'undefined') {
-Swal.close();
-}
-if (loadingSpinner && loadingSpinner.style) {
-loadingSpinner.style.display = 'none';
-}
-if (typeof Swal !== 'undefined') {
-await Swal.fire('Hata', res.msg, 'error');
-}
-}
+        if (res.ok) {
+            // BAŞARILI - Lisans doğrulandı
+            localStorage.setItem("nevafilKey", key);
+            
+            // SweetAlert'i kapat
+            if (typeof Swal !== 'undefined') {
+                Swal.close();
+            }
+            
+            // Yükleme spinner'ını gizle
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+            
+            // OYUNU BAŞLAT - BU FONKSİYON ÇAĞRILMALI
+            startGame();
+            
+        } else {
+            // BAŞARISIZ - Hata mesajı
+            if (typeof Swal !== 'undefined') {
+                Swal.close();
+                await Swal.fire('Hata', res.msg, 'error');
+            }
+            
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        // Sistem hatası
+        console.error("Lisans doğrulama hatası:", error);
+        
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+            await Swal.fire('Hata', 'Sistem hatası oluştu. Lütfen tekrar deneyin.', 'error');
+        }
+        
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
+        }
+    }
 };
+
+  
 
 // Ney Sesi - GitHub raw URL - Kullanıcı tıklayınca çalar
 let isMusicPlaying = false;
