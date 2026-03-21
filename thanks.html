@@ -592,10 +592,26 @@ showConfirmButton: false
 localStorage.setItem('nevafil_license_key', key);
 localStorage.setItem('nevafil_user_name', `${firstName} ${lastName}`);
 
-// game1/index.html sayfasına yönlendir (lisans parametresi ile)
-setTimeout(() => {
-window.location.href = `game1/index.html?license=${encodeURIComponent(key)}`;
-}, 2000);
+// Oyun giriş sayfasına yönlendir
+// Önce game1/index.html dene, yoksa root index.html
+const gameUrl = `game1/index.html?license=${encodeURIComponent(key)}`;
+const rootUrl = `index.html?license=${encodeURIComponent(key)}`;
+
+// game1/index.html var mı kontrol et
+fetch(gameUrl, { method: 'HEAD' })
+.then(response => {
+if (response.ok) {
+// game1/index.html var, oraya git
+window.location.href = gameUrl;
+} else {
+// Yoksa root index.html'e git
+window.location.href = rootUrl;
+}
+})
+.catch(() => {
+// Hata olursa root index.html'e git
+window.location.href = rootUrl;
+});
 
 } catch (e) {
 console.error("Anahtar kaydedilemedi:", e);
