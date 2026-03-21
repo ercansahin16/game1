@@ -897,23 +897,28 @@ await Swal.fire('Hata', res.msg, 'error');
 }
 };
 
-// Ney Sesi - GitHub raw URL - Sayfa açılınca otomatik başlar
+// Ney Sesi - game1/tools/ney.mp3 (root dizinden)
 let isMusicPlaying = false;
 let neyAudio = null;
 let audioError = false;
 let audioLoaded = false;
-let autoPlayAttempted = false;
 
-function initAudio() {
+window.toggleManeviMusic = function() {
 const btn = document.getElementById('soundToggle');
 if (!btn) return;
+
+if (audioError && !audioLoaded) {
+audioError = false;
+neyAudio = null;
+}
 
 if (!neyAudio) {
 neyAudio = new Audio();
 neyAudio.loop = true;
 neyAudio.volume = 0.3;
 
-const audioUrl = 'https://raw.githubusercontent.com/ercansahin16/game1/main/tools/ney.mp3';
+// Doğru yol: game1/tools/ney.mp3 (root'tan)
+const audioUrl = 'game1/tools/ney.mp3';
 console.log('Müzik URL:', audioUrl);
 
 neyAudio.addEventListener('canplaythrough', () => {
@@ -921,10 +926,6 @@ console.log('✅ Müzik yüklendi');
 audioLoaded = true;
 audioError = false;
 btn.classList.remove('error');
-if (isMusicPlaying) {
-btn.innerHTML = '🔊';
-btn.title = 'Ney Sesi (Çalıyor)';
-}
 }, { once: true });
 
 neyAudio.addEventListener('error', (e) => {
@@ -932,56 +933,28 @@ console.error('❌ Müzik yüklenemedi:', audioUrl);
 audioError = true;
 btn.classList.add('error');
 btn.innerHTML = '❌';
-btn.title = 'Müzik dosyası bulunamadı';
+btn.title = 'Müzik dosyası bulunamadı: ' + audioUrl;
 }, { once: true });
 
 neyAudio.src = audioUrl;
 }
-}
-
-function playAudio() {
-const btn = document.getElementById('soundToggle');
-if (!btn || !neyAudio || !audioLoaded || audioError) return;
-
-const playPromise = neyAudio.play();
-if (playPromise !== undefined) {
-playPromise.then(() => {
-isMusicPlaying = true;
-btn.innerHTML = '🔊';
-btn.title = 'Ney Sesi (Çalıyor)';
-console.log('▶️ Müzik çalıyor');
-}).catch(e => {
-console.error("⛔ Otomatik çalma engellendi:", e);
-isMusicPlaying = false;
-btn.innerHTML = '🔇';
-btn.title = 'Ney Sesi (Başlatmak için tıklayın)';
-});
-}
-}
-
-window.toggleManeviMusic = function() {
-const btn = document.getElementById('soundToggle');
-if (!btn) return;
-
-if (!neyAudio) {
-initAudio();
-}
 
 if (audioError) {
+console.log('Audio error state, tekrar deneniyor...');
 audioError = false;
 audioLoaded = false;
 neyAudio = null;
-initAudio();
-setTimeout(() => {
-if (audioLoaded) playAudio();
-}, 1000);
+window.toggleManeviMusic();
 return;
 }
 
 if (!audioLoaded) {
+console.log('Müzik henüz yüklenmedi, bekleniyor...');
 btn.innerHTML = '⏳';
 setTimeout(() => {
-if (!audioLoaded) btn.innerHTML = '🔇';
+if (!audioLoaded) {
+btn.innerHTML = '🔇';
+}
 }, 2000);
 return;
 }
@@ -992,33 +965,28 @@ btn.innerHTML = '🔇';
 btn.title = 'Ney Sesi';
 isMusicPlaying = false;
 } else {
-playAudio();
+const playPromise = neyAudio.play();
+if (playPromise !== undefined) {
+playPromise.then(() => {
+btn.innerHTML = '🔊';
+btn.title = 'Ney Sesi (Çalıyor)';
+isMusicPlaying = true;
+}).catch(e => {
+console.error("⛔ Çalma hatası:", e);
+btn.classList.add('error');
+btn.innerHTML = '❌';
+btn.title = 'Çalma hatası: ' + e.message;
+setTimeout(() => {
+if (!isMusicPlaying) {
+btn.classList.remove('error');
+btn.innerHTML = '🔇';
+btn.title = 'Ney Sesi';
+}
+}, 2000);
+});
+}
 }
 };
-
-// Sayfa açılınca otomatik başlat (kullanıcı etkileşimi gerekmeden denenecek)
-function attemptAutoPlay() {
-if (autoPlayAttempted) return;
-autoPlayAttempted = true;
-
-initAudio();
-
-// Yüklendikten sonra çalmaya çalış
-const checkAndPlay = setInterval(() => {
-if (audioLoaded) {
-clearInterval(checkAndPlay);
-playAudio();
-} else if (audioError) {
-clearInterval(checkAndPlay);
-console.log('❌ Otomatik çalma başarısız');
-}
-}, 500);
-
-// 5 saniye timeout
-setTimeout(() => {
-clearInterval(checkAndPlay);
-}, 5000);
-}
 
 // Sayfa yüklendiğinde
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1052,19 +1020,9 @@ if (recoverBtn) recoverBtn.onclick = () => window.showEmailModal();
 if (helpBtn) helpBtn.onclick = () => window.showHelpModal();
 if (soundBtn) soundBtn.onclick = () => window.toggleManeviMusic();
 
-// Otomatik müzik başlatma
-attemptAutoPlay();
-});
-
-// Kullanıcı ilk etkileşiminde de dene (tarayıcı politikaları için yedek)
-let userInteractionHandled = false;
-['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
-document.addEventListener(event, () => {
-if (!userInteractionHandled && !isMusicPlaying && audioLoaded) {
-userInteractionHandled = true;
-playAudio();
-}
-}, { once: true });
+// Debug: Sayfa yüklenince müzik kontrolü
+console.log('🔍 Müzik dosyası: game1/tools/ney.mp3');
+console.log('Mevcut URL:', window.location.href);
 });
 </script>
 </body>
