@@ -476,6 +476,7 @@ if (licenseInput) {
 licenseInput.value = key;
 }
 
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 icon: 'success',
 title: 'Lisans Hazır',
@@ -483,43 +484,50 @@ text: 'Lisansınız başarıyla yüklendi.',
 timer: 1500,
 showConfirmButton: false
 });
+}
 
 setTimeout(() => {
-onLicenseSubmit();
+window.onLicenseSubmit();
 }, 1500);
 }
 
 window.recoverLicenseByEmail = async function(email) {
 if (!email) {
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 title: 'Uyarı',
 text: 'Lütfen e-posta adresinizi girin.',
 icon: 'warning',
 confirmButtonText: 'Tamam'
 });
+}
 return;
 }
 
 const normalizedEmail = email.trim().toLowerCase();
 
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 title: 'Aranıyor...',
 html: 'Lisansınız kontrol ediliyor.',
 allowOutsideClick: false,
 didOpen: () => Swal.showLoading()
 });
+}
 
 try {
 const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
 const snapshot = await getDocs(q);
 
 if (snapshot.empty) {
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 icon: 'error',
 title: 'Bulunamadı',
 text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
 confirmButtonText: 'Tamam'
 });
+}
 return;
 }
 
@@ -540,6 +548,7 @@ doc: doc
 };
 });
 
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 title: 'Birden fazla hesap bulundu',
 html: `
@@ -585,9 +594,11 @@ await processLicense(selectedDoc);
 });
 }
 });
+}
 
 } catch (e) {
 console.error("E-posta sorgulama hatası:", e);
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 icon: 'error',
 title: 'Hata',
@@ -595,9 +606,15 @@ text: 'Sorgulama sırasında bir hata oluştu.',
 confirmButtonText: 'Tamam'
 });
 }
+}
 };
 
 window.showEmailModal = async function() {
+if (typeof Swal === 'undefined') {
+console.error('SweetAlert2 yüklenmemiş');
+return;
+}
+
 const { value: email } = await Swal.fire({
 title: 'E-posta adresiniz',
 text: 'Lisansınızın kayıtlı olduğu e-posta',
@@ -619,6 +636,11 @@ await window.recoverLicenseByEmail(email.toLowerCase());
 };
 
 window.showHelpModal = async function() {
+if (typeof Swal === 'undefined') {
+console.error('SweetAlert2 yüklenmemiş');
+return;
+}
+
 const { value: formValues } = await Swal.fire({
 title: 'Yardım / İletişim',
 html: `
@@ -690,15 +712,15 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 const mainCard = document.getElementById('mainCard');
 const gameContainer = document.getElementById('gameContainer');
 
-if (loadingSpinner) {
+if (loadingSpinner && loadingSpinner.style) {
 loadingSpinner.style.display = 'none';
 }
 
-if (mainCard) {
+if (mainCard && mainCard.style) {
 mainCard.style.display = 'none';
 }
 
-if (gameContainer) {
+if (gameContainer && gameContainer.style) {
 gameContainer.style.display = 'block';
 
 if (!gameContainer.querySelector("iframe")) {
@@ -718,36 +740,46 @@ if (!keyInput) return;
 
 const key = keyInput.value.trim().toUpperCase();
 if (!key) {
+if (typeof Swal !== 'undefined') {
 await Swal.fire('Hata', 'Anahtar girilmedi.', 'warning');
+}
 return;
 }
 
 const loadingSpinner = document.getElementById('loadingSpinner');
-if (loadingSpinner) {
+if (loadingSpinner && loadingSpinner.style) {
 loadingSpinner.style.display = 'block';
 }
 
+if (typeof Swal !== 'undefined') {
 await Swal.fire({
 title: 'Giriş Yapılıyor...',
 allowOutsideClick: false,
 didOpen: () => Swal.showLoading()
 });
+}
 
 const res = await verifyLicense(key);
 
 if (res.ok) {
 localStorage.setItem("nevafilKey", key);
+if (typeof Swal !== 'undefined') {
 Swal.close();
-if (loadingSpinner) {
+}
+if (loadingSpinner && loadingSpinner.style) {
 loadingSpinner.style.display = 'none';
 }
 startGame();
 } else {
+if (typeof Swal !== 'undefined') {
 Swal.close();
-if (loadingSpinner) {
+}
+if (loadingSpinner && loadingSpinner.style) {
 loadingSpinner.style.display = 'none';
 }
+if (typeof Swal !== 'undefined') {
 await Swal.fire('Hata', res.msg, 'error');
+}
 }
 };
 
@@ -787,12 +819,12 @@ return;
 }
 
 const loadingSpinner = document.getElementById('loadingSpinner');
-if (loadingSpinner) {
+if (loadingSpinner && loadingSpinner.style) {
 loadingSpinner.style.display = 'none';
 }
 
 const mainCard = document.getElementById('mainCard');
-if (mainCard) {
+if (mainCard && mainCard.style) {
 mainCard.style.display = 'block';
 }
 
