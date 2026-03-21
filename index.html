@@ -300,6 +300,11 @@ box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 
 #soundToggle:hover { transform: scale(1.1); }
 
+#soundToggle.error {
+background: rgba(211, 84, 0, 0.1);
+border-color: var(--autumn-leaf);
+}
+
 #gameContainer {
 display: none;
 position: fixed;
@@ -478,7 +483,7 @@ h2 { font-size: 1.45rem; }
 
 <div class="ambient-bg"></div>
 
-<button id="soundToggle">🔇</button>
+<button id="soundToggle" title="Ney Sesi">🔇</button>
 
 <!-- Ana Kart -->
 <div class="spiritual-card" id="mainCard">
@@ -892,35 +897,117 @@ await Swal.fire('Hata', res.msg, 'error');
 }
 };
 
-// Ney Sesi - Local Dosya
+// Ney Sesi - Local Dosya (Fallback desteği ile)
 let isMusicPlaying = false;
 let neyAudio = null;
+let audioError = false;
 
 window.toggleManeviMusic = function() {
 const btn = document.getElementById('soundToggle');
+if (!btn) return;
+
+// Hata durumunda tekrar dene
+if (audioError && !neyAudio) {
+audioError = false;
+}
 
 if (!neyAudio) {
-// Local dosya yolu: game1/tools/ney.m4a
-neyAudio = new Audio('game1/tools/ney.m4a');
+// Önce M4A dene, olmazsa MP3 fallback
+// Dosya yolları: ./game1/tools/ney.m4a veya ./game1/tools/ney.mp3
+const audioSources = [
+'./game1/tools/ney.m4a',
+'./game1/tools/ney.mp3',
+'game1/tools/ney.m4a',
+'game1/tools/ney.mp3'
+];
+
+neyAudio = new Audio();
 neyAudio.loop = true;
 neyAudio.volume = 0.3;
+
+// Can play through event
+neyAudio.addEventListener('canplaythrough', () => {
+console.log('Müzik yüklendi ve çalmaya hazır');
+btn.classList.remove('error');
+audioError = false;
+}, { once: true });
+
+// Error handling
+neyAudio.addEventListener('error', (e) => {
+console.error('Müzik dosyası hatası:', e);
+audioError = true;
+btn.classList.add('error');
+btn.innerHTML = '⚠️';
+btn.title = 'Müzik dosyası bulunamadı veya desteklenmiyor';
+}, { once: true });
+
+// Kaynakları dene
+let currentSource = 0;
+function tryLoadSource() {
+if (currentSource < audioSources.length) {
+console.log('Denenen kaynak:', audioSources[currentSource]);
+neyAudio.src = audioSources[currentSource];
+currentSource++;
+} else {
+console.error('Tüm kaynaklar başarısız');
+audioError = true;
+btn.classList.add('error');
+btn.innerHTML = '❌';
+btn.title = 'Müzik dosyası bulunamadı';
+}
+}
+
+// İlk kaynağı dene
+tryLoadSource();
+
+// Hata durumunda sonraki kaynağa geç
+neyAudio.addEventListener('error', () => {
+if (currentSource < audioSources.length && !audioError) {
+tryLoadSource();
+}
+}, { once: false });
+}
+
+if (audioError) {
+// Kullanıcıya bilgi ver
+if (typeof Swal !== 'undefined') {
+Swal.fire({
+icon: 'warning',
+title: 'Müzik Dosyası Bulunamadı',
+text: 'Lütfen game1/tools/ney.m4a veya ney.mp3 dosyasını kontrol edin.',
+timer: 3000,
+showConfirmButton: false
+});
+}
+return;
 }
 
 if (isMusicPlaying) {
 neyAudio.pause();
-if (btn) btn.innerHTML = '🔇';
+btn.innerHTML = '🔇';
+btn.title = 'Ney Sesi';
 isMusicPlaying = false;
 } else {
-neyAudio.play().catch(e => {
-console.log("Müzik çalınamadı:", e);
-// Hata durumunda kullanıcıya bildir
-if (btn) btn.innerHTML = '❌';
+const playPromise = neyAudio.play();
+if (playPromise !== undefined) {
+playPromise.then(() => {
+btn.innerHTML = '🔊';
+btn.title = 'Ney Sesi (Çalıyor)';
+isMusicPlaying = true;
+}).catch(e => {
+console.error("Müzik çalınamadı:", e);
+btn.classList.add('error');
+btn.innerHTML = '❌';
+btn.title = 'Çalma hatası: ' + e.message;
 setTimeout(() => {
-if (btn) btn.innerHTML = '🔇';
+if (!isMusicPlaying) {
+btn.classList.remove('error');
+btn.innerHTML = '🔇';
+btn.title = 'Ney Sesi';
+}
 }, 2000);
 });
-if (btn) btn.innerHTML = '🔊';
-isMusicPlaying = true;
+}
 }
 };
 
