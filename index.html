@@ -604,124 +604,115 @@ window.onLicenseSubmit();
 }, 1500);
 }
 
-window.recoverLicenseByEmail = async function(email) {
-if (!email) {
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-title: 'Uyarı',
-text: 'Lütfen e-posta adresinizi girin.',
-icon: 'warning',
-confirmButtonText: 'Tamam'
-});
-}
-return;
-}
+    window.recoverLicenseByEmail = async function(email) {
+        if (!email) {
+            Swal.fire({
+                title: 'Uyarı',
+                text: 'Lütfen e-posta adresinizi girin.',
+                icon: 'warning',
+                confirmButtonText: 'Tamam'
+            });
+            return;
+        }
 
-const normalizedEmail = email.trim().toLowerCase();
+        const normalizedEmail = email.trim().toLowerCase();
 
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-title: 'Aranıyor...',
-html: 'Lisansınız kontrol ediliyor.',
-allowOutsideClick: false,
-didOpen: () => Swal.showLoading()
-});
-}
+        Swal.fire({
+            title: 'Aranıyor...',
+            html: 'Lisansınız kontrol ediliyor.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-try {
-const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
-const snapshot = await getDocs(q);
+        try {
+            const q = query(collection(db, "licenses"), where("email", "==", normalizedEmail));
+            const snapshot = await getDocs(q);
 
-if (snapshot.empty) {
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-icon: 'error',
-title: 'Bulunamadı',
-text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
-confirmButtonText: 'Tamam'
-});
-}
-return;
-}
+            if (snapshot.empty) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Bulunamadı',
+                    text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+            }
 
-if (snapshot.size === 1) {
-await processLicense(snapshot.docs[0]);
-return;
-}
+            if (snapshot.size === 1) {
+                await processLicense(snapshot.docs[0]);
+                return;
+            }
 
-const licenseOptions = snapshot.docs.map(doc => {
-const data = doc.data();
-const firstName = data.firstName || '';
-const lastName = data.lastName || '';
-const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
-return {
-key: data.key,
-fullName: fullName,
-doc: doc
-};
-});
+            const licenseOptions = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const firstName = data.firstName || '';
+                const lastName = data.lastName || '';
+                const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
+                return {
+                    id: doc.id,
+                    key: data.key,
+                    fullName: fullName,
+                    doc: doc
+                };
+            });
 
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-title: 'Birden fazla hesap bulundu',
-html: `
-<p style="margin-bottom:15px; font-size:0.8rem; color: var(--text-main);">Hangi hesapla giriş yapmak istiyorsunuz?</p>
-<div style="display:flex; flex-direction:column; gap:10px;">
-${licenseOptions.map(opt => `
-<button class="swal2-select-option" data-key="${opt.key}" style="
-width:100%;
-padding:12px;
-background:#fdfaf5;
-border:2px solid rgba(179, 139, 67, 0.3);
-border-radius:14px;
-font-size:0.8rem;
-font-weight:600;
-color:#0a192f;
-cursor:pointer;
-transition:all 0.2s;
-text-align:left;
-display:flex;
-align-items:center;
-gap:10px;
-font-family: 'Quicksand', sans-serif;
-">
-<span style="font-size:1rem;">👤</span>
-<span style="flex:1;">${opt.fullName}</span>
-<span style="color:#b38b43;">→</span>
-</button>
-`).join('')}
-</div>
-`,
-showConfirmButton: false,
-showCancelButton: true,
-cancelButtonText: 'Vazgeç',
-didOpen: () => {
-document.querySelectorAll('.swal2-select-option').forEach(btn => {
-btn.addEventListener('click', async () => {
-const selectedKey = btn.dataset.key;
-Swal.close();
-const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
-if (selectedDoc) {
-await processLicense(selectedDoc);
-}
-});
-});
-}
-});
-}
+            await Swal.fire({
+                title: 'Birden fazla hesap bulundu',
+                html: `
+                    <p style="margin-bottom:15px;">Hangi hesapla giriş yapmak istiyorsunuz?</p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        ${licenseOptions.map(opt => `
+                            <button class="swal2-select-option" data-key="${opt.key}" style="
+                                width:100%;
+                                padding:14px;
+                                background:#f3f4f6;
+                                border:2px solid #e5e7eb;
+                                border-radius:14px;
+                                font-size:0.96rem;
+                                font-weight:600;
+                                color:#1f2937;
+                                cursor:pointer;
+                                transition:all 0.2s;
+                                text-align:left;
+                                display:flex;
+                                align-items:center;
+                                gap:12px;
+                                box-shadow:0 2px 4px rgba(0,0,0,0.05);
+                            ">
+                                <span style="font-size:1.2rem;">👤</span>
+                                <span style="flex:1;">${opt.fullName}</span>
+                                <span style="color:#6b7280;">→</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Vazgeç',
+                didOpen: () => {
+                    document.querySelectorAll('.swal2-select-option').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const selectedKey = btn.dataset.key;
+                            Swal.close();
+                            const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
+                            if (selectedDoc) {
+                                processLicense(selectedDoc);
+                            }
+                        });
+                    });
+                }
+            });
 
-} catch (e) {
-console.error("E-posta sorgulama hatası:", e);
-if (typeof Swal !== 'undefined') {
-await Swal.fire({
-icon: 'error',
-title: 'Hata',
-text: 'Sorgulama sırasında bir hata oluştu.',
-confirmButtonText: 'Tamam'
-});
-}
-}
-};
+        } catch (e) {
+            console.error("E-posta sorgulama hatası:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sorgulama sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+                confirmButtonText: 'Tamam'
+            });
+        }
+    };
 
 window.showEmailModal = async function() {
 if (typeof Swal === 'undefined') {
