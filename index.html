@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
     
-    <!-- SweetAlert2 CSS ve JS -->
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -300,7 +300,6 @@
 
         #soundToggle:hover { transform: scale(1.1); }
 
-        /* Oyun Konteyneri - Başlangıçta gizli */
         #gameContainer {
             display: none;
             position: fixed;
@@ -372,7 +371,6 @@
     <div class="ambient-bg"></div>
 
     <button id="soundToggle">🔇</button>
-    <audio id="maneviAudio" style="display: none;"></audio>
 
     <!-- Ana Kart -->
     <div class="spiritual-card" id="mainCard">
@@ -386,19 +384,19 @@
         </div>
 
         <h2>NEVAFİL</h2>
-        <p class="spiritual-motto animate__animated animate__fadeInUp">Gönül kapısını muhabbetle açmaya hazır mısın?</p>
+        <p class="spiritual-motto">Gönül kapısını muhabbetle açmaya hazır mısın?</p>
 
-        <div class="form-group animate__animated animate__fadeInUp animate__delay-1s">
+        <div class="form-group">
             <input type="text" id="licenseInput" placeholder="Lisans Anahtarınızı Giriniz">
         </div>
 
-        <button class="btn-start animate__animated animate__fadeInUp animate__delay-1s" id="startBtn">Bismillah, Yolculuğa Başla</button>
+        <button class="btn-start" id="startBtn">Bismillah, Yolculuğa Başla</button>
 
-        <a class="btn-join animate__animated animate__fadeInUp animate__delay-1s" href="https://www.shopier.com/nevafil/44722560" target="_blank">
+        <a class="btn-join" href="https://www.shopier.com/nevafil/44722560" target="_blank">
             🕊️ Yolculuğa Katıl (Lisans Al)
         </a>
 
-        <div class="secondary-links animate__animated animate__fadeInUp animate__delay-2s">
+        <div class="secondary-links">
             <button class="btn-recover" id="recoverBtn">Lisansımı Hatırlat</button>
             <button class="btn-recover" id="helpBtn">Yardım ve İletişim</button>
         </div>
@@ -430,8 +428,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        let deferredPrompt = null;
 
         function getDeviceId() {
             let id = localStorage.getItem("deviceId");
@@ -480,7 +476,7 @@
                 licenseInput.value = key;
             }
 
-            Swal.fire({
+            await Swal.fire({
                 icon: 'success',
                 title: 'Lisans Hazır',
                 text: 'Lisansınız başarıyla yüklendi.',
@@ -495,7 +491,7 @@
 
         window.recoverLicenseByEmail = async function(email) {
             if (!email) {
-                Swal.fire({
+                await Swal.fire({
                     title: 'Uyarı',
                     text: 'Lütfen e-posta adresinizi girin.',
                     icon: 'warning',
@@ -506,7 +502,7 @@
 
             const normalizedEmail = email.trim().toLowerCase();
 
-            Swal.fire({
+            await Swal.fire({
                 title: 'Aranıyor...',
                 html: 'Lisansınız kontrol ediliyor.',
                 allowOutsideClick: false,
@@ -518,7 +514,7 @@
                 const snapshot = await getDocs(q);
 
                 if (snapshot.empty) {
-                    Swal.fire({
+                    await Swal.fire({
                         icon: 'error',
                         title: 'Bulunamadı',
                         text: 'Bu e-posta ile kayıtlı bir lisans bulunamadı.',
@@ -538,7 +534,6 @@
                     const lastName = data.lastName || '';
                     const fullName = `${firstName} ${lastName}`.trim() || 'İsimsiz Kullanıcı';
                     return {
-                        id: doc.id,
                         key: data.key,
                         fullName: fullName,
                         doc: doc
@@ -579,12 +574,12 @@
                     cancelButtonText: 'Vazgeç',
                     didOpen: () => {
                         document.querySelectorAll('.swal2-select-option').forEach(btn => {
-                            btn.addEventListener('click', () => {
+                            btn.addEventListener('click', async () => {
                                 const selectedKey = btn.dataset.key;
                                 Swal.close();
                                 const selectedDoc = snapshot.docs.find(doc => doc.data().key === selectedKey);
                                 if (selectedDoc) {
-                                    processLicense(selectedDoc);
+                                    await processLicense(selectedDoc);
                                 }
                             });
                         });
@@ -593,7 +588,7 @@
 
             } catch (e) {
                 console.error("E-posta sorgulama hatası:", e);
-                Swal.fire({
+                await Swal.fire({
                     icon: 'error',
                     title: 'Hata',
                     text: 'Sorgulama sırasında bir hata oluştu.',
@@ -639,10 +634,10 @@
                 confirmButtonText: 'Gönder',
                 cancelButtonText: 'Vazgeç',
                 preConfirm: () => {
-                    const firstName = document.getElementById('swal-firstname')?.value.trim() || '';
-                    const lastName = document.getElementById('swal-lastname')?.value.trim() || '';
-                    const email = document.getElementById('swal-email')?.value.trim() || '';
-                    const message = document.getElementById('swal-message')?.value.trim() || '';
+                    const firstName = document.getElementById('swal-firstname')?.value?.trim() || '';
+                    const lastName = document.getElementById('swal-lastname')?.value?.trim() || '';
+                    const email = document.getElementById('swal-email')?.value?.trim() || '';
+                    const message = document.getElementById('swal-message')?.value?.trim() || '';
 
                     if (!firstName) {
                         Swal.showValidationMessage('Ad alanı boş olamaz');
@@ -676,7 +671,7 @@
                         kaynak: 'lisans',
                         durum: 'Beklemede'
                     });
-                    Swal.fire({
+                    await Swal.fire({
                         icon: 'success',
                         title: 'Mesajınız Gönderildi',
                         text: 'En kısa sürede dönüş yapılacaktır.',
@@ -685,7 +680,7 @@
                     });
                 } catch (e) {
                     console.error("Mesaj kaydedilemedi:", e);
-                    Swal.fire('Hata', 'Mesaj gönderilemedi.', 'error');
+                    await Swal.fire('Hata', 'Mesaj gönderilemedi.', 'error');
                 }
             }
         };
@@ -695,9 +690,15 @@
             const mainCard = document.getElementById('mainCard');
             const gameContainer = document.getElementById('gameContainer');
             
-            if (loadingSpinner) loadingSpinner.style.display = 'none';
-            if (mainCard) mainCard.style.display = 'none';
-            if (gameContainer) {
+            if (loadingSpinner && loadingSpinner.style) {
+                loadingSpinner.style.display = 'none';
+            }
+            
+            if (mainCard && mainCard.style) {
+                mainCard.style.display = 'none';
+            }
+            
+            if (gameContainer && gameContainer.style) {
                 gameContainer.style.display = 'block';
                 
                 if (!gameContainer.querySelector("iframe")) {
@@ -717,14 +718,16 @@
             
             const key = keyInput.value.trim().toUpperCase();
             if (!key) { 
-                Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); 
+                await Swal.fire('Hata', 'Anahtar girilmedi.', 'warning'); 
                 return; 
             }
 
             const loadingSpinner = document.getElementById('loadingSpinner');
-            if (loadingSpinner) loadingSpinner.style.display = 'block';
+            if (loadingSpinner && loadingSpinner.style) {
+                loadingSpinner.style.display = 'block';
+            }
 
-            Swal.fire({
+            await Swal.fire({
                 title: 'Giriş Yapılıyor...',
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
@@ -735,12 +738,16 @@
             if (res.ok) {
                 localStorage.setItem("nevafilKey", key);
                 Swal.close();
-                if (loadingSpinner) loadingSpinner.style.display = 'none';
+                if (loadingSpinner && loadingSpinner.style) {
+                    loadingSpinner.style.display = 'none';
+                }
                 startGame();
             } else {
                 Swal.close();
-                if (loadingSpinner) loadingSpinner.style.display = 'none';
-                Swal.fire('Hata', res.msg, 'error');
+                if (loadingSpinner && loadingSpinner.style) {
+                    loadingSpinner.style.display = 'none';
+                }
+                await Swal.fire('Hata', res.msg, 'error');
             }
         };
 
@@ -769,18 +776,25 @@
         };
 
         // Sayfa yüklendiğinde
-        window.addEventListener("load", async () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             const saved = localStorage.getItem("nevafilKey");
-            if (saved && (await verifyLicense(saved)).ok) {
-                startGame();
-                return;
+            if (saved) {
+                const res = await verifyLicense(saved);
+                if (res.ok) {
+                    startGame();
+                    return;
+                }
             }
             
             const loadingSpinner = document.getElementById('loadingSpinner');
-            if (loadingSpinner) loadingSpinner.style.display = 'none';
+            if (loadingSpinner && loadingSpinner.style) {
+                loadingSpinner.style.display = 'none';
+            }
             
             const mainCard = document.getElementById('mainCard');
-            if (mainCard) mainCard.style.display = 'block';
+            if (mainCard && mainCard.style) {
+                mainCard.style.display = 'block';
+            }
             
             // Buton eventlerini ata
             const startBtn = document.getElementById('startBtn');
@@ -792,12 +806,6 @@
             if (recoverBtn) recoverBtn.onclick = () => window.showEmailModal();
             if (helpBtn) helpBtn.onclick = () => window.showHelpModal();
             if (soundBtn) soundBtn.onclick = () => window.toggleManeviMusic();
-        });
-
-        // PWA kurulumu
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
         });
     </script>
 </body>
