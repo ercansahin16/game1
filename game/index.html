@@ -135,7 +135,7 @@
             <div style="font-weight: 600; margin-bottom: 10px; font-size: 0.9rem;">Avatar Seç:</div>
             <div id="settingsAvatarSelector" class="avatar-selector"></div>
             <div class="settings-modal-buttons">
-                <button id="saveSettingsBtn" class="btn-save">Kaydet</button>
+                <button id="Btn" class="btn-save">Kaydet</button>
                 <button id="closeSettingsBtn" class="btn-close">Kapat</button>
             </div>
         </div>
@@ -146,7 +146,7 @@
 <div style="font-weight: 600; margin-bottom: 10px;">Avatar Seç:</div>
 <div id="settingsAvatarSelector" class="avatar-selector"></div>
 <div style="display: flex; gap: 5px; margin-top: 5px;">
-<button id="saveSettingsBtn" class="restart-btn" style="background: #a5d6b7; box-shadow: 0 8px 0 #6b8c7e; color: #1e3a2f;">Kaydet</button>
+<button id="Btn" class="restart-btn" style="background: #a5d6b7; box-shadow: 0 8px 0 #6b8c7e; color: #1e3a2f;">Kaydet</button>
 <button id="closeSettingsBtn" class="restart-btn" style="background: #ffe0b0; box-shadow: 0 8px 0 #d4a373; color: #5e4b3c;">Kapat</button>
 </div>
 </div>
@@ -634,7 +634,7 @@ const introSettingsBtn = document.getElementById('introSettingsBtn');
 const introSettingsPanel = document.getElementById('introSettingsPanel');
 const settingsUsername = document.getElementById('settingsUsername');
 const settingsAvatarSelector = document.getElementById('settingsAvatarSelector');
-const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const Btn = document.getElementById('Btn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 // YENİ: Intro'daki leaderboard butonu
 const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
@@ -928,7 +928,6 @@ if(currentLevelDisplay) currentLevelDisplay.innerText = gameState.currentLevel;
 async function saveSettings() {
     const newName = settingsUsername.value.trim();
 
-    // Boş veya "Misafir" ismini engelle
     if (!newName || newName.toLowerCase() === 'misafir') {
         showToast('Lütfen geçerli bir kullanıcı adı girin (Misafir kullanılamaz).', 'error');
         return;
@@ -937,35 +936,29 @@ async function saveSettings() {
     const oldUsername = gameState.username;
 
     try {
-        // Yeni isim başka biri tarafından kullanılıyor mu kontrol et
         const q = query(collection(db, LEADERBOARD_COLL), where("username", "==", newName));
         const snapshot = await getDocs(q);
-
-        // Aynı isimde kayıt varsa ve bu isim şu anki kullanıcıya ait değilse engelle
         if (!snapshot.empty && newName !== oldUsername) {
-            showToast('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir isim seçin.', 'error');
+            showToast('Bu kullanıcı adı zaten kullanılıyor.', 'error');
             return;
         }
     } catch (e) {
         console.error("İsim kontrolü hatası:", e);
-        showToast('İsim kontrolü yapılamadı, lütfen tekrar deneyin.', 'error');
+        showToast('İsim kontrolü yapılamadı.', 'error');
         return;
     }
 
-    // Seçilen avatarı al
     const selectedAvatar = document.querySelector('#settingsAvatarSelector .avatar-option.selected');
     if (selectedAvatar) {
         gameState.avatar = selectedAvatar.dataset.avatarIcon;
         gameState.avatarImg = selectedAvatar.dataset.avatarImg;
     }
 
-    // Leaderboard kaydını güncelle
+    // Leaderboard güncelleme
     try {
         if (oldUsername && oldUsername !== 'Misafir') {
             const oldQ = query(collection(db, LEADERBOARD_COLL), where("username", "==", oldUsername));
             const oldSnapshot = await getDocs(oldQ);
-
-            // Eski kullanıcı adına ait kayıt(lar) bulunduysa update et
             for (const leaderboardDoc of oldSnapshot.docs) {
                 await updateDoc(leaderboardDoc.ref, {
                     username: newName,
@@ -980,17 +973,25 @@ async function saveSettings() {
         return;
     }
 
-    // Local state güncelle
+    // 🔥 YENİ: Lisans dokümanını güncelle (giriş yapıldığında doğru isim gelsin)
+    const licenseKey = localStorage.getItem('nevafilKey');
+    if (licenseKey) {
+        try {
+            const licenseRef = doc(db, "licenses", licenseKey);
+            // İsmi ad ve soyad olarak ayır
+            const nameParts = newName.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            await updateDoc(licenseRef, { firstName, lastName });
+        } catch (e) {
+            console.error("Lisans güncellenemedi:", e);
+        }
+    }
+
     gameState.username = newName;
-
-    // Oyun durumunu kaydet
     await saveGameState();
-
-    // Arayüzü güncelle
     updateIntroUI();
     updateGameHeader();
-
-    // Modalı kapat
     settingsModalOverlay.classList.remove('active');
     showToast('Profil güncellendi!', 'success');
 }
