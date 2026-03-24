@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a30;
+      --card2:#16203a;
+      --line:rgba(255,255,255,.08);
+      --text:#fff;
+      --muted:#b8c1d9;
+      --accent:#a78bfa;
+      --accent2:#c4b5fd;
+      --success:#22c55e;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+      --shadow:0 20px 55px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(124,58,237,.2), transparent 25%),
+        radial-gradient(circle at top right, rgba(59,130,246,.14), transparent 30%),
+        linear-gradient(135deg, #0b1020, #111827 60%, #1e1b4b);
+      min-height:100vh;
+    }
+    .container{width:min(1240px, calc(100% - 24px)); margin:0 auto; padding:20px 0 40px}
+    .login-wrap,.panel-wrap{
+      background:rgba(18,26,48,.82);
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+    }
+    .login-wrap{
+      width:min(520px, calc(100% - 24px));
+      margin:48px auto;
+      padding:28px;
+    }
+    .login-title{margin:0 0 8px;font-size:1.8rem;font-weight:800}
+    .login-sub{margin:0 0 18px;color:var(--muted);line-height:1.7}
+    .field{margin-bottom:14px}
+    .field label{display:block;margin-bottom:8px;font-size:.92rem;color:#e6e9f2}
+    .input, .textarea, .select{
+      width:100%;
+      border:none;
+      outline:none;
+      min-height:50px;
+      padding:14px 15px;
+      border-radius:16px;
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      border:1px solid var(--line);
+      font-family:inherit;
+      font-size:.95rem;
+    }
+    .textarea{min-height:110px;resize:vertical}
+    .pass-wrap{position:relative}
+    .pass-toggle{
+      position:absolute;
+      top:50%;
+      right:10px;
+      transform:translateY(-50%);
+      border:none;
+      background:transparent;
+      color:#d8def0;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn{
+      border:none;
+      border-radius:16px;
+      height:50px;
+      padding:0 16px;
+      cursor:pointer;
+      font-weight:700;
+      font-family:inherit;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#24124f;
+    }
+    .btn-dark{
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      border:1px solid var(--line);
+    }
+    .btn-danger{
+      background:rgba(239,68,68,.16);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.28);
+    }
+    .btn-success{
+      background:rgba(34,197,94,.16);
+      color:#bbf7d0;
+      border:1px solid rgba(34,197,94,.28);
+    }
+    .btn-warning{
+      background:rgba(245,158,11,.16);
+      color:#fde68a;
+      border:1px solid rgba(245,158,11,.28);
+    }
+    .panel-wrap{padding:18px}
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+    .brand-title{margin:0;font-size:1.6rem;font-weight:800}
+    .brand-sub{margin:4px 0 0;color:var(--muted)}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .stat{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:16px;
+    }
+    .stat .n{font-size:1.55rem;font-weight:800}
+    .stat .t{color:var(--muted);font-size:.9rem;margin-top:6px}
+    .grid{
+      display:grid;
+      grid-template-columns:380px 1fr;
+      gap:18px;
+    }
+    .card{
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+    }
+    .card h3{
+      margin:0 0 14px;
+      font-size:1.08rem;
+      font-weight:700;
+    }
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .links-list{
+      display:grid;
+      gap:12px;
+      margin-top:16px;
+    }
+    .item{
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+    }
+    .item-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .item-title{font-weight:700}
+    .item-sub{font-size:.85rem;color:var(--muted);margin-top:4px;word-break:break-all}
+    .mini-tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .mini-tag{
+      font-size:.75rem;
+      background:rgba(255,255,255,.07);
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:5px 9px;
+    }
+    .profile-grid{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    .profile-option{
+      position:relative;
+      border-radius:18px;
+      overflow:hidden;
+      border:2px solid transparent;
+      cursor:pointer;
+      background:#fff;
+    }
+    .profile-option img{
+      width:100%;
+      aspect-ratio:1/1;
+      object-fit:cover;
+      display:block;
+    }
+    .profile-option.active{
+      border-color:#c4b5fd;
+      box-shadow:0 0 0 3px rgba(196,181,253,.15);
+    }
+    .searchbar{
+      margin-bottom:14px;
+      display:grid;
+      grid-template-columns:1fr 180px;
+      gap:12px;
+    }
+    .hidden{display:none!important}
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%) translateY(20px);
+      background:#0f172a;
+      color:#fff;
+      border:1px solid rgba(255,255,255,.1);
+      padding:12px 16px;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      opacity:0;
+      pointer-events:none;
+      transition:.25s;
+      z-index:9999;
+      max-width:calc(100% - 24px);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .note{
+      color:#cbd5e1;
+      font-size:.88rem;
+      line-height:1.7;
+      background:rgba(245,158,11,.08);
+      border:1px solid rgba(245,158,11,.16);
+      padding:12px 14px;
+      border-radius:14px;
+    }
+    @media (max-width: 1080px){
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .grid{grid-template-columns:1fr}
+    }
+    @media (max-width: 700px){
+      .row2,.row3,.searchbar{grid-template-columns:1fr}
+      .profile-grid{grid-template-columns:repeat(3,1fr)}
+      .stats{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap" id="loginBox">
+    <h1 class="login-title">Gizli Admin Girişi</h1>
+    <p class="login-sub">
+      Bu alana sadece yönetici erişebilir. Şifre görünür/gizli yapılabilir.
+    </p>
+
+    <div class="field">
+      <label>Admin Şifresi</label>
+      <div class="pass-wrap">
+        <input type="password" id="adminPassword" class="input" placeholder="Şifrenizi girin">
+        <button class="pass-toggle" id="togglePass">Göster</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="loginBtn">Panele Gir</button>
+    </div>
+
+    <div style="margin-top:14px" class="note">
+      Not: Bu sürümde giriş kontrolü istemci taraflıdır. Gerçek güvenlik için Firebase Auth + Firestore Rules eklenmelidir.
+    </div>
+  </div>
+
+  <div class="container hidden" id="panelBox">
+    <div class="panel-wrap">
+      <div class="topbar">
+        <div>
+          <h1 class="brand-title">Link Yönetim Paneli</h1>
+          <p class="brand-sub">Site ayarları, profil görselleri, banner, linkler ve gelişmiş seçenekler</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-dark" id="openSiteBtn">Siteyi Aç</button>
+          <button class="btn btn-warning" id="seedBtn">Örnek Veri Yükle</button>
+          <button class="btn btn-danger" id="logoutBtn">Çıkış Yap</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="n" id="statTotal">0</div><div class="t">Toplam Link</div></div>
+        <div class="stat"><div class="n" id="statVisible">0</div><div class="t">Görünür</div></div>
+        <div class="stat"><div class="n" id="statFeatured">0</div><div class="t">Öne Çıkan</div></div>
+        <div class="stat"><div class="n" id="statClicks">0</div><div class="t">Toplam Tıklama</div></div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h3>Site Genel Ayarları</h3>
+
+            <div class="field">
+              <label>Tarayıcı Başlığı</label>
+              <input class="input" id="browserTitle" placeholder="Örn: Nevafil Linklerim">
+            </div>
+
+            <div class="field">
+              <label>Sayfa Başlığı</label>
+              <input class="input" id="siteTitle" placeholder="Örn: Bağlantılarım">
+            </div>
+
+            <div class="field">
+              <label>Kısa Açıklama</label>
+              <textarea class="textarea" id="siteBio" placeholder="Sayfa açıklaması"></textarea>
+            </div>
+
+            <div class="field">
+              <label>Banner Görsel URL</label>
+              <input class="input" id="bannerImage" placeholder="https://...">
+            </div>
+
+            <div class="field">
+              <label>Seçili Profil Resmi URL</label>
+              <input class="input" id="profileImage" placeholder="https://...">
+            </div>
+
+            <div class="field">
+              <label>Hazır 25 Profil Görseli</label>
+              <div class="profile-grid" id="profileGrid"></div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" id="saveSettingsBtn">Ayarları Kaydet</button>
+              <button class="btn btn-dark" id="previewProfileBtn">Önizleme İçin Doldur</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px">
+            <h3>Link Ekle / Düzenle</h3>
+
+            <input type="hidden" id="editingId">
+
+            <div class="field">
+              <label>Başlık</label>
+              <input class="input" id="linkTitle" placeholder="Proje adı">
+            </div>
+
+            <div class="field">
+              <label>URL</label>
+              <input class="input" id="linkUrl" placeholder="https://...">
+            </div>
+
+            <div class="field">
+              <label>Açıklama</label>
+              <textarea class="textarea" id="linkDescription" placeholder="Link açıklaması"></textarea>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>Kategori</label>
+                <input class="input" id="linkCategory" placeholder="Örn: Web, Oyun, Admin">
+              </div>
+              <div class="field">
+                <label>Sıra</label>
+                <input class="input" id="linkOrder" type="number" placeholder="1">
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>İkon / Kart Görseli URL</label>
+                <input class="input" id="linkIcon" placeholder="https://...">
+              </div>
+              <div class="field">
+                <label>Etiketler</label>
+                <input class="input" id="linkTags" placeholder="html, firebase, admin">
+              </div>
+            </div>
+
+            <div class="row3">
+              <div class="field">
+                <label>Görünürlük</label>
+                <select class="select" id="linkVisible">
+                  <option value="true">Görünür</option>
+                  <option value="false">Gizli</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Öne Çıkan</label>
+                <select class="select" id="linkFeatured">
+                  <option value="false">Hayır</option>
+                  <option value="true">Evet</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Yeni sekmede aç</label>
+                <select class="select" id="linkNewTab">
+                  <option value="true">Evet</option>
+                  <option value="false">Hayır</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" id="saveLinkBtn">Kaydet</button>
+              <button class="btn btn-dark" id="clearFormBtn">Formu Temizle</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>Link Listesi</h3>
+
+            <div class="searchbar">
+              <input class="input" id="searchAdmin" placeholder="Başlık, açıklama, kategori ara...">
+              <select class="select" id="filterAdmin">
+                <option value="">Tümü</option>
+                <option value="visible">Sadece görünür</option>
+                <option value="hidden">Sadece gizli</option>
+                <option value="featured">Sadece öne çıkan</option>
+              </select>
+            </div>
+
+            <div class="links-list" id="linksList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { db } from "./firebase-core.js";
+    import {
+      collection,
+      addDoc,
+      deleteDoc,
+      doc,
+      getDoc,
+      getDocs,
+      setDoc,
+      updateDoc,
+      query,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const ADMIN_PASSWORD = "Nevafil#2026"; // Bunu değiştir.
+
+    const readyProfileImages = [
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504257432389-52343af06ae3?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1542204625-de293a2f8ff0?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1541534401786-2077eed87a72?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1552058544-f2b08422138a?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1502767089025-6572583495b0?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1554151228-14d9def656e4?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?q=80&w=500&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?q=80&w=500&auto=format&fit=crop"
+    ];
+
+    const loginBox = document.getElementById("loginBox");
+    const panelBox = document.getElementById("panelBox");
+    const adminPassword = document.getElementById("adminPassword");
+    const togglePass = document.getElementById("togglePass");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const openSiteBtn = document.getElementById("openSiteBtn");
+    const seedBtn = document.getElementById("seedBtn");
+
+    const profileGrid = document.getElementById("profileGrid");
+    const browserTitle = document.getElementById("browserTitle");
+    const siteTitle = document.getElementById("siteTitle");
+    const siteBio = document.getElementById("siteBio");
+    const bannerImage = document.getElementById("bannerImage");
+    const profileImage = document.getElementById("profileImage");
+    const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+    const previewProfileBtn = document.getElementById("previewProfileBtn");
+
+    const editingId = document.getElementById("editingId");
+    const linkTitle = document.getElementById("linkTitle");
+    const linkUrl = document.getElementById("linkUrl");
+    const linkDescription = document.getElementById("linkDescription");
+    const linkCategory = document.getElementById("linkCategory");
+    const linkOrder = document.getElementById("linkOrder");
+    const linkIcon = document.getElementById("linkIcon");
+    const linkTags = document.getElementById("linkTags");
+    const linkVisible = document.getElementById("linkVisible");
+    const linkFeatured = document.getElementById("linkFeatured");
+    const linkNewTab = document.getElementById("linkNewTab");
+    const saveLinkBtn = document.getElementById("saveLinkBtn");
+    const clearFormBtn = document.getElementById("clearFormBtn");
+
+    const linksList = document.getElementById("linksList");
+    const searchAdmin = document.getElementById("searchAdmin");
+    const filterAdmin = document.getElementById("filterAdmin");
+
+    const statTotal = document.getElementById("statTotal");
+    const statVisible = document.getElementById("statVisible");
+    const statFeatured = document.getElementById("statFeatured");
+    const statClicks = document.getElementById("statClicks");
+
+    const toast = document.getElementById("toast");
+
+    let allLinks = [];
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function normalizeText(t){
+      return (t || "").toString().toLocaleLowerCase("tr");
+    }
+
+    function parseTags(str){
+      return (str || "")
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+    }
+
+    function renderProfileChoices(){
+      profileGrid.innerHTML = readyProfileImages.map((url, i) => `
+        <div class="profile-option ${profileImage.value === url ? "active" : ""}" data-url="${url}">
+          <img src="${url}" alt="Profil ${i+1}">
+        </div>
+      `).join("");
+    }
+
+    profileGrid.addEventListener("click", (e) => {
+      const item = e.target.closest(".profile-option");
+      if(!item) return;
+      profileImage.value = item.dataset.url;
+      renderProfileChoices();
+    });
+
+    togglePass.addEventListener("click", () => {
+      const isPass = adminPassword.type === "password";
+      adminPassword.type = isPass ? "text" : "password";
+      togglePass.textContent = isPass ? "Gizle" : "Göster";
+    });
+
+    function checkSession(){
+      const ok = localStorage.getItem("link_admin_logged") === "1";
+      loginBox.classList.toggle("hidden", ok);
+      panelBox.classList.toggle("hidden", !ok);
+      if(ok){
+        loadSettings();
+        loadLinks();
+      }
+    }
+
+    loginBtn.addEventListener("click", () => {
+      const pass = adminPassword.value.trim();
+      if(pass === ADMIN_PASSWORD){
+        localStorage.setItem("link_admin_logged", "1");
+        showToast("Giriş başarılı.");
+        checkSession();
+      } else {
+        showToast("Şifre hatalı.");
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("link_admin_logged");
+      showToast("Çıkış yapıldı.");
+      checkSession();
+    });
+
+    openSiteBtn.addEventListener("click", () => window.open("./index.html", "_blank"));
+
+    previewProfileBtn.addEventListener("click", () => {
+      browserTitle.value ||= "Nevafil Link Dünyası";
+      siteTitle.value ||= "Tüm Projelerim";
+      siteBio.value ||= "Buradan projelerime, panellerime, gizli araçlarıma ve özel bağlantılarıma ulaşabilirsin.";
+      bannerImage.value ||= "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop";
+      profileImage.value ||= readyProfileImages[0];
+      renderProfileChoices();
+    });
+
+    async function loadSettings(){
+      try{
+        const ref = doc(db, "siteSettings", "main");
+        const snap = await getDoc(ref);
+
+        if(snap.exists()){
+          const data = snap.data();
+          browserTitle.value = data.browserTitle || "";
+          siteTitle.value = data.siteTitle || "";
+          siteBio.value = data.siteBio || "";
+          bannerImage.value = data.bannerImage || "";
+          profileImage.value = data.profileImage || "";
+        } else {
+          previewProfileBtn.click();
+        }
+
+        renderProfileChoices();
+      } catch(err){
+        console.error(err);
+        showToast("Ayarlar yüklenemedi.");
+      }
+    }
+
+    saveSettingsBtn.addEventListener("click", async () => {
+      try{
+        await setDoc(doc(db, "siteSettings", "main"), {
+          browserTitle: browserTitle.value.trim(),
+          siteTitle: siteTitle.value.trim(),
+          siteBio: siteBio.value.trim(),
+          bannerImage: bannerImage.value.trim(),
+          profileImage: profileImage.value.trim(),
+          updatedAt: serverTimestamp()
+        }, { merge:true });
+
+        showToast("Ayarlar kaydedildi.");
+      } catch(err){
+        console.error(err);
+        showToast("Ayarlar kaydedilemedi.");
+      }
+    });
+
+    function clearForm(){
+      editingId.value = "";
+      linkTitle.value = "";
+      linkUrl.value = "";
+      linkDescription.value = "";
+      linkCategory.value = "";
+      linkOrder.value = "";
+      linkIcon.value = "";
+      linkTags.value = "";
+      linkVisible.value = "true";
+      linkFeatured.value = "false";
+      linkNewTab.value = "true";
+      saveLinkBtn.textContent = "Kaydet";
+    }
+
+    clearFormBtn.addEventListener("click", clearForm);
+
+    async function loadLinks(){
+      try{
+        const qRef = query(collection(db, "links"), orderBy("order", "asc"));
+        const snap = await getDocs(qRef);
+        allLinks = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        renderAdminLinks();
+        refreshStats();
+      } catch(err){
+        console.error(err);
+        showToast("Linkler yüklenemedi.");
+      }
+    }
+
+    function refreshStats(){
+      statTotal.textContent = allLinks.length;
+      statVisible.textContent = allLinks.filter(x => x.visible !== false).length;
+      statFeatured.textContent = allLinks.filter(x => x.featured).length;
+      statClicks.textContent = allLinks.reduce((a,b) => a + (Number(b.clickCount) || 0), 0);
+    }
+
+    function renderAdminLinks(){
+      const term = normalizeText(searchAdmin.value.trim());
+      const filter = filterAdmin.value;
+
+      let filtered = allLinks.filter(item => {
+        const text = normalizeText(`${item.title||""} ${item.description||""} ${item.category||""} ${(item.tags||[]).join(" ")}`);
+        const matchText = !term || text.includes(term);
+
+        let matchFilter = true;
+        if(filter === "visible") matchFilter = item.visible !== false;
+        if(filter === "hidden") matchFilter = item.visible === false;
+        if(filter === "featured") matchFilter = !!item.featured;
+
+        return matchText && matchFilter;
+      });
+
+      if(!filtered.length){
+        linksList.innerHTML = `<div class="item">Kayıt bulunamadı.</div>`;
+        return;
+      }
+
+      linksList.innerHTML = filtered.map(item => `
+        <div class="item">
+          <div class="item-top">
+            <div>
+              <div class="item-title">${item.title || "Başlıksız"}</div>
+              <div class="item-sub">${item.url || ""}</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-dark editBtn" data-id="${item.id}">Düzenle</button>
+              <button class="btn btn-danger delBtn" data-id="${item.id}">Sil</button>
+            </div>
+          </div>
+
+          <div>${item.description || "-"}</div>
+
+          <div class="mini-tags">
+            <span class="mini-tag">Kategori: ${item.category || "-"}</span>
+            <span class="mini-tag">Sıra: ${item.order ?? 0}</span>
+            <span class="mini-tag">${item.visible !== false ? "Görünür" : "Gizli"}</span>
+            <span class="mini-tag">${item.featured ? "Öne çıkan" : "Normal"}</span>
+            <span class="mini-tag">Tıklama: ${item.clickCount || 0}</span>
+            ${(item.tags || []).map(t => `<span class="mini-tag">${t}</span>`).join("")}
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-success visBtn" data-id="${item.id}" data-val="${item.visible !== false}">
+              ${item.visible !== false ? "Gizle" : "Göster"}
+            </button>
+            <button class="btn btn-warning featBtn" data-id="${item.id}" data-val="${!!item.featured}">
+              ${item.featured ? "Öne Çıkanı Kaldır" : "Öne Çıkar"}
+            </button>
+            <button class="btn btn-dark cloneBtn" data-id="${item.id}">Kopyasını Oluştur</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    searchAdmin.addEventListener("input", renderAdminLinks);
+    filterAdmin.addEventListener("change", renderAdminLinks);
+
+    saveLinkBtn.addEventListener("click", async () => {
+      const payload = {
+        title: linkTitle.value.trim(),
+        url: linkUrl.value.trim(),
+        description: linkDescription.value.trim(),
+        category: linkCategory.value.trim(),
+        order: Number(linkOrder.value || 0),
+        icon: linkIcon.value.trim(),
+        tags: parseTags(linkTags.value),
+        visible: linkVisible.value === "true",
+        featured: linkFeatured.value === "true",
+        newTab: linkNewTab.value === "true",
+        updatedAt: serverTimestamp()
+      };
+
+      if(!payload.title || !payload.url){
+        showToast("Başlık ve URL zorunludur.");
+        return;
+      }
+
+      try{
+        if(editingId.value){
+          await updateDoc(doc(db, "links", editingId.value), payload);
+          showToast("Link güncellendi.");
+        } else {
+          payload.clickCount = 0;
+          payload.createdAt = serverTimestamp();
+          await addDoc(collection(db, "links"), payload);
+          showToast("Link eklendi.");
+        }
+
+        clearForm();
+        await loadLinks();
+      } catch(err){
+        console.error(err);
+        showToast("Kayıt işlemi başarısız.");
+      }
+    });
+
+    linksList.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest(".editBtn");
+      const delBtn = e.target.closest(".delBtn");
+      const visBtn = e.target.closest(".visBtn");
+      const featBtn = e.target.closest(".featBtn");
+      const cloneBtn = e.target.closest(".cloneBtn");
+
+      try{
+        if(editBtn){
+          const item = allLinks.find(x => x.id === editBtn.dataset.id);
+          if(!item) return;
+          editingId.value = item.id;
+          linkTitle.value = item.title || "";
+          linkUrl.value = item.url || "";
+          linkDescription.value = item.description || "";
+          linkCategory.value = item.category || "";
+          linkOrder.value = item.order ?? "";
+          linkIcon.value = item.icon || "";
+          linkTags.value = (item.tags || []).join(", ");
+          linkVisible.value = String(item.visible !== false);
+          linkFeatured.value = String(!!item.featured);
+          linkNewTab.value = String(item.newTab !== false);
+          saveLinkBtn.textContent = "Güncelle";
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        if(delBtn){
+          const id = delBtn.dataset.id;
+          const ok = confirm("Bu link silinsin mi?");
+          if(!ok) return;
+          await deleteDoc(doc(db, "links", id));
+          showToast("Link silindi.");
+          await loadLinks();
+        }
+
+        if(visBtn){
+          const id = visBtn.dataset.id;
+          const item = allLinks.find(x => x.id === id);
+          await updateDoc(doc(db, "links", id), { visible: !(item.visible !== false) });
+          showToast("Görünürlük güncellendi.");
+          await loadLinks();
+        }
+
+        if(featBtn){
+          const id = featBtn.dataset.id;
+          const item = allLinks.find(x => x.id === id);
+          await updateDoc(doc(db, "links", id), { featured: !item.featured });
+          showToast("Öne çıkan durumu güncellendi.");
+          await loadLinks();
+        }
+
+        if(cloneBtn){
+          const id = cloneBtn.dataset.id;
+          const item = allLinks.find(x => x.id === id);
+          if(!item) return;
+
+          const clone = {
+            ...item,
+            title: `${item.title} (Kopya)`,
+            order: Number(item.order || 0) + 1,
+            clickCount: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          delete clone.id;
+
+          await addDoc(collection(db, "links"), clone);
+          showToast("Kopya oluşturuldu.");
+          await loadLinks();
+        }
+      } catch(err){
+        console.error(err);
+        showToast("İşlem başarısız oldu.");
+      }
+    });
+
+    seedBtn.addEventListener("click", async () => {
+      const ok = confirm("Örnek veriler eklensin mi?");
+      if(!ok) return;
+
+      const samples = [
+        {
+          title:"Ana Proje",
+          url:"https://nevafil.com.tr",
+          description:"Ana sayfa ve proje tanıtım sayfası",
+          category:"Web",
+          order:1,
+          icon:"https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop",
+          tags:["ana sayfa","kurumsal","tanıtım"],
+          visible:true,
+          featured:true,
+          newTab:true,
+          clickCount:0,
+          createdAt:serverTimestamp(),
+          updatedAt:serverTimestamp()
+        },
+        {
+          title:"Admin Paneli",
+          url:"./admindash.html",
+          description:"İçerik düzenleme ve link yönetimi paneli",
+          category:"Admin",
+          order:2,
+          icon:"https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=500&auto=format&fit=crop",
+          tags:["admin","panel","yönetim"],
+          visible:true,
+          featured:true,
+          newTab:true,
+          clickCount:0,
+          createdAt:serverTimestamp(),
+          updatedAt:serverTimestamp()
+        },
+        {
+          title:"Oyun Projesi",
+          url:"https://nevafil.com.tr/game/",
+          description:"Manevi aile oyunu sayfası",
+          category:"Oyun",
+          order:3,
+          icon:"https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=500&auto=format&fit=crop",
+          tags:["oyun","aile","manevi"],
+          visible:true,
+          featured:false,
+          newTab:true,
+          clickCount:0,
+          createdAt:serverTimestamp(),
+          updatedAt:serverTimestamp()
+        }
+      ];
+
+      try{
+        for(const item of samples){
+          await addDoc(collection(db, "links"), item);
+        }
+        showToast("Örnek veriler yüklendi.");
+        await loadLinks();
+      } catch(err){
+        console.error(err);
+        showToast("Örnek veri eklenemedi.");
+      }
+    });
+
+    checkSession();
+    clearForm();
+  </script>
+</body>
+</html>
