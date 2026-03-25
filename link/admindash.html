@@ -2,173 +2,121 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Admin Panel | Link Yönetimi</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@latest/css/sortable.min.css">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /* Mikro Tasarım Ayarları */
+        body { font-size: 8px; background: #FAF9F6; padding: 20px; font-family: sans-serif; }
+        .panel { max-width: 400px; margin: auto; background: white; border-radius: 15px; padding: 10px; border: 1px solid #ddd; }
+        input, button { font-size: 8px; padding: 4px; margin: 2px 0; border-radius: 5px; border: 1px solid #ccc; width: 100%; box-sizing: border-box;}
+        .link-item { 
+            background: #fdfdfd; border: 0.5px solid #eee; margin: 4px 0; padding: 5px; 
+            display: flex; align-items: center; cursor: grab; border-radius: 5px;
+        }
+        .stats { color: var(--gold); font-weight: bold; margin-left: auto; }
+        .avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin: 10px 0; }
+        .avatar-option { width: 30px; height: 30px; cursor: pointer; border-radius: 50%; border: 1px solid transparent; }
+        .avatar-option.selected { border-color: gold; transform: scale(1.1); }
+        .password-container { position: relative; }
+        .toggle-pw { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 7px; }
+    </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="admin-header">
-            <h1><i class="fas fa-crown"></i> Admin Panel</h1>
-            <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+    <div id="login-zone" class="panel">
+        <h3>Admin Girişi</h3>
+        <div class="password-container">
+            <input type="password" id="adminPass" placeholder="Şifre">
+            <span class="toggle-pw" onclick="togglePass()">👁️</span>
         </div>
-        
-        <div id="loginSection" class="login-section">
-            <div class="glass-card">
-                <h2><i class="fas fa-lock"></i> Admin Girişi</h2>
-                <div class="password-input-wrapper">
-                    <input type="password" id="adminPassword" placeholder="Admin Şifresi" class="password-input">
-                    <button class="toggle-password" id="togglePassword">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-                <button id="loginBtn" class="btn-primary">Giriş Yap</button>
-                <p class="hint-text">İpucu: admin123</p>
-            </div>
-        </div>
-        
-        <div id="adminContent" style="display: none;">
-            <div class="admin-tabs">
-                <button class="tab-btn active" data-tab="profile"><i class="fas fa-user"></i> Profil</button>
-                <button class="tab-btn" data-tab="links"><i class="fas fa-link"></i> Linkler</button>
-                <button class="tab-btn" data-tab="analytics"><i class="fas fa-chart-line"></i> Analitik</button>
-                <button class="tab-btn" data-tab="avatars"><i class="fas fa-images"></i> Avatarlar</button>
-                <button class="tab-btn" data-tab="settings"><i class="fas fa-cog"></i> Ayarlar</button>
-            </div>
-            
-            <!-- Profil Sekmesi -->
-            <div class="tab-content active" id="profileTab">
-                <div class="form-card">
-                    <h3><i class="fas fa-user-circle"></i> Profil Bilgileri</h3>
-                    <div class="form-group">
-                        <label>Kullanıcı Adı</label>
-                        <input type="text" id="userNameInput" class="form-control" placeholder="Kullanıcı adı">
-                    </div>
-                    <div class="form-group">
-                        <label>Biyografi</label>
-                        <textarea id="userBioInput" rows="3" class="form-control" placeholder="Kendinizi tanıtın..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Profil Resmi</label>
-                        <div class="avatar-selection">
-                            <div class="current-avatar" id="currentAvatarPreview">
-                                <img id="currentAvatarImg" src="" alt="Mevcut Avatar">
-                            </div>
-                            <button class="btn-secondary" id="openAvatarGallery"><i class="fas fa-images"></i> Avatar Seç</button>
-                            <button class="btn-secondary" id="uploadAvatarBtn"><i class="fas fa-upload"></i> Yükle</button>
-                            <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Banner Resmi</label>
-                        <div class="banner-upload-area">
-                            <img id="currentBannerImg" src="" alt="Mevcut Banner">
-                            <button class="btn-secondary" id="uploadBannerBtn"><i class="fas fa-upload"></i> Banner Yükle</button>
-                            <input type="file" id="bannerUpload" accept="image/*" style="display: none;">
-                        </div>
-                    </div>
-                    <button id="saveProfileBtn" class="btn-primary"><i class="fas fa-save"></i> Profili Kaydet</button>
-                </div>
-            </div>
-            
-            <!-- Linkler Sekmesi -->
-            <div class="tab-content" id="linksTab">
-                <div class="form-card">
-                    <h3><i class="fas fa-plus-circle"></i> Yeni Link Ekle</h3>
-                    <div class="form-group">
-                        <input type="text" id="newLinkTitle" class="form-control" placeholder="Link Başlığı (örn: Instagram)">
-                    </div>
-                    <div class="form-group">
-                        <input type="url" id="newLinkUrl" class="form-control" placeholder="Link URL (örn: https://instagram.com/...)">
-                    </div>
-                    <div class="form-group">
-                        <select id="newLinkIcon" class="form-control">
-                            <option value="fab fa-instagram">Instagram</option>
-                            <option value="fab fa-twitter">Twitter</option>
-                            <option value="fab fa-youtube">YouTube</option>
-                            <option value="fab fa-tiktok">TikTok</option>
-                            <option value="fab fa-facebook">Facebook</option>
-                            <option value="fab fa-linkedin">LinkedIn</option>
-                            <option value="fab fa-github">GitHub</option>
-                            <option value="fas fa-globe">Website</option>
-                            <option value="fas fa-envelope">Email</option>
-                            <option value="fab fa-whatsapp">WhatsApp</option>
-                        </select>
-                    </div>
-                    <button id="addLinkBtn" class="btn-primary"><i class="fas fa-plus"></i> Link Ekle</button>
-                </div>
-                
-                <div class="links-management">
-                    <h3><i class="fas fa-list"></i> Mevcut Linkler <span class="hint">(Sürükle-bırak ile sıralayın)</span></h3>
-                    <div id="sortableLinks" class="sortable-links"></div>
-                </div>
-            </div>
-            
-            <!-- Analitik Sekmesi -->
-            <div class="tab-content" id="analyticsTab">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <i class="fas fa-chart-simple"></i>
-                        <h3 id="totalClicksStat">0</h3>
-                        <p>Toplam Tıklanma</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-link"></i>
-                        <h3 id="totalLinksStat">0</h3>
-                        <p>Aktif Link</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-eye"></i>
-                        <h3 id="avgClicksStat">0</h3>
-                        <p>Ortalama Tıklanma</p>
-                    </div>
-                </div>
-                <div class="analytics-chart">
-                    <h3><i class="fas fa-chart-bar"></i> Link Performansı</h3>
-                    <div id="analyticsList" class="analytics-list"></div>
-                </div>
-            </div>
-            
-            <!-- Avatarlar Sekmesi -->
-            <div class="tab-content" id="avatarsTab">
-                <div class="form-card">
-                    <h3><i class="fas fa-smile"></i> Çizgi Film Avatar Galerisi</h3>
-                    <div class="avatar-gallery" id="avatarGallery"></div>
-                    <button id="refreshAvatarsBtn" class="btn-secondary"><i class="fas fa-sync"></i> Yenile</button>
-                </div>
-            </div>
-            
-            <!-- Ayarlar Sekmesi -->
-            <div class="tab-content" id="settingsTab">
-                <div class="form-card">
-                    <h3><i class="fas fa-key"></i> Güvenlik Ayarları</h3>
-                    <div class="form-group">
-                        <label>Admin Şifresini Değiştir</label>
-                        <div class="password-input-wrapper">
-                            <input type="password" id="newPassword" class="form-control" placeholder="Yeni şifre">
-                            <button class="toggle-password" id="toggleNewPassword">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <button id="changePasswordBtn" class="btn-primary mt-2">Şifreyi Güncelle</button>
-                    </div>
-                    
-                    <hr>
-                    
-                    <h3><i class="fas fa-database"></i> Veri Yönetimi</h3>
-                    <button id="exportDataBtn" class="btn-secondary"><i class="fas fa-download"></i> Verileri Dışa Aktar</button>
-                    <button id="resetAllBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> Tüm Verileri Sıfırla</button>
-                </div>
-            </div>
-        </div>
+        <button onclick="checkAuth()">Giriş Yap</button>
     </div>
-    
-    <div id="toastMessage" class="toast"></div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script type="module" src="admin.js"></script>
+
+    <div id="admin-content" class="panel" style="display:none;">
+        <h3>Link Yönetimi (Sürükle Bırak)</h3>
+        <div id="link-list"></div>
+        <hr>
+        <h3>Yeni Link Ekle</h3>
+        <input type="text" id="newTitle" placeholder="Başlık (örn: Instagram)">
+        <input type="text" id="newUrl" placeholder="URL">
+        <button onclick="addNewLink()">Ekle</button>
+        <hr>
+        <h3>Profil Karakteri Seç (25 Adet)</h3>
+        <div id="avatar-picker" class="avatar-grid"></div>
+        <button onclick="saveProfile()">Ayarları Kaydet</button>
+    </div>
+
+    <script type="module">
+        import { db } from './firebase-core.js';
+        import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js ";
+
+        // 1. Şifre Göster/Gizle Fonksiyonu
+        window.togglePass = () => {
+            const p = document.getElementById('adminPass');
+            p.type = p.type === 'password' ? 'text' : 'password';
+        }
+
+        // 2. Basit Auth (Daha güvenli hale getirilebilir)
+        window.checkAuth = () => {
+            if(document.getElementById('adminPass').value === "1234") { // Şifreyi buradan değiştirebilirsin
+                document.getElementById('login-zone').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                loadAdminData();
+            }
+        }
+
+        // 3. Verileri Yükle & Sürükle Bırak
+        function loadAdminData() {
+            const list = document.getElementById('link-list');
+            onSnapshot(query(collection(db, "links"), orderBy("order")), (snap) => {
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const data = d.data();
+                    list.innerHTML += `
+                        <div class="link-item" data-id="${d.id}">
+                            <span>☰ ${data.title}</span>
+                            <span class="stats">${data.clicks || 0} Tık</span>
+                            <button onclick="deleteLink('${d.id}')" style="width:20px; background:red; color:white; border:none; margin-left:5px;">X</button>
+                        </div>
+                    `;
+                });
+            });
+
+            // SortableJS Entegrasyonu
+            new Sortable(list, {
+                animation: 150,
+                onEnd: async function() {
+                    const items = list.querySelectorAll('.link-item');
+                    items.forEach((item, index) => {
+                        updateDoc(doc(db, "links", item.getAttribute('data-id')), { order: index });
+                    });
+                }
+            });
+        }
+
+        // 4. Çizgi Film Karakterleri (25 Adet Placeholder URL)
+        const picker = document.getElementById('avatar-picker');
+        for(let i=1; i<=25; i++) {
+            const img = document.createElement('img');
+            img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`; // API ile çizgi film karakterleri
+            img.className = 'avatar-option';
+            img.onclick = () => {
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+                img.classList.add('selected');
+                window.selectedAvatar = img.src;
+            };
+            picker.appendChild(img);
+        }
+
+        window.addNewLink = async () => {
+            await addDoc(collection(db, "links"), {
+                title: document.getElementById('newTitle').value,
+                url: document.getElementById('newUrl').value,
+                order: 99,
+                clicks: 0
+            });
+        }
+        
+        window.deleteLink = async (id) => { if(confirm('Silinsin mi?')) await deleteDoc(doc(db, "links", id)); }
+    </script>
 </body>
 </html>
