@@ -6,7 +6,6 @@
     <title>Glossy Touch - Modern Cam Tasarım</title>
     <link rel="stylesheet" href="templatemo-glossy-touch.css">
     <style>
-        /* Kartlar için ek düzenlemeler */
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -139,7 +138,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -168,13 +167,19 @@
             const container = document.getElementById("featuresContainer");
             if (!container) return;
             try {
-                const querySnapshot = await getDocs(collection(db, FEATURES_COLLECTION));
+                // Sadece aktif kartlar, order'a göre artan sırada
+                const q = query(
+                    collection(db, FEATURES_COLLECTION),
+                    where("active", "==", true),
+                    orderBy("order", "asc")
+                );
+                const querySnapshot = await getDocs(q);
                 let cards = [];
                 querySnapshot.forEach(docSnap => {
                     cards.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 if (cards.length === 0) {
-                    container.innerHTML = `<div class="glass" style="padding:2rem;">Henüz kart eklenmemiş. Admin panelinden ekleyebilirsiniz.</div>`;
+                    container.innerHTML = `<div class="glass" style="padding:2rem;">Henüz aktif kart eklenmemiş. Admin panelinden ekleyebilirsiniz.</div>`;
                     return;
                 }
                 let html = '';
