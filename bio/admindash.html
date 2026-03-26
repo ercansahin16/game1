@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Glossy Touch</title>
+    <link rel="stylesheet" href="templatemo-glossy-touch.css">
+    <style>
+        /* Admin özel stilleri - minimal ve işlevsel */
+        body {
+            background: radial-gradient(circle at 10% 20%, rgba(20,30,50,1) 0%, rgba(5,10,20,1) 100%);
+            min-height: 100vh;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .admin-header h1 {
+            font-size: 1.8rem;
+            margin: 0;
+            background: linear-gradient(135deg, #fff, #aaccff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logout-link {
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            text-decoration: none;
+            color: white;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .logout-link:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        .admin-card {
+            background: rgba(30, 30, 45, 0.65);
+            backdrop-filter: blur(14px);
+            border-radius: 28px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .admin-card h2 {
+            margin-top: 0;
+            font-size: 1.4rem;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .admin-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .admin-item {
+            background: rgba(20, 20, 35, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 1rem;
+            border-left: 4px solid #88aaff;
+        }
+        .admin-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .admin-item-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .admin-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: rgba(100, 150, 255, 0.7);
+        }
+        .btn-danger {
+            background: rgba(220, 60, 60, 0.7);
+        }
+        .btn-small {
+            padding: 0.2rem 0.8rem;
+            font-size: 0.75rem;
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: scale(0.97);
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.5rem 0.8rem;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 40px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        textarea {
+            border-radius: 20px;
+            resize: vertical;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            width: auto;
+        }
+        .add-form {
+            margin-top: 1rem;
+        }
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .flex-row .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        hr {
+            margin: 1rem 0;
+            border-color: rgba(255,255,255,0.2);
+        }
+        .status-msg {
+            padding: 0.5rem;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        .icon-preview {
+            font-size: 1.5rem;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>✨ Glossy Touch · Admin Paneli</h1>
+            <a href="index.html" class="logout-link">← Siteye Dön</a>
+        </div>
+
+        <!-- Kart listesi -->
+        <div class="admin-card">
+            <h2>📋 Mevcut Kartlar</h2>
+            <div id="adminCardsList">
+                <div class="status-msg">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <!-- Yeni kart ekleme -->
+        <div class="admin-card">
+            <h2>➕ Yeni Kart Ekle</h2>
+            <div class="add-form">
+                <div class="flex-row">
+                    <div class="form-group" style="flex: 0.8;">
+                        <label>İkon Seç</label>
+                        <select id="newIconSelect">
+                            <option value="✨">✨ Işık</option>
+                            <option value="⚡">⚡ Hız</option>
+                            <option value="📱">📱 Mobil</option>
+                            <option value="🎨">🎨 Tasarım</option>
+                            <option value="🔒">🔒 Güvenlik</option>
+                            <option value="🚀">🚀 Entegrasyon</option>
+                            <option value="🌟">🌟 Yıldız</option>
+                            <option value="💡">💡 Fikir</option>
+                            <option value="🔥">🔥 Trend</option>
+                            <option value="🎯">🎯 Hedef</option>
+                            <option value="💎">💎 Kalite</option>
+                            <option value="❤️">❤️ Sevgi</option>
+                            <option value="👍">👍 Onay</option>
+                            <option value="🤖">🤖 Yapay Zeka</option>
+                            <option value="🧩">🧩 Modüler</option>
+                            <option value="custom">✏️ Özel (yaz)</option>
+                        </select>
+                        <input type="text" id="newIconCustom" placeholder="Özel ikon (emoji veya metin)" style="display:none; margin-top:5px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Başlık *</label>
+                        <input type="text" id="newTitle" placeholder="Örn: Modern Tasarım">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Açıklama *</label>
+                    <textarea id="newDesc" rows="2" placeholder="Kart açıklaması..."></textarea>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Link URL (isteğe bağlı)</label>
+                        <input type="text" id="newLink" placeholder="https://ornek.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="newShowLinkAsUrl"> Link’i URL olarak göster
+                        </label>
+                    </div>
+                </div>
+                <button id="addCardBtn" class="btn btn-primary">➕ Kart Oluştur</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+            authDomain: "duapro-a7d7e.firebaseapp.com",
+            projectId: "duapro-a7d7e",
+            storageBucket: "duapro-a7d7e.appspot.com",
+            messagingSenderId: "450775848659",
+            appId: "1:450775848659:web:ca192a401da3f887e1e626"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const FEATURES_COLLECTION = "featureCards";
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Admin panelinde kartları listele (düzenleme modunda)
+        async function renderAdminList() {
+            const container = document.getElementById("adminCardsList");
+            if (!container) return;
+            try {
+                const querySnapshot = await getDocs(collection(db, FEATURES_COLLECTION));
+                let cards = [];
+                querySnapshot.forEach(docSnap => {
+                    cards.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                if (cards.length === 0) {
+                    container.innerHTML = `<div class="status-msg">📭 Henüz kart yok. Yukarıdaki formdan ekleyin.</div>`;
+                    return;
+                }
+                let html = `<div class="admin-grid">`;
+                cards.forEach((card, idx) => {
+                    const icon = card.icon || "✨";
+                    const title = card.title || "";
+                    const desc = card.description || "";
+                    const link = card.link || "";
+                    const showUrl = card.showLinkAsUrl === true;
+                    
+                    html += `
+                        <div class="admin-item" data-id="${card.id}">
+                            <div class="admin-item-header">
+                                <span class="admin-item-title">${idx+1}. ${escapeHtml(title) || 'Başlıksız'}</span>
+                                <div class="admin-buttons">
+                                    <button class="btn btn-primary btn-small saveEditBtn" data-id="${card.id}">💾 Kaydet</button>
+                                    <button class="btn btn-danger btn-small deleteCardBtn" data-id="${card.id}">🗑 Sil</button>
+                                    <button class="btn btn-small showLinkBtn" data-link="${escapeHtml(link)}" data-title="${escapeHtml(title)}">🔗 Göster Link</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>İkon</label>
+                                <div style="display: flex; gap: 5px;">
+                                    <select class="editIconSelect" data-id="${card.id}" style="flex:1;">
+                                        <option value="✨" ${icon === '✨' ? 'selected' : ''}>✨ Işık</option>
+                                        <option value="⚡" ${icon === '⚡' ? 'selected' : ''}>⚡ Hız</option>
+                                        <option value="📱" ${icon === '📱' ? 'selected' : ''}>📱 Mobil</option>
+                                        <option value="🎨" ${icon === '🎨' ? 'selected' : ''}>🎨 Tasarım</option>
+                                        <option value="🔒" ${icon === '🔒' ? 'selected' : ''}>🔒 Güvenlik</option>
+                                        <option value="🚀" ${icon === '🚀' ? 'selected' : ''}>🚀 Entegrasyon</option>
+                                        <option value="🌟" ${icon === '🌟' ? 'selected' : ''}>🌟 Yıldız</option>
+                                        <option value="💡" ${icon === '💡' ? 'selected' : ''}>💡 Fikir</option>
+                                        <option value="🔥" ${icon === '🔥' ? 'selected' : ''}>🔥 Trend</option>
+                                        <option value="🎯" ${icon === '🎯' ? 'selected' : ''}>🎯 Hedef</option>
+                                        <option value="💎" ${icon === '💎' ? 'selected' : ''}>💎 Kalite</option>
+                                        <option value="❤️" ${icon === '❤️' ? 'selected' : ''}>❤️ Sevgi</option>
+                                        <option value="👍" ${icon === '👍' ? 'selected' : ''}>👍 Onay</option>
+                                        <option value="🤖" ${icon === '🤖' ? 'selected' : ''}>🤖 Yapay Zeka</option>
+                                        <option value="🧩" ${icon === '🧩' ? 'selected' : ''}>🧩 Modüler</option>
+                                        <option value="custom" ${!['✨','⚡','📱','🎨','🔒','🚀','🌟','💡','🔥','🎯','💎','❤️','👍','🤖','🧩'].includes(icon) ? 'selected' : ''}>✏️ Özel</option>
+                                    </select>
+                                    <span class="icon-preview" id="preview-${card.id}">${escapeHtml(icon)}</span>
+                                </div>
+                                <input type="text" class="editIconCustom" data-id="${card.id}" placeholder="Özel ikon" value="${escapeHtml(icon)}" style="display: ${!['✨','⚡','📱','🎨','🔒','🚀','🌟','💡','🔥','🎯','💎','❤️','👍','🤖','🧩'].includes(icon) ? 'block' : 'none'}; margin-top:5px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Başlık</label>
+                                <input type="text" class="editTitle" data-id="${card.id}" value="${escapeHtml(title)}">
+                            </div>
+                            <div class="form-group">
+                                <label>Açıklama</label>
+                                <textarea class="editDesc" data-id="${card.id}" rows="2">${escapeHtml(desc)}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Link URL</label>
+                                <input type="text" class="editLink" data-id="${card.id}" value="${escapeHtml(link)}" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="editShowLinkAsUrl" data-id="${card.id}" ${showUrl ? 'checked' : ''}> Link’i URL olarak göster (ana sayfada)
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+                
+                // Dropdown değişikliklerinde custom input göster/gizle ve preview güncelle
+                document.querySelectorAll('.editIconSelect').forEach(select => {
+                    const id = select.getAttribute('data-id');
+                    const customInput = document.querySelector(`.editIconCustom[data-id="${id}"]`);
+                    const previewSpan = document.getElementById(`preview-${id}`);
+                    const updatePreview = () => {
+                        let val = select.value;
+                        if (val === 'custom') {
+                            val = customInput.value.trim() || '✨';
+                        }
+                        if (previewSpan) previewSpan.textContent = val;
+                    };
+                    select.addEventListener('change', () => {
+                        if (select.value === 'custom') {
+                            customInput.style.display = 'block';
+                        } else {
+                            customInput.style.display = 'none';
+                            updatePreview();
+                        }
+                    });
+                    customInput.addEventListener('input', () => {
+                        if (select.value === 'custom') updatePreview();
+                    });
+                });
+                
+                // Kaydet butonları
+                document.querySelectorAll('.saveEditBtn').forEach(btn => {
+                    btn.addEventListener('click', handleSaveEdit);
+                });
+                document.querySelectorAll('.deleteCardBtn').forEach(btn => {
+                    btn.addEventListener('click', handleDeleteCard);
+                });
+                document.querySelectorAll('.showLinkBtn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const link = btn.getAttribute('data-link') || 'Bağlantı yok';
+                        const title = btn.getAttribute('data-title') || 'Kart';
+                        alert(`"${title}" kartının linki:\n${link}`);
+                    });
+                });
+            } catch (err) {
+                container.innerHTML = `<div class="status-msg">❌ Hata: ${err.message}</div>`;
+            }
+        }
+        
+        async function handleSaveEdit(e) {
+            const btn = e.currentTarget;
+            const cardId = btn.getAttribute('data-id');
+            const iconSelect = document.querySelector(`.editIconSelect[data-id="${cardId}"]`);
+            let icon = iconSelect.value;
+            if (icon === 'custom') {
+                const customInput = document.querySelector(`.editIconCustom[data-id="${cardId}"]`);
+                icon = customInput.value.trim();
+                if (!icon) icon = "✨";
+            }
+            const title = document.querySelector(`.editTitle[data-id="${cardId}"]`).value;
+            const desc = document.querySelector(`.editDesc[data-id="${cardId}"]`).value;
+            const link = document.querySelector(`.editLink[data-id="${cardId}"]`).value;
+            const showUrl = document.querySelector(`.editShowLinkAsUrl[data-id="${cardId}"]`).checked;
+            try {
+                await updateDoc(doc(db, FEATURES_COLLECTION, cardId), {
+                    icon, title, description: desc, link, showLinkAsUrl: showUrl
+                });
+                await renderAdminList();
+            } catch (err) {
+                alert("Güncelleme hatası: " + err.message);
+            }
+        }
+        
+        async function handleDeleteCard(e) {
+            const btn = e.currentTarget;
+            const cardId = btn.getAttribute('data-id');
+            if (confirm("Bu kartı kalıcı olarak silmek istediğinize emin misiniz?")) {
+                try {
+                    await deleteDoc(doc(db, FEATURES_COLLECTION, cardId));
+                    await renderAdminList();
+                } catch (err) {
+                    alert("Silme hatası: " + err.message);
+                }
+            }
+        }
+        
+        // Yeni kart ekleme
+        async function addNewCard() {
+            let icon = document.getElementById("newIconSelect").value;
+            if (icon === 'custom') {
+                const customVal = document.getElementById("newIconCustom").value.trim();
+                icon = customVal || "✨";
+            }
+            const title = document.getElementById("newTitle").value.trim();
+            const description = document.getElementById("newDesc").value.trim();
+            let link = document.getElementById("newLink").value.trim();
+            const showUrl = document.getElementById("newShowLinkAsUrl").checked;
+            if (!title) { alert("Başlık giriniz."); return; }
+            if (!description) { alert("Açıklama giriniz."); return; }
+            if (link && !link.startsWith("http")) link = "https://" + link;
+            try {
+                await addDoc(collection(db, FEATURES_COLLECTION), {
+                    icon, title, description, link, showLinkAsUrl: showUrl
+                });
+                document.getElementById("newTitle").value = "";
+                document.getElementById("newDesc").value = "";
+                document.getElementById("newLink").value = "";
+                document.getElementById("newIconCustom").value = "";
+                document.getElementById("newShowLinkAsUrl").checked = false;
+                await renderAdminList();
+            } catch (err) {
+                alert("Ekleme hatası: " + err.message);
+            }
+        }
+        
+        // Özel ikon input görünürlüğü (yeni kart formu)
+        const newIconSelect = document.getElementById("newIconSelect");
+        const newIconCustom = document.getElementById("newIconCustom");
+        newIconSelect.addEventListener("change", () => {
+            newIconCustom.style.display = newIconSelect.value === "custom" ? "block" : "none";
+        });
+        
+        document.getElementById("addCardBtn").addEventListener("click", addNewCard);
+        
+        // Başlangıç
+        renderAdminList();
+    </script>
+</body>
+</html>
