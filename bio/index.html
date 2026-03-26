@@ -168,16 +168,17 @@
             if (!container) return;
             try {
                 // Sadece aktif kartlar, order'a göre artan sırada
-                const q = query(
-                    collection(db, FEATURES_COLLECTION),
-                    where("active", "==", true),
-                    orderBy("order", "asc")
-                );
-                const querySnapshot = await getDocs(q);
-                let cards = [];
-                querySnapshot.forEach(docSnap => {
-                    cards.push({ id: docSnap.id, ...docSnap.data() });
-                });
+              const q = query(
+    collection(db, FEATURES_COLLECTION),
+    where("active", "==", true)
+);
+const querySnapshot = await getDocs(q);
+let cards = [];
+querySnapshot.forEach(docSnap => {
+    cards.push({ id: docSnap.id, ...docSnap.data() });
+});
+// JavaScript ile order alanına göre sırala
+cards.sort((a, b) => (a.order || 0) - (b.order || 0));
                 if (cards.length === 0) {
                     container.innerHTML = `<div class="glass" style="padding:2rem;">Henüz aktif kart eklenmemiş. Admin panelinden ekleyebilirsiniz.</div>`;
                     return;
