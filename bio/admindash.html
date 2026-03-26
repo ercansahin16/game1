@@ -2,473 +2,583 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Admin Panel - Glossy Touch</title>
     <link rel="stylesheet" href="templatemo-glossy-touch.css">
     <style>
-        /* Admin özel stilleri - minimal ve işlevsel */
+        /* Kompakt Admin Stilleri */
+        * {
+            box-sizing: border-box;
+        }
         body {
-            background: radial-gradient(circle at 10% 20%, rgba(20,30,50,1) 0%, rgba(5,10,20,1) 100%);
-            min-height: 100vh;
+            background: radial-gradient(circle at 10% 20%, #0a0f1a 0%, #03060c 100%);
+            margin: 0;
+            font-family: system-ui, 'Segoe UI', sans-serif;
+            color: #eee;
         }
         .admin-container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
         }
-        .admin-header {
+        /* Top bar - menüler sağda */
+        .admin-topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+            background: rgba(20, 25, 40, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .admin-header h1 {
-            font-size: 1.8rem;
-            margin: 0;
-            background: linear-gradient(135deg, #fff, #aaccff);
+        .admin-logo {
+            font-weight: 600;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #fff, #88aaff);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        .logout-link {
-            background: rgba(255,255,255,0.2);
-            padding: 0.4rem 1rem;
+        .admin-actions {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+        .admin-actions a, .admin-actions button {
+            background: rgba(255,255,255,0.12);
+            border: none;
+            padding: 0.25rem 0.75rem;
             border-radius: 40px;
-            text-decoration: none;
+            font-size: 0.75rem;
             color: white;
-            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
             transition: 0.2s;
         }
-        .logout-link:hover {
-            background: rgba(255,255,255,0.4);
+        .admin-actions a:hover, .admin-actions button:hover {
+            background: rgba(255,255,255,0.25);
         }
-        .admin-card {
-            background: rgba(30, 30, 45, 0.65);
-            backdrop-filter: blur(14px);
-            border-radius: 28px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255,255,255,0.25);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-        }
-        .admin-card h2 {
-            margin-top: 0;
-            font-size: 1.4rem;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            padding-bottom: 0.5rem;
+        /* Filtre/Search bar */
+        .filter-bar {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
             margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+            font-size: 0.8rem;
         }
-        .admin-grid {
+        .filter-bar input, .filter-bar select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 0.3rem 0.8rem;
+            color: white;
+            font-size: 0.8rem;
+        }
+        .filter-bar button {
+            background: rgba(100,150,255,0.5);
+            border: none;
+            border-radius: 30px;
+            padding: 0.3rem 1rem;
+            cursor: pointer;
+            color: white;
+        }
+        /* Kart listesi - kompakt */
+        .cards-list {
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 0.5rem;
         }
-        .admin-item {
-            background: rgba(20, 20, 35, 0.7);
+        .card-row {
+            background: rgba(25, 30, 45, 0.7);
             backdrop-filter: blur(4px);
             border-radius: 20px;
-            padding: 1rem;
+            padding: 0.6rem 1rem;
             border-left: 4px solid #88aaff;
+            transition: 0.1s;
         }
-        .admin-item-header {
+        .card-row.inactive {
+            opacity: 0.6;
+            border-left-color: #888;
+        }
+        .card-row:hover {
+            background: rgba(35, 40, 60, 0.8);
+        }
+        /* İçerik düzeni - satırlar halinde */
+        .row-fields {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.4rem;
         }
-        .admin-item-title {
-            font-weight: bold;
-            font-size: 1.1rem;
+        .field-icon {
+            width: 2rem;
+            text-align: center;
+            font-size: 1.3rem;
         }
-        .admin-buttons {
+        .field-title {
+            flex: 2;
+            min-width: 120px;
+            font-weight: 500;
+        }
+        .field-link {
+            flex: 3;
+            font-size: 0.7rem;
+            color: #aaa;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .field-check {
             display: flex;
-            gap: 0.5rem;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.7rem;
         }
-        .btn {
-            background: rgba(255,255,255,0.2);
+        .action-buttons {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .btn-icon {
+            background: rgba(255,255,255,0.15);
             border: none;
-            padding: 0.3rem 1rem;
-            border-radius: 40px;
-            color: white;
+            border-radius: 20px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
             cursor: pointer;
-            font-size: 0.8rem;
-            transition: 0.2s;
+            color: white;
+            transition: 0.1s;
         }
-        .btn-primary {
-            background: rgba(100, 150, 255, 0.7);
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.3);
         }
         .btn-danger {
-            background: rgba(220, 60, 60, 0.7);
+            background: rgba(200,60,60,0.6);
         }
-        .btn-small {
-            padding: 0.2rem 0.8rem;
-            font-size: 0.75rem;
+        .btn-success {
+            background: rgba(60,160,60,0.6);
         }
-        .btn:hover {
-            background: rgba(255,255,255,0.4);
-            transform: scale(0.97);
+        .expand-details {
+            margin-top: 0.5rem;
+            padding-top: 0.3rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: none;
+            font-size: 0.7rem;
+            grid-template-columns: auto 1fr;
+            gap: 0.3rem 0.8rem;
         }
-        .form-group {
-            margin-bottom: 1rem;
+        .expand-details.active {
+            display: grid;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.3rem;
+        .expand-details label {
             font-weight: 500;
-            font-size: 0.85rem;
         }
-        input, textarea, select {
-            width: 100%;
-            padding: 0.5rem 0.8rem;
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 40px;
+        .expand-details input, .expand-details textarea {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 0.2rem 0.5rem;
             color: white;
-            font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
+            width: 100%;
         }
-        textarea {
-            border-radius: 20px;
+        .expand-details textarea {
             resize: vertical;
         }
-        .checkbox-label {
+        .add-card-form {
+            background: rgba(20, 25, 40, 0.7);
+            border-radius: 24px;
+            padding: 0.8rem 1rem;
+            margin-top: 1.5rem;
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-        .checkbox-label input {
-            width: auto;
-        }
-        .add-form {
-            margin-top: 1rem;
-        }
-        .flex-row {
-            display: flex;
-            gap: 1rem;
             flex-wrap: wrap;
+            gap: 0.6rem;
             align-items: flex-end;
         }
-        .flex-row .form-group {
+        .add-card-form .form-group {
             flex: 1;
-            min-width: 150px;
+            min-width: 120px;
+        }
+        .add-card-form label {
+            font-size: 0.7rem;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+        .add-card-form input, .add-card-form select, .add-card-form textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            color: white;
+        }
+        .add-card-form button {
+            background: #2c6e9e;
+            border: none;
+            border-radius: 30px;
+            padding: 0.3rem 1rem;
+            cursor: pointer;
+            color: white;
+            font-size: 0.75rem;
+        }
+        .bulk-delete {
+            margin-bottom: 0.5rem;
+            text-align: right;
+        }
+        .checkbox-select {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.3rem;
+            vertical-align: middle;
         }
         hr {
-            margin: 1rem 0;
-            border-color: rgba(255,255,255,0.2);
+            margin: 0.5rem 0;
+            border-color: rgba(255,255,255,0.1);
         }
-        .status-msg {
-            padding: 0.5rem;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.5);
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
-        }
-        .icon-preview {
-            font-size: 1.5rem;
-            vertical-align: middle;
-            margin-left: 0.5rem;
+        .small-text {
+            font-size: 0.7rem;
+            color: #aaa;
         }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="admin-header">
-            <h1>✨ Glossy Touch · Admin Paneli</h1>
-            <a href="index.html" class="logout-link">← Siteye Dön</a>
-        </div>
-
-        <!-- Kart listesi -->
-        <div class="admin-card">
-            <h2>📋 Mevcut Kartlar</h2>
-            <div id="adminCardsList">
-                <div class="status-msg">Yükleniyor...</div>
-            </div>
-        </div>
-
-        <!-- Yeni kart ekleme -->
-        <div class="admin-card">
-            <h2>➕ Yeni Kart Ekle</h2>
-            <div class="add-form">
-                <div class="flex-row">
-                    <div class="form-group" style="flex: 0.8;">
-                        <label>İkon Seç</label>
-                        <select id="newIconSelect">
-                            <option value="✨">✨ Işık</option>
-                            <option value="⚡">⚡ Hız</option>
-                            <option value="📱">📱 Mobil</option>
-                            <option value="🎨">🎨 Tasarım</option>
-                            <option value="🔒">🔒 Güvenlik</option>
-                            <option value="🚀">🚀 Entegrasyon</option>
-                            <option value="🌟">🌟 Yıldız</option>
-                            <option value="💡">💡 Fikir</option>
-                            <option value="🔥">🔥 Trend</option>
-                            <option value="🎯">🎯 Hedef</option>
-                            <option value="💎">💎 Kalite</option>
-                            <option value="❤️">❤️ Sevgi</option>
-                            <option value="👍">👍 Onay</option>
-                            <option value="🤖">🤖 Yapay Zeka</option>
-                            <option value="🧩">🧩 Modüler</option>
-                            <option value="custom">✏️ Özel (yaz)</option>
-                        </select>
-                        <input type="text" id="newIconCustom" placeholder="Özel ikon (emoji veya metin)" style="display:none; margin-top:5px;">
-                    </div>
-                    <div class="form-group">
-                        <label>Başlık *</label>
-                        <input type="text" id="newTitle" placeholder="Örn: Modern Tasarım">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Açıklama *</label>
-                    <textarea id="newDesc" rows="2" placeholder="Kart açıklaması..."></textarea>
-                </div>
-                <div class="flex-row">
-                    <div class="form-group">
-                        <label>Link URL (isteğe bağlı)</label>
-                        <input type="text" id="newLink" placeholder="https://ornek.com">
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="newShowLinkAsUrl"> Link’i URL olarak göster
-                        </label>
-                    </div>
-                </div>
-                <button id="addCardBtn" class="btn btn-primary">➕ Kart Oluştur</button>
-            </div>
+<div class="admin-container">
+    <!-- Top bar: logo sol, menüler sağ -->
+    <div class="admin-topbar">
+        <div class="admin-logo">✨ Glossy Touch · Yönetim Paneli</div>
+        <div class="admin-actions">
+            <button id="refreshBtn">🔄 Yenile</button>
+            <a href="index.html" target="_blank">🌐 Siteyi Görüntüle</a>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
-            authDomain: "duapro-a7d7e.firebaseapp.com",
-            projectId: "duapro-a7d7e",
-            storageBucket: "duapro-a7d7e.appspot.com",
-            messagingSenderId: "450775848659",
-            appId: "1:450775848659:web:ca192a401da3f887e1e626"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const FEATURES_COLLECTION = "featureCards";
-        
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-        
-        // Admin panelinde kartları listele (düzenleme modunda)
-        async function renderAdminList() {
-            const container = document.getElementById("adminCardsList");
-            if (!container) return;
-            try {
-                const querySnapshot = await getDocs(collection(db, FEATURES_COLLECTION));
-                let cards = [];
-                querySnapshot.forEach(docSnap => {
-                    cards.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                if (cards.length === 0) {
-                    container.innerHTML = `<div class="status-msg">📭 Henüz kart yok. Yukarıdaki formdan ekleyin.</div>`;
-                    return;
-                }
-                let html = `<div class="admin-grid">`;
-                cards.forEach((card, idx) => {
-                    const icon = card.icon || "✨";
-                    const title = card.title || "";
-                    const desc = card.description || "";
-                    const link = card.link || "";
-                    const showUrl = card.showLinkAsUrl === true;
-                    
-                    html += `
-                        <div class="admin-item" data-id="${card.id}">
-                            <div class="admin-item-header">
-                                <span class="admin-item-title">${idx+1}. ${escapeHtml(title) || 'Başlıksız'}</span>
-                                <div class="admin-buttons">
-                                    <button class="btn btn-primary btn-small saveEditBtn" data-id="${card.id}">💾 Kaydet</button>
-                                    <button class="btn btn-danger btn-small deleteCardBtn" data-id="${card.id}">🗑 Sil</button>
-                                    <button class="btn btn-small showLinkBtn" data-link="${escapeHtml(link)}" data-title="${escapeHtml(title)}">🔗 Göster Link</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>İkon</label>
-                                <div style="display: flex; gap: 5px;">
-                                    <select class="editIconSelect" data-id="${card.id}" style="flex:1;">
-                                        <option value="✨" ${icon === '✨' ? 'selected' : ''}>✨ Işık</option>
-                                        <option value="⚡" ${icon === '⚡' ? 'selected' : ''}>⚡ Hız</option>
-                                        <option value="📱" ${icon === '📱' ? 'selected' : ''}>📱 Mobil</option>
-                                        <option value="🎨" ${icon === '🎨' ? 'selected' : ''}>🎨 Tasarım</option>
-                                        <option value="🔒" ${icon === '🔒' ? 'selected' : ''}>🔒 Güvenlik</option>
-                                        <option value="🚀" ${icon === '🚀' ? 'selected' : ''}>🚀 Entegrasyon</option>
-                                        <option value="🌟" ${icon === '🌟' ? 'selected' : ''}>🌟 Yıldız</option>
-                                        <option value="💡" ${icon === '💡' ? 'selected' : ''}>💡 Fikir</option>
-                                        <option value="🔥" ${icon === '🔥' ? 'selected' : ''}>🔥 Trend</option>
-                                        <option value="🎯" ${icon === '🎯' ? 'selected' : ''}>🎯 Hedef</option>
-                                        <option value="💎" ${icon === '💎' ? 'selected' : ''}>💎 Kalite</option>
-                                        <option value="❤️" ${icon === '❤️' ? 'selected' : ''}>❤️ Sevgi</option>
-                                        <option value="👍" ${icon === '👍' ? 'selected' : ''}>👍 Onay</option>
-                                        <option value="🤖" ${icon === '🤖' ? 'selected' : ''}>🤖 Yapay Zeka</option>
-                                        <option value="🧩" ${icon === '🧩' ? 'selected' : ''}>🧩 Modüler</option>
-                                        <option value="custom" ${!['✨','⚡','📱','🎨','🔒','🚀','🌟','💡','🔥','🎯','💎','❤️','👍','🤖','🧩'].includes(icon) ? 'selected' : ''}>✏️ Özel</option>
-                                    </select>
-                                    <span class="icon-preview" id="preview-${card.id}">${escapeHtml(icon)}</span>
-                                </div>
-                                <input type="text" class="editIconCustom" data-id="${card.id}" placeholder="Özel ikon" value="${escapeHtml(icon)}" style="display: ${!['✨','⚡','📱','🎨','🔒','🚀','🌟','💡','🔥','🎯','💎','❤️','👍','🤖','🧩'].includes(icon) ? 'block' : 'none'}; margin-top:5px;">
-                            </div>
-                            <div class="form-group">
-                                <label>Başlık</label>
-                                <input type="text" class="editTitle" data-id="${card.id}" value="${escapeHtml(title)}">
-                            </div>
-                            <div class="form-group">
-                                <label>Açıklama</label>
-                                <textarea class="editDesc" data-id="${card.id}" rows="2">${escapeHtml(desc)}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Link URL</label>
-                                <input type="text" class="editLink" data-id="${card.id}" value="${escapeHtml(link)}" placeholder="https://...">
-                            </div>
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" class="editShowLinkAsUrl" data-id="${card.id}" ${showUrl ? 'checked' : ''}> Link’i URL olarak göster (ana sayfada)
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-                container.innerHTML = html;
-                
-                // Dropdown değişikliklerinde custom input göster/gizle ve preview güncelle
-                document.querySelectorAll('.editIconSelect').forEach(select => {
-                    const id = select.getAttribute('data-id');
-                    const customInput = document.querySelector(`.editIconCustom[data-id="${id}"]`);
-                    const previewSpan = document.getElementById(`preview-${id}`);
-                    const updatePreview = () => {
-                        let val = select.value;
-                        if (val === 'custom') {
-                            val = customInput.value.trim() || '✨';
-                        }
-                        if (previewSpan) previewSpan.textContent = val;
-                    };
-                    select.addEventListener('change', () => {
-                        if (select.value === 'custom') {
-                            customInput.style.display = 'block';
-                        } else {
-                            customInput.style.display = 'none';
-                            updatePreview();
-                        }
-                    });
-                    customInput.addEventListener('input', () => {
-                        if (select.value === 'custom') updatePreview();
-                    });
-                });
-                
-                // Kaydet butonları
-                document.querySelectorAll('.saveEditBtn').forEach(btn => {
-                    btn.addEventListener('click', handleSaveEdit);
-                });
-                document.querySelectorAll('.deleteCardBtn').forEach(btn => {
-                    btn.addEventListener('click', handleDeleteCard);
-                });
-                document.querySelectorAll('.showLinkBtn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const link = btn.getAttribute('data-link') || 'Bağlantı yok';
-                        const title = btn.getAttribute('data-title') || 'Kart';
-                        alert(`"${title}" kartının linki:\n${link}`);
-                    });
-                });
-            } catch (err) {
-                container.innerHTML = `<div class="status-msg">❌ Hata: ${err.message}</div>`;
-            }
-        }
-        
-        async function handleSaveEdit(e) {
-            const btn = e.currentTarget;
-            const cardId = btn.getAttribute('data-id');
-            const iconSelect = document.querySelector(`.editIconSelect[data-id="${cardId}"]`);
-            let icon = iconSelect.value;
-            if (icon === 'custom') {
-                const customInput = document.querySelector(`.editIconCustom[data-id="${cardId}"]`);
-                icon = customInput.value.trim();
-                if (!icon) icon = "✨";
-            }
-            const title = document.querySelector(`.editTitle[data-id="${cardId}"]`).value;
-            const desc = document.querySelector(`.editDesc[data-id="${cardId}"]`).value;
-            const link = document.querySelector(`.editLink[data-id="${cardId}"]`).value;
-            const showUrl = document.querySelector(`.editShowLinkAsUrl[data-id="${cardId}"]`).checked;
-            try {
-                await updateDoc(doc(db, FEATURES_COLLECTION, cardId), {
-                    icon, title, description: desc, link, showLinkAsUrl: showUrl
-                });
-                await renderAdminList();
-            } catch (err) {
-                alert("Güncelleme hatası: " + err.message);
-            }
-        }
-        
-        async function handleDeleteCard(e) {
-            const btn = e.currentTarget;
-            const cardId = btn.getAttribute('data-id');
-            if (confirm("Bu kartı kalıcı olarak silmek istediğinize emin misiniz?")) {
-                try {
-                    await deleteDoc(doc(db, FEATURES_COLLECTION, cardId));
-                    await renderAdminList();
-                } catch (err) {
-                    alert("Silme hatası: " + err.message);
-                }
-            }
-        }
-        
-        // Yeni kart ekleme
-        async function addNewCard() {
-            let icon = document.getElementById("newIconSelect").value;
-            if (icon === 'custom') {
-                const customVal = document.getElementById("newIconCustom").value.trim();
-                icon = customVal || "✨";
-            }
-            const title = document.getElementById("newTitle").value.trim();
-            const description = document.getElementById("newDesc").value.trim();
-            let link = document.getElementById("newLink").value.trim();
-            const showUrl = document.getElementById("newShowLinkAsUrl").checked;
-            if (!title) { alert("Başlık giriniz."); return; }
-            if (!description) { alert("Açıklama giriniz."); return; }
-            if (link && !link.startsWith("http")) link = "https://" + link;
-            try {
-                await addDoc(collection(db, FEATURES_COLLECTION), {
-                    icon, title, description, link, showLinkAsUrl: showUrl
-                });
-                document.getElementById("newTitle").value = "";
-                document.getElementById("newDesc").value = "";
-                document.getElementById("newLink").value = "";
-                document.getElementById("newIconCustom").value = "";
-                document.getElementById("newShowLinkAsUrl").checked = false;
-                await renderAdminList();
-            } catch (err) {
-                alert("Ekleme hatası: " + err.message);
-            }
-        }
-        
-        // Özel ikon input görünürlüğü (yeni kart formu)
-        const newIconSelect = document.getElementById("newIconSelect");
-        const newIconCustom = document.getElementById("newIconCustom");
-        newIconSelect.addEventListener("change", () => {
-            newIconCustom.style.display = newIconSelect.value === "custom" ? "block" : "none";
+    <!-- Filtreleme ve araçlar -->
+    <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Başlık veya link ara..." style="width: 200px;">
+        <select id="filterActive">
+            <option value="all">Tümü</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Pasif</option>
+        </select>
+        <select id="sortBy">
+            <option value="order">Sıra (varsayılan)</option>
+            <option value="title">Başlık A-Z</option>
+            <option value="date">Oluşturma tarihi</option>
+        </select>
+        <button id="bulkDeleteBtn" class="btn-danger">🗑 Seçilenleri Sil</button>
+        <span class="small-text" id="cardCount"></span>
+    </div>
+
+    <!-- Kart listesi (kompakt) -->
+    <div id="cardsContainer" class="cards-list">
+        <div class="small-text" style="padding:1rem;">Yükleniyor...</div>
+    </div>
+
+    <!-- Yeni kart ekleme formu (kompakt) -->
+    <div class="add-card-form">
+        <div class="form-group">
+            <label>İkon</label>
+            <select id="newIconSelect">
+                <option value="✨">✨ Işık</option>
+                <option value="⚡">⚡ Hız</option>
+                <option value="📱">📱 Mobil</option>
+                <option value="🎨">🎨 Tasarım</option>
+                <option value="🔒">🔒 Güvenlik</option>
+                <option value="🚀">🚀 Entegrasyon</option>
+                <option value="🌟">🌟 Yıldız</option>
+                <option value="💡">💡 Fikir</option>
+                <option value="🔥">🔥 Trend</option>
+                <option value="🎯">🎯 Hedef</option>
+                <option value="custom">✏️ Özel</option>
+            </select>
+            <input type="text" id="newIconCustom" placeholder="Özel ikon" style="display:none; margin-top:3px;">
+        </div>
+        <div class="form-group">
+            <label>Başlık *</label>
+            <input type="text" id="newTitle" placeholder="Kart başlığı">
+        </div>
+        <div class="form-group">
+            <label>Açıklama</label>
+            <textarea id="newDesc" rows="1" placeholder="Kısa açıklama"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Link (URL)</label>
+            <input type="text" id="newLink" placeholder="https://...">
+        </div>
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap:5px;">
+                <input type="checkbox" id="newShowUrl"> URL göster
+            </label>
+        </div>
+        <button id="addCardBtn">➕ Ekle</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, writeBatch, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+        authDomain: "duapro-a7d7e.firebaseapp.com",
+        projectId: "duapro-a7d7e",
+        storageBucket: "duapro-a7d7e.appspot.com",
+        messagingSenderId: "450775848659",
+        appId: "1:450775848659:web:ca192a401da3f887e1e626"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const FEATURES_COLLECTION = "featureCards";
+
+    let allCards = []; // { id, icon, title, description, link, showLinkAsUrl, active, order, createdAt }
+
+    // Yardımcı
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
         });
-        
-        document.getElementById("addCardBtn").addEventListener("click", addNewCard);
-        
-        // Başlangıç
-        renderAdminList();
-    </script>
+    }
+
+    // Verileri çek ve render et
+    async function loadCards() {
+        const snapshot = await getDocs(collection(db, FEATURES_COLLECTION));
+        const cards = [];
+        snapshot.forEach(docSnap => {
+            let data = docSnap.data();
+            cards.push({
+                id: docSnap.id,
+                icon: data.icon || '✨',
+                title: data.title || '',
+                description: data.description || '',
+                link: data.link || '',
+                showLinkAsUrl: data.showLinkAsUrl === true,
+                active: data.active !== false, // varsayılan true
+                order: typeof data.order === 'number' ? data.order : 9999,
+                createdAt: data.createdAt || Date.now()
+            });
+        });
+        // Sırala
+        cards.sort((a,b) => a.order - b.order);
+        allCards = cards;
+        applyFilterAndRender();
+    }
+
+    // Filtreleme ve sıralama uygula
+    function applyFilterAndRender() {
+        let filtered = [...allCards];
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const activeFilter = document.getElementById('filterActive').value;
+        const sortBy = document.getElementById('sortBy').value;
+
+        if (searchTerm) {
+            filtered = filtered.filter(c => c.title.toLowerCase().includes(searchTerm) || (c.link && c.link.toLowerCase().includes(searchTerm)));
+        }
+        if (activeFilter === 'active') filtered = filtered.filter(c => c.active === true);
+        if (activeFilter === 'inactive') filtered = filtered.filter(c => c.active === false);
+
+        if (sortBy === 'title') filtered.sort((a,b) => a.title.localeCompare(b.title));
+        if (sortBy === 'date') filtered.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        if (sortBy === 'order') filtered.sort((a,b) => a.order - b.order);
+
+        renderCards(filtered);
+        document.getElementById('cardCount').innerText = `${filtered.length} / ${allCards.length} kart`;
+    }
+
+    // Kartları render et (kompakt satırlar)
+    function renderCards(cards) {
+        const container = document.getElementById('cardsContainer');
+        if (!cards.length) {
+            container.innerHTML = '<div class="small-text" style="padding:1rem;">📭 Henüz kart yok. Yeni ekleyin.</div>';
+            return;
+        }
+        let html = '';
+        cards.forEach(card => {
+            const activeClass = card.active ? '' : 'inactive';
+            const linkPreview = card.link ? (card.link.length > 40 ? card.link.substr(0,40)+'…' : card.link) : 'Bağlantı yok';
+            html += `
+                <div class="card-row ${activeClass}" data-id="${card.id}">
+                    <div class="row-fields">
+                        <input type="checkbox" class="checkbox-select card-select" data-id="${card.id}" style="width:18px; margin:0 5px 0 0;">
+                        <div class="field-icon">${escapeHtml(card.icon)}</div>
+                        <div class="field-title">${escapeHtml(card.title)}</div>
+                        <div class="field-link">🔗 ${escapeHtml(linkPreview)}</div>
+                        <div class="field-check">
+                            <label style="display:flex; align-items:center; gap:3px;">
+                                <input type="checkbox" class="active-toggle" data-id="${card.id}" ${card.active ? 'checked' : ''}> Aktif
+                            </label>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-icon move-up" data-id="${card.id}" ${cards.indexOf(card) === 0 ? 'disabled' : ''}>▲</button>
+                            <button class="btn-icon move-down" data-id="${card.id}" ${cards.indexOf(card) === cards.length-1 ? 'disabled' : ''}>▼</button>
+                            <button class="btn-icon duplicate-btn" data-id="${card.id}">📋 Çoğalt</button>
+                            <button class="btn-icon expand-btn" data-id="${card.id}">✏️ Detay</button>
+                            <button class="btn-icon btn-danger delete-btn" data-id="${card.id}">🗑</button>
+                        </div>
+                    </div>
+                    <div class="expand-details" id="expand-${card.id}">
+                        <label>İkon:</label><input type="text" class="edit-icon" data-id="${card.id}" value="${escapeHtml(card.icon)}">
+                        <label>Başlık:</label><input type="text" class="edit-title" data-id="${card.id}" value="${escapeHtml(card.title)}">
+                        <label>Açıklama:</label><textarea class="edit-desc" data-id="${card.id}" rows="2">${escapeHtml(card.description)}</textarea>
+                        <label>Link:</label><input type="text" class="edit-link" data-id="${card.id}" value="${escapeHtml(card.link)}">
+                        <label>URL göster:</label><input type="checkbox" class="edit-showUrl" data-id="${card.id}" ${card.showLinkAsUrl ? 'checked' : ''}>
+                        <div style="grid-column:1/-1; text-align:right;">
+                            <button class="btn-icon save-details" data-id="${card.id}">💾 Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        // Olayları bağla
+        document.querySelectorAll('.active-toggle').forEach(cb => {
+            cb.addEventListener('change', async (e) => {
+                const id = cb.dataset.id;
+                const active = cb.checked;
+                await updateDoc(doc(db, FEATURES_COLLECTION, id), { active });
+                await loadCards();
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                if (confirm('Bu kartı silmek istediğinize emin misiniz?')) {
+                    await deleteDoc(doc(db, FEATURES_COLLECTION, btn.dataset.id));
+                    await loadCards();
+                }
+            });
+        });
+        document.querySelectorAll('.duplicate-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.dataset.id;
+                const original = allCards.find(c => c.id === id);
+                if (original) {
+                    const newOrder = allCards.length + 1;
+                    await addDoc(collection(db, FEATURES_COLLECTION), {
+                        icon: original.icon,
+                        title: original.title + ' (kopya)',
+                        description: original.description,
+                        link: original.link,
+                        showLinkAsUrl: original.showLinkAsUrl,
+                        active: original.active,
+                        order: newOrder,
+                        createdAt: Date.now()
+                    });
+                    await loadCards();
+                }
+            });
+        });
+        document.querySelectorAll('.move-up, .move-down').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.dataset.id;
+                const currentCards = [...allCards].sort((a,b) => a.order - b.order);
+                const index = currentCards.findIndex(c => c.id === id);
+                if (index === -1) return;
+                const newIndex = btn.classList.contains('move-up') ? index-1 : index+1;
+                if (newIndex < 0 || newIndex >= currentCards.length) return;
+                // swap order values
+                const card1 = currentCards[index];
+                const card2 = currentCards[newIndex];
+                const batch = writeBatch(db);
+                batch.update(doc(db, FEATURES_COLLECTION, card1.id), { order: card2.order });
+                batch.update(doc(db, FEATURES_COLLECTION, card2.id), { order: card1.order });
+                await batch.commit();
+                await loadCards();
+            });
+        });
+        document.querySelectorAll('.expand-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const div = document.getElementById(`expand-${btn.dataset.id}`);
+                div.classList.toggle('active');
+            });
+        });
+        document.querySelectorAll('.save-details').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.dataset.id;
+                const newIcon = document.querySelector(`.edit-icon[data-id="${id}"]`).value;
+                const newTitle = document.querySelector(`.edit-title[data-id="${id}"]`).value;
+                const newDesc = document.querySelector(`.edit-desc[data-id="${id}"]`).value;
+                const newLink = document.querySelector(`.edit-link[data-id="${id}"]`).value;
+                const newShowUrl = document.querySelector(`.edit-showUrl[data-id="${id}"]`).checked;
+                await updateDoc(doc(db, FEATURES_COLLECTION, id), {
+                    icon: newIcon,
+                    title: newTitle,
+                    description: newDesc,
+                    link: newLink,
+                    showLinkAsUrl: newShowUrl
+                });
+                await loadCards();
+            });
+        });
+    }
+
+    // Yeni kart ekleme
+    async function addCard() {
+        let icon = document.getElementById('newIconSelect').value;
+        if (icon === 'custom') {
+            icon = document.getElementById('newIconCustom').value.trim();
+            if (!icon) icon = '✨';
+        }
+        const title = document.getElementById('newTitle').value.trim();
+        const desc = document.getElementById('newDesc').value.trim();
+        let link = document.getElementById('newLink').value.trim();
+        const showUrl = document.getElementById('newShowUrl').checked;
+
+        if (!title) { alert('Başlık gerekli'); return; }
+        if (link && !link.startsWith('http')) link = 'https://' + link;
+
+        const newOrder = allCards.length + 1;
+        await addDoc(collection(db, FEATURES_COLLECTION), {
+            icon, title, description: desc, link, showLinkAsUrl: showUrl,
+            active: true, order: newOrder, createdAt: Date.now()
+        });
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newDesc').value = '';
+        document.getElementById('newLink').value = '';
+        document.getElementById('newIconCustom').value = '';
+        document.getElementById('newShowUrl').checked = false;
+        await loadCards();
+    }
+
+    // Toplu silme
+    async function bulkDelete() {
+        const selected = Array.from(document.querySelectorAll('.card-select:checked')).map(cb => cb.dataset.id);
+        if (!selected.length) { alert('Hiç kart seçilmedi'); return; }
+        if (confirm(`${selected.length} kartı silmek istediğinize emin misiniz?`)) {
+            const batch = writeBatch(db);
+            selected.forEach(id => batch.delete(doc(db, FEATURES_COLLECTION, id)));
+            await batch.commit();
+            await loadCards();
+        }
+    }
+
+    // Olay dinleyiciler
+    document.getElementById('refreshBtn').addEventListener('click', () => loadCards());
+    document.getElementById('bulkDeleteBtn').addEventListener('click', bulkDelete);
+    document.getElementById('addCardBtn').addEventListener('click', addCard);
+    document.getElementById('searchInput').addEventListener('input', () => applyFilterAndRender());
+    document.getElementById('filterActive').addEventListener('change', () => applyFilterAndRender());
+    document.getElementById('sortBy').addEventListener('change', () => applyFilterAndRender());
+
+    // Özel ikon gösterimi
+    document.getElementById('newIconSelect').addEventListener('change', (e) => {
+        const customInput = document.getElementById('newIconCustom');
+        customInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
+    });
+
+    // Başlangıç
+    loadCards();
+</script>
 </body>
 </html>
