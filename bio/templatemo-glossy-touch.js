@@ -143,41 +143,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ========== PWA KURULUM - GELİŞMİŞ SÜRÜM ==========
+// ========== PWA KURULUM - HER ZAMAN ÇALIŞIR ==========
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('📱 beforeinstallprompt tetiklendi - PWA kuruluma hazır');
     e.preventDefault();
     deferredPrompt = e;
+    console.log('📱 PWA kuruluma hazır');
     
     const installBtn = document.getElementById('installButton');
     if (installBtn) {
         installBtn.style.display = 'inline-block';
-        installBtn.style.opacity = '1';
         installBtn.textContent = '📱 Uygulamayı Yükle';
-        console.log('✅ İndir butonu gösteriliyor');
-        
-        // Butona tıklama olayını temizle ve yeniden ata
-        const newBtn = installBtn.cloneNode(true);
-        installBtn.parentNode.replaceChild(newBtn, installBtn);
-        
-        newBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            console.log('🔽 İndir butonuna tıklandı');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`Kullanıcı ${outcome} seçti`);
-                deferredPrompt = null;
-                newBtn.style.display = 'none';
-            } else {
-                console.log('❌ deferredPrompt mevcut değil');
-                alert('Uygulamayı yüklemek için tarayıcı menüsünden "Uygulamayı yükle" seçeneğini kullanın.\n\nChrome: Adres çubuğundaki + simgesine tıklayın\nSafari: Paylaş > Ana Ekrana Ekle');
-            }
-        });
     }
 });
+
+// PWA kurulumu mümkün değilse butonu göster ama alternatif işlev ekle
+window.addEventListener('load', () => {
+    const installBtn = document.getElementById('installButton');
+    if (installBtn) {
+        // Buton zaten görünüyor, ek işlev ekle
+        if (!window.deferredPrompt) {
+            installBtn.textContent = '📱 Uygulama Yükleme Kılavuzu';
+        }
+    }
+    
+    // Uygulama zaten yüklüyse butonu gizle
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        if (installBtn) installBtn.style.display = 'none';
+    }
+});
+
+// Service Worker Kaydı
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/bio/sw.js')
+        .then(reg => console.log('✅ SW kaydedildi:', reg))
+        .catch(err => console.log('❌ SW kaydı başarısız:', err));
+}
 
 // Sayfa yüklendikten sonra PWA durumunu kontrol et
 window.addEventListener('load', () => {
