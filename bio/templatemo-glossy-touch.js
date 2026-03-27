@@ -68,9 +68,7 @@ async function renderFrontendCards() {
     }
 }
 
-// Sayfa Geçişleri ve Hamburger Menü
-let currentPage = 'home';
-
+// Sayfa Geçişleri
 window.showPage = function(pageId) {
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
@@ -84,30 +82,51 @@ window.showPage = function(pageId) {
         }
     });
     
-    currentPage = pageId;
-    
     const footer = document.getElementById('footer');
     const activePage = document.getElementById(pageId);
-    activePage.appendChild(footer);
+    if (footer && activePage) {
+        activePage.appendChild(footer);
+    }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // Mobil menüyü kapat
     const navLinks = document.getElementById('navLinks');
-    if (navLinks.classList.contains('active')) {
+    if (navLinks && navLinks.classList.contains('active')) {
         navLinks.classList.remove('active');
     }
 };
 
-// Hamburger Menü Toggle
-document.addEventListener('DOMContentLoaded', () => {
+// ========== HAMBURGER MENÜ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM yüklendi - hamburger menü hazırlanıyor');
+    
     const hamburger = document.getElementById('hamburgerBtn');
     const navLinks = document.getElementById('navLinks');
     
-    if (hamburger) {
-        hamburger.addEventListener('click', () => {
+    if (hamburger && navLinks) {
+        console.log('✅ Buton ve menü bulundu');
+        
+        hamburger.addEventListener('click', function(e) {
+            e.stopPropagation();
             navLinks.classList.toggle('active');
+            console.log('Menü durumu:', navLinks.classList.contains('active') ? 'açıldı' : 'kapandı');
         });
+        
+        // Sayfa dışına tıklayınca menüyü kapat
+        document.addEventListener('click', function(event) {
+            if (navLinks.classList.contains('active') && 
+                !navLinks.contains(event.target) && 
+                !hamburger.contains(event.target)) {
+                navLinks.classList.remove('active');
+                console.log('Menü dışarı tıklama ile kapandı');
+            }
+        });
+        
+    } else {
+        console.error('❌ Buton veya menü bulunamadı!');
+        console.log('hamburgerBtn:', hamburger);
+        console.log('navLinks:', navLinks);
     }
     
     // Footer'ı home sayfasına taşı
