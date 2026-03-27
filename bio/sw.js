@@ -1,13 +1,12 @@
 const CACHE_NAME = 'glossy-touch-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/admindash.html',
-  '/templatemo-glossy-touch.css',
-  '/templatemo-glossy-touch.js',
-  '/manifest.json',
-  '/images/templatemo-futuristic-girl.jpg'
-  // Gerekirse başka statik dosyaları da ekleyin (örneğin ikonlar)
+  '/bio/',
+  '/bio/index.html',
+  '/bio/admindash.html',
+  '/bio/templatemo-glossy-touch.css',
+  '/bio/templatemo-glossy-touch.js',
+  '/bio/images/templatemo-futuristic-girl.jpg',
+  '/bio/manifest.json'
 ];
 
 self.addEventListener('install', event => {
