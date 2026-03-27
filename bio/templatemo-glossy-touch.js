@@ -135,33 +135,91 @@ document.addEventListener('DOMContentLoaded', function() {
     if (footer && homePage) {
         homePage.appendChild(footer);
     }
+    
+    // İndir butonunu başlangıçta gizle, PWA hazır olunca göster
+    const installBtn = document.getElementById('installButton');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
 });
 
-// PWA Kurulum
+// ========== PWA KURULUM - GELİŞMİŞ SÜRÜM ==========
 let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('📱 beforeinstallprompt tetiklendi - PWA kuruluma hazır');
     e.preventDefault();
     deferredPrompt = e;
+    
     const installBtn = document.getElementById('installButton');
     if (installBtn) {
         installBtn.style.display = 'inline-block';
-        installBtn.addEventListener('click', async () => {
+        installBtn.style.opacity = '1';
+        installBtn.textContent = '📱 Uygulamayı Yükle';
+        console.log('✅ İndir butonu gösteriliyor');
+        
+        // Butona tıklama olayını temizle ve yeniden ata
+        const newBtn = installBtn.cloneNode(true);
+        installBtn.parentNode.replaceChild(newBtn, installBtn);
+        
+        newBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log('🔽 İndir butonuna tıklandı');
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 console.log(`Kullanıcı ${outcome} seçti`);
                 deferredPrompt = null;
-                installBtn.style.display = 'none';
+                newBtn.style.display = 'none';
+            } else {
+                console.log('❌ deferredPrompt mevcut değil');
+                alert('Uygulamayı yüklemek için tarayıcı menüsünden "Uygulamayı yükle" seçeneğini kullanın.\n\nChrome: Adres çubuğundaki + simgesine tıklayın\nSafari: Paylaş > Ana Ekrana Ekle');
             }
         });
     }
 });
 
-// Service Worker
+// Sayfa yüklendikten sonra PWA durumunu kontrol et
+window.addEventListener('load', () => {
+    // Uygulama zaten standalone modunda çalışıyorsa butonu gizle
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('✅ Uygulama standalone modunda çalışıyor');
+        const installBtn = document.getElementById('installButton');
+        if (installBtn) installBtn.style.display = 'none';
+    }
+    
+    // HTTPS kontrolü
+    if (location.protocol !== 'https:') {
+        console.warn('⚠️ PWA HTTPS üzerinde çalışmalıdır');
+    }
+    
+    // Service Worker durumunu kontrol et
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+            if (reg) {
+                console.log('✅ Service Worker kayıtlı:', reg);
+            } else {
+                console.log('⚠️ Service Worker kaydı bulunamadı');
+            }
+        });
+    }
+});
+
+// ========== SERVICE WORKER KAYDI ==========
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/bio/sw.js')
-        .then(reg => console.log('SW kaydedildi:', reg))
-        .catch(err => console.log('SW kaydı başarısız:', err));
+        .then(reg => {
+            console.log('✅ SW kaydedildi:', reg);
+            // Service Worker durumunu dinle
+            if (reg.installing) {
+                console.log('📦 Service Worker kuruluyor...');
+            } else if (reg.waiting) {
+                console.log('⏳ Service Worker bekliyor');
+            } else if (reg.active) {
+                console.log('🚀 Service Worker aktif');
+            }
+        })
+        .catch(err => console.log('❌ SW kaydı başarısız:', err));
 }
 
 // Logo tıklaması
@@ -169,3 +227,5 @@ document.querySelector('.logo')?.addEventListener('click', () => showPage('home'
 
 // Kartları yükle
 renderFrontendCards();
+
+console.log('🎉 Glossy Touch başlatıldı - PWA hazır');
