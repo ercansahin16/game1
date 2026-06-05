@@ -240,6 +240,15 @@ async function loadLessons() {
 }
 
 async function createDemoLessons() {
+    // Önce mevcut dersleri kontrol et
+    const lessonsRef = collection(db, 'lessons');
+    const existingLessons = await getDocs(lessonsRef);
+    
+    if (!existingLessons.empty) {
+        console.log("Dersler zaten mevcut, demo eklenmiyor");
+        return;
+    }
+    
     const demoLessons = [
         { name: "Ders 1", description: "Temel Kelimeler", order: 1 },
         { name: "Ders 2", description: "Günlük Hayat", order: 2 },
@@ -278,6 +287,8 @@ async function createDemoLessons() {
             });
         }
     }
+    
+    console.log("Demo dersler ve kelimeler oluşturuldu");
 }
 
 async function loadUserLessons() {
@@ -638,45 +649,86 @@ function showAdminPanel() {
 }
 
 async function loadAllLessonsForAdmin() {
-    const lessonsRef = collection(db, 'lessons');
-    const q = query(lessonsRef, orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
-    
-    lessons = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    }));
-    
-    displayLessonsForAdmin();
+    try {
+        const lessonsRef = collection(db, 'lessons');
+        const q = query(lessonsRef, orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        
+        // Benzersiz dersleri al (id bazında)
+        const lessonsMap = new Map();
+        snapshot.docs.forEach(doc => {
+            if (!lessonsMap.has(doc.id)) {
+                lessonsMap.set(doc.id, {
+                    id: doc.id,
+                    ...doc.data()
+                });
+            }
+        });
+        
+        lessons = Array.from(lessonsMap.values());
+        
+        displayLessonsForAdmin();
+    } catch (error) {
+        console.error('Dersler yüklenirken hata:', error);
+        const container = document.getElementById('lessonsAdminList');
+        if (container) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color: red;">❌ Bağlantı hatası! İnternetinizi kontrol edin.</div>';
+        }
+        showNotification('❌ Firebase bağlantı hatası! Lütfen internet bağlantınızı kontrol edin.');
+    }
 }
 
 function displayLessonsForAdmin() {
     const container = document.getElementById('lessonsAdminList');
     if (!container) return;
     
+    // Temizle
     container.innerHTML = '';
     
-    if (lessons.length === 0) {
+    if (!lessons || lessons.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz ders eklenmemiş. "Yeni Ders" butonuna tıklayın.</div>';
         return;
     }
     
+    // Benzersiz dersleri göster (id'ye göre)
+    const uniqueLessons = [];
+    const seenIds = new Set();
+    
     for (const lesson of lessons) {
+        if (!seenIds.has(lesson.id)) {
+            seenIds.add(lesson.id);
+            uniqueLessons.push(lesson);
+        }
+    }
+    
+    for (const lesson of uniqueLessons) {
         const lessonDiv = document.createElement('div');
         lessonDiv.className = 'lesson-admin-item';
+        lessonDiv.setAttribute('data-lesson-id', lesson.id);
         lessonDiv.innerHTML = `
             <div class="lesson-info">
-                <h4><i class="fas fa-book"></i> ${lesson.name}</h4>
-                <p>${lesson.description || 'Açıklama yok'} | Sıra: ${lesson.order || 0}</p>
+                <h4><i class="fas fa-book"></i> ${escapeHtml(lesson.name)}</h4>
+                <p>${escapeHtml(lesson.description || 'Açıklama yok')} | Sıra: ${lesson.order || 0}</p>
             </div>
             <div class="lesson-actions">
                 <button class="btn-warning" onclick="window.editLesson('${lesson.id}')"><i class="fas fa-edit"></i> Düzenle</button>
                 <button class="btn-danger" onclick="window.deleteLesson('${lesson.id}')"><i class="fas fa-trash"></i> Sil</button>
-                <button class="btn-success" onclick="window.selectLessonForWords('${lesson.id}', '${lesson.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
+                <button class="btn-success" onclick="window.selectLessonForWords('${lesson.id}', '${escapeHtml(lesson.name).replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
             </div>
         `;
         container.appendChild(lessonDiv);
     }
+}
+
+// HTML escape fonksiyonu (XSS koruması için)
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 async function selectLessonForWords(lessonId, lessonName) {
@@ -782,10 +834,20 @@ async function saveLesson() {
     
     try {
         if (lessonId) {
+            // Güncelleme
             await updateDoc(doc(db, 'lessons', lessonId), { name, description });
             showNotification('✅ Ders güncellendi!');
         } else {
+            // Yeni ders ekle - önce aynı isimde ders var mı kontrol et
             const lessonsRef = collection(db, 'lessons');
+            const q = query(lessonsRef, where('name', '==', name));
+            const existing = await getDocs(q);
+            
+            if (!existing.empty) {
+                showNotification('❌ Bu isimde bir ders zaten var!');
+                return;
+            }
+            
             const snapshot = await getDocs(lessonsRef);
             const order = snapshot.size + 1;
             
@@ -819,9 +881,20 @@ async function saveWord() {
     
     try {
         if (wordId) {
+            // Güncelleme
             await updateDoc(doc(db, 'words', wordId), { arabic, turkish });
             showNotification('✅ Kelime güncellendi!');
         } else {
+            // Yeni kelime ekle - aynı kelime aynı derste var mı kontrol et
+            const wordsRef = collection(db, 'words');
+            const q = query(wordsRef, where('lessonId', '==', currentEditingLesson), where('arabic', '==', arabic));
+            const existing = await getDocs(q);
+            
+            if (!existing.empty) {
+                showNotification('❌ Bu kelime bu derste zaten var!');
+                return;
+            }
+            
             const newWordRef = doc(collection(db, 'words'));
             await setDoc(newWordRef, { arabic, turkish, lessonId: currentEditingLesson });
             showNotification('✅ Yeni kelime eklendi!');
