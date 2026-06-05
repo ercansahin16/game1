@@ -625,8 +625,16 @@ function authenticateAdmin(password) {
 function showAdminPanel() {
     const adminLoginSection = document.getElementById('adminLoginSection');
     const adminPanel = document.getElementById('adminPanel');
-    if (adminLoginSection) adminLoginSection.classList.add('hidden');
-    if (adminPanel) adminPanel.classList.remove('hidden');
+    
+    if (adminLoginSection) {
+        adminLoginSection.classList.add('hidden');
+        adminLoginSection.style.display = 'none';
+    }
+    
+    if (adminPanel) {
+        adminPanel.classList.remove('hidden');
+        adminPanel.style.display = 'block';
+    }
 }
 
 async function loadAllLessonsForAdmin() {
