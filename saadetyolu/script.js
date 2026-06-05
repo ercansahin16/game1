@@ -58,7 +58,7 @@ let totalWordCountEl, lessonWordCountEl;
 let progressFill, progressPercent;
 let lessonsGrid;
 
-// Ses
+// Sesss
 let speechSynthesis = window.speechSynthesis;
 let currentUtterance = null;
 
