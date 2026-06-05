@@ -147,32 +147,39 @@ function initUserPage() {
     loadTheme();
     
     // Auth durumunu izle
-    auth.onAuthStateChanged((user) => {
-        const loginSection = document.getElementById('loginSection');
-        const learningSection = document.getElementById('learningSection');
-        const menuBtn = document.getElementById('menuBtn');
-        const userBadge = document.getElementById('userBadge');
-        const menuUserName = document.getElementById('menuUserName');
-        const userNameDisplay = document.getElementById('userNameDisplay');
+   // Auth durumunu izle (initUserPage içinde)
+auth.onAuthStateChanged(async (user) => {
+    const loginSection = document.getElementById('loginSection');
+    const learningSection = document.getElementById('learningSection');
+    const menuBtn = document.getElementById('menuBtn');
+    const userBadge = document.getElementById('userBadge');
+    const menuUserName = document.getElementById('menuUserName');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    
+    if (user) {
+        console.log("Kullanıcı giriş yaptı:", user.email);
+        currentUser = user;
+        if (loginSection) loginSection.style.display = 'none';
+        if (learningSection) learningSection.style.display = 'block';
+        if (menuBtn) menuBtn.classList.remove('hidden');
+        if (userBadge) userBadge.classList.remove('hidden');
+        if (menuUserName) menuUserName.innerText = user.email.split('@')[0];
+        if (userNameDisplay) userNameDisplay.innerText = user.email.split('@')[0];
         
-        if (user) {
-            currentUser = user;
-            if (loginSection) loginSection.style.display = 'none';
-            if (learningSection) learningSection.style.display = 'block';
-            if (menuBtn) menuBtn.classList.remove('hidden');
-            if (userBadge) userBadge.classList.remove('hidden');
-            if (menuUserName) menuUserName.innerText = user.email.split('@')[0];
-            if (userNameDisplay) userNameDisplay.innerText = user.email.split('@')[0];
-            loadLessons();
-            loadUserLessons();
-        } else {
-            currentUser = null;
-            if (loginSection) loginSection.style.display = 'flex';
-            if (learningSection) learningSection.style.display = 'none';
-            if (menuBtn) menuBtn.classList.add('hidden');
-            if (userBadge) userBadge.classList.add('hidden');
-        }
-    });
+        // ÖNCE dersleri yükle, sonra kullanıcının derslerini göster
+        await loadLessons();
+        await loadUserLessons();
+        
+        console.log("Dersler yüklendi, gösteriliyor...");
+    } else {
+        console.log("Kullanıcı çıkış yaptı");
+        currentUser = null;
+        if (loginSection) loginSection.style.display = 'flex';
+        if (learningSection) learningSection.style.display = 'none';
+        if (menuBtn) menuBtn.classList.add('hidden');
+        if (userBadge) userBadge.classList.add('hidden');
+    }
+});
 }
 
 // ========== MENÜ FONKSİYONLARI ==========
@@ -404,94 +411,173 @@ function showFlowerNotification(msg) {
 // ========== DERS VE KELİME FONKSİYONLARI ==========
 
 async function loadLessons() {
-    const lessonsRef = collection(db, 'lessons');
-    const q = query(lessonsRef, orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
-        await createDemoLessons();
-        return loadLessons();
+    console.log("loadLessons çağrıldı");
+    try {
+        const lessonsRef = collection(db, 'lessons');
+        const q = query(lessonsRef, orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        
+        console.log("Ders snapshot boyutu:", snapshot.size);
+        
+        if (snapshot.empty) {
+            console.log("Ders bulunamadı, demo dersler oluşturuluyor...");
+            await createDemoLessons();
+            // Demo dersler oluştuktan sonra tekrar dene
+            const newSnapshot = await getDocs(q);
+            lessons = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Demo dersler oluşturuldu, ders sayısı:", lessons.length);
+        } else {
+            lessons = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            console.log("Dersler yüklendi:", lessons.length);
+        }
+        
+        // Dersler yüklendikten sonra kullanıcı varsa göster
+        if (currentUser) {
+            await loadUserLessons();
+        }
+    } catch (error) {
+        console.error("Dersler yüklenirken hata:", error);
+        showNotification('Dersler yüklenirken hata oluştu!');
     }
-    
-    lessons = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    }));
 }
 
 async function createDemoLessons() {
+    console.log("createDemoLessons çağrıldı");
     const lessonsRef = collection(db, 'lessons');
     const existingLessons = await getDocs(lessonsRef);
-    if (!existingLessons.empty) return;
+    
+    if (!existingLessons.empty) {
+        console.log("Dersler zaten var, demo oluşturulmuyor");
+        return;
+    }
     
     const demoLessons = [
-        { name: "Ders 1", description: "Temel Kelimeler", order: 1 },
-        { name: "Ders 2", description: "Günlük Hayat", order: 2 },
-        { name: "Ders 3", description: "İbadet Kelimeleri", order: 3 }
+        { name: "Ders 1 - Temel Kelimeler", description: "Kur'an'da sık geçen temel kavramlar", order: 1 },
+        { name: "Ders 2 - Güzel İsimler", description: "Allah'ın 99 ismi (El-Esma-ül Hüsna)", order: 2 },
+        { name: "Ders 3 - İbadet Terimleri", description: "Namaz, oruç, hac gibi ibadetlerle ilgili terimler", order: 3 }
     ];
     
     const demoWords = {
-        "Ders 1": [
+        "Ders 1 - Temel Kelimeler": [
             { arabic: "خلق", turkish: "yaratılış" },
-            { arabic: "رحمن", turkish: "rahman, çok merhametli" },
-            { arabic: "كريم", turkish: "cömert, kerim" },
-            { arabic: "صبر", turkish: "sabır" }
+            { arabic: "رحمن", turkish: "Rahman, çok merhametli" },
+            { arabic: "كريم", turkish: "Kerim, cömert" },
+            { arabic: "صبر", turkish: "sabır" },
+            { arabic: "شكر", turkish: "şükür" }
         ],
-        "Ders 2": [
-            { arabic: "شكر", turkish: "şükür" },
-            { arabic: "توكل", turkish: "tevekkül" },
-            { arabic: "إخلاص", turkish: "ihlas, samimiyet" }
+        "Ders 2 - Güzel İsimler": [
+            { arabic: "الرحمن", turkish: "Rahman (çok merhametli)" },
+            { arabic: "الرحيم", turkish: "Rahim (çok esirgeyici)" },
+            { arabic: "الملك", turkish: "Melik (hükümran)" },
+            { arabic: "القدوس", turkish: "Kuddüs (eksikliklerden uzak)" },
+            { arabic: "السلام", turkish: "Selam (esenlik veren)" }
         ],
-        "Ders 3": [
-            { arabic: "هدى", turkish: "hidayet, doğru yol" },
-            { arabic: "تقوى", turkish: "takva, Allah korkusu" },
-            { arabic: "بركة", turkish: "bereket" }
+        "Ders 3 - İbadet Terimleri": [
+            { arabic: "صلاة", turkish: "namaz" },
+            { arabic: "صوم", turkish: "oruç" },
+            { arabic: "زكاة", turkish: "zekât" },
+            { arabic: "حج", turkish: "hac" },
+            { arabic: "دعاء", turkish: "dua" }
         ]
     };
     
     for (const lesson of demoLessons) {
         const lessonRef = doc(collection(db, 'lessons'));
         await setDoc(lessonRef, lesson);
+        console.log("Ders oluşturuldu:", lesson.name);
         
         const words = demoWords[lesson.name] || [];
         for (const word of words) {
             const wordRef = doc(collection(db, 'words'));
             await setDoc(wordRef, { ...word, lessonId: lessonRef.id });
+            console.log("Kelime eklendi:", word.arabic);
         }
     }
+    
+    console.log("Demo dersler ve kelimeler oluşturuldu");
 }
 
 async function loadUserLessons() {
-    if (!currentUser) return;
+    console.log("loadUserLessons çağrıldı, currentUser:", currentUser ? currentUser.uid : "yok");
     
-    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-    if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const selectedLessonIds = userData.selectedLessons || [];
+    if (!currentUser) {
+        console.log("Kullanıcı yok, çıkılıyor");
+        return;
+    }
+    
+    try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        let selectedLessonIds = [];
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            selectedLessonIds = userData.selectedLessons || [];
+            console.log("Kullanıcının seçili dersleri:", selectedLessonIds);
+        } else {
+            console.log("Kullanıcı dokümanı yok, yeni oluşturulacak");
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                email: currentUser.email,
+                selectedLessons: [],
+                createdAt: new Date().toISOString()
+            });
+        }
+        
         displayLessons(selectedLessonIds);
+        
+        const totalWordCountEl = document.getElementById('totalWordCount');
+        if (totalWordCountEl) totalWordCountEl.innerText = selectedLessonIds.length;
+        
+    } catch (error) {
+        console.error("Kullanıcı dersleri yüklenirken hata:", error);
+        showNotification('Dersler yüklenirken hata oluştu!');
     }
 }
 
 function displayLessons(selectedLessonIds) {
     const lessonsGrid = document.getElementById('lessonsGrid');
-    if (!lessonsGrid) return;
+    if (!lessonsGrid) {
+        console.log("lessonsGrid bulunamadı");
+        return;
+    }
+    
+    console.log("Dersler gösteriliyor, lessons dizisi:", lessons);
+    console.log("Seçili ders ID'leri:", selectedLessonIds);
+    
     lessonsGrid.innerHTML = '';
     
+    if (!lessons || lessons.length === 0) {
+        lessonsGrid.innerHTML = '<div style="text-align:center; padding:40px; color: var(--text-secondary);">📚 Henüz ders eklenmemiş. Admin panelden ders ekleyebilirsiniz.</div>';
+        return;
+    }
+    
     for (const lesson of lessons) {
-        const isSelected = selectedLessonIds.includes(lesson.id);
+        const isSelected = selectedLessonIds ? selectedLessonIds.includes(lesson.id) : false;
         const lessonCard = document.createElement('div');
         lessonCard.className = 'lesson-card';
         lessonCard.innerHTML = `
             <i class="fas ${isSelected ? 'fa-check-circle' : 'fa-book'}"></i>
-            <h4>${lesson.name}</h4>
-            <p>${lesson.description || ''}</p>
+            <h4>${escapeHtml(lesson.name)}</h4>
+            <p>${escapeHtml(lesson.description || 'Ders açıklaması yok')}</p>
         `;
         lessonCard.onclick = () => selectLesson(lesson.id, isSelected);
         lessonsGrid.appendChild(lessonCard);
     }
     
-    const totalWordCountEl = document.getElementById('totalWordCount');
-    if (totalWordCountEl) totalWordCountEl.innerText = selectedLessonIds.length;
+    console.log("Ders kartları oluşturuldu, toplam:", lessons.length);
+}
+
+// Yardımcı fonksiyon
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 async function selectLesson(lessonId, isSelected) {
