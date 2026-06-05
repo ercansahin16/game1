@@ -8,29 +8,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="dark-mode">
     <div class="app-container">
-        <!-- Hamburger Menü -->
+        <!-- Hamburger Menü (Sadece giriş sonrası) -->
         <div class="menu-overlay" id="menuOverlay"></div>
         <div class="side-menu" id="sideMenu">
             <div class="menu-header">
-                <div class="user-info-side" id="userInfoSide">
+                <div class="user-info-side">
                     <i class="fas fa-user-circle"></i>
                     <span id="menuUserName">Misafir</span>
                 </div>
             </div>
             <div class="menu-items">
-                <div class="menu-item" onclick="window.location.href='index.html'">
+                <div class="menu-item" onclick="goToHome()">
                     <i class="fas fa-home"></i>
                     <span>Ana Sayfa</span>
                 </div>
-                <div class="menu-item" onclick="goToAddWords()">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Kelime Ekle</span>
+                <div class="menu-item" onclick="goToLessons()">
+                    <i class="fas fa-book"></i>
+                    <span>Derslerim</span>
                 </div>
-                <div class="menu-item" onclick="showStats()">
-                    <i class="fas fa-chart-line"></i>
-                    <span>İstatistiklerim</span>
+                <div class="menu-item" onclick="showWarning()">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Uyarı</span>
+                </div>
+                <div class="menu-item" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                    <span>Tema Değiştir</span>
                 </div>
                 <div class="menu-item" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i>
@@ -42,19 +46,19 @@
         <!-- Ana İçerik -->
         <div class="main-content">
             <div class="top-bar">
-                <button class="menu-btn" id="menuBtn">
+                <button class="menu-btn hidden" id="menuBtn">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo">
                     <span>🌸 Saadet Yolu</span>
                 </div>
-                <div class="user-badge" id="userBadge">
+                <div class="user-badge hidden" id="userBadge">
                     <i class="fas fa-user"></i>
                     <span id="userNameDisplay">Misafir</span>
                 </div>
             </div>
 
-            <!-- Hoşgeldin / Giriş Alanı -->
+            <!-- Giriş Alanı -->
             <div id="loginSection" class="login-section">
                 <div class="welcome-card">
                     <div class="flower-icon">🌸🌺🌼</div>
@@ -67,51 +71,64 @@
                 </div>
             </div>
 
-            <!-- Öğrenme Alanı (Giriş yapıldıktan sonra göster) -->
+            <!-- Öğrenme Alanı (Giriş sonrası) -->
             <div id="learningSection" class="learning-section hidden">
-                <div class="stats-bar" id="statsBar">
-                    <div class="stat-card">
-                        <span class="stat-value" id="totalWordCount">0</span>
-                        <span class="stat-label">Öğrendiğin Kelime</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="learnedPercent">0</span>
-                        <span class="stat-label">Havuzdan Seçtiğin</span>
-                    </div>
+                <!-- Ders Seçim Alanı -->
+                <div id="lessonSelectArea" class="lesson-select-area">
+                    <h3><i class="fas fa-graduation-cap"></i> Ders Seçiniz</h3>
+                    <div class="lessons-grid" id="lessonsGrid"></div>
                 </div>
 
-                <div class="word-card-container">
-                    <div class="word-card" id="wordCard">
-                        <div class="arabic-word" id="arabicWord">خلق</div>
-                        <div class="turkish-word hidden" id="turkishWord">yaratılış</div>
-                        <div class="card-buttons">
-                            <button class="btn-sound" id="soundBtn">
-                                <i class="fas fa-volume-up"></i>
-                            </button>
-                            <button class="btn-show" id="showMeaningBtn">
-                                <i class="fas fa-eye"></i> Göster
-                            </button>
-                            <button class="btn-next" id="nextWordBtn">
-                                <i class="fas fa-arrow-right"></i> Sonraki
-                            </button>
+                <!-- Kelime Öğrenme Alanı -->
+                <div id="wordLearningArea" class="word-learning-area hidden">
+                    <div class="stats-bar">
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalWordCount">0</span>
+                            <span class="stat-label">Öğrendiğin Kelime</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="lessonWordCount">0</span>
+                            <span class="stat-label">Bu Dersteki Kelime</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="progress-bar-container">
-                    <div class="progress-label">
-                        <span>Bugünkü İlerleme</span>
-                        <span id="progressPercent">0%</span>
+                    <div class="word-card-container">
+                        <div class="word-card">
+                            <div class="arabic-word" id="arabicWord">خلق</div>
+                            <div class="turkish-word hidden" id="turkishWord">yaratılış</div>
+                            <div class="card-buttons">
+                                <button class="btn-sound" id="soundBtn">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button class="btn-show" id="showMeaningBtn">
+                                    <i class="fas fa-eye"></i> Göster
+                                </button>
+                                <button class="btn-next" id="nextWordBtn">
+                                    <i class="fas fa-arrow-right"></i> Sonraki
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
+
+                    <div class="progress-bar-container">
+                        <div class="progress-label">
+                            <span>Dersteki İlerleme</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
                     </div>
+                    
+                    <button class="btn-back-lessons" id="backToLessonsBtn">
+                        <i class="fas fa-arrow-left"></i> Derslere Dön
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tebrik/Çiçek Bildirimi -->
+    <!-- Bildirim -->
     <div id="notification" class="notification hidden">
         <div class="notification-content">
             <i class="fas fa-seedling"></i>
