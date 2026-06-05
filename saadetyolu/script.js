@@ -922,16 +922,52 @@ async function deleteWord(wordId) {
 }
 
 function logoutAdmin() {
+    // Oturumu temizle
     sessionStorage.removeItem('admin_auth');
     adminAuthenticated = false;
-    const adminLoginSection = document.getElementById('adminLoginSection');
-    const adminPanel = document.getElementById('adminPanel');
-    const adminPassword = document.getElementById('adminPassword');
     
-    if (adminLoginSection) adminLoginSection.classList.remove('hidden');
-    if (adminPanel) adminPanel.classList.add('hidden');
-    if (adminPassword) adminPassword.value = '';
-    showNotification('Admin çıkışı yapıldı');
+    // Admin panelini tamamen gizle
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        adminPanel.classList.add('hidden');
+        adminPanel.style.display = 'none';
+    }
+    
+    // Kelime ve ders bölümlerini gizle
+    const wordsSection = document.getElementById('wordsSection');
+    if (wordsSection) {
+        wordsSection.style.display = 'none';
+    }
+    
+    // Giriş bölümünü göster
+    const adminLoginSection = document.getElementById('adminLoginSection');
+    if (adminLoginSection) {
+        adminLoginSection.classList.remove('hidden');
+        adminLoginSection.style.display = 'flex';
+    }
+    
+    // Şifre inputunu temizle
+    const adminPassword = document.getElementById('adminPassword');
+    if (adminPassword) {
+        adminPassword.value = '';
+    }
+    
+    // Ders listesini temizle (gizlendiğinde)
+    const lessonsAdminList = document.getElementById('lessonsAdminList');
+    if (lessonsAdminList) {
+        lessonsAdminList.innerHTML = '<div style="text-align:center; padding:20px;">Dersler yükleniyor...</div>';
+    }
+    
+    // Kelime listesini temizle
+    const wordsAdminList = document.getElementById('wordsAdminList');
+    if (wordsAdminList) {
+        wordsAdminList.innerHTML = '<div style="text-align:center; padding:20px;">Kelime eklemek için bir ders seçin</div>';
+    }
+    
+    // Mevcut ders seçimini sıfırla
+    currentEditingLesson = null;
+    
+    showNotification('🔐 Admin çıkışı yapıldı');
 }
 
 // Global fonksiyonlar (HTML'den erişim için)
