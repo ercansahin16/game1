@@ -587,6 +587,21 @@ async function initAdminPage() {
         showAdminPanel();
         await loadAllLessonsForAdmin();
     }
+
+    // Tema butonu (admin panelinde)
+const themeBtn = document.getElementById('themeBtn');
+if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        toggleTheme();
+        // Buton içindeki ikonu güncelle
+        const icon = themeBtn.querySelector('i');
+        if (document.body.classList.contains('dark-mode')) {
+            icon.className = 'fas fa-moon';
+        } else {
+            icon.className = 'fas fa-sun';
+        }
+    });
+}
 }
 
 function authenticateAdmin(password) {
