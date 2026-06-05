@@ -137,11 +137,21 @@ async function checkStoredUser() {
             
             // Menü butonlarını göster
             if (menuBtn) menuBtn.classList.remove('hidden');
-            document.getElementById('userBadge')?.classList.remove('hidden');
+            const userBadge = document.getElementById('userBadge');
+            if (userBadge) userBadge.classList.remove('hidden');
         } else {
             localStorage.removeItem('saadet_user_id');
             localStorage.removeItem('saadet_user_name');
+            // Menü butonlarını gizle
+            if (menuBtn) menuBtn.classList.add('hidden');
+            const userBadge = document.getElementById('userBadge');
+            if (userBadge) userBadge.classList.add('hidden');
         }
+    } else {
+        // Menü butonlarını gizle
+        if (menuBtn) menuBtn.classList.add('hidden');
+        const userBadge = document.getElementById('userBadge');
+        if (userBadge) userBadge.classList.add('hidden');
     }
 }
 
@@ -425,6 +435,11 @@ function backToLessons() {
 function showLearningSection() {
     if (loginSection) loginSection.classList.add('hidden');
     if (learningSection) learningSection.classList.remove('hidden');
+    
+    // Menü butonlarını göster
+    if (menuBtn) menuBtn.classList.remove('hidden');
+    const userBadge = document.getElementById('userBadge');
+    if (userBadge) userBadge.classList.remove('hidden');
 }
 
 function goToHome() {
@@ -480,14 +495,20 @@ async function logout() {
     currentLesson = null;
     currentLessonWords = [];
     
+    // Menüyü kapat
+    if (sideMenu) sideMenu.classList.remove('open');
+    if (menuOverlay) menuOverlay.classList.remove('active');
+    
     if (loginSection) loginSection.classList.remove('hidden');
     if (learningSection) learningSection.classList.add('hidden');
     if (userNameInput) userNameInput.value = '';
     if (lessonSelectArea) lessonSelectArea.classList.remove('hidden');
     if (wordLearningArea) wordLearningArea.classList.add('hidden');
     
+    // Menü butonlarını gizle
     if (menuBtn) menuBtn.classList.add('hidden');
-    document.getElementById('userBadge')?.classList.add('hidden');
+    const userBadge = document.getElementById('userBadge');
+    if (userBadge) userBadge.classList.add('hidden');
     
     showNotification('🌸 Çıkış yapıldı. Yine bekleriz! 🌸');
 }
