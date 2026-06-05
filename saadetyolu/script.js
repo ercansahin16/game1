@@ -135,20 +135,17 @@ async function checkStoredUser() {
             await loadUserLessons();
             showLearningSection();
             
-            // Menü butonlarını göster
             if (menuBtn) menuBtn.classList.remove('hidden');
             const userBadge = document.getElementById('userBadge');
             if (userBadge) userBadge.classList.remove('hidden');
         } else {
             localStorage.removeItem('saadet_user_id');
             localStorage.removeItem('saadet_user_name');
-            // Menü butonlarını gizle
             if (menuBtn) menuBtn.classList.add('hidden');
             const userBadge = document.getElementById('userBadge');
             if (userBadge) userBadge.classList.add('hidden');
         }
     } else {
-        // Menü butonlarını gizle
         if (menuBtn) menuBtn.classList.add('hidden');
         const userBadge = document.getElementById('userBadge');
         if (userBadge) userBadge.classList.add('hidden');
@@ -162,7 +159,6 @@ async function handleLogin() {
         return;
     }
     
-    // Kullanıcı var mı kontrol et
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('userName', '==', userName));
     const querySnapshot = await getDocs(q);
@@ -176,7 +172,7 @@ async function handleLogin() {
         const newUser = {
             userName: userName,
             createdAt: new Date().toISOString(),
-            selectedLessons: []  // Ders ID'leri
+            selectedLessons: []
         };
         await setDoc(newUserRef, newUser);
         currentUser = { id: newUserRef.id, ...newUser };
@@ -228,7 +224,6 @@ async function loadLessons() {
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) {
-        // Demo dersler oluştur
         await createDemoLessons();
         return loadLessons();
     }
@@ -240,12 +235,10 @@ async function loadLessons() {
 }
 
 async function createDemoLessons() {
-    // Önce mevcut dersleri kontrol et
     const lessonsRef = collection(db, 'lessons');
     const existingLessons = await getDocs(lessonsRef);
     
     if (!existingLessons.empty) {
-        console.log("Dersler zaten mevcut, demo eklenmiyor");
         return;
     }
     
@@ -287,8 +280,6 @@ async function createDemoLessons() {
             });
         }
     }
-    
-    console.log("Demo dersler ve kelimeler oluşturuldu");
 }
 
 async function loadUserLessons() {
@@ -298,7 +289,6 @@ async function loadUserLessons() {
     if (userDoc.exists()) {
         const userData = userDoc.data();
         const selectedLessonIds = userData.selectedLessons || [];
-        
         displayLessons(selectedLessonIds);
         updateStats(selectedLessonIds.length);
     }
@@ -306,12 +296,10 @@ async function loadUserLessons() {
 
 function displayLessons(selectedLessonIds) {
     if (!lessonsGrid) return;
-    
     lessonsGrid.innerHTML = '';
     
     for (const lesson of lessons) {
         const isSelected = selectedLessonIds.includes(lesson.id);
-        
         const lessonCard = document.createElement('div');
         lessonCard.className = 'lesson-card';
         lessonCard.innerHTML = `
@@ -319,7 +307,6 @@ function displayLessons(selectedLessonIds) {
             <h4>${lesson.name}</h4>
             <p>${lesson.description || ''}</p>
         `;
-        
         lessonCard.onclick = () => selectLesson(lesson.id, isSelected);
         lessonsGrid.appendChild(lessonCard);
     }
@@ -329,14 +316,12 @@ async function selectLesson(lessonId, isSelected) {
     if (!currentUser) return;
     
     if (!isSelected) {
-        // Dersi seç
         await updateDoc(doc(db, 'users', currentUser.id), {
             selectedLessons: arrayUnion(lessonId)
         });
         showNotification(`📚 ${lessons.find(l => l.id === lessonId)?.name} seçildi!`);
     }
     
-    // Dersin kelimelerini yükle ve öğrenmeye başla
     await loadLessonWords(lessonId);
     currentLesson = lessonId;
     lessonSelectArea.classList.add('hidden');
@@ -365,7 +350,6 @@ function startLearningLesson() {
         return;
     }
     
-    // Karıştır
     currentWordList = [...currentLessonWords];
     for (let i = currentWordList.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -388,7 +372,6 @@ function displayCurrentWord() {
     arabicWordEl.innerText = word.arabic;
     turkishWordEl.innerText = word.turkish;
     turkishWordEl.classList.add('hidden');
-    
     updateProgress();
 }
 
@@ -400,7 +383,6 @@ function showMeaning() {
 
 function nextWord() {
     if (currentLessonWords.length === 0) return;
-    
     currentWordIndex = (currentWordIndex + 1) % currentWordList.length;
     displayCurrentWord();
 }
@@ -422,7 +404,6 @@ function playSound() {
 
 function updateProgress() {
     if (!progressFill || !progressPercent) return;
-    
     const total = currentWordList.length;
     const percent = Math.round(((currentWordIndex + 1) / total) * 100);
     progressFill.style.width = `${percent}%`;
@@ -445,8 +426,6 @@ function backToLessons() {
 function showLearningSection() {
     if (loginSection) loginSection.classList.add('hidden');
     if (learningSection) learningSection.classList.remove('hidden');
-    
-    // Menü butonlarını göster
     if (menuBtn) menuBtn.classList.remove('hidden');
     const userBadge = document.getElementById('userBadge');
     if (userBadge) userBadge.classList.remove('hidden');
@@ -471,20 +450,14 @@ function toggleTheme() {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
         localStorage.setItem('theme', 'light');
-        // Tema ikonunu güncelle (admin panelindeki için)
         const themeIcons = document.querySelectorAll('#themeBtn i, #themeIcon');
-        themeIcons.forEach(icon => {
-            icon.className = 'fas fa-sun';
-        });
+        themeIcons.forEach(icon => { icon.className = 'fas fa-sun'; });
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
-        // Tema ikonunu güncelle (admin panelindeki için)
         const themeIcons = document.querySelectorAll('#themeBtn i, #themeIcon');
-        themeIcons.forEach(icon => {
-            icon.className = 'fas fa-moon';
-        });
+        themeIcons.forEach(icon => { icon.className = 'fas fa-moon'; });
     }
 }
 
@@ -494,13 +467,9 @@ function loadTheme() {
     if (savedTheme === 'light') {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) themeIcon.className = 'fas fa-sun';
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) themeIcon.className = 'fas fa-moon';
     }
 }
 
@@ -511,17 +480,14 @@ async function logout() {
     currentLesson = null;
     currentLessonWords = [];
     
-    // Menüyü kapat
     if (sideMenu) sideMenu.classList.remove('open');
     if (menuOverlay) menuOverlay.classList.remove('active');
-    
     if (loginSection) loginSection.classList.remove('hidden');
     if (learningSection) learningSection.classList.add('hidden');
     if (userNameInput) userNameInput.value = '';
     if (lessonSelectArea) lessonSelectArea.classList.remove('hidden');
     if (wordLearningArea) wordLearningArea.classList.add('hidden');
     
-    // Menü butonlarını gizle
     if (menuBtn) menuBtn.classList.add('hidden');
     const userBadge = document.getElementById('userBadge');
     if (userBadge) userBadge.classList.add('hidden');
@@ -534,22 +500,17 @@ async function logout() {
 let adminAuthenticated = false;
 
 async function initAdminPage() {
-    console.log("Admin sayfası başlatılıyor...");
-    
     const adminLoginBtn = document.getElementById('adminLoginBtn');
     const adminPassword = document.getElementById('adminPassword');
     const togglePasswordBtn = document.getElementById('togglePasswordBtn');
     
-    // Admin giriş butonu
     if (adminLoginBtn) {
         adminLoginBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log("Giriş butonuna tıklandı");
             authenticateAdmin(adminPassword.value);
         });
     }
     
-    // Enter tuşu ile giriş
     if (adminPassword) {
         adminPassword.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -559,7 +520,6 @@ async function initAdminPage() {
         });
     }
     
-    // Şifre göster/gizle butonu
     if (togglePasswordBtn && adminPassword) {
         togglePasswordBtn.addEventListener('click', () => {
             const type = adminPassword.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -568,19 +528,16 @@ async function initAdminPage() {
         });
     }
     
-    // Yeni Ders Ekle butonu
     const addLessonBtn = document.getElementById('addLessonBtn');
     if (addLessonBtn) {
         addLessonBtn.addEventListener('click', () => openAddLessonModal());
     }
     
-    // Yeni Kelime Ekle butonu
     const addWordBtn = document.getElementById('addWordBtn');
     if (addWordBtn) {
         addWordBtn.addEventListener('click', () => openAddWordModal());
     }
     
-    // Kaydet butonları
     const saveLessonBtn = document.getElementById('saveLessonBtn');
     if (saveLessonBtn) {
         saveLessonBtn.addEventListener('click', () => saveLesson());
@@ -591,34 +548,29 @@ async function initAdminPage() {
         saveWordBtn.addEventListener('click', () => saveWord());
     }
     
-    // Admin şifresini kontrol et (önceki oturum)
+    const themeBtn = document.getElementById('themeBtn');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            toggleTheme();
+            const icon = themeBtn.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
+        });
+    }
+    
     const storedAuth = sessionStorage.getItem('admin_auth');
     if (storedAuth === 'true') {
         adminAuthenticated = true;
         showAdminPanel();
         await loadAllLessonsForAdmin();
     }
-
-    // Tema butonu (admin panelinde)
-const themeBtn = document.getElementById('themeBtn');
-if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
-        toggleTheme();
-        // Buton içindeki ikonu güncelle
-        const icon = themeBtn.querySelector('i');
-        if (document.body.classList.contains('dark-mode')) {
-            icon.className = 'fas fa-moon';
-        } else {
-            icon.className = 'fas fa-sun';
-        }
-    });
-}
 }
 
 function authenticateAdmin(password) {
     const ADMIN_PASSWORD = "admin123";
-    
-    console.log("Şifre kontrolü yapılıyor...");
     
     if (password === ADMIN_PASSWORD) {
         adminAuthenticated = true;
@@ -639,12 +591,9 @@ function showAdminPanel() {
     
     if (adminLoginSection) {
         adminLoginSection.classList.add('hidden');
-        adminLoginSection.style.display = 'none';
     }
-    
     if (adminPanel) {
         adminPanel.classList.remove('hidden');
-        adminPanel.style.display = 'block';
     }
 }
 
@@ -654,27 +603,17 @@ async function loadAllLessonsForAdmin() {
         const q = query(lessonsRef, orderBy('order', 'asc'));
         const snapshot = await getDocs(q);
         
-        // Benzersiz dersleri al (id bazında)
-        const lessonsMap = new Map();
-        snapshot.docs.forEach(doc => {
-            if (!lessonsMap.has(doc.id)) {
-                lessonsMap.set(doc.id, {
-                    id: doc.id,
-                    ...doc.data()
-                });
-            }
-        });
-        
-        lessons = Array.from(lessonsMap.values());
+        lessons = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
         
         displayLessonsForAdmin();
     } catch (error) {
-        console.error('Dersler yüklenirken hata:', error);
         const container = document.getElementById('lessonsAdminList');
         if (container) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color: red;">❌ Bağlantı hatası! İnternetinizi kontrol edin.</div>';
+            container.innerHTML = '<div style="text-align:center; padding:20px; color: red;">❌ Bağlantı hatası!</div>';
         }
-        showNotification('❌ Firebase bağlantı hatası! Lütfen internet bağlantınızı kontrol edin.');
     }
 }
 
@@ -682,7 +621,6 @@ function displayLessonsForAdmin() {
     const container = document.getElementById('lessonsAdminList');
     if (!container) return;
     
-    // Temizle
     container.innerHTML = '';
     
     if (!lessons || lessons.length === 0) {
@@ -690,21 +628,9 @@ function displayLessonsForAdmin() {
         return;
     }
     
-    // Benzersiz dersleri göster (id'ye göre)
-    const uniqueLessons = [];
-    const seenIds = new Set();
-    
     for (const lesson of lessons) {
-        if (!seenIds.has(lesson.id)) {
-            seenIds.add(lesson.id);
-            uniqueLessons.push(lesson);
-        }
-    }
-    
-    for (const lesson of uniqueLessons) {
         const lessonDiv = document.createElement('div');
         lessonDiv.className = 'lesson-admin-item';
-        lessonDiv.setAttribute('data-lesson-id', lesson.id);
         lessonDiv.innerHTML = `
             <div class="lesson-info">
                 <h4><i class="fas fa-book"></i> ${escapeHtml(lesson.name)}</h4>
@@ -720,7 +646,6 @@ function displayLessonsForAdmin() {
     }
 }
 
-// HTML escape fonksiyonu (XSS koruması için)
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) {
@@ -738,7 +663,6 @@ async function selectLessonForWords(lessonId, lessonName) {
     const wordsSection = document.getElementById('wordsSection');
     if (wordsSection) wordsSection.style.display = 'block';
     
-    // Kelimeleri yükle
     const wordsRef = collection(db, 'words');
     const q = query(wordsRef, where('lessonId', '==', lessonId));
     const snapshot = await getDocs(q);
@@ -781,16 +705,13 @@ function displayWordsForAdmin(words) {
 
 function openAddLessonModal() {
     const modal = document.getElementById('lessonModal');
-    const modalTitle = document.getElementById('lessonModalTitle');
-    const editLessonId = document.getElementById('editLessonId');
-    const lessonName = document.getElementById('lessonName');
-    const lessonDesc = document.getElementById('lessonDesc');
-    
-    if (modalTitle) modalTitle.innerText = '➕ Yeni Ders Ekle';
-    if (editLessonId) editLessonId.value = '';
-    if (lessonName) lessonName.value = '';
-    if (lessonDesc) lessonDesc.value = '';
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        document.getElementById('lessonModalTitle').innerText = '➕ Yeni Ders Ekle';
+        document.getElementById('editLessonId').value = '';
+        document.getElementById('lessonName').value = '';
+        document.getElementById('lessonDesc').value = '';
+        modal.classList.remove('hidden');
+    }
 }
 
 function openAddWordModal() {
@@ -800,16 +721,13 @@ function openAddWordModal() {
     }
     
     const modal = document.getElementById('wordModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const editWordId = document.getElementById('editWordId');
-    const wordArabic = document.getElementById('wordArabic');
-    const wordTurkish = document.getElementById('wordTurkish');
-    
-    if (modalTitle) modalTitle.innerText = '➕ Yeni Kelime Ekle';
-    if (editWordId) editWordId.value = '';
-    if (wordArabic) wordArabic.value = '';
-    if (wordTurkish) wordTurkish.value = '';
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        document.getElementById('modalTitle').innerText = '➕ Yeni Kelime Ekle';
+        document.getElementById('editWordId').value = '';
+        document.getElementById('wordArabic').value = '';
+        document.getElementById('wordTurkish').value = '';
+        modal.classList.remove('hidden');
+    }
 }
 
 function closeWordModal() {
@@ -834,11 +752,9 @@ async function saveLesson() {
     
     try {
         if (lessonId) {
-            // Güncelleme
             await updateDoc(doc(db, 'lessons', lessonId), { name, description });
             showNotification('✅ Ders güncellendi!');
         } else {
-            // Yeni ders ekle - önce aynı isimde ders var mı kontrol et
             const lessonsRef = collection(db, 'lessons');
             const q = query(lessonsRef, where('name', '==', name));
             const existing = await getDocs(q);
@@ -850,7 +766,6 @@ async function saveLesson() {
             
             const snapshot = await getDocs(lessonsRef);
             const order = snapshot.size + 1;
-            
             const newLessonRef = doc(collection(db, 'lessons'));
             await setDoc(newLessonRef, { name, description, order });
             showNotification('✅ Yeni ders eklendi!');
@@ -859,7 +774,6 @@ async function saveLesson() {
         closeLessonModal();
         await loadAllLessonsForAdmin();
     } catch (error) {
-        console.error('Ders kaydetme hatası:', error);
         showNotification('❌ Hata: ' + error.message);
     }
 }
@@ -881,11 +795,9 @@ async function saveWord() {
     
     try {
         if (wordId) {
-            // Güncelleme
             await updateDoc(doc(db, 'words', wordId), { arabic, turkish });
             showNotification('✅ Kelime güncellendi!');
         } else {
-            // Yeni kelime ekle - aynı kelime aynı derste var mı kontrol et
             const wordsRef = collection(db, 'words');
             const q = query(wordsRef, where('lessonId', '==', currentEditingLesson), where('arabic', '==', arabic));
             const existing = await getDocs(q);
@@ -901,11 +813,9 @@ async function saveWord() {
         }
         
         closeWordModal();
-        
         const lessonName = document.getElementById('currentLessonName')?.innerText || '';
         await selectLessonForWords(currentEditingLesson, lessonName);
     } catch (error) {
-        console.error('Kelime kaydetme hatası:', error);
         showNotification('❌ Hata: ' + error.message);
     }
 }
@@ -915,16 +825,13 @@ async function editLesson(lessonId) {
     if (!lesson) return;
     
     const modal = document.getElementById('lessonModal');
-    const modalTitle = document.getElementById('lessonModalTitle');
-    const editLessonId = document.getElementById('editLessonId');
-    const lessonName = document.getElementById('lessonName');
-    const lessonDesc = document.getElementById('lessonDesc');
-    
-    if (modalTitle) modalTitle.innerText = '✏️ Ders Düzenle';
-    if (editLessonId) editLessonId.value = lessonId;
-    if (lessonName) lessonName.value = lesson.name;
-    if (lessonDesc) lessonDesc.value = lesson.description || '';
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        document.getElementById('lessonModalTitle').innerText = '✏️ Ders Düzenle';
+        document.getElementById('editLessonId').value = lessonId;
+        document.getElementById('lessonName').value = lesson.name;
+        document.getElementById('lessonDesc').value = lesson.description || '';
+        modal.classList.remove('hidden');
+    }
 }
 
 async function deleteLesson(lessonId) {
@@ -950,7 +857,6 @@ async function deleteLesson(lessonId) {
             currentEditingLesson = null;
         }
     } catch (error) {
-        console.error('Ders silme hatası:', error);
         showNotification('❌ Hata: ' + error.message);
     }
 }
@@ -969,20 +875,15 @@ async function editWord(wordId) {
         }
         
         const word = wordDoc.data();
-        
         const modal = document.getElementById('wordModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const editWordId = document.getElementById('editWordId');
-        const wordArabic = document.getElementById('wordArabic');
-        const wordTurkish = document.getElementById('wordTurkish');
-        
-        if (modalTitle) modalTitle.innerText = '✏️ Kelime Düzenle';
-        if (editWordId) editWordId.value = wordId;
-        if (wordArabic) wordArabic.value = word.arabic;
-        if (wordTurkish) wordTurkish.value = word.turkish;
-        if (modal) modal.classList.remove('hidden');
+        if (modal) {
+            document.getElementById('modalTitle').innerText = '✏️ Kelime Düzenle';
+            document.getElementById('editWordId').value = wordId;
+            document.getElementById('wordArabic').value = word.arabic;
+            document.getElementById('wordTurkish').value = word.turkish;
+            modal.classList.remove('hidden');
+        }
     } catch (error) {
-        console.error('Kelime yükleme hatası:', error);
         showNotification('❌ Hata: ' + error.message);
     }
 }
@@ -993,65 +894,52 @@ async function deleteWord(wordId) {
     try {
         await deleteDoc(doc(db, 'words', wordId));
         showNotification('✅ Kelime silindi!');
-        
         const lessonName = document.getElementById('currentLessonName')?.innerText || '';
         await selectLessonForWords(currentEditingLesson, lessonName);
     } catch (error) {
-        console.error('Kelime silme hatası:', error);
         showNotification('❌ Hata: ' + error.message);
     }
 }
 
 function logoutAdmin() {
-    // Oturumu temizle
     sessionStorage.removeItem('admin_auth');
     adminAuthenticated = false;
     
-    // Admin panelini tamamen gizle
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel) {
         adminPanel.classList.add('hidden');
-        adminPanel.style.display = 'none';
     }
     
-    // Kelime ve ders bölümlerini gizle
     const wordsSection = document.getElementById('wordsSection');
     if (wordsSection) {
         wordsSection.style.display = 'none';
     }
     
-    // Giriş bölümünü göster
     const adminLoginSection = document.getElementById('adminLoginSection');
     if (adminLoginSection) {
         adminLoginSection.classList.remove('hidden');
-        adminLoginSection.style.display = 'flex';
     }
     
-    // Şifre inputunu temizle
     const adminPassword = document.getElementById('adminPassword');
     if (adminPassword) {
         adminPassword.value = '';
     }
     
-    // Ders listesini temizle (gizlendiğinde)
     const lessonsAdminList = document.getElementById('lessonsAdminList');
     if (lessonsAdminList) {
         lessonsAdminList.innerHTML = '<div style="text-align:center; padding:20px;">Dersler yükleniyor...</div>';
     }
     
-    // Kelime listesini temizle
     const wordsAdminList = document.getElementById('wordsAdminList');
     if (wordsAdminList) {
         wordsAdminList.innerHTML = '<div style="text-align:center; padding:20px;">Kelime eklemek için bir ders seçin</div>';
     }
     
-    // Mevcut ders seçimini sıfırla
     currentEditingLesson = null;
-    
     showNotification('🔐 Admin çıkışı yapıldı');
 }
 
-// Global fonksiyonlar (HTML'den erişim için)
+// Global fonksiyonlar
 window.goToHome = goToHome;
 window.goToLessons = goToLessons;
 window.showWarning = showWarning;
@@ -1070,10 +958,8 @@ window.closeLessonModal = closeLessonModal;
 window.saveLesson = saveLesson;
 window.saveWord = saveWord;
 
-// Sayfa yüklendiğinde admin panelini başlat
 if (window.location.pathname.includes('admin.html')) {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOM yüklendi, admin panel başlatılıyor...");
         initAdminPage();
     });
 }
