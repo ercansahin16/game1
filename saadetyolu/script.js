@@ -376,11 +376,11 @@ async function handleForgotPassword() {
     
     try {
         await sendPasswordResetEmail(auth, email);
-        showNotification('✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!');
+        showNotification('✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi! Spam maillerinizi kontrol ediniz...');
         document.getElementById('forgotEmail').value = '';
         const forgotResult = document.getElementById('forgotResult');
         if (forgotResult) {
-            forgotResult.innerHTML = '<div style="background:#10b981; padding:12px; border-radius:12px; margin-top:10px; color:white;">✅ Şifre sıfırlama bağlantısı gönderildi!</div>';
+            forgotResult.innerHTML = '<div style="background:#10b981; padding:12px; border-radius:12px; margin-top:10px; color:white;">✅ Şifre sıfırlama bağlantısı gönderildi!Spam maillerinizi kontrol ediniz...</div>';
             setTimeout(() => { forgotResult.innerHTML = ''; }, 5000);
         }
     } catch (error) {
