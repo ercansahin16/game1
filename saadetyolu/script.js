@@ -460,14 +460,20 @@ function toggleTheme() {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
         localStorage.setItem('theme', 'light');
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) themeIcon.className = 'fas fa-sun';
+        // Tema ikonunu güncelle (admin panelindeki için)
+        const themeIcons = document.querySelectorAll('#themeBtn i, #themeIcon');
+        themeIcons.forEach(icon => {
+            icon.className = 'fas fa-sun';
+        });
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) themeIcon.className = 'fas fa-moon';
+        // Tema ikonunu güncelle (admin panelindeki için)
+        const themeIcons = document.querySelectorAll('#themeBtn i, #themeIcon');
+        themeIcons.forEach(icon => {
+            icon.className = 'fas fa-moon';
+        });
     }
 }
 
