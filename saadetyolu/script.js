@@ -292,6 +292,102 @@ if (savedTheme === 'light') {
     document.body.classList.add('light-mode');
 }
 
+// DOĞRUDAN ÇALIŞAN FONKSİYONLAR
+window.handleLoginDirect = async () => {
+    console.log("Login butonuna tıklandı (direct)");
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!email || !password) {
+        alert('Lütfen e-posta ve şifre girin!');
+        return;
+    }
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert('✅ Giriş başarılı!');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        // Sayfayı yenilemeden giriş sonrasını göster
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('learningSection').style.display = 'block';
+        document.getElementById('menuBtn').classList.remove('hidden');
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('menuUserName').innerText = email.split('@')[0];
+        document.getElementById('userNameDisplay').innerText = email.split('@')[0];
+    } catch (error) {
+        console.error(error);
+        alert('Hata: ' + error.message);
+    }
+};
+
+window.handleRegisterDirect = async () => {
+    console.log("Kayıt butonuna tıklandı (direct)");
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    
+    if (!name || !email || !password) {
+        alert('Lütfen tüm alanları doldurun!');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('Şifre en az 6 karakter olmalı!');
+        return;
+    }
+    
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        await setDoc(doc(db, 'users', user.uid), {
+            name: name,
+            email: email,
+            selectedLessons: [],
+            createdAt: new Date().toISOString()
+        });
+        
+        alert(`🌸 Hoş geldiniz ${name}! Allah'ı tanımaya geldiniz. 🌸`);
+        
+        document.getElementById('registerName').value = '';
+        document.getElementById('registerEmail').value = '';
+        document.getElementById('registerPassword').value = '';
+        
+        // Login tab'ına geç
+        document.querySelector('.tab-btn[data-tab="login"]').click();
+        
+    } catch (error) {
+        console.error(error);
+        if (error.code === 'auth/email-already-in-use') {
+            alert('Bu e-posta zaten kullanılıyor!');
+        } else {
+            alert('Hata: ' + error.message);
+        }
+    }
+};
+
+window.handleForgotDirect = async () => {
+    console.log("Şifre sıfırlama butonuna tıklandı (direct)");
+    const email = document.getElementById('forgotEmail').value;
+    
+    if (!email) {
+        alert('Lütfen e-posta adresinizi girin!');
+        return;
+    }
+    
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert('✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!');
+        document.getElementById('forgotEmail').value = '';
+    } catch (error) {
+        console.error(error);
+        alert('Hata: ' + error.message);
+    }
+};
+
+
+
 // Global fonksiyonlar
 window.goToHome = goToHome;
 window.goToLessons = goToLessons;
