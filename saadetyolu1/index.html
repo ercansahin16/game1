@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saadet Yolu - Kelime Öğrenme</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e1b4b);
+            min-height: 100vh;
+            color: white;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo { font-size: 24px; font-weight: bold; color: #f59e0b; }
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #f59e0b; color: #1e1b4b; }
+        .btn-secondary { background: #3b82f6; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .card { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .login-card { max-width: 400px; margin: 50px auto; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; }
+        input::placeholder { color: #ccc; }
+        .books-grid, .lessons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .book-card, .lesson-card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .book-card:hover, .lesson-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.2); }
+        .word-card { text-align: center; padding: 40px; }
+        .arabic { font-size: 48px; font-family: 'Amiri', serif; margin-bottom: 20px; }
+        .turkish { font-size: 24px; color: #f59e0b; margin-bottom: 30px; }
+        .hidden { display: none; }
+        .stats { display: flex; gap: 15px; margin-bottom: 20px; }
+        .stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; }
+        .menu-btn { position: fixed; top: 20px; left: 20px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; z-index: 100; }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #1e1b4b; transition: 0.3s; padding: 20px; z-index: 99; }
+        .sidebar.open { left: 0; }
+        .sidebar-item { padding: 12px; margin: 5px 0; border-radius: 10px; cursor: pointer; }
+        .sidebar-item:hover { background: #f59e0b; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 98; display: none; }
+        .overlay.active { display: block; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .progress-bar { height: 8px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: #f59e0b; width: 0%; transition: width 0.3s; }
+        @media (max-width: 600px) { .arabic { font-size: 32px; } .turkish { font-size: 18px; } }
+    </style>
+</head>
+<body>
+
+<button class="menu-btn" id="menuBtn">☰</button>
+<div class="sidebar" id="sidebar">
+    <div style="margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #444;">
+        <strong id="sidebarUser">Misafir</strong>
+    </div>
+    <div class="sidebar-item" onclick="goHome()">🏠 Ana Sayfa</div>
+    <div class="sidebar-item" onclick="goBooks()">📚 Kitaplarım</div>
+    <div class="sidebar-item" onclick="showProfile()">👤 Profilim</div>
+    <div class="sidebar-item" onclick="logout()">🚪 Çıkış Yap</div>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">🌸 Saadet Yolu</div>
+        <div id="userBadge" class="stat" style="padding: 5px 15px; width: auto; display: none;"></div>
+    </div>
+
+    <!-- Giriş Ekranı -->
+    <div id="loginScreen" class="login-card card">
+        <h2>🌸 Allah'ı Tanımaya Hoş Geldiniz</h2>
+        <p style="margin: 10px 0;">Rahman ve Rahim olan Allah'ın adıyla...</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+            <button id="showLoginBtn" class="btn btn-primary">Giriş Yap</button>
+            <button id="showRegisterBtn" class="btn btn-secondary">Kayıt Ol</button>
+        </div>
+        <div id="loginForm">
+            <input type="email" id="loginEmail" placeholder="E-posta">
+            <input type="password" id="loginPassword" placeholder="Şifre">
+            <button id="doLoginBtn" class="btn btn-primary" style="width: 100%;">Giriş Yap</button>
+        </div>
+        <div id="registerForm" style="display: none;">
+            <input type="text" id="regName" placeholder="Adınız Soyadınız">
+            <input type="email" id="regEmail" placeholder="E-posta">
+            <input type="password" id="regPassword" placeholder="Şifre (6+ karakter)">
+            <button id="doRegisterBtn" class="btn btn-primary" style="width: 100%;">Kayıt Ol</button>
+        </div>
+    </div>
+
+    <!-- Ana Sayfa -->
+    <div id="homeScreen" class="hidden">
+        <div class="stats">
+            <div class="stat"><div class="stat-value" id="totalBooks">0</div><div>Kitap</div></div>
+            <div class="stat"><div class="stat-value" id="totalLessons">0</div><div>Ders</div></div>
+            <div class="stat"><div class="stat-value" id="totalWords">0</div><div>Kelime</div></div>
+        </div>
+        <div class="card">
+            <h3>📖 Öne Çıkan Kitaplar</h3>
+            <div class="books-grid" id="featuredBooks"></div>
+        </div>
+    </div>
+
+    <!-- Kitaplar Ekranı -->
+    <div id="booksScreen" class="hidden">
+        <h3>📚 Kitaplar</h3>
+        <div class="books-grid" id="booksList"></div>
+        <button class="btn btn-secondary" onclick="goHome()">← Geri</button>
+    </div>
+
+    <!-- Dersler Ekranı -->
+    <div id="lessonsScreen" class="hidden">
+        <h3 id="lessonsTitle">📖 Dersler</h3>
+        <div class="lessons-grid" id="lessonsList"></div>
+        <button class="btn btn-secondary" onclick="showBooks()">← Geri</button>
+    </div>
+
+    <!-- Kelime Öğrenme Ekranı -->
+    <div id="wordsScreen" class="hidden">
+        <div class="stats">
+            <div class="stat"><div class="stat-value" id="wordCount">0</div><div>Bu Dersteki Kelime</div></div>
+            <div class="stat"><div class="stat-value" id="progressPercent">0%</div><div>İlerleme</div></div>
+        </div>
+        <div class="card word-card">
+            <div class="arabic" id="arabicWord">خلق</div>
+            <div class="turkish hidden" id="turkishWord">yaratılış</div>
+            <div class="btn-group">
+                <button id="soundBtn" class="btn btn-secondary">🔊 Ses</button>
+                <button id="showBtn" class="btn btn-primary">👁️ Göster</button>
+                <button id="nextBtn" class="btn btn-primary">➡️ Sonraki</button>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <button class="btn btn-secondary" onclick="showLessons()">← Derslere Dön</button>
+    </div>
+
+    <!-- Profil Ekranı -->
+    <div id="profileScreen" class="hidden">
+        <div class="card">
+            <h3>👤 Profil Bilgilerim</h3>
+            <p><strong>Ad:</strong> <span id="profileName"></span></p>
+            <p><strong>E-posta:</strong> <span id="profileEmail"></span></p>
+            <p><strong>Toplam Kelime:</strong> <span id="profileTotalWords">0</span></p>
+            <div style="margin-top: 20px;">
+                <input type="password" id="newPassword" placeholder="Yeni Şifre">
+                <button id="updatePasswordBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Şifreyi Güncelle</button>
+            </div>
+        </div>
+        <button class="btn btn-secondary" onclick="goHome()">← Ana Sayfaya Dön</button>
+    </div>
+</div>
+
+<script type="module">
+    import { db, auth } from './firebase.js';
+    import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    let currentUser = null;
+    let currentBook = null;
+    let currentLesson = null;
+    let currentWords = [];
+    let currentWordIndex = 0;
+    let lessonsList = [];
+    let booksList = [];
+
+    // DOM Elements
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const loginScreen = document.getElementById('loginScreen');
+    const homeScreen = document.getElementById('homeScreen');
+    const booksScreen = document.getElementById('booksScreen');
+    const lessonsScreen = document.getElementById('lessonsScreen');
+    const wordsScreen = document.getElementById('wordsScreen');
+    const profileScreen = document.getElementById('profileScreen');
+
+    function showScreen(screen) {
+        [loginScreen, homeScreen, booksScreen, lessonsScreen, wordsScreen, profileScreen].forEach(s => s.classList.add('hidden'));
+        screen.classList.remove('hidden');
+    }
+
+    function toggleMenu() { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); }
+    menuBtn.onclick = toggleMenu;
+    overlay.onclick = toggleMenu;
+
+    window.goHome = () => { showScreen(homeScreen); loadHomeData(); toggleMenu(); };
+    window.goBooks = () => { showScreen(booksScreen); loadBooks(); toggleMenu(); };
+    window.showProfile = () => { showScreen(profileScreen); loadProfile(); toggleMenu(); };
+    window.showBooks = () => { showScreen(booksScreen); loadBooks(); };
+    window.showLessons = () => { showScreen(lessonsScreen); loadLessons(); };
+
+    async function loadHomeData() {
+        const books = await getDocs(collection(db, 'books'));
+        const lessons = await getDocs(collection(db, 'lessons'));
+        const words = await getDocs(collection(db, 'words'));
+        document.getElementById('totalBooks').innerText = books.size;
+        document.getElementById('totalLessons').innerText = lessons.size;
+        document.getElementById('totalWords').innerText = words.size;
+        
+        const featured = document.getElementById('featuredBooks');
+        featured.innerHTML = '';
+        books.docs.slice(0, 4).forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'book-card';
+            div.innerHTML = `<strong>${data.name}</strong><br><small>${data.description || ''}</small>`;
+            div.onclick = () => selectBook(doc.id, data.name);
+            featured.appendChild(div);
+        });
+    }
+
+    async function loadBooks() {
+        const snapshot = await getDocs(collection(db, 'books'));
+        booksList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const container = document.getElementById('booksList');
+        container.innerHTML = '';
+        booksList.forEach(book => {
+            const div = document.createElement('div');
+            div.className = 'book-card';
+            div.innerHTML = `<strong>${book.name}</strong><br><small>${book.description || ''}</small>`;
+            div.onclick = () => selectBook(book.id, book.name);
+            container.appendChild(div);
+        });
+    }
+
+    async function selectBook(bookId, bookName) {
+        currentBook = bookId;
+        document.getElementById('lessonsTitle').innerHTML = `📖 ${bookName} - Dersler`;
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const container = document.getElementById('lessonsList');
+        container.innerHTML = '';
+        lessonsList.forEach(lesson => {
+            const div = document.createElement('div');
+            div.className = 'lesson-card';
+            div.innerHTML = `<strong>${lesson.name}</strong><br><small>${lesson.description || ''}</small>`;
+            div.onclick = () => selectLesson(lesson.id);
+            container.appendChild(div);
+        });
+        showScreen(lessonsScreen);
+    }
+
+    async function selectLesson(lessonId) {
+        currentLesson = lessonId;
+        const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+        currentWords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        document.getElementById('wordCount').innerText = currentWords.length;
+        if (currentWords.length > 0) {
+            currentWordList = [...currentWords];
+            for (let i = currentWordList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentWordList[i], currentWordList[j]] = [currentWordList[j], currentWordList[i]];
+            }
+            currentWordIndex = 0;
+            displayWord();
+        }
+        showScreen(wordsScreen);
+    }
+
+    function displayWord() {
+        if (currentWords.length === 0) return;
+        const word = currentWordList[currentWordIndex];
+        document.getElementById('arabicWord').innerText = word.arabic;
+        document.getElementById('turkishWord').innerText = word.turkish;
+        document.getElementById('turkishWord').classList.add('hidden');
+        const percent = Math.round(((currentWordIndex + 1) / currentWordList.length) * 100);
+        document.getElementById('progressFill').style.width = `${percent}%`;
+        document.getElementById('progressPercent').innerText = `${percent}%`;
+    }
+
+    document.getElementById('showBtn')?.addEventListener('click', () => {
+        document.getElementById('turkishWord').classList.remove('hidden');
+        if (currentUser && currentLesson) updateWordCount();
+    });
+    document.getElementById('nextBtn')?.addEventListener('click', () => {
+        if (currentWords.length === 0) return;
+        currentWordIndex = (currentWordIndex + 1) % currentWordList.length;
+        displayWord();
+    });
+    document.getElementById('soundBtn')?.addEventListener('click', () => {
+        const word = currentWordList[currentWordIndex];
+        if (word) { const utterance = new SpeechSynthesisUtterance(word.arabic); utterance.lang = 'ar-SA'; speechSynthesis.speak(utterance); }
+    });
+
+    async function updateWordCount() {
+        if (!currentUser) return;
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        const current = userDoc.data()?.totalWordsViewed || 0;
+        await updateDoc(userRef, { totalWordsViewed: current + 1 });
+    }
+
+    async function loadProfile() {
+        if (!currentUser) return;
+        document.getElementById('profileName').innerText = currentUser.email.split('@')[0];
+        document.getElementById('profileEmail').innerText = currentUser.email;
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+            document.getElementById('profileTotalWords').innerText = userDoc.data().totalWordsViewed || 0;
+        }
+    }
+
+    // Auth
+    document.getElementById('showLoginBtn').onclick = () => { document.getElementById('loginForm').style.display = 'block'; document.getElementById('registerForm').style.display = 'none'; };
+    document.getElementById('showRegisterBtn').onclick = () => { document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'block'; };
+    
+    document.getElementById('doLoginBtn').onclick = async () => {
+        try {
+            await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+            currentUser = auth.currentUser;
+            document.getElementById('userBadge').innerHTML = `👤 ${currentUser.email.split('@')[0]}`;
+            document.getElementById('userBadge').style.display = 'inline-block';
+            document.getElementById('sidebarUser').innerText = currentUser.email.split('@')[0];
+            showScreen(homeScreen);
+            loadHomeData();
+        } catch(e) { alert('Hata: ' + e.message); }
+    };
+    
+    document.getElementById('doRegisterBtn').onclick = async () => {
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, document.getElementById('regEmail').value, document.getElementById('regPassword').value);
+            await setDoc(doc(db, 'users', cred.user.uid), { name: document.getElementById('regName').value, email: cred.user.email, totalWordsViewed: 0, createdAt: new Date().toISOString() });
+            alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+        } catch(e) { alert('Hata: ' + e.message); }
+    };
+    
+    document.getElementById('updatePasswordBtn').onclick = async () => {
+        const newPass = document.getElementById('newPassword').value;
+        if (newPass.length < 6) { alert('Şifre en az 6 karakter!'); return; }
+        try { await updatePassword(auth.currentUser, newPass); alert('Şifre güncellendi!'); } catch(e) { alert('Hata: ' + e.message); }
+    };
+    
+    window.logout = async () => { await signOut(auth); currentUser = null; document.getElementById('userBadge').style.display = 'none'; showScreen(loginScreen); toggleMenu(); };
+    
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('userBadge').innerHTML = `👤 ${user.email.split('@')[0]}`;
+            document.getElementById('userBadge').style.display = 'inline-block';
+            document.getElementById('sidebarUser').innerText = user.email.split('@')[0];
+            showScreen(homeScreen);
+            loadHomeData();
+        } else {
+            showScreen(loginScreen);
+        }
+    });
+</script>
+</body>
+</html>
