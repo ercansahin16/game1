@@ -11,17 +11,19 @@
             background: linear-gradient(135deg, #0f172a, #1e1b4b);
             min-height: 100vh;
             color: white;
+            transition: all 0.3s;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .logo { font-size: 24px; font-weight: bold; color: #f59e0b; }
-        .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s; }
         .btn-primary { background: #f59e0b; color: #1e1b4b; }
+        .btn-primary:hover { background: #d97706; transform: scale(1.02); }
         .btn-secondary { background: #3b82f6; color: white; }
         .btn-danger { background: #ef4444; color: white; }
         .card { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-        .login-card { max-width: 400px; margin: 50px auto; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; }
+        .login-card { max-width: 450px; margin: 50px auto; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; font-size: 14px; }
         input::placeholder { color: #ccc; }
         .books-grid, .lessons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
         .book-card, .lesson-card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
@@ -30,39 +32,106 @@
         .arabic { font-size: 48px; font-family: 'Amiri', serif; margin-bottom: 20px; }
         .turkish { font-size: 24px; color: #f59e0b; margin-bottom: 30px; }
         .hidden { display: none; }
-        .stats { display: flex; gap: 15px; margin-bottom: 20px; }
-        .stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; }
-        .menu-btn { position: fixed; top: 20px; left: 20px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; z-index: 100; }
-        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #1e1b4b; transition: 0.3s; padding: 20px; z-index: 99; }
+        .stats { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; min-width: 100px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #f59e0b; }
+        
+        /* Hamburger Menü */
+        .menu-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #f59e0b;
+            border: none;
+            color: #1e1b4b;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .menu-btn:hover { transform: scale(1.05); background: #d97706; }
+        .menu-btn.hidden { display: none; }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e1b4b;
+            z-index: 99;
+            transition: 0.3s;
+            padding: 80px 20px 20px 20px;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+        }
         .sidebar.open { left: 0; }
-        .sidebar-item { padding: 12px; margin: 5px 0; border-radius: 10px; cursor: pointer; }
-        .sidebar-item:hover { background: #f59e0b; }
-        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 98; display: none; }
+        .sidebar-header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #f59e0b; margin-bottom: 20px; }
+        .sidebar-header h3 { color: #f59e0b; }
+        .sidebar-item { padding: 12px 20px; margin: 5px 0; border-radius: 12px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 12px; }
+        .sidebar-item:hover { background: #f59e0b; color: #1e1b4b; }
+        .sidebar-footer { position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px; }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 98;
+            display: none;
+        }
         .overlay.active { display: block; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .progress-bar { height: 8px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 10px; }
-        .progress-fill { height: 100%; background: #f59e0b; width: 0%; transition: width 0.3s; }
-        @media (max-width: 600px) { .arabic { font-size: 32px; } .turkish { font-size: 18px; } }
+        
+        .reset-link { color: #f59e0b; cursor: pointer; margin-top: 15px; display: inline-block; font-size: 13px; text-decoration: underline; }
+        .reset-link:hover { color: #d97706; }
+        
+        .forgot-card { margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; }
+        
+        @media (max-width: 600px) {
+            .arabic { font-size: 32px; }
+            .turkish { font-size: 18px; }
+            .stats { gap: 10px; }
+            .stat { padding: 10px; }
+            .stat-value { font-size: 20px; }
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-<button class="menu-btn" id="menuBtn">☰</button>
+<!-- Hamburger Menü Butonu (Sadece giriş yapınca görünür) -->
+<button class="menu-btn hidden" id="menuBtn"><i class="fas fa-bars"></i></button>
+
+<!-- Sidebar Menü -->
 <div class="sidebar" id="sidebar">
-    <div style="margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #444;">
-        <strong id="sidebarUser">Misafir</strong>
+    <div class="sidebar-header">
+        <h3><i class="fas fa-seedling"></i> Saadet Yolu</h3>
+        <small id="sidebarUserName">Misafir</small>
     </div>
-    <div class="sidebar-item" onclick="goHome()">🏠 Ana Sayfa</div>
-    <div class="sidebar-item" onclick="goBooks()">📚 Kitaplarım</div>
-    <div class="sidebar-item" onclick="showProfile()">👤 Profilim</div>
-    <div class="sidebar-item" onclick="logout()">🚪 Çıkış Yap</div>
+    <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
+    <div class="sidebar-item" onclick="goBooks()"><i class="fas fa-book"></i> Kitaplarım</div>
+    <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
+    <div class="sidebar-footer">
+        <div class="sidebar-item" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
+        <div class="sidebar-item" id="themeBtn"><i class="fas fa-moon"></i> Tema Değiştir</div>
+    </div>
 </div>
 <div class="overlay" id="overlay"></div>
 
 <div class="container">
     <div class="header">
         <div class="logo">🌸 Saadet Yolu</div>
-        <div id="userBadge" class="stat" style="padding: 5px 15px; width: auto; display: none;"></div>
+        <div id="userBadge" class="stat" style="padding: 8px 20px; width: auto; display: none; margin: 0;">
+            <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
+        </div>
     </div>
 
     <!-- Giriş Ekranı -->
@@ -73,16 +142,31 @@
             <button id="showLoginBtn" class="btn btn-primary">Giriş Yap</button>
             <button id="showRegisterBtn" class="btn btn-secondary">Kayıt Ol</button>
         </div>
+        
+        <!-- Giriş Formu -->
         <div id="loginForm">
             <input type="email" id="loginEmail" placeholder="E-posta">
             <input type="password" id="loginPassword" placeholder="Şifre">
             <button id="doLoginBtn" class="btn btn-primary" style="width: 100%;">Giriş Yap</button>
+            <div class="reset-link" id="showForgotBtn">Şifremi unuttum?</div>
         </div>
+        
+        <!-- Kayıt Formu -->
         <div id="registerForm" style="display: none;">
             <input type="text" id="regName" placeholder="Adınız Soyadınız">
             <input type="email" id="regEmail" placeholder="E-posta">
             <input type="password" id="regPassword" placeholder="Şifre (6+ karakter)">
             <button id="doRegisterBtn" class="btn btn-primary" style="width: 100%;">Kayıt Ol</button>
+        </div>
+        
+        <!-- Şifre Sıfırlama Formu -->
+        <div id="forgotForm" style="display: none;">
+            <div class="forgot-card">
+                <p>Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.</p>
+                <input type="email" id="forgotEmail" placeholder="E-posta adresiniz">
+                <button id="doForgotBtn" class="btn btn-primary" style="width: 100%;">Bağlantı Gönder</button>
+                <div id="forgotMessage" style="margin-top: 10px; font-size: 12px;"></div>
+            </div>
         </div>
     </div>
 
@@ -122,12 +206,16 @@
         <div class="card word-card">
             <div class="arabic" id="arabicWord">خلق</div>
             <div class="turkish hidden" id="turkishWord">yaratılış</div>
-            <div class="btn-group">
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
                 <button id="soundBtn" class="btn btn-secondary">🔊 Ses</button>
                 <button id="showBtn" class="btn btn-primary">👁️ Göster</button>
                 <button id="nextBtn" class="btn btn-primary">➡️ Sonraki</button>
             </div>
-            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div style="margin-top: 20px;">
+                <div class="progress-bar" style="height: 6px; background: #333; border-radius: 10px; overflow: hidden;">
+                    <div class="progress-fill" id="progressFill" style="height: 100%; width: 0%; background: #f59e0b;"></div>
+                </div>
+            </div>
         </div>
         <button class="btn btn-secondary" onclick="showLessons()">← Derslere Dön</button>
     </div>
@@ -140,7 +228,7 @@
             <p><strong>E-posta:</strong> <span id="profileEmail"></span></p>
             <p><strong>Toplam Kelime:</strong> <span id="profileTotalWords">0</span></p>
             <div style="margin-top: 20px;">
-                <input type="password" id="newPassword" placeholder="Yeni Şifre">
+                <input type="password" id="newPassword" placeholder="Yeni Şifre (6+ karakter)">
                 <button id="updatePasswordBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Şifreyi Güncelle</button>
             </div>
         </div>
@@ -149,16 +237,29 @@
 </div>
 
 <script type="module">
-    import { db, auth } from './firebase.js';
-    import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-    import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+        authDomain: "duapro-a7d7e.firebaseapp.com",
+        projectId: "duapro-a7d7e",
+        storageBucket: "duapro-a7d7e.appspot.com",
+        messagingSenderId: "450775848659",
+        appId: "1:450775848659:web:ca192a401da3f887e1e626"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     let currentUser = null;
     let currentBook = null;
     let currentLesson = null;
     let currentWords = [];
+    let currentWordList = [];
     let currentWordIndex = 0;
-    let lessonsList = [];
     let booksList = [];
 
     // DOM Elements
@@ -172,20 +273,20 @@
     const wordsScreen = document.getElementById('wordsScreen');
     const profileScreen = document.getElementById('profileScreen');
 
+    function toggleMenu() { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); }
+    menuBtn.onclick = toggleMenu;
+    overlay.onclick = toggleMenu;
+
     function showScreen(screen) {
         [loginScreen, homeScreen, booksScreen, lessonsScreen, wordsScreen, profileScreen].forEach(s => s.classList.add('hidden'));
         screen.classList.remove('hidden');
     }
 
-    function toggleMenu() { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); }
-    menuBtn.onclick = toggleMenu;
-    overlay.onclick = toggleMenu;
-
-    window.goHome = () => { showScreen(homeScreen); loadHomeData(); toggleMenu(); };
-    window.goBooks = () => { showScreen(booksScreen); loadBooks(); toggleMenu(); };
-    window.showProfile = () => { showScreen(profileScreen); loadProfile(); toggleMenu(); };
+    window.goHome = () => { showScreen(homeScreen); loadHomeData(); if(sidebar.classList.contains('open')) toggleMenu(); };
+    window.goBooks = () => { showScreen(booksScreen); loadBooks(); if(sidebar.classList.contains('open')) toggleMenu(); };
     window.showBooks = () => { showScreen(booksScreen); loadBooks(); };
     window.showLessons = () => { showScreen(lessonsScreen); loadLessons(); };
+    window.showProfile = () => { showScreen(profileScreen); loadProfile(); if(sidebar.classList.contains('open')) toggleMenu(); };
 
     async function loadHomeData() {
         const books = await getDocs(collection(db, 'books'));
@@ -225,7 +326,7 @@
         currentBook = bookId;
         document.getElementById('lessonsTitle').innerHTML = `📖 ${bookName} - Dersler`;
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const container = document.getElementById('lessonsList');
         container.innerHTML = '';
         lessonsList.forEach(lesson => {
@@ -285,7 +386,7 @@
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         const current = userDoc.data()?.totalWordsViewed || 0;
-        await updateDoc(userRef, { totalWordsViewed: current + 1 });
+        await updateDoc(userRef, { totalWordsViewed: current + 1, lastActive: new Date().toISOString() });
     }
 
     async function loadProfile() {
@@ -298,48 +399,98 @@
         }
     }
 
-    // Auth
-    document.getElementById('showLoginBtn').onclick = () => { document.getElementById('loginForm').style.display = 'block'; document.getElementById('registerForm').style.display = 'none'; };
-    document.getElementById('showRegisterBtn').onclick = () => { document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'block'; };
-    
+    // Tab geçişleri
+    document.getElementById('showLoginBtn').onclick = () => { document.getElementById('loginForm').style.display = 'block'; document.getElementById('registerForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'none'; };
+    document.getElementById('showRegisterBtn').onclick = () => { document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'block'; document.getElementById('forgotForm').style.display = 'none'; };
+    document.getElementById('showForgotBtn').onclick = () => { document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'block'; };
+
+    // Giriş
     document.getElementById('doLoginBtn').onclick = async () => {
         try {
             await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
-            currentUser = auth.currentUser;
-            document.getElementById('userBadge').innerHTML = `👤 ${currentUser.email.split('@')[0]}`;
-            document.getElementById('userBadge').style.display = 'inline-block';
-            document.getElementById('sidebarUser').innerText = currentUser.email.split('@')[0];
-            showScreen(homeScreen);
-            loadHomeData();
         } catch(e) { alert('Hata: ' + e.message); }
     };
-    
+
+    // Kayıt
     document.getElementById('doRegisterBtn').onclick = async () => {
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const name = document.getElementById('regName').value;
+        if (password.length < 6) { alert('Şifre en az 6 karakter olmalı!'); return; }
         try {
-            const cred = await createUserWithEmailAndPassword(auth, document.getElementById('regEmail').value, document.getElementById('regPassword').value);
-            await setDoc(doc(db, 'users', cred.user.uid), { name: document.getElementById('regName').value, email: cred.user.email, totalWordsViewed: 0, createdAt: new Date().toISOString() });
+            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            await setDoc(doc(db, 'users', cred.user.uid), { name, email, totalWordsViewed: 0, createdAt: new Date().toISOString() });
             alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+            document.getElementById('showLoginBtn').click();
         } catch(e) { alert('Hata: ' + e.message); }
     };
-    
+
+    // Şifre Sıfırlama
+    document.getElementById('doForgotBtn').onclick = async () => {
+        const email = document.getElementById('forgotEmail').value;
+        if (!email) { alert('Lütfen e-posta adresinizi girin!'); return; }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            document.getElementById('forgotMessage').innerHTML = '<span style="color: #10b981;">✅ Şifre sıfırlama bağlantısı gönderildi! E-postanızı kontrol edin.</span>';
+            document.getElementById('forgotEmail').value = '';
+        } catch(e) { document.getElementById('forgotMessage').innerHTML = '<span style="color: #ef4444;">❌ Hata: ' + e.message + '</span>'; }
+    };
+
+    // Şifre Güncelleme
     document.getElementById('updatePasswordBtn').onclick = async () => {
         const newPass = document.getElementById('newPassword').value;
         if (newPass.length < 6) { alert('Şifre en az 6 karakter!'); return; }
-        try { await updatePassword(auth.currentUser, newPass); alert('Şifre güncellendi!'); } catch(e) { alert('Hata: ' + e.message); }
+        try { await updatePassword(auth.currentUser, newPass); alert('Şifre güncellendi!'); document.getElementById('newPassword').value = ''; } 
+        catch(e) { alert('Hata: ' + e.message); }
     };
-    
-    window.logout = async () => { await signOut(auth); currentUser = null; document.getElementById('userBadge').style.display = 'none'; showScreen(loginScreen); toggleMenu(); };
-    
-    auth.onAuthStateChanged(async (user) => {
+
+    // Çıkış
+    document.getElementById('logoutBtn').onclick = async () => { await signOut(auth); };
+
+    // Tema değiştir
+    let isDark = true;
+    document.getElementById('themeBtn').onclick = () => {
+        if (isDark) {
+            document.body.style.background = 'linear-gradient(135deg, #f5f7fa, #e8edf5)';
+            document.body.style.color = '#1e1b4b';
+            document.querySelectorAll('.card, .stat, .book-card, .lesson-card').forEach(el => el.style.background = 'rgba(0,0,0,0.05)');
+            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#ffffff');
+            document.querySelectorAll('.btn, input').forEach(el => el.style.background = 'rgba(0,0,0,0.1)');
+            document.getElementById('themeBtn').innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
+        } else {
+            document.body.style.background = 'linear-gradient(135deg, #0f172a, #1e1b4b)';
+            document.body.style.color = 'white';
+            document.querySelectorAll('.card, .stat, .book-card, .lesson-card').forEach(el => el.style.background = 'rgba(255,255,255,0.1)');
+            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#1e1b4b');
+            document.querySelectorAll('.btn, input').forEach(el => el.style.background = 'rgba(255,255,255,0.2)');
+            document.getElementById('themeBtn').innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
+        }
+        isDark = !isDark;
+    };
+
+    // Auth durumu dinleme
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            document.getElementById('userBadge').innerHTML = `👤 ${user.email.split('@')[0]}`;
-            document.getElementById('userBadge').style.display = 'inline-block';
-            document.getElementById('sidebarUser').innerText = user.email.split('@')[0];
+            menuBtn.classList.remove('hidden');
+            document.getElementById('userBadge').style.display = 'flex';
+            document.getElementById('userNameDisplay').innerText = user.email.split('@')[0];
+            document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0]}`;
             showScreen(homeScreen);
-            loadHomeData();
+            await loadHomeData();
         } else {
+            currentUser = null;
+            menuBtn.classList.add('hidden');
+            document.getElementById('userBadge').style.display = 'none';
+            document.getElementById('sidebarUserName').innerHTML = 'Misafir';
             showScreen(loginScreen);
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('regName').value = '';
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('forgotMessage').innerHTML = '';
         }
     });
 </script>
