@@ -464,44 +464,92 @@ async function loadAllBooks() {
 
 window.selectBookForLessons = async (bookId, bookName) => {
     currentEditingBookId = bookId;
-    document.getElementById('currentBookName').innerText = bookName;
-    document.getElementById('lessonsSection').style.display = 'block';
-    document.getElementById('moveLessonBtn').style.display = 'inline-flex';
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId), orderBy('order', 'asc')));
+    
+    // Element kontrolü ile güvenli atama
+    const currentBookNameEl = document.getElementById('currentBookName');
+    if (currentBookNameEl) {
+        currentBookNameEl.innerText = bookName;
+    }
+    
+    const lessonsSection = document.getElementById('lessonsSection');
+    if (lessonsSection) lessonsSection.style.display = 'block';
+    
+    const moveLessonBtn = document.getElementById('moveLessonBtn');
+    if (moveLessonBtn) moveLessonBtn.style.display = 'inline-flex';
+    
+    // Dersleri yükle
+    const lessonsRef = collection(db, 'lessons');
+    const q = query(lessonsRef, where('bookId', '==', bookId));
+    const snapshot = await getDocs(q);
+    const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
     const container = document.getElementById('lessonsAdminList');
     if (container) {
         container.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement('div');
-            div.className = 'lesson-admin-item';
-            div.innerHTML = `<div><h4>${data.name}</h4><p>${data.description || ''} | Sıra: ${data.order || 0}</p></div>
-                <div><button class="btn-warning" onclick="window.editLessonAdmin('${doc.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-info" onclick="window.selectLessonForWords('${doc.id}', '${data.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
-                <button class="btn-danger" onclick="window.deleteLessonAdmin('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
+        if (lessonsList.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Bu kitapta henüz ders yok. "Yeni Ders" butonuna tıklayın.</div>';
+        } else {
+            lessonsList.forEach(lesson => {
+                const div = document.createElement('div');
+                div.className = 'lesson-admin-item';
+                div.innerHTML = `
+                    <div class="lesson-info">
+                        <h4><i class="fas fa-graduation-cap"></i> ${lesson.name}</h4>
+                        <p>${lesson.description || 'Açıklama yok'} | Sıra: ${lesson.order || 0}</p>
+                    </div>
+                    <div class="lesson-actions">
+                        <button class="btn-warning" onclick="window.editLessonAdmin('${lesson.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-info" onclick="window.selectLessonForWords('${lesson.id}', '${lesson.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
+                        <button class="btn-danger" onclick="window.deleteLessonAdmin('${lesson.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
     }
 };
 
 window.selectLessonForWords = async (lessonId, lessonName) => {
     currentEditingLessonId = lessonId;
-    document.getElementById('currentLessonName').innerText = lessonName;
-    document.getElementById('wordsSection').style.display = 'block';
-    document.getElementById('moveWordBtn').style.display = 'inline-flex';
-    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+    
+    const currentLessonNameEl = document.getElementById('currentLessonName');
+    if (currentLessonNameEl) {
+        currentLessonNameEl.innerText = lessonName;
+    }
+    
+    const wordsSection = document.getElementById('wordsSection');
+    if (wordsSection) wordsSection.style.display = 'block';
+    
+    const moveWordBtn = document.getElementById('moveWordBtn');
+    if (moveWordBtn) moveWordBtn.style.display = 'inline-flex';
+    
+    const wordsRef = collection(db, 'words');
+    const q = query(wordsRef, where('lessonId', '==', lessonId));
+    const snapshot = await getDocs(q);
+    const wordsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
     const container = document.getElementById('wordsAdminList');
     if (container) {
         container.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement('div');
-            div.className = 'word-admin-item';
-            div.innerHTML = `<div><div class="word-arabic">${data.arabic}</div><div class="word-turkish">${data.turkish}</div></div>
-                <div><button class="btn-warning" onclick="window.editWordAdmin('${doc.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-danger" onclick="window.deleteWordAdmin('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
+        if (wordsList.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz kelime yok. "Yeni Kelime" butonuna tıklayın.</div>';
+        } else {
+            wordsList.forEach(word => {
+                const div = document.createElement('div');
+                div.className = 'word-admin-item';
+                div.innerHTML = `
+                    <div class="word-info">
+                        <div class="word-arabic">${word.arabic}</div>
+                        <div class="word-turkish">${word.turkish}</div>
+                    </div>
+                    <div class="word-actions">
+                        <button class="btn-warning" onclick="window.editWordAdmin('${word.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger" onclick="window.deleteWordAdmin('${word.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
     }
 };
 
