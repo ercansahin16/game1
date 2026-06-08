@@ -530,7 +530,16 @@ async function loadAllUsers() {
         }
     }
 }
-
+// HTML özel karakterleri kaçış fonksiyonu
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
 async function loadAllBooks() {
     try {
         const snapshot = await getDocs(collection(db, 'books'));
