@@ -524,7 +524,11 @@ async function loadAllUsers() {
 async function loadAllBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    document.getElementById('totalBooksCount').innerText = books.length;
+    
+    // SADECE admin panelinde varsa güncelle
+    const totalBooksCountEl = document.getElementById('totalBooksCount');
+    if (totalBooksCountEl) totalBooksCountEl.innerText = books.length;
+    
     const container = document.getElementById('booksList');
     if (container) {
         container.innerHTML = '';
@@ -535,6 +539,7 @@ async function loadAllBooks() {
             container.appendChild(div);
         });
     }
+    
     await loadLessonFilters();
     await loadWordFilters();
 }
@@ -581,7 +586,11 @@ async function loadLessonsByBook(bookId) {
             container.appendChild(div);
         });
     }
-    document.getElementById('totalLessonsCount').innerText = snapshot.size;
+    
+    // SADECE admin panelinde varsa güncelle
+    const totalLessonsCountEl = document.getElementById('totalLessonsCount');
+    if (totalLessonsCountEl) totalLessonsCountEl.innerText = snapshot.size;
+    
     const sidebarTotalLessons = document.getElementById('sidebarTotalLessons');
     if (sidebarTotalLessons) sidebarTotalLessons.innerText = snapshot.size;
 }
@@ -610,7 +619,11 @@ async function loadWordsByLesson(lessonId) {
             container.appendChild(div);
         });
     }
-    document.getElementById('totalWordsCount').innerText = snapshot.size;
+    
+    // SADECE admin panelinde varsa güncelle
+    const totalWordsCountEl = document.getElementById('totalWordsCount');
+    if (totalWordsCountEl) totalWordsCountEl.innerText = snapshot.size;
+    
     const sidebarTotalWords = document.getElementById('sidebarTotalWords');
     if (sidebarTotalWords) sidebarTotalWords.innerText = snapshot.size;
 }
