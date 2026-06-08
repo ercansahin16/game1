@@ -440,6 +440,7 @@ async function initAdminPage() {
         document.getElementById('adminPanel').classList.remove('hidden');
         loadAllBooks();
         loadAllUsers();
+        initAdminMenu();
     }
 }
 
@@ -713,6 +714,294 @@ async function loadAllUsers() {
         });
     }
 }
+
+
+// ========== ADMIN MENÜ FONKSİYONLARI ==========
+
+// Admin menü elementleri
+let adminSideMenu = null;
+let adminMenuOverlay = null;
+
+function initAdminMenu() {
+    adminSideMenu = document.getElementById('adminSideMenu');
+    adminMenuOverlay = document.getElementById('adminMenuOverlay');
+    const adminMenuBtn = document.getElementById('adminMenuBtn');
+    
+    if (adminMenuBtn) {
+        adminMenuBtn.addEventListener('click', () => {
+            adminSideMenu?.classList.toggle('open');
+            adminMenuOverlay?.classList.toggle('active');
+        });
+    }
+    
+    if (adminMenuOverlay) {
+        adminMenuOverlay.addEventListener('click', () => {
+            adminSideMenu?.classList.remove('open');
+            adminMenuOverlay?.classList.remove('active');
+        });
+    }
+}
+
+// Admin bölüm gösterim fonksiyonları
+window.showAdminUsers = function() {
+    document.getElementById('adminUsersSection')?.classList.remove('hidden');
+    document.getElementById('adminBooksSection')?.classList.add('hidden');
+    document.getElementById('adminLessonsSection')?.classList.add('hidden');
+    document.getElementById('adminWordsSection')?.classList.add('hidden');
+    adminSideMenu?.classList.remove('open');
+    adminMenuOverlay?.classList.remove('active');
+    loadAllUsers();
+};
+
+window.showAdminBooks = function() {
+    document.getElementById('adminUsersSection')?.classList.add('hidden');
+    document.getElementById('adminBooksSection')?.classList.remove('hidden');
+    document.getElementById('adminLessonsSection')?.classList.add('hidden');
+    document.getElementById('adminWordsSection')?.classList.add('hidden');
+    adminSideMenu?.classList.remove('open');
+    adminMenuOverlay?.classList.remove('active');
+    loadAllBooks();
+};
+
+window.showAdminLessons = function() {
+    document.getElementById('adminUsersSection')?.classList.add('hidden');
+    document.getElementById('adminBooksSection')?.classList.add('hidden');
+    document.getElementById('adminLessonsSection')?.classList.remove('hidden');
+    document.getElementById('adminWordsSection')?.classList.add('hidden');
+    adminSideMenu?.classList.remove('open');
+    adminMenuOverlay?.classList.remove('active');
+    loadLessonsForAdminSelect();
+};
+
+window.showAdminWords = function() {
+    document.getElementById('adminUsersSection')?.classList.add('hidden');
+    document.getElementById('adminBooksSection')?.classList.add('hidden');
+    document.getElementById('adminLessonsSection')?.classList.add('hidden');
+    document.getElementById('adminWordsSection')?.classList.remove('hidden');
+    adminSideMenu?.classList.remove('open');
+    adminMenuOverlay?.classList.remove('active');
+    loadWordsForAdminSelect();
+};
+
+window.toggleAdminTheme = function() {
+    if (document.body.classList.contains('dark-mode')) {
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+    }
+    const icon = document.getElementById('adminThemeIcon');
+    if (icon) icon.className = document.body.classList.contains('dark-mode') ? 'fas fa-moon' : 'fas fa-sun';
+    adminSideMenu?.classList.remove('open');
+    adminMenuOverlay?.classList.remove('active');
+};
+
+// Admin dersler için kitap seçimi
+async function loadLessonsForAdminSelect() {
+    const booksRef = collection(db, 'books');
+    const snapshot = await getDocs(booksRef);
+    const booksList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+    
+    const select = document.getElementById('lessonBookSelect');
+    if (select) {
+        select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        booksList.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book.id;
+            option.textContent = book.name;
+            select.appendChild(option);
+        });
+        select.onchange = () => {
+            if (select.value) {
+                loadLessonsByBook(select.value);
+            }
+        };
+    }
+}
+
+async function loadLessonsByBook(bookId) {
+    const lessonsRef = collection(db, 'lessons');
+    const q = query(lessonsRef, where('bookId', '==', bookId));
+    const snapshot = await getDocs(q);
+    const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const container = document.getElementById('lessonsAdminList');
+    if (container) {
+        container.innerHTML = '';
+        lessonsList.forEach(lesson => {
+            const div = document.createElement('div');
+            div.className = 'lesson-item';
+            div.innerHTML = `
+                <div><strong>${lesson.name}</strong><br><small>${lesson.description || ''} | Sıra: ${lesson.order || 0}</small></div>
+                <div>
+                    <button class="btn-warning" onclick="window.editLessonItem('${lesson.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-info" onclick="window.selectLessonForWordsFromList('${lesson.id}', '${lesson.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i></button>
+                    <button class="btn-danger" onclick="window.deleteLessonItem('${lesson.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    currentEditingBookId = bookId;
+    document.getElementById('moveLessonBtn').style.display = 'inline-flex';
+}
+
+// Admin kelimeler için ders seçimi
+async function loadWordsForAdminSelect() {
+    const booksRef = collection(db, 'books');
+    const snapshot = await getDocs(booksRef);
+    const booksList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+    
+    const bookSelect = document.getElementById('wordBookSelect');
+    if (!bookSelect) {
+        // Ders seçimi için önce kitap seçimi yapalım
+        const selectorDiv = document.querySelector('.lesson-selector');
+        if (selectorDiv) {
+            selectorDiv.innerHTML = '<label>Kitap Seç:</label><select id="wordBookSelect" class="book-select"></select><label style="margin-left:15px">Ders Seç:</label><select id="wordLessonSelectAdmin" class="lesson-select"></select>';
+        }
+    }
+    
+    const bookSelectEl = document.getElementById('wordBookSelect');
+    if (bookSelectEl) {
+        bookSelectEl.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        booksList.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book.id;
+            option.textContent = book.name;
+            bookSelectEl.appendChild(option);
+        });
+        bookSelectEl.onchange = () => {
+            if (bookSelectEl.value) {
+                loadLessonsForWords(bookSelectEl.value);
+            }
+        };
+    }
+}
+
+async function loadLessonsForWords(bookId) {
+    const lessonsRef = collection(db, 'lessons');
+    const q = query(lessonsRef, where('bookId', '==', bookId));
+    const snapshot = await getDocs(q);
+    const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+    
+    const lessonSelect = document.getElementById('wordLessonSelectAdmin');
+    if (lessonSelect) {
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        lessonsList.forEach(lesson => {
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
+        });
+        lessonSelect.onchange = () => {
+            if (lessonSelect.value) {
+                loadWordsByLesson(lessonSelect.value);
+            }
+        };
+    }
+}
+
+async function loadWordsByLesson(lessonId) {
+    currentEditingLessonId = lessonId;
+    const wordsRef = collection(db, 'words');
+    const q = query(wordsRef, where('lessonId', '==', lessonId));
+    const snapshot = await getDocs(q);
+    const wordsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const container = document.getElementById('wordsAdminList');
+    if (container) {
+        container.innerHTML = '';
+        wordsList.forEach(word => {
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            div.innerHTML = `
+                <div><strong class="word-arabic">${word.arabic}</strong> - ${word.turkish}</div>
+                <div>
+                    <button class="btn-warning" onclick="window.editWordItem('${word.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger" onclick="window.deleteWordItem('${word.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    document.getElementById('moveWordBtn').style.display = 'inline-flex';
+}
+
+window.selectLessonForWordsFromList = async (lessonId, lessonName) => {
+    currentEditingLessonId = lessonId;
+    document.getElementById('currentLessonName').innerText = lessonName;
+    document.getElementById('wordsSection').style.display = 'block';
+    document.getElementById('moveWordBtn').style.display = 'inline-flex';
+    
+    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+    const container = document.getElementById('wordsAdminList');
+    if (container) {
+        container.innerHTML = '';
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            div.innerHTML = `<div><strong class="word-arabic">${data.arabic}</strong> - ${data.turkish}</div>
+                <div><button class="btn-warning" onclick="window.editWordItem('${doc.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn-danger" onclick="window.deleteWordItem('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+            container.appendChild(div);
+        });
+    }
+};
+
+window.editLessonItem = async (id) => {
+    const lessonDoc = await getDoc(doc(db, 'lessons', id));
+    if (lessonDoc.exists()) {
+        const data = lessonDoc.data();
+        document.getElementById('lessonModalTitle').innerText = 'Ders Düzenle';
+        document.getElementById('editLessonId').value = id;
+        document.getElementById('lessonName').value = data.name;
+        document.getElementById('lessonDesc').value = data.description || '';
+        document.getElementById('lessonOrder').value = data.order || 0;
+        document.getElementById('currentBookIdForLesson').value = data.bookId;
+        document.getElementById('lessonModal').classList.remove('hidden');
+    }
+};
+
+window.deleteLessonItem = async (id) => {
+    if (!confirm('Bu dersi silmek istediğinize emin misiniz? İçindeki tüm kelimeler de silinecek!')) return;
+    try {
+        const words = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
+        for (const w of words.docs) await deleteDoc(doc(db, 'words', w.id));
+        await deleteDoc(doc(db, 'lessons', id));
+        showNotification('Ders silindi!');
+        const bookSelect = document.getElementById('lessonBookSelect');
+        if (bookSelect && bookSelect.value) loadLessonsByBook(bookSelect.value);
+    } catch(e) { showNotification('Hata: ' + e.message); }
+};
+
+window.editWordItem = async (id) => {
+    const wordDoc = await getDoc(doc(db, 'words', id));
+    if (wordDoc.exists()) {
+        const data = wordDoc.data();
+        document.getElementById('wordModalTitle').innerText = 'Kelime Düzenle';
+        document.getElementById('editWordId').value = id;
+        document.getElementById('wordArabic').value = data.arabic;
+        document.getElementById('wordTurkish').value = data.turkish;
+        document.getElementById('currentLessonIdForWord').value = data.lessonId;
+        document.getElementById('wordModal').classList.remove('hidden');
+    }
+};
+
+window.deleteWordItem = async (id) => {
+    if (!confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) return;
+    await deleteDoc(doc(db, 'words', id));
+    showNotification('Kelime silindi!');
+    const lessonSelect = document.getElementById('wordLessonSelectAdmin');
+    if (lessonSelect && lessonSelect.value) loadWordsByLesson(lessonSelect.value);
+};
+
+// initAdminPage fonksiyonuna menü başlatmayı ekleyin
+// Mevcut initAdminPage fonksiyonunun içine şunu ekleyin:
+
 
 window.closeBookModal = () => document.getElementById('bookModal').classList.add('hidden');
 window.closeLessonModal = () => document.getElementById('lessonModal').classList.add('hidden');
