@@ -6,11 +6,12 @@
     <title>Saadet Yolu - Arapça Kelime Öğrenme</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dark-mode">
     <div class="app-container">
-        <!-- Hamburger Menü (Sadece giriş sonrası) -->
+        <!-- Hamburger Menü -->
         <div class="menu-overlay" id="menuOverlay"></div>
         <div class="side-menu" id="sideMenu">
             <div class="menu-header">
@@ -24,9 +25,9 @@
                     <i class="fas fa-home"></i>
                     <span>Ana Sayfa</span>
                 </div>
-                <div class="menu-item" onclick="window.goToLessons()">
+                <div class="menu-item" onclick="window.goToBooks()">
                     <i class="fas fa-book"></i>
-                    <span>Derslerim</span>
+                    <span>Kitaplarım</span>
                 </div>
                 <div class="menu-item" onclick="window.showProfile()">
                     <i class="fas fa-user"></i>
@@ -62,21 +63,19 @@
                 </div>
             </div>
 
-            <!-- Giriş Alanı (Login/Register Tabs) -->
+            <!-- Giriş Alanı -->
             <div id="loginSection" class="login-section">
                 <div class="welcome-card">
                     <div class="flower-icon">🌸🌺🌼</div>
                     <h2>Allah'ı Tanımaya Hoş Geldiniz</h2>
                     <p>Rahman ve Rahim olan Allah'ın adıyla...</p>
                     
-                    <!-- Tab Buttons -->
                     <div class="login-tabs">
                         <button class="tab-btn active" data-tab="login">Giriş Yap</button>
                         <button class="tab-btn" data-tab="register">Kayıt Ol</button>
                         <button class="tab-btn" data-tab="forgot">Şifremi Unuttum</button>
                     </div>
                     
-                    <!-- Login Form -->
                     <div id="loginForm" class="tab-content active">
                         <div class="input-group">
                             <input type="email" id="loginEmail" placeholder="E-posta" autocomplete="off">
@@ -85,7 +84,6 @@
                         </div>
                     </div>
                     
-                    <!-- Register Form -->
                     <div id="registerForm" class="tab-content hidden">
                         <div class="input-group">
                             <input type="text" id="registerName" placeholder="Adınız Soyadınız">
@@ -95,7 +93,6 @@
                         </div>
                     </div>
                     
-                    <!-- Forgot Form -->
                     <div id="forgotForm" class="tab-content hidden">
                         <div class="input-group">
                             <input type="email" id="forgotEmail" placeholder="E-posta adresiniz">
@@ -108,10 +105,61 @@
 
             <!-- Öğrenme Alanı (Giriş sonrası) -->
             <div id="learningSection" class="learning-section hidden">
+                <!-- Ana Sayfa Bölümü (Hadisler/Ayetler) -->
+                <div id="homeSection" class="home-section">
+                    <!-- Hadis / Ayet Bölümü -->
+                    <div class="hadith-section">
+                        <div class="hadith-card" id="hadithCard">
+                            <div class="hadith-text" id="hadithText">
+                                "İlim öğrenmek her Müslüman'a farzdır."
+                            </div>
+                            <div class="hadith-source" id="hadithSource">
+                                - İbni Mace, Mukaddime, 17
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İstatistik Kartları -->
+                    <div class="stats-bar">
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalBooksCount">0</span>
+                            <span class="stat-label">Kitap</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalLessonsCount">0</span>
+                            <span class="stat-label">Ders</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalWordsCount">0</span>
+                            <span class="stat-label">Kelime</span>
+                        </div>
+                    </div>
+
+                    <!-- Önerilen Kitaplar -->
+                    <div class="book-select-area">
+                        <h3><i class="fas fa-star"></i> Öne Çıkan Kitaplar</h3>
+                        <div class="books-grid" id="featuredBooksGrid"></div>
+                    </div>
+
+                    <!-- Son Eklenen Kelimeler -->
+                    <div class="recent-words-area">
+                        <h3><i class="fas fa-clock"></i> Son Eklenen Kelimeler</h3>
+                        <div class="recent-words-list" id="recentWordsList"></div>
+                    </div>
+                </div>
+
+                <!-- Kitap Seçim Alanı -->
+                <div id="bookSelectArea" class="book-select-area hidden">
+                    <h3><i class="fas fa-book"></i> Kitap Seçiniz</h3>
+                    <div class="books-grid" id="booksGrid"></div>
+                    <button class="btn-back-books" id="backToHomeBtn">← Ana Sayfaya Dön</button>
+                </div>
+
                 <!-- Ders Seçim Alanı -->
-                <div id="lessonSelectArea" class="lesson-select-area">
-                    <h3><i class="fas fa-graduation-cap"></i> Ders Seçiniz</h3>
+                <div id="lessonSelectArea" class="lesson-select-area hidden">
+                    <h3><i class="fas fa-graduation-cap"></i> <span id="selectedBookName">Dersler</span></h3>
                     <div class="lessons-grid" id="lessonsGrid"></div>
+                    <button class="btn-back-books" id="backToBooksBtn">← Kitaplara Dön</button>
                 </div>
 
                 <!-- Kelime Öğrenme Alanı -->
@@ -119,11 +167,11 @@
                     <div class="stats-bar">
                         <div class="stat-card">
                             <span class="stat-value" id="totalWordCount">0</span>
-                            <span class="stat-label">Seçtiğin Ders</span>
+                            <span class="stat-label">Bu Dersteki Kelime</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-value" id="lessonWordCount">0</span>
-                            <span class="stat-label">Bu Dersteki Kelime</span>
+                            <span class="stat-value" id="learnedCount">0</span>
+                            <span class="stat-label">Öğrenilen</span>
                         </div>
                     </div>
 
@@ -165,6 +213,10 @@
                     <div class="profile-card">
                         <h3><i class="fas fa-user-circle"></i> Profil Bilgilerim</h3>
                         <div class="input-group">
+                            <label>Adınız</label>
+                            <input type="text" id="profileName" readonly disabled>
+                        </div>
+                        <div class="input-group">
                             <label>E-posta Adresiniz</label>
                             <input type="email" id="profileEmail" readonly disabled>
                         </div>
@@ -172,6 +224,17 @@
                             <label>Yeni Şifre</label>
                             <input type="password" id="profileNewPassword" placeholder="Yeni şifreniz (en az 6 karakter)">
                             <button id="profileUpdateBtn" class="btn-primary">🔒 Şifreyi Güncelle</button>
+                        </div>
+                        <div class="profile-stats">
+                            <h4>İstatistiklerim</h4>
+                            <div class="stat-item">
+                                <span>Toplam Kelime:</span>
+                                <strong id="profileTotalWords">0</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Tamamlanan Ders:</span>
+                                <strong id="profileCompletedLessons">0</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
