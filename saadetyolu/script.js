@@ -47,7 +47,6 @@ let lessons = [];
 let currentLessonWords = [];
 let currentWordIndex = 0;
 let currentWordList = [];
-let userProgress = {};
 
 // Hadisler/Ayetler
 const hadiths = [
@@ -56,8 +55,7 @@ const hadiths = [
     { text: "Rahman olan Allah, Kur'an'ı öğreteni sever.", source: "Buhari, Tevhid, 33" },
     { text: "Sizin en hayırlınız, Kur'an'ı öğrenen ve öğretendir.", source: "Buhari, Fedailü'l-Kur'an, 21" },
     { text: "اِقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", source: "Alak Suresi, 1. Ayet" },
-    { text: "وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ", source: "Enbiya Suresi, 107. Ayet" },
-    { text: "Allah, kendisine ibadet edenlerin ilmini artırır.", source: "Tirmizi, Tefsir, 2" }
+    { text: "وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ", source: "Enbiya Suresi, 107. Ayet" }
 ];
 
 // Ses
@@ -68,8 +66,7 @@ let currentUtterance = null;
 let adminAuthenticated = false;
 let currentEditingBookId = null;
 let currentEditingLessonId = null;
-let currentEditingWordId = null;
-let moveType = null; // 'lesson' or 'word'
+let moveType = null;
 let moveItemId = null;
 let moveCurrentParentId = null;
 
@@ -89,12 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========== KULLANICI SAYFASI ==========
 
 function initUserPage() {
-    // Menü elemanları
     window.menuBtn = document.getElementById('menuBtn');
     window.sideMenu = document.getElementById('sideMenu');
     window.menuOverlay = document.getElementById('menuOverlay');
     
-    // Tab butonları
     const tabBtns = document.querySelectorAll('.tab-btn');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
@@ -116,17 +111,14 @@ function initUserPage() {
         });
     });
     
-    // Menü butonu
     if (window.menuBtn) window.menuBtn.addEventListener('click', toggleMenu);
     if (window.menuOverlay) window.menuOverlay.addEventListener('click', toggleMenu);
     
-    // Auth butonları
     document.getElementById('loginBtn')?.addEventListener('click', () => handleLogin());
     document.getElementById('registerBtn')?.addEventListener('click', () => handleRegister());
     document.getElementById('forgotBtn')?.addEventListener('click', () => handleForgotPassword());
     document.getElementById('profileUpdateBtn')?.addEventListener('click', () => handleUpdatePassword());
     
-    // Öğrenme butonları
     document.getElementById('showMeaningBtn')?.addEventListener('click', showMeaning);
     document.getElementById('nextWordBtn')?.addEventListener('click', nextWord);
     document.getElementById('soundBtn')?.addEventListener('click', playSound);
@@ -134,7 +126,6 @@ function initUserPage() {
     document.getElementById('backToBooksBtn')?.addEventListener('click', backToBooks);
     document.getElementById('backToHomeBtn')?.addEventListener('click', backToHome);
     
-    // Enter tuşu
     document.getElementById('loginPassword')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleLogin();
     });
@@ -180,14 +171,42 @@ function initUserPage() {
     });
 }
 
+function toggleMenu() {
+    if (window.sideMenu) window.sideMenu.classList.toggle('open');
+    if (window.menuOverlay) window.menuOverlay.classList.toggle('active');
+}
+
+function loadRandomHadith() {
+    const randomIndex = Math.floor(Math.random() * hadiths.length);
+    const hadith = hadiths[randomIndex];
+    const hadithText = document.getElementById('hadithText');
+    const hadithSource = document.getElementById('hadithSource');
+    if (hadithText) hadithText.innerHTML = `"${hadith.text}"`;
+    if (hadithSource) hadithSource.innerHTML = `- ${hadith.source}`;
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+    }
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = document.body.classList.contains('dark-mode') ? 'fas fa-moon' : 'fas fa-sun';
+}
+
 async function loadUserStats() {
     if (!currentUser) return;
-    
     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     if (userDoc.exists()) {
         const data = userDoc.data();
-        document.getElementById('profileTotalWords').innerText = data.totalWordsViewed || 0;
-        document.getElementById('profileCompletedLessons').innerText = data.completedLessons?.length || 0;
+        const totalWords = document.getElementById('profileTotalWords');
+        const completedLessons = document.getElementById('profileCompletedLessons');
+        if (totalWords) totalWords.innerText = data.totalWordsViewed || 0;
+        if (completedLessons) completedLessons.innerText = data.completedLessons?.length || 0;
     }
 }
 
@@ -195,252 +214,25 @@ async function loadRecentWords() {
     const wordsRef = collection(db, 'words');
     const q = query(wordsRef, orderBy('createdAt', 'desc'), limit(10));
     const snapshot = await getDocs(q);
-    
     const container = document.getElementById('recentWordsList');
     if (!container) return;
-    
     container.innerHTML = '';
     snapshot.forEach(doc => {
         const word = doc.data();
         const div = document.createElement('div');
         div.className = 'recent-word-item';
-        div.innerHTML = `
-            <span class="word-arabic-small">${word.arabic}</span>
-            <span class="word-turkish-small">${word.turkish}</span>
-        `;
+        div.innerHTML = `<span>${word.arabic}</span><span>${word.turkish}</span>`;
         container.appendChild(div);
     });
 }
-
-function loadRandomHadith() {
-    const randomIndex = Math.floor(Math.random() * hadiths.length);
-    const hadith = hadiths[randomIndex];
-    document.getElementById('hadithText').innerHTML = `"${hadith.text}"`;
-    document.getElementById('hadithSource').innerHTML = `- ${hadith.source}`;
-}
-
-function toggleMenu() {
-    if (window.sideMenu) window.sideMenu.classList.toggle('open');
-    if (window.menuOverlay) window.menuOverlay.classList.toggle('active');
-}
-
-// ========== KULLANICI SAYFASI NAVIGASYON ==========
-
-window.goToHome = function() {
-    console.log("goToHome çağrıldı");
-    const homeSection = document.getElementById('homeSection');
-    const bookSelectArea = document.getElementById('bookSelectArea');
-    const lessonSelectArea = document.getElementById('lessonSelectArea');
-    const wordLearningArea = document.getElementById('wordLearningArea');
-    const profileSection = document.getElementById('profileSection');
-    
-    if (homeSection) homeSection.classList.remove('hidden');
-    if (bookSelectArea) bookSelectArea.classList.add('hidden');
-    if (lessonSelectArea) lessonSelectArea.classList.add('hidden');
-    if (wordLearningArea) wordLearningArea.classList.add('hidden');
-    if (profileSection) profileSection.classList.add('hidden');
-    
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-    
-    loadRandomHadith();
-    loadRecentWords();
-};
-window.goToBooks = function() {
-    console.log("goToBooks çağrıldı");
-    const homeSection = document.getElementById('homeSection');
-    const bookSelectArea = document.getElementById('bookSelectArea');
-    const lessonSelectArea = document.getElementById('lessonSelectArea');
-    const wordLearningArea = document.getElementById('wordLearningArea');
-    const profileSection = document.getElementById('profileSection');
-    
-    if (homeSection) homeSection.classList.add('hidden');
-    if (bookSelectArea) bookSelectArea.classList.remove('hidden');
-    if (lessonSelectArea) lessonSelectArea.classList.add('hidden');
-    if (wordLearningArea) wordLearningArea.classList.add('hidden');
-    if (profileSection) profileSection.classList.add('hidden');
-    
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-    
-    // Kitapları yeniden yükle
-    loadBooks();
-};
-
-
-window.goToBooks = function() {
-    document.getElementById('homeSection').classList.add('hidden');
-    document.getElementById('bookSelectArea').classList.remove('hidden');
-    document.getElementById('lessonSelectArea').classList.add('hidden');
-    document.getElementById('wordLearningArea').classList.add('hidden');
-    document.getElementById('profileSection').classList.add('hidden');
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-    loadBooks();
-};
-
-window.showProfile = function() {
-    document.getElementById('homeSection').classList.add('hidden');
-    document.getElementById('bookSelectArea').classList.add('hidden');
-    document.getElementById('lessonSelectArea').classList.add('hidden');
-    document.getElementById('wordLearningArea').classList.add('hidden');
-    document.getElementById('profileSection').classList.remove('hidden');
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-    document.getElementById('profileEmail').value = currentUser?.email || '';
-};
-
-window.showWarning = function() {
-    showNotification('⚠️ DİKKAT! Eğer profilin size ait olmadığını düşünüyorsanız lütfen çıkış yapın. Saygılar. 🌸');
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-};
-
-window.toggleTheme = function() {
-    const body = document.body;
-    if (body.classList.contains('dark-mode')) {
-        body.classList.remove('dark-mode');
-        body.classList.add('light-mode');
-        localStorage.setItem('theme', 'light');
-    } else {
-        body.classList.remove('light-mode');
-        body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
-    }
-    const icon = document.getElementById('themeIcon');
-    if (icon) icon.className = body.classList.contains('dark-mode') ? 'fas fa-moon' : 'fas fa-sun';
-    if (window.sideMenu) window.sideMenu.classList.remove('open');
-    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-};
-
-function loadTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const icon = document.getElementById('themeIcon');
-    if (savedTheme === 'light') {
-        document.body.classList.remove('dark-mode');
-        document.body.classList.add('light-mode');
-        if (icon) icon.className = 'fas fa-sun';
-    } else {
-        document.body.classList.remove('light-mode');
-        document.body.classList.add('dark-mode');
-        if (icon) icon.className = 'fas fa-moon';
-    }
-}
-
-// ========== AUTH FONKSİYONLARI ==========
-
-async function handleLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!email || !password) {
-        showNotification('Lütfen e-posta ve şifre girin!');
-        return;
-    }
-    
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        showNotification('✅ Giriş başarılı!');
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-    } catch (error) {
-        if (error.code === 'auth/user-not-found') showNotification('Bu e-posta ile kayıtlı kullanıcı bulunamadı!');
-        else if (error.code === 'auth/wrong-password') showNotification('Hatalı şifre!');
-        else showNotification('Hata: ' + error.message);
-    }
-}
-
-async function handleRegister() {
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    
-    if (!name || !email || !password) {
-        showNotification('Lütfen tüm alanları doldurun!');
-        return;
-    }
-    if (password.length < 6) {
-        showNotification('Şifre en az 6 karakter olmalı!');
-        return;
-    }
-    
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-            name: name,
-            email: email,
-            selectedLessons: [],
-            completedLessons: [],
-            totalWordsViewed: 0,
-            createdAt: new Date().toISOString(),
-            lastActive: new Date().toISOString()
-        });
-        showFlowerNotification(`🌸 Hoş geldiniz ${name}! Allah'ı tanımaya geldiniz. 🌸`);
-        document.getElementById('registerName').value = '';
-        document.getElementById('registerEmail').value = '';
-        document.getElementById('registerPassword').value = '';
-        document.querySelector('.tab-btn[data-tab="login"]').click();
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') showNotification('Bu e-posta zaten kullanılıyor!');
-        else showNotification('Hata: ' + error.message);
-    }
-}
-
-async function handleForgotPassword() {
-    const email = document.getElementById('forgotEmail').value.trim();
-    if (!email) {
-        showNotification('Lütfen e-posta adresinizi girin!');
-        return;
-    }
-    try {
-        await sendPasswordResetEmail(auth, email);
-        showNotification('✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!');
-        document.getElementById('forgotEmail').value = '';
-    } catch (error) {
-        if (error.code === 'auth/user-not-found') showNotification('Bu e-posta ile kayıtlı kullanıcı bulunamadı!');
-        else showNotification('Hata: ' + error.message);
-    }
-}
-
-async function handleUpdatePassword() {
-    const newPassword = document.getElementById('profileNewPassword').value;
-    if (!newPassword || newPassword.length < 6) {
-        showNotification('Şifre en az 6 karakter olmalı!');
-        return;
-    }
-    try {
-        await updatePassword(auth.currentUser, newPassword);
-        showNotification('✅ Şifre güncellendi!');
-        document.getElementById('profileNewPassword').value = '';
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
-}
-
-async function logout() {
-    try {
-        await signOut(auth);
-        showNotification('🌸 Çıkış yapıldı. Yine bekleriz! 🌸');
-        if (window.sideMenu) window.sideMenu.classList.remove('open');
-        if (window.menuOverlay) window.menuOverlay.classList.remove('active');
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-window.logout = logout;
-
-// ========== KULLANICI SAYFASI - KİTAP VE DERS ==========
 
 async function loadBooks() {
     const booksRef = collection(db, 'books');
     const q = query(booksRef, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
-    
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     displayBooks();
     
-    // Öne çıkan kitaplar
     const featuredGrid = document.getElementById('featuredBooksGrid');
     if (featuredGrid) {
         featuredGrid.innerHTML = '';
@@ -448,66 +240,51 @@ async function loadBooks() {
             const card = document.createElement('div');
             card.className = 'book-card';
             card.onclick = () => selectBook(book.id, book.name);
-            card.innerHTML = `
-                <i class="fas fa-book"></i>
-                <h4>${book.name}</h4>
-                <p>${book.description || ''}</p>
-            `;
+            card.innerHTML = `<i class="fas fa-book"></i><h4>${book.name}</h4><p>${book.description || ''}</p>`;
             featuredGrid.appendChild(card);
         });
     }
     
-    document.getElementById('totalBooksCount').innerText = books.length;
+    const totalBooks = document.getElementById('totalBooksCount');
+    if (totalBooks) totalBooks.innerText = books.length;
 }
 
 function displayBooks() {
     const container = document.getElementById('booksGrid');
     if (!container) return;
     container.innerHTML = '';
-    
     books.forEach(book => {
         const card = document.createElement('div');
         card.className = 'book-card';
         card.onclick = () => selectBook(book.id, book.name);
-        card.innerHTML = `
-            <i class="fas fa-book"></i>
-            <h4>${book.name}</h4>
-            <p>${book.description || ''}</p>
-        `;
+        card.innerHTML = `<i class="fas fa-book"></i><h4>${book.name}</h4><p>${book.description || ''}</p>`;
         container.appendChild(card);
     });
 }
 
 async function selectBook(bookId, bookName) {
     currentBook = bookId;
-    document.getElementById('selectedBookName').innerText = bookName;
+    const selectedBookName = document.getElementById('selectedBookName');
+    if (selectedBookName) selectedBookName.innerText = bookName;
     document.getElementById('bookSelectArea').classList.add('hidden');
     document.getElementById('lessonSelectArea').classList.remove('hidden');
     
     const lessonsRef = collection(db, 'lessons');
     const q = query(lessonsRef, where('bookId', '==', bookId), orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
-    
     lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    displayLessons();
-}
-
-function displayLessons() {
-    const container = document.getElementById('lessonsGrid');
-    if (!container) return;
-    container.innerHTML = '';
     
-    lessons.forEach(lesson => {
-        const card = document.createElement('div');
-        card.className = 'lesson-card';
-        card.onclick = () => selectLesson(lesson.id);
-        card.innerHTML = `
-            <i class="fas fa-graduation-cap"></i>
-            <h4>${lesson.name}</h4>
-            <p>${lesson.description || ''}</p>
-        `;
-        container.appendChild(card);
-    });
+    const container = document.getElementById('lessonsGrid');
+    if (container) {
+        container.innerHTML = '';
+        lessons.forEach(lesson => {
+            const card = document.createElement('div');
+            card.className = 'lesson-card';
+            card.onclick = () => selectLesson(lesson.id);
+            card.innerHTML = `<i class="fas fa-graduation-cap"></i><h4>${lesson.name}</h4><p>${lesson.description || ''}</p>`;
+            container.appendChild(card);
+        });
+    }
 }
 
 async function selectLesson(lessonId) {
@@ -523,7 +300,8 @@ async function loadLessonWords(lessonId) {
     const q = query(wordsRef, where('lessonId', '==', lessonId));
     const snapshot = await getDocs(q);
     currentLessonWords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    document.getElementById('lessonWordCount').innerText = currentLessonWords.length;
+    const lessonWordCount = document.getElementById('lessonWordCount');
+    if (lessonWordCount) lessonWordCount.innerText = currentLessonWords.length;
 }
 
 function startLearningLesson() {
@@ -573,8 +351,10 @@ function playSound() {
 function updateProgress() {
     const total = currentWordList.length;
     const percent = Math.round(((currentWordIndex + 1) / total) * 100);
-    document.getElementById('progressFill').style.width = `${percent}%`;
-    document.getElementById('progressPercent').innerText = `${percent}%`;
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
+    if (progressFill) progressFill.style.width = `${percent}%`;
+    if (progressPercent) progressPercent.innerText = `${percent}%`;
 }
 
 async function updateUserProgress() {
@@ -606,8 +386,86 @@ function backToBooks() {
 function backToHome() {
     document.getElementById('homeSection').classList.remove('hidden');
     document.getElementById('bookSelectArea').classList.add('hidden');
+    document.getElementById('lessonSelectArea').classList.add('hidden');
+    document.getElementById('wordLearningArea').classList.add('hidden');
+    document.getElementById('profileSection').classList.add('hidden');
     loadRandomHadith();
     loadRecentWords();
+}
+
+// ========== AUTH FONKSİYONLARI ==========
+
+async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { showNotification('Lütfen e-posta ve şifre girin!'); return; }
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showNotification('✅ Giriş başarılı!');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+    } catch (error) {
+        if (error.code === 'auth/user-not-found') showNotification('Bu e-posta ile kayıtlı kullanıcı bulunamadı!');
+        else if (error.code === 'auth/wrong-password') showNotification('Hatalı şifre!');
+        else showNotification('Hata: ' + error.message);
+    }
+}
+
+async function handleRegister() {
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    if (!name || !email || !password) { showNotification('Lütfen tüm alanları doldurun!'); return; }
+    if (password.length < 6) { showNotification('Şifre en az 6 karakter olmalı!'); return; }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+            name: name, email: email, selectedLessons: [], completedLessons: [],
+            totalWordsViewed: 0, createdAt: new Date().toISOString(), lastActive: new Date().toISOString()
+        });
+        showFlowerNotification(`🌸 Hoş geldiniz ${name}! Allah'ı tanımaya geldiniz. 🌸`);
+        document.getElementById('registerName').value = '';
+        document.getElementById('registerEmail').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.querySelector('.tab-btn[data-tab="login"]')?.click();
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') showNotification('Bu e-posta zaten kullanılıyor!');
+        else showNotification('Hata: ' + error.message);
+    }
+}
+
+async function handleForgotPassword() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    if (!email) { showNotification('Lütfen e-posta adresinizi girin!'); return; }
+    try {
+        await sendPasswordResetEmail(auth, email);
+        showNotification('✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!');
+        document.getElementById('forgotEmail').value = '';
+    } catch (error) {
+        if (error.code === 'auth/user-not-found') showNotification('Bu e-posta ile kayıtlı kullanıcı bulunamadı!');
+        else showNotification('Hata: ' + error.message);
+    }
+}
+
+async function handleUpdatePassword() {
+    const newPassword = document.getElementById('profileNewPassword').value;
+    if (!newPassword || newPassword.length < 6) { showNotification('Şifre en az 6 karakter olmalı!'); return; }
+    try {
+        await updatePassword(auth.currentUser, newPassword);
+        showNotification('✅ Şifre güncellendi!');
+        document.getElementById('profileNewPassword').value = '';
+    } catch (error) {
+        showNotification('Hata: ' + error.message);
+    }
+}
+
+async function logout() {
+    try {
+        await signOut(auth);
+        showNotification('🌸 Çıkış yapıldı. Yine bekleriz! 🌸');
+        if (window.sideMenu) window.sideMenu.classList.remove('open');
+        if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    } catch (error) { console.error(error); }
 }
 
 // ========== BİLDİRİM ==========
@@ -619,9 +477,7 @@ function showNotification(msg) {
         notifMsg.innerText = msg;
         notif.classList.remove('hidden');
         setTimeout(() => notif.classList.add('hidden'), 3000);
-    } else {
-        alert(msg);
-    }
+    } else { alert(msg); }
 }
 
 function showFlowerNotification(msg) {
@@ -631,10 +487,69 @@ function showFlowerNotification(msg) {
         notifMsg.innerText = msg;
         notif.classList.remove('hidden');
         setTimeout(() => notif.classList.add('hidden'), 4000);
-    } else {
-        alert(msg);
-    }
+    } else { alert(msg); }
 }
+
+// ========== GLOBAL FONKSİYONLAR ==========
+
+window.goToHome = function() {
+    document.getElementById('homeSection')?.classList.remove('hidden');
+    document.getElementById('bookSelectArea')?.classList.add('hidden');
+    document.getElementById('lessonSelectArea')?.classList.add('hidden');
+    document.getElementById('wordLearningArea')?.classList.add('hidden');
+    document.getElementById('profileSection')?.classList.add('hidden');
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    loadRandomHadith();
+    loadRecentWords();
+};
+
+window.goToBooks = function() {
+    document.getElementById('homeSection')?.classList.add('hidden');
+    document.getElementById('bookSelectArea')?.classList.remove('hidden');
+    document.getElementById('lessonSelectArea')?.classList.add('hidden');
+    document.getElementById('wordLearningArea')?.classList.add('hidden');
+    document.getElementById('profileSection')?.classList.add('hidden');
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    loadBooks();
+};
+
+window.showProfile = function() {
+    document.getElementById('homeSection')?.classList.add('hidden');
+    document.getElementById('bookSelectArea')?.classList.add('hidden');
+    document.getElementById('lessonSelectArea')?.classList.add('hidden');
+    document.getElementById('wordLearningArea')?.classList.add('hidden');
+    document.getElementById('profileSection')?.classList.remove('hidden');
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    const profileEmail = document.getElementById('profileEmail');
+    if (profileEmail && currentUser) profileEmail.value = currentUser.email;
+};
+
+window.showWarning = function() {
+    showNotification('⚠️ DİKKAT! Eğer profilin size ait olmadığını düşünüyorsanız lütfen çıkış yapın. Saygılar. 🌸');
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+};
+
+window.toggleTheme = function() {
+    if (document.body.classList.contains('dark-mode')) {
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+    }
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = document.body.classList.contains('dark-mode') ? 'fas fa-moon' : 'fas fa-sun';
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+};
+
+window.logout = logout;
 
 // ========== ADMIN PANEL ==========
 
@@ -702,37 +617,28 @@ function showAdminPanel() {
     document.getElementById('adminPanel').classList.remove('hidden');
 }
 
-// ========== ADMIN - KİTAP İŞLEMLERİ ==========
-
 async function loadAllBooks() {
     const booksRef = collection(db, 'books');
     const q = query(booksRef, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    displayBooksForAdmin();
-}
-
-function displayBooksForAdmin() {
     const container = document.getElementById('booksAdminList');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    books.forEach(book => {
-        const div = document.createElement('div');
-        div.className = 'book-admin-item';
-        div.innerHTML = `
-            <div class="book-info">
-                <h4><i class="fas fa-book"></i> ${book.name}</h4>
-                <p>${book.description || 'Açıklama yok'} | Sıra: ${book.order || 0}</p>
-            </div>
-            <div class="book-actions">
-                <button class="btn-warning" onclick="window.editBook('${book.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-info" onclick="window.selectBookForLessons('${book.id}', '${book.name.replace(/'/g, "\\'")}')"><i class="fas fa-book-open"></i> Dersler</button>
-                <button class="btn-danger" onclick="window.deleteBook('${book.id}')"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
+    if (container) {
+        container.innerHTML = '';
+        books.forEach(book => {
+            const div = document.createElement('div');
+            div.className = 'book-admin-item';
+            div.innerHTML = `
+                <div class="book-info"><h4>${book.name}</h4><p>${book.description || ''} | Sıra: ${book.order || 0}</p></div>
+                <div class="book-actions">
+                    <button class="btn-warning" onclick="window.editBook('${book.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-info" onclick="window.selectBookForLessons('${book.id}', '${book.name.replace(/'/g, "\\'")}')"><i class="fas fa-book-open"></i> Dersler</button>
+                    <button class="btn-danger" onclick="window.deleteBook('${book.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
 }
 
 window.selectBookForLessons = async (bookId, bookName) => {
@@ -745,31 +651,24 @@ window.selectBookForLessons = async (bookId, bookName) => {
     const q = query(lessonsRef, where('bookId', '==', bookId), orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    displayLessonsForAdmin(lessonsList);
-};
-
-function displayLessonsForAdmin(lessonsList) {
     const container = document.getElementById('lessonsAdminList');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    lessonsList.forEach(lesson => {
-        const div = document.createElement('div');
-        div.className = 'lesson-admin-item';
-        div.innerHTML = `
-            <div class="lesson-info">
-                <h4><i class="fas fa-graduation-cap"></i> ${lesson.name}</h4>
-                <p>${lesson.description || 'Açıklama yok'} | Sıra: ${lesson.order || 0}</p>
-            </div>
-            <div class="lesson-actions">
-                <button class="btn-warning" onclick="window.editLesson('${lesson.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-info" onclick="window.selectLessonForWords('${lesson.id}', '${lesson.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
-                <button class="btn-danger" onclick="window.deleteLesson('${lesson.id}')"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
+    if (container) {
+        container.innerHTML = '';
+        lessonsList.forEach(lesson => {
+            const div = document.createElement('div');
+            div.className = 'lesson-admin-item';
+            div.innerHTML = `
+                <div class="lesson-info"><h4>${lesson.name}</h4><p>${lesson.description || ''} | Sıra: ${lesson.order || 0}</p></div>
+                <div class="lesson-actions">
+                    <button class="btn-warning" onclick="window.editLesson('${lesson.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-info" onclick="window.selectLessonForWords('${lesson.id}', '${lesson.name.replace(/'/g, "\\'")}')"><i class="fas fa-words"></i> Kelimeler</button>
+                    <button class="btn-danger" onclick="window.deleteLesson('${lesson.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+};
 
 window.selectLessonForWords = async (lessonId, lessonName) => {
     currentEditingLessonId = lessonId;
@@ -781,32 +680,23 @@ window.selectLessonForWords = async (lessonId, lessonName) => {
     const q = query(wordsRef, where('lessonId', '==', lessonId));
     const snapshot = await getDocs(q);
     const wordsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    displayWordsForAdmin(wordsList);
-};
-
-function displayWordsForAdmin(wordsList) {
     const container = document.getElementById('wordsAdminList');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    wordsList.forEach(word => {
-        const div = document.createElement('div');
-        div.className = 'word-admin-item';
-        div.innerHTML = `
-            <div class="word-info">
-                <div class="word-arabic">${word.arabic}</div>
-                <div class="word-turkish">${word.turkish}</div>
-            </div>
-            <div class="word-actions">
-                <button class="btn-warning" onclick="window.editWord('${word.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-danger" onclick="window.deleteWord('${word.id}')"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// ========== ADMIN - MODAL İŞLEMLERİ ==========
+    if (container) {
+        container.innerHTML = '';
+        wordsList.forEach(word => {
+            const div = document.createElement('div');
+            div.className = 'word-admin-item';
+            div.innerHTML = `
+                <div class="word-info"><div class="word-arabic">${word.arabic}</div><div class="word-turkish">${word.turkish}</div></div>
+                <div class="word-actions">
+                    <button class="btn-warning" onclick="window.editWord('${word.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger" onclick="window.deleteWord('${word.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+};
 
 function openBookModal(bookId = null) {
     if (bookId) {
@@ -829,10 +719,7 @@ function openBookModal(bookId = null) {
 }
 
 function openLessonModal(lessonId = null) {
-    if (!currentEditingBookId) {
-        showNotification('Lütfen önce bir kitap seçin!');
-        return;
-    }
+    if (!currentEditingBookId) { showNotification('Lütfen önce bir kitap seçin!'); return; }
     if (lessonId) {
         document.getElementById('lessonModalTitle').innerText = 'Ders Düzenle';
         document.getElementById('editLessonId').value = lessonId;
@@ -848,10 +735,7 @@ function openLessonModal(lessonId = null) {
 }
 
 function openWordModal(wordId = null) {
-    if (!currentEditingLessonId) {
-        showNotification('Lütfen önce bir ders seçin!');
-        return;
-    }
+    if (!currentEditingLessonId) { showNotification('Lütfen önce bir ders seçin!'); return; }
     if (wordId) {
         document.getElementById('wordModalTitle').innerText = 'Kelime Düzenle';
         document.getElementById('editWordId').value = wordId;
@@ -870,16 +754,12 @@ window.closeLessonModal = () => document.getElementById('lessonModal').classList
 window.closeWordModal = () => document.getElementById('wordModal').classList.add('hidden');
 window.closeMoveModal = () => document.getElementById('moveModal').classList.add('hidden');
 
-// ========== ADMIN - KAYDETME İŞLEMLERİ ==========
-
 async function saveBook() {
     const bookId = document.getElementById('editBookId').value;
     const name = document.getElementById('bookName').value.trim();
     const description = document.getElementById('bookDesc').value.trim();
     const order = parseInt(document.getElementById('bookOrder').value) || 0;
-    
     if (!name) { showNotification('Kitap adı gerekli!'); return; }
-    
     try {
         if (bookId) {
             await updateDoc(doc(db, 'books', bookId), { name, description, order });
@@ -890,9 +770,7 @@ async function saveBook() {
         }
         closeBookModal();
         await loadAllBooks();
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+    } catch (error) { showNotification('Hata: ' + error.message); }
 }
 
 async function saveLesson() {
@@ -901,9 +779,7 @@ async function saveLesson() {
     const description = document.getElementById('lessonDesc').value.trim();
     const order = parseInt(document.getElementById('lessonOrder').value) || 0;
     const bookId = document.getElementById('currentBookIdForLesson').value;
-    
     if (!name) { showNotification('Ders adı gerekli!'); return; }
-    
     try {
         if (lessonId) {
             await updateDoc(doc(db, 'lessons', lessonId), { name, description, order, bookId });
@@ -913,10 +789,8 @@ async function saveLesson() {
             showNotification('Yeni ders eklendi!');
         }
         closeLessonModal();
-        await selectBookForLessons(bookId, document.getElementById('currentBookName').innerText);
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+        await window.selectBookForLessons(bookId, document.getElementById('currentBookName').innerText);
+    } catch (error) { showNotification('Hata: ' + error.message); }
 }
 
 async function saveWord() {
@@ -924,9 +798,7 @@ async function saveWord() {
     const arabic = document.getElementById('wordArabic').value.trim();
     const turkish = document.getElementById('wordTurkish').value.trim();
     const lessonId = document.getElementById('currentLessonIdForWord').value;
-    
     if (!arabic || !turkish) { showNotification('Her iki alan da gerekli!'); return; }
-    
     try {
         if (wordId) {
             await updateDoc(doc(db, 'words', wordId), { arabic, turkish });
@@ -936,29 +808,16 @@ async function saveWord() {
             showNotification('Yeni kelime eklendi!');
         }
         closeWordModal();
-        await selectLessonForWords(lessonId, document.getElementById('currentLessonName').innerText);
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+        await window.selectLessonForWords(lessonId, document.getElementById('currentLessonName').innerText);
+    } catch (error) { showNotification('Hata: ' + error.message); }
 }
 
-// ========== ADMIN - SİLME VE DÜZENLEME ==========
-
-window.editBook = async (id) => {
-    const book = books.find(b => b.id === id);
-    if (book) openBookModal(id);
-};
-
-window.editLesson = async (id) => {
-    openLessonModal(id);
-};
-
-window.editWord = async (id) => {
-    openWordModal(id);
-};
+window.editBook = async (id) => openBookModal(id);
+window.editLesson = async (id) => openLessonModal(id);
+window.editWord = async (id) => openWordModal(id);
 
 window.deleteBook = async (id) => {
-    if (!confirm('Bu kitabı silmek istediğinize emin misiniz? İçindeki tüm dersler ve kelimeler de silinecek!')) return;
+    if (!confirm('Bu kitabı silmek istediğinize emin misiniz?')) return;
     try {
         const lessonsRef = collection(db, 'lessons');
         const q = query(lessonsRef, where('bookId', '==', id));
@@ -977,13 +836,11 @@ window.deleteBook = async (id) => {
             document.getElementById('lessonsSection').style.display = 'none';
             document.getElementById('wordsSection').style.display = 'none';
         }
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+    } catch (error) { showNotification('Hata: ' + error.message); }
 };
 
 window.deleteLesson = async (id) => {
-    if (!confirm('Bu dersi silmek istediğinize emin misiniz? İçindeki tüm kelimeler de silinecek!')) return;
+    if (!confirm('Bu dersi silmek istediğinize emin misiniz?')) return;
     try {
         const wordsRef = collection(db, 'words');
         const q = query(wordsRef, where('lessonId', '==', id));
@@ -991,10 +848,8 @@ window.deleteLesson = async (id) => {
         for (const wordDoc of snapshot.docs) await deleteDoc(doc(db, 'words', wordDoc.id));
         await deleteDoc(doc(db, 'lessons', id));
         showNotification('Ders silindi!');
-        await selectBookForLessons(currentEditingBookId, document.getElementById('currentBookName').innerText);
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+        await window.selectBookForLessons(currentEditingBookId, document.getElementById('currentBookName').innerText);
+    } catch (error) { showNotification('Hata: ' + error.message); }
 };
 
 window.deleteWord = async (id) => {
@@ -1002,41 +857,33 @@ window.deleteWord = async (id) => {
     try {
         await deleteDoc(doc(db, 'words', id));
         showNotification('Kelime silindi!');
-        await selectLessonForWords(currentEditingLessonId, document.getElementById('currentLessonName').innerText);
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+        await window.selectLessonForWords(currentEditingLessonId, document.getElementById('currentLessonName').innerText);
+    } catch (error) { showNotification('Hata: ' + error.message); }
 };
-
-// ========== ADMIN - TAŞIMA İŞLEMLERİ ==========
 
 function openMoveModal(type) {
     moveType = type;
     if (type === 'lesson') {
-        if (!currentEditingLessonId) {
-            showNotification('Lütfen önce taşınacak dersi seçin!');
-            return;
-        }
+        if (!currentEditingLessonId) { showNotification('Lütfen önce taşınacak dersi seçin!'); return; }
         moveItemId = currentEditingLessonId;
         moveCurrentParentId = currentEditingBookId;
         document.getElementById('moveModalTitle').innerText = 'Dersi Taşı';
         document.getElementById('moveItemLabel').innerText = 'Hedef Kitap:';
     } else {
-        if (!currentEditingWordId) {
-            showNotification('Lütfen önce taşınacak kelimeyi seçin!');
-            return;
-        }
+        if (!currentEditingWordId) { showNotification('Lütfen önce taşınacak kelimeyi seçin!'); return; }
         moveItemId = currentEditingWordId;
         moveCurrentParentId = currentEditingLessonId;
         document.getElementById('moveModalTitle').innerText = 'Kelimeyi Taşı';
         document.getElementById('moveItemLabel').innerText = 'Hedef Ders:';
     }
-    
+    document.getElementById('moveModal').classList.remove('hidden');
+    loadMoveTargets();
+}
+
+async function loadMoveTargets() {
     const select = document.getElementById('moveTargetSelect');
     select.innerHTML = '<option value="">Yükleniyor...</option>';
-    document.getElementById('moveModal').classList.remove('hidden');
-    
-    if (type === 'lesson') {
+    if (moveType === 'lesson') {
         const booksRef = collection(db, 'books');
         const snapshot = await getDocs(booksRef);
         select.innerHTML = '';
@@ -1066,55 +913,43 @@ function openMoveModal(type) {
 
 async function confirmMove() {
     const targetId = document.getElementById('moveTargetSelect').value;
-    if (!targetId) {
-        showNotification('Lütfen bir hedef seçin!');
-        return;
-    }
-    
+    if (!targetId) { showNotification('Lütfen bir hedef seçin!'); return; }
     try {
         if (moveType === 'lesson') {
             await updateDoc(doc(db, 'lessons', moveItemId), { bookId: targetId });
             showNotification('Ders taşındı!');
-            await selectBookForLessons(targetId, document.getElementById('currentBookName').innerText);
+            await window.selectBookForLessons(targetId, document.getElementById('currentBookName').innerText);
         } else {
             await updateDoc(doc(db, 'words', moveItemId), { lessonId: targetId });
             showNotification('Kelime taşındı!');
-            await selectLessonForWords(targetId, document.getElementById('currentLessonName').innerText);
+            await window.selectLessonForWords(targetId, document.getElementById('currentLessonName').innerText);
         }
         closeMoveModal();
-    } catch (error) {
-        showNotification('Hata: ' + error.message);
-    }
+    } catch (error) { showNotification('Hata: ' + error.message); }
 }
-
-// ========== ADMIN - KULLANICI İSTATİSTİKLERİ ==========
 
 async function loadAllUsers() {
     const usersRef = collection(db, 'users');
     const snapshot = await getDocs(usersRef);
     const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
     document.getElementById('totalUsersCount').innerText = users.length;
-    
     let totalWords = 0;
     users.forEach(u => totalWords += u.totalWordsViewed || 0);
     document.getElementById('totalWordsViewed').innerText = totalWords;
-    
     const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '';
-    
-    for (const user of users) {
-        const row = document.createElement('tr');
-        const selectedLessonsCount = user.selectedLessons?.length || 0;
-        row.innerHTML = `
-            <td>${user.name || '-'}</td>
-            <td>${user.email}</td>
-            <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}</td>
-            <td>${selectedLessonsCount}</td>
-            <td class="user-word-count">${user.totalWordsViewed || 0}</td>
-            <td>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : '-'}</td>
-        `;
-        tbody.appendChild(row);
+    if (tbody) {
+        tbody.innerHTML = '';
+        for (const user of users) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.name || '-'}</td><td>${user.email}</td>
+                <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}</td>
+                <td>${user.selectedLessons?.length || 0}</td>
+                <td class="user-word-count">${user.totalWordsViewed || 0}</td>
+                <td>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : '-'}</td>
+            `;
+            tbody.appendChild(row);
+        }
     }
 }
 
@@ -1126,14 +961,3 @@ function logoutAdmin() {
     document.getElementById('adminPassword').value = '';
     showNotification('Admin çıkışı yapıldı');
 }
-
-// Global admin fonksiyonları
-window.editBook = window.editBook;
-window.deleteBook = window.deleteBook;
-window.selectBookForLessons = window.selectBookForLessons;
-window.selectLessonForWords = window.selectLessonForWords;
-window.editLesson = window.editLesson;
-window.deleteLesson = window.deleteLesson;
-window.editWord = window.editWord;
-window.deleteWord = window.deleteWord;
-window.openMoveModal = openMoveModal;
