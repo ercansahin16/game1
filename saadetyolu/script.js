@@ -227,16 +227,46 @@ function toggleMenu() {
 // ========== KULLANICI SAYFASI NAVIGASYON ==========
 
 window.goToHome = function() {
-    document.getElementById('homeSection').classList.remove('hidden');
-    document.getElementById('bookSelectArea').classList.add('hidden');
-    document.getElementById('lessonSelectArea').classList.add('hidden');
-    document.getElementById('wordLearningArea').classList.add('hidden');
-    document.getElementById('profileSection').classList.add('hidden');
+    console.log("goToHome çağrıldı");
+    const homeSection = document.getElementById('homeSection');
+    const bookSelectArea = document.getElementById('bookSelectArea');
+    const lessonSelectArea = document.getElementById('lessonSelectArea');
+    const wordLearningArea = document.getElementById('wordLearningArea');
+    const profileSection = document.getElementById('profileSection');
+    
+    if (homeSection) homeSection.classList.remove('hidden');
+    if (bookSelectArea) bookSelectArea.classList.add('hidden');
+    if (lessonSelectArea) lessonSelectArea.classList.add('hidden');
+    if (wordLearningArea) wordLearningArea.classList.add('hidden');
+    if (profileSection) profileSection.classList.add('hidden');
+    
     if (window.sideMenu) window.sideMenu.classList.remove('open');
     if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    
     loadRandomHadith();
     loadRecentWords();
 };
+window.goToBooks = function() {
+    console.log("goToBooks çağrıldı");
+    const homeSection = document.getElementById('homeSection');
+    const bookSelectArea = document.getElementById('bookSelectArea');
+    const lessonSelectArea = document.getElementById('lessonSelectArea');
+    const wordLearningArea = document.getElementById('wordLearningArea');
+    const profileSection = document.getElementById('profileSection');
+    
+    if (homeSection) homeSection.classList.add('hidden');
+    if (bookSelectArea) bookSelectArea.classList.remove('hidden');
+    if (lessonSelectArea) lessonSelectArea.classList.add('hidden');
+    if (wordLearningArea) wordLearningArea.classList.add('hidden');
+    if (profileSection) profileSection.classList.add('hidden');
+    
+    if (window.sideMenu) window.sideMenu.classList.remove('open');
+    if (window.menuOverlay) window.menuOverlay.classList.remove('active');
+    
+    // Kitapları yeniden yükle
+    loadBooks();
+};
+
 
 window.goToBooks = function() {
     document.getElementById('homeSection').classList.add('hidden');
