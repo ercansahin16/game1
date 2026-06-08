@@ -50,6 +50,8 @@ body.light-mode .side-menu,
 body.light-mode .word-card,
 body.light-mode .stat-card,
 body.light-mode .lesson-card,
+body.light-mode .book-card,
+body.light-mode .hadith-card,
 body.light-mode .admin-section,
 body.light-mode .profile-card,
 body.light-mode .welcome-card,
@@ -368,9 +370,61 @@ body.light-mode input {
     display: none;
 }
 
+/* Kitap Seçim Alanı */
+.book-select-area {
+    margin-bottom: 30px;
+}
+
+.book-select-area h3 {
+    margin-bottom: 20px;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.book-card {
+    background: var(--dark-card);
+    border-radius: 20px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--dark-border);
+}
+
+.book-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.book-card i {
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.book-card h4 {
+    font-size: 15px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.book-card p {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
 /* Ders Seçim Alanı */
 .lesson-select-area {
     margin-bottom: 30px;
+    margin-top: 20px;
 }
 
 .lesson-select-area h3 {
@@ -417,6 +471,34 @@ body.light-mode input {
 .lesson-card p {
     font-size: 11px;
     color: var(--text-secondary);
+}
+
+/* Hadis / Ayet Bölümü */
+.hadith-section {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.hadith-card {
+    background: var(--dark-card);
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid var(--dark-border);
+    border-right: 4px solid var(--accent);
+}
+
+.hadith-text {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.hadith-source {
+    font-size: 12px;
+    color: var(--accent);
+    text-align: right;
+    margin-top: 10px;
 }
 
 /* Kelime Öğrenme Alanı */
@@ -490,7 +572,7 @@ body.light-mode input {
     flex-wrap: wrap;
 }
 
-.btn-sound, .btn-show, .btn-next, .btn-back-lessons {
+.btn-sound, .btn-show, .btn-next, .btn-back-lessons, .btn-back-books {
     padding: 10px 18px;
     border-radius: 50px;
     border: none;
@@ -522,27 +604,29 @@ body.light-mode input {
     color: white;
 }
 
-.btn-back-lessons {
+.btn-back-lessons, .btn-back-books {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
     width: 100%;
     justify-content: center;
-    margin-top: 20px;
+    margin-top: 10px;
     font-weight: 500;
 }
 
-.btn-back-lessons:hover {
+.btn-back-lessons:hover, .btn-back-books:hover {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Açık tema (Gündüz Modu) için Derslere Dön butonu */
-body.light-mode .btn-back-lessons {
+/* Açık tema için butonlar */
+body.light-mode .btn-back-lessons,
+body.light-mode .btn-back-books {
     background: #e2e8f0;
     color: #1e293b;
     border: 1px solid #cbd5e1;
 }
 
-body.light-mode .btn-back-lessons:hover {
+body.light-mode .btn-back-lessons:hover,
+body.light-mode .btn-back-books:hover {
     background: #cbd5e1;
 }
 
@@ -774,11 +858,22 @@ body.light-mode .btn-back-lessons:hover {
     transition: opacity 0.2s;
 }
 
-.btn-danger:hover, .btn-warning:hover {
+.btn-info {
+    background: var(--info);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: opacity 0.2s;
+}
+
+.btn-danger:hover, .btn-warning:hover, .btn-info:hover {
     opacity: 0.85;
 }
 
-.lessons-admin-list, .words-admin-list {
+.books-admin-list, .lessons-admin-list, .words-admin-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -786,7 +881,7 @@ body.light-mode .btn-back-lessons:hover {
     overflow-y: auto;
 }
 
-.lesson-admin-item, .word-admin-item {
+.book-admin-item, .lesson-admin-item, .word-admin-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -797,20 +892,54 @@ body.light-mode .btn-back-lessons:hover {
     gap: 10px;
 }
 
-.lesson-info h4, .word-info .word-arabic {
+.book-info h4, .lesson-info h4, .word-info .word-arabic {
     margin-bottom: 4px;
     font-size: 14px;
     font-weight: 600;
 }
 
-.lesson-info p, .word-info .word-turkish {
+.book-info p, .lesson-info p, .word-info .word-turkish {
     font-size: 11px;
     color: var(--text-secondary);
 }
 
-.lesson-actions, .word-actions {
+.book-actions, .lesson-actions, .word-actions {
     display: flex;
     gap: 8px;
+}
+
+/* Kullanıcı listesi tablosu */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.users-table th, .users-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.users-table th {
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+
+.user-word-count {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* Taşıma modalı */
+.move-select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--dark-border);
+    color: var(--text-primary);
+    margin-top: 10px;
 }
 
 /* Modal */
@@ -836,7 +965,7 @@ body.light-mode .btn-back-lessons:hover {
     background: var(--dark-surface);
     border-radius: 24px;
     width: 90%;
-    max-width: 480px;
+    max-width: 500px;
     max-height: 90vh;
     overflow: auto;
     border: 1px solid var(--dark-border);
@@ -879,7 +1008,7 @@ body.light-mode .btn-back-lessons:hover {
     font-size: 13px;
 }
 
-.modal-body input, .modal-body textarea {
+.modal-body input, .modal-body textarea, .modal-body select {
     width: 100%;
     padding: 10px 14px;
     border-radius: 12px;
@@ -891,7 +1020,7 @@ body.light-mode .btn-back-lessons:hover {
     outline: none;
 }
 
-.modal-body input:focus, .modal-body textarea:focus {
+.modal-body input:focus, .modal-body textarea:focus, .modal-body select:focus {
     border-color: var(--accent);
 }
 
@@ -1016,20 +1145,20 @@ body.light-mode .btn-back-lessons:hover {
         font-size: 20px;
     }
     
-    .lessons-grid {
+    .books-grid, .lessons-grid {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 12px;
     }
     
-    .lesson-card {
+    .book-card, .lesson-card {
         padding: 14px;
     }
     
-    .lesson-card i {
+    .book-card i, .lesson-card i {
         font-size: 28px;
     }
     
-    .lesson-card h4 {
+    .book-card h4, .lesson-card h4 {
         font-size: 14px;
     }
     
@@ -1048,6 +1177,10 @@ body.light-mode .btn-back-lessons:hover {
     .stat-card {
         min-width: 90px;
         padding: 10px;
+    }
+    
+    .hadith-text {
+        font-size: 15px;
     }
 }
 
