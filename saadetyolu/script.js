@@ -476,23 +476,33 @@ async function initAdminPage() {
 }
 
 async function loadAllData() {
-    await loadAllUsers();
-    await loadAllBooks();
-    await loadLessonFilters();
-    await loadWordFilters();
-    await updateSidebarStats();
+    try {
+        await loadAllUsers();
+        await loadAllBooks();
+        await loadLessonFilters();
+        await loadWordFilters();
+        await updateSidebarStats();
+    } catch (error) {
+        console.error("loadAllData hatası:", error);
+    }
 }
 
 async function updateSidebarStats() {
-    const users = await getDocs(collection(db, 'users'));
-    const words = await getDocs(collection(db, 'words'));
-    const lessons = await getDocs(collection(db, 'lessons'));
-    const sidebarTotalUsers = document.getElementById('sidebarTotalUsers');
-    const sidebarTotalWords = document.getElementById('sidebarTotalWords');
-    const sidebarTotalLessons = document.getElementById('sidebarTotalLessons');
-    if (sidebarTotalUsers) sidebarTotalUsers.innerText = users.size;
-    if (sidebarTotalWords) sidebarTotalWords.innerText = words.size;
-    if (sidebarTotalLessons) sidebarTotalLessons.innerText = lessons.size;
+    try {
+        const users = await getDocs(collection(db, 'users'));
+        const words = await getDocs(collection(db, 'words'));
+        const lessons = await getDocs(collection(db, 'lessons'));
+        
+        const sidebarTotalUsers = document.getElementById('sidebarTotalUsers');
+        const sidebarTotalWords = document.getElementById('sidebarTotalWords');
+        const sidebarTotalLessons = document.getElementById('sidebarTotalLessons');
+        
+        if (sidebarTotalUsers) sidebarTotalUsers.innerText = users.size;
+        if (sidebarTotalWords) sidebarTotalWords.innerText = words.size;
+        if (sidebarTotalLessons) sidebarTotalLessons.innerText = lessons.size;
+    } catch (error) {
+        console.error("updateSidebarStats hatası:", error);
+    }
 }
 
 async function loadAllUsers() {
@@ -522,26 +532,31 @@ async function loadAllUsers() {
 }
 
 async function loadAllBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
-    books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // SADECE admin panelinde varsa güncelle
-    const totalBooksCountEl = document.getElementById('totalBooksCount');
-    if (totalBooksCountEl) totalBooksCountEl.innerText = books.length;
-    
-    const container = document.getElementById('booksList');
-    if (container) {
-        container.innerHTML = '';
-        books.forEach(book => {
-            const div = document.createElement('div');
-            div.className = 'item-row';
-            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || 'Açıklama yok'} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn-edit" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
+    try {
+        const snapshot = await getDocs(collection(db, 'books'));
+        books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sadece element varsa güncelle (admin panelinde bu element yok)
+        const totalBooksCountEl = document.getElementById('totalBooksCount');
+        if (totalBooksCountEl) totalBooksCountEl.innerText = books.length;
+        
+        const container = document.getElementById('booksList');
+        if (container) {
+            container.innerHTML = '';
+            books.forEach(book => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                div.innerHTML = `<div class="item-info"><strong>${escapeHtml(book.name)}</strong><small>${escapeHtml(book.description || 'Açıklama yok')} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn-edit" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
+                container.appendChild(div);
+            });
+        }
+        
+        await loadLessonFilters();
+        await loadWordFilters();
+    } catch (error) {
+        console.error("loadAllBooks hatası:", error);
+        showNotificationAdmin('Veritabanı bağlantı hatası!');
     }
-    
-    await loadLessonFilters();
-    await loadWordFilters();
 }
 
 async function loadLessonFilters() {
