@@ -11,21 +11,18 @@
 <body class="dark-mode">
     <div class="app-container admin-container">
         <div class="admin-header">
-            <h1><i class="fas fa-crown"></i> Admin Panel - Ders ve Kelime Yönetimi</h1>
+            <h1><i class="fas fa-crown"></i> Admin Panel - Yönetim Sistemi</h1>
             <div class="admin-actions">
-                <!-- Değiştir -->
-<button id="themeBtn" class="icon-btn">
-    <i class="fas fa-moon"></i>
-</button>
-
-<!-- Bunun yerine doğrudan id ile event listener ekleyelim -->
-                <button id="logoutAdminBtn" class="btn-logout" onclick="window.logoutAdmin()">
+                <button id="themeBtn" class="icon-btn">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="logoutAdminBtn" class="btn-logout">
                     <i class="fas fa-sign-out-alt"></i> Çıkış
                 </button>
             </div>
         </div>
 
-        <!-- Giriş Alanı (Şifreli) -->
+        <!-- Giriş Alanı -->
         <div id="adminLoginSection" class="login-section">
             <div class="welcome-card">
                 <h2>🔐 Admin Girişi</h2>
@@ -41,49 +38,101 @@
             </div>
         </div>
 
-        <!-- Admin Ana Panel (Giriş Sonrası) -->
+        <!-- Admin Ana Panel -->
         <div id="adminPanel" class="admin-panel hidden">
-            <!-- Ders Yönetimi -->
+            <!-- Kullanıcı İstatistikleri -->
             <div class="admin-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-layer-group"></i> Ders Yönetimi</h2>
-                    <button id="addLessonBtn" class="btn-success"><i class="fas fa-plus"></i> Yeni Ders</button>
+                    <h2><i class="fas fa-users"></i> Kullanıcılar ve İstatistikler</h2>
+                    <button id="refreshUsersBtn" class="btn-info"><i class="fas fa-sync-alt"></i> Yenile</button>
                 </div>
-                <div class="lessons-admin-list" id="lessonsAdminList">
-                    <div style="text-align:center; padding:20px;">Dersler yükleniyor...</div>
+                <div class="users-stats" id="usersStats">
+                    <div class="stats-summary">
+                        <div class="stat-card-mini">
+                            <span class="stat-value" id="totalUsersCount">0</span>
+                            <span class="stat-label">Toplam Kullanıcı</span>
+                        </div>
+                        <div class="stat-card-mini">
+                            <span class="stat-value" id="totalWordsViewed">0</span>
+                            <span class="stat-label">Toplam Kelime Bakma</span>
+                        </div>
+                    </div>
+                    <div class="users-table-container">
+                        <table class="users-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Kullanıcı Adı</th>
+                                    <th>E-posta</th>
+                                    <th>Kayıt Tarihi</th>
+                                    <th>Seçilen Ders</th>
+                                    <th>Bakılan Kelime</th>
+                                    <th>Son Aktiflik</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Kitap Yönetimi -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-layer-group"></i> Kitap Yönetimi</h2>
+                    <button id="addBookBtn" class="btn-success"><i class="fas fa-plus"></i> Yeni Kitap</button>
+                </div>
+                <div class="books-admin-list" id="booksAdminList">
+                    <div style="text-align:center; padding:20px;">Kitaplar yükleniyor...</div>
+                </div>
+            </div>
+
+            <!-- Ders Yönetimi (Seçili kitaba göre) -->
+            <div class="admin-section" id="lessonsSection" style="display:none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-book"></i> Ders Yönetimi - <span id="currentBookName">Kitap Seçin</span></h2>
+                    <div>
+                        <button id="moveLessonBtn" class="btn-warning" style="display:none;"><i class="fas fa-arrows-alt"></i> Dersi Taşı</button>
+                        <button id="addLessonBtn" class="btn-success"><i class="fas fa-plus"></i> Yeni Ders</button>
+                    </div>
+                </div>
+                <div class="lessons-admin-list" id="lessonsAdminList"></div>
             </div>
 
             <!-- Kelime Yönetimi (Seçili derse göre) -->
             <div class="admin-section" id="wordsSection" style="display:none;">
                 <div class="section-header">
                     <h2><i class="fas fa-book"></i> Kelime Yönetimi - <span id="currentLessonName">Ders Seçin</span></h2>
-                    <button id="addWordBtn" class="btn-success"><i class="fas fa-plus"></i> Yeni Kelime</button>
+                    <div>
+                        <button id="moveWordBtn" class="btn-warning" style="display:none;"><i class="fas fa-arrows-alt"></i> Kelimeyi Taşı</button>
+                        <button id="addWordBtn" class="btn-success"><i class="fas fa-plus"></i> Yeni Kelime</button>
+                    </div>
                 </div>
-                <div class="words-admin-list" id="wordsAdminList">
-                    <div style="text-align:center; padding:20px;">Kelime eklemek için bir ders seçin</div>
-                </div>
+                <div class="words-admin-list" id="wordsAdminList"></div>
             </div>
         </div>
     </div>
 
-    <!-- Kelime Ekleme/Düzenleme Modal -->
-    <div id="wordModal" class="modal hidden">
+    <!-- Kitap Ekleme/Düzenleme Modal -->
+    <div id="bookModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">Kelime Ekle</h3>
-                <button class="close-modal" onclick="window.closeWordModal()">&times;</button>
+                <h3 id="bookModalTitle">Kitap Ekle</h3>
+                <button class="close-modal" onclick="window.closeBookModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <label>Arapça Kelime</label>
-                <input type="text" id="wordArabic" placeholder="مثال">
-                <label>Türkçe Anlam</label>
-                <input type="text" id="wordTurkish" placeholder="örnek">
-                <input type="hidden" id="editWordId">
+                <label>Kitap Adı</label>
+                <input type="text" id="bookName" placeholder="Örn: Kur'an-ı Kerim, Hadisler...">
+                <label>Açıklama (Opsiyonel)</label>
+                <input type="text" id="bookDesc" placeholder="Kısa açıklama">
+                <label>Sıra No</label>
+                <input type="number" id="bookOrder" placeholder="1, 2, 3...">
+                <input type="hidden" id="editBookId">
             </div>
             <div class="modal-footer">
-                <button class="btn-cancel" onclick="window.closeWordModal()">İptal</button>
-                <button class="btn-save" id="saveWordBtn">Kaydet</button>
+                <button class="btn-cancel" onclick="window.closeBookModal()">İptal</button>
+                <button class="btn-save" id="saveBookBtn">Kaydet</button>
             </div>
         </div>
     </div>
@@ -98,9 +147,12 @@
             <div class="modal-body">
                 <label>Ders Adı</label>
                 <input type="text" id="lessonName" placeholder="Örn: Ders 1, Ders 2...">
-                <label>Ders Açıklaması (Opsiyonel)</label>
+                <label>Açıklama (Opsiyonel)</label>
                 <input type="text" id="lessonDesc" placeholder="Kısa açıklama">
+                <label>Sıra No</label>
+                <input type="number" id="lessonOrder" placeholder="1, 2, 3...">
                 <input type="hidden" id="editLessonId">
+                <input type="hidden" id="currentBookIdForLesson">
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" onclick="window.closeLessonModal()">İptal</button>
@@ -109,6 +161,47 @@
         </div>
     </div>
 
+    <!-- Kelime Ekleme/Düzenleme Modal -->
+    <div id="wordModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="wordModalTitle">Kelime Ekle</h3>
+                <button class="close-modal" onclick="window.closeWordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label>Arapça Kelime</label>
+                <input type="text" id="wordArabic" placeholder="مثال">
+                <label>Türkçe Anlam</label>
+                <input type="text" id="wordTurkish" placeholder="örnek">
+                <input type="hidden" id="editWordId">
+                <input type="hidden" id="currentLessonIdForWord">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="window.closeWordModal()">İptal</button>
+                <button class="btn-save" id="saveWordBtn">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taşıma Modalı (Ders veya Kelime taşıma) -->
+    <div id="moveModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="moveModalTitle">Taşı</h3>
+                <button class="close-modal" onclick="window.closeMoveModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label id="moveItemLabel">Hedef Kitap:</label>
+                <select id="moveTargetSelect" class="move-select"></select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="window.closeMoveModal()">İptal</button>
+                <button class="btn-save" id="confirmMoveBtn">Taşı</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirim -->
     <div id="notification" class="notification hidden">
         <div class="notification-content">
             <i class="fas fa-check-circle"></i>
@@ -117,7 +210,6 @@
     </div>
 
     <style>
-        /* Şifre input wrapper */
         .password-input-wrapper {
             position: relative;
             width: 100%;
@@ -136,10 +228,60 @@
             cursor: pointer;
             color: var(--text-secondary);
             font-size: 16px;
-            padding: 5px;
         }
-        .password-toggle:hover {
+        .stat-card-mini {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 12px 20px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .stats-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .users-table-container {
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .users-table th, .users-table td {
+            padding: 8px;
+            font-size: 12px;
+        }
+        .profile-stats {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--dark-border);
+        }
+        .profile-stats h4 {
+            margin-bottom: 12px;
             color: var(--accent);
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+        .recent-words-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .recent-word-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-info {
+            background: #8b5cf6;
         }
     </style>
 
