@@ -822,6 +822,7 @@ window.showAdminLessons = function() {
 };
 
 window.showAdminWords = function() {
+    console.log("showAdminWords çağrıldı");
     document.getElementById('adminUsersSection')?.classList.add('hidden');
     document.getElementById('adminBooksSection')?.classList.add('hidden');
     document.getElementById('adminLessonsSection')?.classList.add('hidden');
@@ -848,9 +849,9 @@ window.toggleAdminTheme = function() {
 };
 
 // Admin dersler için kitap seçimi
+// Dersler için kitap seçimi (düzeltilmiş)
 async function loadLessonsForAdminSelect() {
-    const booksRef = collection(db, 'books');
-    const snapshot = await getDocs(booksRef);
+    const snapshot = await getDocs(collection(db, 'books'));
     const booksList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
     
     const select = document.getElementById('lessonBookSelect');
@@ -865,6 +866,10 @@ async function loadLessonsForAdminSelect() {
         select.onchange = () => {
             if (select.value) {
                 loadLessonsByBook(select.value);
+                // Kitap seçildiğinde currentBookName'i güncelle
+                const bookName = select.options[select.selectedIndex]?.text || '';
+                const currentBookNameEl = document.getElementById('currentBookName');
+                if (currentBookNameEl) currentBookNameEl.innerText = bookName;
             }
         };
     }
@@ -898,40 +903,30 @@ async function loadLessonsByBook(bookId) {
 }
 
 // Admin kelimeler için ders seçimi
+// Kelimeler için kitap ve ders seçimi (düzeltilmiş)
 async function loadWordsForAdminSelect() {
-    const booksRef = collection(db, 'books');
-    const snapshot = await getDocs(booksRef);
+    const snapshot = await getDocs(collection(db, 'books'));
     const booksList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
     
     const bookSelect = document.getElementById('wordBookSelect');
-    if (!bookSelect) {
-        // Ders seçimi için önce kitap seçimi yapalım
-        const selectorDiv = document.querySelector('.lesson-selector');
-        if (selectorDiv) {
-            selectorDiv.innerHTML = '<label>Kitap Seç:</label><select id="wordBookSelect" class="book-select"></select><label style="margin-left:15px">Ders Seç:</label><select id="wordLessonSelectAdmin" class="lesson-select"></select>';
-        }
-    }
-    
-    const bookSelectEl = document.getElementById('wordBookSelect');
-    if (bookSelectEl) {
-        bookSelectEl.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    if (bookSelect) {
+        bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
         booksList.forEach(book => {
             const option = document.createElement('option');
             option.value = book.id;
             option.textContent = book.name;
-            bookSelectEl.appendChild(option);
+            bookSelect.appendChild(option);
         });
-        bookSelectEl.onchange = () => {
-            if (bookSelectEl.value) {
-                loadLessonsForWords(bookSelectEl.value);
+        bookSelect.onchange = () => {
+            if (bookSelect.value) {
+                loadLessonsForWords(bookSelect.value);
             }
         };
     }
 }
 
 async function loadLessonsForWords(bookId) {
-    const lessonsRef = collection(db, 'lessons');
-    const q = query(lessonsRef, where('bookId', '==', bookId));
+    const q = query(collection(db, 'lessons'), where('bookId', '==', bookId));
     const snapshot = await getDocs(q);
     const lessonsList = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
     
@@ -946,7 +941,8 @@ async function loadLessonsForWords(bookId) {
         });
         lessonSelect.onchange = () => {
             if (lessonSelect.value) {
-                loadWordsByLesson(lessonSelect.value);
+                const lessonName = lessonSelect.options[lessonSelect.selectedIndex]?.text || '';
+                window.selectLessonForWordsFromList(lessonSelect.value, lessonName);
             }
         };
     }
@@ -978,25 +974,48 @@ async function loadWordsByLesson(lessonId) {
     document.getElementById('moveWordBtn').style.display = 'inline-flex';
 }
 
+// Kelimeler için ders seçimi (düzeltilmiş)
 window.selectLessonForWordsFromList = async (lessonId, lessonName) => {
+    console.log("selectLessonForWordsFromList çağrıldı:", lessonId, lessonName);
     currentEditingLessonId = lessonId;
-    document.getElementById('currentLessonName').innerText = lessonName;
-    document.getElementById('wordsSection').style.display = 'block';
-    document.getElementById('moveWordBtn').style.display = 'inline-flex';
     
-    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+    // Element kontrolü
+    const currentLessonNameSpan = document.getElementById('currentLessonName');
+    if (currentLessonNameSpan) {
+        currentLessonNameSpan.innerText = lessonName;
+    } else {
+        console.log("currentLessonName elementi bulunamadı");
+    }
+    
+    const wordsSection = document.getElementById('wordsSection');
+    if (wordsSection) wordsSection.style.display = 'block';
+    
+    const moveWordBtn = document.getElementById('moveWordBtn');
+    if (moveWordBtn) moveWordBtn.style.display = 'inline-flex';
+    
+    // Kelimeleri yükle
+    const q = query(collection(db, 'words'), where('lessonId', '==', lessonId));
+    const snapshot = await getDocs(q);
     const container = document.getElementById('wordsAdminList');
     if (container) {
         container.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement('div');
-            div.className = 'word-item';
-            div.innerHTML = `<div><strong class="word-arabic">${data.arabic}</strong> - ${data.turkish}</div>
-                <div><button class="btn-warning" onclick="window.editWordItem('${doc.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn-danger" onclick="window.deleteWordItem('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
+        if (snapshot.empty) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz kelime yok. "Yeni Kelime" butonuna tıklayın.</div>';
+        } else {
+            snapshot.forEach(doc => {
+                const word = doc.data();
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.innerHTML = `
+                    <div><strong class="word-arabic">${word.arabic}</strong> - ${word.turkish}</div>
+                    <div>
+                        <button class="btn-warning" onclick="window.editWordItem('${doc.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger" onclick="window.deleteWordItem('${doc.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
     }
 };
 
