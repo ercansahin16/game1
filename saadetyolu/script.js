@@ -536,9 +536,10 @@ async function loadAllBooks() {
         const snapshot = await getDocs(collection(db, 'books'));
         books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Sadece element varsa güncelle (admin panelinde bu element yok)
-        const totalBooksCountEl = document.getElementById('totalBooksCount');
-        if (totalBooksCountEl) totalBooksCountEl.innerText = books.length;
+        // NOT: totalBooksCount sadece index.html'de var, admin.html'de yok
+        // Bu yüzden bu satırı kaldırdık veya kontrol ekledik
+        // const totalBooksCountEl = document.getElementById('totalBooksCount');
+        // if (totalBooksCountEl) totalBooksCountEl.innerText = books.length;
         
         const container = document.getElementById('booksList');
         if (container) {
