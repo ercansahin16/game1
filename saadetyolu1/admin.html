@@ -12,25 +12,134 @@
             min-height: 100vh;
             color: white;
         }
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        /* Hamburger Menü */
+        .menu-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #f59e0b;
+            border: none;
+            color: #1e1b4b;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .menu-btn:hover { transform: scale(1.05); background: #d97706; }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background: #1e1b4b;
+            z-index: 99;
+            transition: 0.3s;
+            padding: 80px 20px 20px 20px;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+        }
+        .sidebar.open { left: 0; }
+        
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f59e0b;
+            margin-bottom: 20px;
+        }
+        .sidebar-header h3 { color: #f59e0b; margin-bottom: 5px; }
+        .sidebar-header p { font-size: 12px; opacity: 0.7; }
+        
+        .sidebar-item {
+            padding: 15px 20px;
+            margin: 5px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+        }
+        .sidebar-item:hover { background: #f59e0b; color: #1e1b4b; }
+        .sidebar-item.active { background: #f59e0b; color: #1e1b4b; }
+        .sidebar-item i { width: 25px; font-size: 18px; }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            padding: 0 20px;
+        }
+        
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 98;
+            display: none;
+        }
+        .overlay.active { display: block; }
+        
+        /* Ana İçerik */
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+            transition: 0.3s;
+        }
+        .main-content.shifted { margin-left: 300px; }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
         .logo { font-size: 24px; font-weight: bold; color: #f59e0b; }
+        .user-info { background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 30px; font-size: 14px; }
+        
         .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
         .btn-primary { background: #f59e0b; color: #1e1b4b; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-success { background: #10b981; color: white; }
         .btn-warning { background: #f59e0b; color: #1e1b4b; }
+        
         .card { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-        .login-card { max-width: 400px; margin: 50px auto; text-align: center; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; }
-        input::placeholder, select { color: #ccc; }
-        .item-list { margin-top: 15px; }
-        .item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 8px; }
+        .login-card { max-width: 400px; margin: 100px auto; text-align: center; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; }
+        input::placeholder { color: #ccc; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 32px; font-weight: bold; color: #f59e0b; }
+        .stat-label { font-size: 12px; opacity: 0.8; margin-top: 5px; }
+        
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-row select { width: auto; min-width: 150px; }
+        
+        .item-list { margin-top: 15px; max-height: 300px; overflow-y: auto; }
+        .item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; }
         .item-info { flex: 1; }
+        .item-info strong { font-size: 16px; }
+        .item-info small { font-size: 11px; opacity: 0.7; display: block; margin-top: 4px; }
         .item-actions { display: flex; gap: 8px; }
-        .hidden { display: none; }
-        .stats { display: flex; gap: 15px; margin-bottom: 20px; }
-        .stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; }
+        
         .modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
             display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s;
@@ -39,20 +148,61 @@
         .modal-content { background: #1e1b4b; border-radius: 20px; padding: 25px; width: 90%; max-width: 500px; }
         .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
         .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .filter-row select { width: auto; flex: 1; }
-        @media (max-width: 600px) { .item { flex-direction: column; gap: 10px; } .item-actions { width: 100%; justify-content: center; } }
+        
+        .hidden { display: none; }
+        
+        @media (max-width: 768px) {
+            .main-content.shifted { margin-left: 0; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .filter-row select { width: 100%; }
+            .item { flex-direction: column; gap: 10px; }
+            .item-actions { width: 100%; justify-content: center; }
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="logo">🔐 Admin Panel</div>
-        <div>
-            <button id="themeBtn" class="btn btn-warning">🌙 Tema</button>
-            <button id="logoutBtn" class="btn btn-danger">🚪 Çıkış</button>
+<!-- Hamburger Menü -->
+<button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3><i class="fas fa-crown"></i> Admin Panel</h3>
+        <p>Yönetim Sistemi</p>
+    </div>
+    <div class="sidebar-item active" data-section="dashboard">
+        <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" data-section="books">
+        <i class="fas fa-book"></i> <span>Kitaplar</span>
+    </div>
+    <div class="sidebar-item" data-section="lessons">
+        <i class="fas fa-graduation-cap"></i> <span>Dersler</span>
+    </div>
+    <div class="sidebar-item" data-section="words">
+        <i class="fas fa-language"></i> <span>Kelimeler</span>
+    </div>
+    <div class="sidebar-item" data-section="users">
+        <i class="fas fa-users"></i> <span>Kullanıcılar</span>
+    </div>
+    <div class="sidebar-footer">
+        <div class="sidebar-item" id="logoutSidebarBtn">
+            <i class="fas fa-sign-out-alt"></i> <span>Çıkış Yap</span>
         </div>
+        <div class="sidebar-item" id="themeSidebarBtn">
+            <i class="fas fa-moon"></i> <span>Tema Değiştir</span>
+        </div>
+    </div>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<!-- Ana İçerik -->
+<div class="main-content" id="mainContent">
+    <div class="admin-header">
+        <div class="logo">🔐 Admin Panel</div>
+        <div class="user-info"><i class="fas fa-user-shield"></i> Administrator</div>
     </div>
 
     <!-- Giriş Ekranı -->
@@ -62,75 +212,137 @@
         <button id="doLoginBtn" class="btn btn-primary" style="width: 100%;">Giriş Yap</button>
     </div>
 
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="hidden">
-        <div class="stats">
-            <div class="stat"><div class="stat-value" id="statUsers">0</div><div>Kullanıcı</div></div>
-            <div class="stat"><div class="stat-value" id="statBooks">0</div><div>Kitap</div></div>
-            <div class="stat"><div class="stat-value" id="statLessons">0</div><div>Ders</div></div>
-            <div class="stat"><div class="stat-value" id="statWords">0</div><div>Kelime</div></div>
+    <!-- Dashboard -->
+    <div id="dashboardSection" class="hidden">
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="statUsers">0</div><div class="stat-label">Toplam Kullanıcı</div></div>
+            <div class="stat-card"><div class="stat-value" id="statBooks">0</div><div class="stat-label">Toplam Kitap</div></div>
+            <div class="stat-card"><div class="stat-value" id="statLessons">0</div><div class="stat-label">Toplam Ders</div></div>
+            <div class="stat-card"><div class="stat-value" id="statWords">0</div><div class="stat-label">Toplam Kelime</div></div>
         </div>
-
-        <!-- Kitaplar -->
         <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <h3>📚 Kitaplar</h3>
-                <button id="addBookBtn" class="btn btn-success">+ Yeni Kitap</button>
+            <h3><i class="fas fa-chart-simple"></i> Hızlı Bakış</h3>
+            <p style="margin-top: 10px;">Hoş geldiniz! Sol menüden yönetmek istediğiniz bölümü seçin.</p>
+        </div>
+    </div>
+
+    <!-- Kitaplar -->
+    <div id="booksSection" class="hidden">
+        <div class="card">
+            <div class="section-header">
+                <h3><i class="fas fa-book"></i> Kitaplar</h3>
+                <button id="addBookBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Kitap</button>
             </div>
             <div id="booksList" class="item-list"></div>
         </div>
+    </div>
 
-        <!-- Dersler -->
+    <!-- Dersler -->
+    <div id="lessonsSection" class="hidden">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <h3>📖 Dersler</h3>
+            <div class="section-header">
+                <h3><i class="fas fa-graduation-cap"></i> Dersler</h3>
                 <div style="display: flex; gap: 10px;">
-                    <select id="lessonBookFilter"><option value="">Tüm Kitaplar</option></select>
-                    <button id="addLessonBtn" class="btn btn-success">+ Yeni Ders</button>
+                    <select id="lessonBookFilter" class="btn" style="background: rgba(255,255,255,0.2); width: auto;"></select>
+                    <button id="addLessonBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Ders</button>
                 </div>
             </div>
             <div id="lessonsList" class="item-list"></div>
         </div>
+    </div>
 
-        <!-- Kelimeler -->
+    <!-- Kelimeler -->
+    <div id="wordsSection" class="hidden">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <h3>🔤 Kelimeler</h3>
-                <div style="display: flex; gap: 10px;">
-                    <select id="wordBookFilter"><option value="">Tüm Kitaplar</option></select>
-                    <select id="wordLessonFilter"><option value="">Tüm Dersler</option></select>
-                    <button id="addWordBtn" class="btn btn-success">+ Yeni Kelime</button>
+            <div class="section-header">
+                <h3><i class="fas fa-language"></i> Kelimeler</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <select id="wordBookFilter" class="btn" style="background: rgba(255,255,255,0.2); width: auto;"></select>
+                    <select id="wordLessonFilter" class="btn" style="background: rgba(255,255,255,0.2); width: auto;"></select>
+                    <button id="addWordBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Kelime</button>
                 </div>
             </div>
             <div id="wordsList" class="item-list"></div>
         </div>
+    </div>
 
-        <!-- Kullanıcılar -->
+    <!-- Kullanıcılar -->
+    <div id="usersSection" class="hidden">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <h3>👥 Kullanıcılar</h3>
-                <button id="refreshUsersBtn" class="btn btn-warning">🔄 Yenile</button>
+            <div class="section-header">
+                <h3><i class="fas fa-users"></i> Kullanıcılar</h3>
+                <button id="refreshUsersBtn" class="btn btn-warning"><i class="fas fa-sync-alt"></i> Yenile</button>
             </div>
             <div id="usersList" class="item-list"></div>
         </div>
     </div>
 </div>
 
-<!-- Kitap Modal -->
+<!-- Modallar -->
 <div id="bookModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="bookModalTitle">Kitap Ekle</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><input type="text" id="bookName" placeholder="Kitap Adı"><input type="text" id="bookDesc" placeholder="Açıklama"><input type="number" id="bookOrder" placeholder="Sıra"><input type="hidden" id="editBookId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('bookModal')">İptal</button><button id="saveBookBtn" class="btn btn-success">Kaydet</button></div></div></div>
 
-<!-- Ders Modal -->
 <div id="lessonModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="lessonModalTitle">Ders Ekle</h3><button class="modal-close" onclick="closeModal('lessonModal')">&times;</button></div><input type="text" id="lessonName" placeholder="Ders Adı"><input type="text" id="lessonDesc" placeholder="Açıklama"><select id="lessonBookSelect"></select><input type="number" id="lessonOrder" placeholder="Sıra"><input type="hidden" id="editLessonId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('lessonModal')">İptal</button><button id="saveLessonBtn" class="btn btn-success">Kaydet</button></div></div></div>
 
-<!-- Kelime Modal -->
 <div id="wordModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="wordModalTitle">Kelime Ekle</h3><button class="modal-close" onclick="closeModal('wordModal')">&times;</button></div><input type="text" id="wordArabic" placeholder="Arapça"><input type="text" id="wordTurkish" placeholder="Türkçe"><select id="wordLessonSelect"></select><input type="hidden" id="editWordId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('wordModal')">İptal</button><button id="saveWordBtn" class="btn btn-success">Kaydet</button></div></div></div>
 
 <script type="module">
-    import { db, auth } from './firebase.js';
-    import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-    import { signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    let books = [], lessons = [];
+    const firebaseConfig = {
+        apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
+        authDomain: "duapro-a7d7e.firebaseapp.com",
+        projectId: "duapro-a7d7e",
+        storageBucket: "duapro-a7d7e.appspot.com",
+        messagingSenderId: "450775848659",
+        appId: "1:450775848659:web:ca192a401da3f887e1e626"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let books = [];
+
+    // Menü
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const mainContent = document.getElementById('mainContent');
+
+    function toggleMenu() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        mainContent.classList.toggle('shifted');
+    }
+    menuBtn.onclick = toggleMenu;
+    overlay.onclick = toggleMenu;
+
+    // Sayfa değiştirme
+    const sections = {
+        dashboard: document.getElementById('dashboardSection'),
+        books: document.getElementById('booksSection'),
+        lessons: document.getElementById('lessonsSection'),
+        words: document.getElementById('wordsSection'),
+        users: document.getElementById('usersSection')
+    };
+
+    document.querySelectorAll('.sidebar-item[data-section]').forEach(item => {
+        item.onclick = () => {
+            const section = item.getAttribute('data-section');
+            Object.values(sections).forEach(s => s.classList.add('hidden'));
+            sections[section].classList.remove('hidden');
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            if (window.innerWidth <= 768) toggleMenu();
+            if (section === 'books') loadBooks();
+            if (section === 'lessons') loadLessons();
+            if (section === 'words') loadWords();
+            if (section === 'users') loadUsers();
+            if (section === 'dashboard') loadStats();
+        };
+    });
 
     function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
     window.closeModal = closeModal;
@@ -154,7 +366,7 @@
         container.innerHTML = '';
         books.forEach(book => {
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><br><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editBook('${book.id}')">✏️</button><button class="btn btn-danger" onclick="deleteBook('${book.id}')">🗑️</button></div>`;
+            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editBook('${book.id}')">✏️ Düzenle</button><button class="btn btn-danger" onclick="deleteBook('${book.id}')">🗑️ Sil</button></div>`;
             container.appendChild(div);
         });
         const filter = document.getElementById('lessonBookFilter');
@@ -172,6 +384,7 @@
             wordBookFilter.innerHTML = '<option value="">Tüm Kitaplar</option>';
             books.forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.textContent = b.name; wordBookFilter.appendChild(opt); });
         }
+        loadStats();
     }
 
     async function loadLessons(bookId = '') {
@@ -183,7 +396,7 @@
             const data = doc.data();
             const bookName = books.find(b => b.id === data.bookId)?.name || '-';
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><br><small>${data.description || ''} | Kitap: ${bookName} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editLesson('${doc.id}')">✏️</button><button class="btn btn-danger" onclick="deleteLesson('${doc.id}')">🗑️</button></div>`;
+            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Kitap: ${bookName} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editLesson('${doc.id}')">✏️ Düzenle</button><button class="btn btn-danger" onclick="deleteLesson('${doc.id}')">🗑️ Sil</button></div>`;
             container.appendChild(div);
         });
         const wordLessonFilter = document.getElementById('wordLessonFilter');
@@ -192,6 +405,7 @@
             wordLessonFilter.innerHTML = '<option value="">Tüm Dersler</option>';
             allLessons.docs.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.data().name; wordLessonFilter.appendChild(opt); });
         }
+        loadStats();
     }
 
     async function loadWords(lessonId = '') {
@@ -202,9 +416,10 @@
         snapshot.docs.forEach(doc => {
             const data = doc.data();
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><br><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editWord('${doc.id}')">✏️</button><button class="btn btn-danger" onclick="deleteWord('${doc.id}')">🗑️</button></div>`;
+            div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editWord('${doc.id}')">✏️ Düzenle</button><button class="btn btn-danger" onclick="deleteWord('${doc.id}')">🗑️ Sil</button></div>`;
             container.appendChild(div);
         });
+        loadStats();
     }
 
     async function loadUsers() {
@@ -214,32 +429,56 @@
         snapshot.docs.forEach(doc => {
             const data = doc.data();
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${data.name || '-'}</strong><br><small>${data.email} | Kelime: ${data.totalWordsViewed || 0} | Kayıt: ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-'}</small></div>`;
+            div.innerHTML = `<div class="item-info"><strong>${data.name || '-'}</strong><small>📧 ${data.email} | 📖 Kelime: ${data.totalWordsViewed || 0} | 📅 ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-'}</small></div>`;
             container.appendChild(div);
         });
     }
 
+    // CRUD
     window.editBook = (id) => { const book = books.find(b => b.id === id); if(book){ document.getElementById('bookModalTitle').innerText = 'Kitap Düzenle'; document.getElementById('editBookId').value = id; document.getElementById('bookName').value = book.name; document.getElementById('bookDesc').value = book.description || ''; document.getElementById('bookOrder').value = book.order || 0; openModal('bookModal'); } };
     window.editLesson = async (id) => { const snap = await getDoc(doc(db, 'lessons', id)); if(snap.exists()){ const data = snap.data(); document.getElementById('lessonModalTitle').innerText = 'Ders Düzenle'; document.getElementById('editLessonId').value = id; document.getElementById('lessonName').value = data.name; document.getElementById('lessonDesc').value = data.description || ''; document.getElementById('lessonOrder').value = data.order || 0; document.getElementById('lessonBookSelect').value = data.bookId || ''; openModal('lessonModal'); } };
     window.editWord = async (id) => { const snap = await getDoc(doc(db, 'words', id)); if(snap.exists()){ const data = snap.data(); document.getElementById('wordModalTitle').innerText = 'Kelime Düzenle'; document.getElementById('editWordId').value = id; document.getElementById('wordArabic').value = data.arabic; document.getElementById('wordTurkish').value = data.turkish; document.getElementById('wordLessonSelect').value = data.lessonId || ''; openModal('wordModal'); } };
-    window.deleteBook = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'books', id)); loadBooks(); loadStats(); } };
-    window.deleteLesson = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'lessons', id)); loadLessons(document.getElementById('lessonBookFilter').value); loadStats(); } };
-    window.deleteWord = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'words', id)); loadWords(document.getElementById('wordLessonFilter').value); loadStats(); } };
+    window.deleteBook = async (id) => { if(confirm('Bu kitabı silmek istediğinize emin misiniz?')){ await deleteDoc(doc(db, 'books', id)); loadBooks(); if(!document.getElementById('booksSection').classList.contains('hidden')) loadBooks(); } };
+    window.deleteLesson = async (id) => { if(confirm('Bu dersi silmek istediğinize emin misiniz?')){ await deleteDoc(doc(db, 'lessons', id)); loadLessons(document.getElementById('lessonBookFilter').value); } };
+    window.deleteWord = async (id) => { if(confirm('Bu kelimeyi silmek istediğinize emin misiniz?')){ await deleteDoc(doc(db, 'words', id)); loadWords(document.getElementById('wordLessonFilter').value); } };
 
+    // Butonlar
     document.getElementById('addBookBtn').onclick = () => { document.getElementById('bookModalTitle').innerText = 'Yeni Kitap Ekle'; document.getElementById('editBookId').value = ''; document.getElementById('bookName').value = ''; document.getElementById('bookDesc').value = ''; document.getElementById('bookOrder').value = ''; openModal('bookModal'); };
     document.getElementById('addLessonBtn').onclick = () => { document.getElementById('lessonModalTitle').innerText = 'Yeni Ders Ekle'; document.getElementById('editLessonId').value = ''; document.getElementById('lessonName').value = ''; document.getElementById('lessonDesc').value = ''; document.getElementById('lessonOrder').value = ''; openModal('lessonModal'); };
     document.getElementById('addWordBtn').onclick = () => { document.getElementById('wordModalTitle').innerText = 'Yeni Kelime Ekle'; document.getElementById('editWordId').value = ''; document.getElementById('wordArabic').value = ''; document.getElementById('wordTurkish').value = ''; openModal('wordModal'); };
-    document.getElementById('saveBookBtn').onclick = async () => { const id = document.getElementById('editBookId').value; const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 }; if(id) await updateDoc(doc(db, 'books', id), data); else await setDoc(doc(collection(db, 'books')), data); closeModal('bookModal'); loadBooks(); loadStats(); };
-    document.getElementById('saveLessonBtn').onclick = async () => { const id = document.getElementById('editLessonId').value; const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelect').value }; if(id) await updateDoc(doc(db, 'lessons', id), data); else await setDoc(doc(collection(db, 'lessons')), data); closeModal('lessonModal'); loadLessons(document.getElementById('lessonBookFilter').value); loadStats(); };
-    document.getElementById('saveWordBtn').onclick = async () => { const id = document.getElementById('editWordId').value; const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelect').value, createdAt: new Date().toISOString() }; if(id) await updateDoc(doc(db, 'words', id), data); else await setDoc(doc(collection(db, 'words')), data); closeModal('wordModal'); loadWords(document.getElementById('wordLessonFilter').value); loadStats(); };
+    document.getElementById('saveBookBtn').onclick = async () => { const id = document.getElementById('editBookId').value; const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 }; if(id) await updateDoc(doc(db, 'books', id), data); else await setDoc(doc(collection(db, 'books')), data); closeModal('bookModal'); loadBooks(); };
+    document.getElementById('saveLessonBtn').onclick = async () => { const id = document.getElementById('editLessonId').value; const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelect').value }; if(id) await updateDoc(doc(db, 'lessons', id), data); else await setDoc(doc(collection(db, 'lessons')), data); closeModal('lessonModal'); loadLessons(document.getElementById('lessonBookFilter').value); };
+    document.getElementById('saveWordBtn').onclick = async () => { const id = document.getElementById('editWordId').value; const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelect').value, createdAt: new Date().toISOString() }; if(id) await updateDoc(doc(db, 'words', id), data); else await setDoc(doc(collection(db, 'words')), data); closeModal('wordModal'); loadWords(document.getElementById('wordLessonFilter').value); };
     document.getElementById('lessonBookFilter').onchange = (e) => loadLessons(e.target.value);
     document.getElementById('wordBookFilter').onchange = async (e) => { const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', e.target.value))); const filter = document.getElementById('wordLessonFilter'); filter.innerHTML = '<option value="">Tüm Dersler</option>'; lessonsSnap.docs.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.data().name; filter.appendChild(opt); }); loadWords(); };
     document.getElementById('wordLessonFilter').onchange = (e) => loadWords(e.target.value);
     document.getElementById('refreshUsersBtn').onclick = loadUsers;
-    document.getElementById('themeBtn').onclick = () => { document.body.style.background = document.body.style.background.includes('0f172a') ? 'linear-gradient(135deg, #f5f7fa, #e8edf5)' : 'linear-gradient(135deg, #0f172a, #1e1b4b)'; };
-    document.getElementById('logoutBtn').onclick = async () => { await signOut(auth); document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('adminPanel').classList.add('hidden'); };
-    document.getElementById('doLoginBtn').onclick = () => { const pwd = document.getElementById('adminPassword').value; if(pwd === 'admin123'){ document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('adminPanel').classList.remove('hidden'); loadBooks(); loadLessons(); loadWords(); loadUsers(); loadStats(); } else { alert('Hatalı şifre!'); } };
+
+    // Tema
+    let isDark = true;
+    document.getElementById('themeSidebarBtn').onclick = () => {
+        if (isDark) {
+            document.body.style.background = 'linear-gradient(135deg, #f5f7fa, #e8edf5)';
+            document.body.style.color = '#1e1b4b';
+            document.querySelectorAll('.card, .stat-card, .login-card, .modal-content').forEach(el => el.style.background = 'rgba(255,255,255,0.9)');
+            document.querySelectorAll('.item').forEach(el => el.style.background = 'rgba(0,0,0,0.05)');
+            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#ffffff');
+            document.querySelectorAll('.btn, input, select').forEach(el => el.style.background = 'rgba(0,0,0,0.05)');
+        } else {
+            document.body.style.background = 'linear-gradient(135deg, #0f172a, #1e1b4b)';
+            document.body.style.color = 'white';
+            document.querySelectorAll('.card, .stat-card, .login-card, .modal-content').forEach(el => el.style.background = 'rgba(255,255,255,0.1)');
+            document.querySelectorAll('.item').forEach(el => el.style.background = 'rgba(255,255,255,0.05)');
+            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#1e1b4b');
+            document.querySelectorAll('.btn, input, select').forEach(el => el.style.background = 'rgba(255,255,255,0.2)');
+        }
+        isDark = !isDark;
+    };
+
+    // Giriş
+    document.getElementById('doLoginBtn').onclick = () => { const pwd = document.getElementById('adminPassword').value; if(pwd === 'admin123'){ document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('dashboardSection').classList.remove('hidden'); loadStats(); loadBooks(); } else { alert('Hatalı şifre!'); } };
     document.getElementById('adminPassword').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doLoginBtn').click(); });
+    document.getElementById('logoutSidebarBtn').onclick = async () => { await signOut(auth); document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('dashboardSection').classList.add('hidden'); document.getElementById('adminPassword').value = ''; };
 
     async function loadWordSelects() {
         const lessonsSnap = await getDocs(collection(db, 'lessons'));
