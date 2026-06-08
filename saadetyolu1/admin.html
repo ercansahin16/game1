@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Saadet Yolu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e1b4b);
+            min-height: 100vh;
+            color: white;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo { font-size: 24px; font-weight: bold; color: #f59e0b; }
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #f59e0b; color: #1e1b4b; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: #1e1b4b; }
+        .card { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .login-card { max-width: 400px; margin: 50px auto; text-align: center; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; }
+        input::placeholder, select { color: #ccc; }
+        .item-list { margin-top: 15px; }
+        .item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 8px; }
+        .item-info { flex: 1; }
+        .item-actions { display: flex; gap: 8px; }
+        .hidden { display: none; }
+        .stats { display: flex; gap: 15px; margin-bottom: 20px; }
+        .stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; }
+        .modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s;
+        }
+        .modal.visible { visibility: visible; opacity: 1; }
+        .modal-content { background: #1e1b4b; border-radius: 20px; padding: 25px; width: 90%; max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-row select { width: auto; flex: 1; }
+        @media (max-width: 600px) { .item { flex-direction: column; gap: 10px; } .item-actions { width: 100%; justify-content: center; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">🔐 Admin Panel</div>
+        <div>
+            <button id="themeBtn" class="btn btn-warning">🌙 Tema</button>
+            <button id="logoutBtn" class="btn btn-danger">🚪 Çıkış</button>
+        </div>
+    </div>
+
+    <!-- Giriş Ekranı -->
+    <div id="loginScreen" class="login-card card">
+        <h2>🔐 Yönetici Girişi</h2>
+        <input type="password" id="adminPassword" placeholder="Şifre">
+        <button id="doLoginBtn" class="btn btn-primary" style="width: 100%;">Giriş Yap</button>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden">
+        <div class="stats">
+            <div class="stat"><div class="stat-value" id="statUsers">0</div><div>Kullanıcı</div></div>
+            <div class="stat"><div class="stat-value" id="statBooks">0</div><div>Kitap</div></div>
+            <div class="stat"><div class="stat-value" id="statLessons">0</div><div>Ders</div></div>
+            <div class="stat"><div class="stat-value" id="statWords">0</div><div>Kelime</div></div>
+        </div>
+
+        <!-- Kitaplar -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <h3>📚 Kitaplar</h3>
+                <button id="addBookBtn" class="btn btn-success">+ Yeni Kitap</button>
+            </div>
+            <div id="booksList" class="item-list"></div>
+        </div>
+
+        <!-- Dersler -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3>📖 Dersler</h3>
+                <div style="display: flex; gap: 10px;">
+                    <select id="lessonBookFilter"><option value="">Tüm Kitaplar</option></select>
+                    <button id="addLessonBtn" class="btn btn-success">+ Yeni Ders</button>
+                </div>
+            </div>
+            <div id="lessonsList" class="item-list"></div>
+        </div>
+
+        <!-- Kelimeler -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3>🔤 Kelimeler</h3>
+                <div style="display: flex; gap: 10px;">
+                    <select id="wordBookFilter"><option value="">Tüm Kitaplar</option></select>
+                    <select id="wordLessonFilter"><option value="">Tüm Dersler</option></select>
+                    <button id="addWordBtn" class="btn btn-success">+ Yeni Kelime</button>
+                </div>
+            </div>
+            <div id="wordsList" class="item-list"></div>
+        </div>
+
+        <!-- Kullanıcılar -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <h3>👥 Kullanıcılar</h3>
+                <button id="refreshUsersBtn" class="btn btn-warning">🔄 Yenile</button>
+            </div>
+            <div id="usersList" class="item-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Kitap Modal -->
+<div id="bookModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="bookModalTitle">Kitap Ekle</h3><button class="modal-close" onclick="closeModal('bookModal')">&times;</button></div><input type="text" id="bookName" placeholder="Kitap Adı"><input type="text" id="bookDesc" placeholder="Açıklama"><input type="number" id="bookOrder" placeholder="Sıra"><input type="hidden" id="editBookId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('bookModal')">İptal</button><button id="saveBookBtn" class="btn btn-success">Kaydet</button></div></div></div>
+
+<!-- Ders Modal -->
+<div id="lessonModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="lessonModalTitle">Ders Ekle</h3><button class="modal-close" onclick="closeModal('lessonModal')">&times;</button></div><input type="text" id="lessonName" placeholder="Ders Adı"><input type="text" id="lessonDesc" placeholder="Açıklama"><select id="lessonBookSelect"></select><input type="number" id="lessonOrder" placeholder="Sıra"><input type="hidden" id="editLessonId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('lessonModal')">İptal</button><button id="saveLessonBtn" class="btn btn-success">Kaydet</button></div></div></div>
+
+<!-- Kelime Modal -->
+<div id="wordModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="wordModalTitle">Kelime Ekle</h3><button class="modal-close" onclick="closeModal('wordModal')">&times;</button></div><input type="text" id="wordArabic" placeholder="Arapça"><input type="text" id="wordTurkish" placeholder="Türkçe"><select id="wordLessonSelect"></select><input type="hidden" id="editWordId"><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('wordModal')">İptal</button><button id="saveWordBtn" class="btn btn-success">Kaydet</button></div></div></div>
+
+<script type="module">
+    import { db, auth } from './firebase.js';
+    import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    let books = [], lessons = [];
+
+    function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+    window.closeModal = closeModal;
+    function openModal(id) { document.getElementById(id).classList.add('visible'); }
+
+    async function loadStats() {
+        const users = await getDocs(collection(db, 'users'));
+        const books = await getDocs(collection(db, 'books'));
+        const lessons = await getDocs(collection(db, 'lessons'));
+        const words = await getDocs(collection(db, 'words'));
+        document.getElementById('statUsers').innerText = users.size;
+        document.getElementById('statBooks').innerText = books.size;
+        document.getElementById('statLessons').innerText = lessons.size;
+        document.getElementById('statWords').innerText = words.size;
+    }
+
+    async function loadBooks() {
+        const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+        books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const container = document.getElementById('booksList');
+        container.innerHTML = '';
+        books.forEach(book => {
+            const div = document.createElement('div'); div.className = 'item';
+            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><br><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editBook('${book.id}')">✏️</button><button class="btn btn-danger" onclick="deleteBook('${book.id}')">🗑️</button></div>`;
+            container.appendChild(div);
+        });
+        const filter = document.getElementById('lessonBookFilter');
+        if (filter) {
+            filter.innerHTML = '<option value="">Tüm Kitaplar</option>';
+            books.forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.textContent = b.name; filter.appendChild(opt); });
+        }
+        const lessonSelect = document.getElementById('lessonBookSelect');
+        if (lessonSelect) {
+            lessonSelect.innerHTML = '';
+            books.forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.textContent = b.name; lessonSelect.appendChild(opt); });
+        }
+        const wordBookFilter = document.getElementById('wordBookFilter');
+        if (wordBookFilter) {
+            wordBookFilter.innerHTML = '<option value="">Tüm Kitaplar</option>';
+            books.forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.textContent = b.name; wordBookFilter.appendChild(opt); });
+        }
+    }
+
+    async function loadLessons(bookId = '') {
+        let q = bookId ? query(collection(db, 'lessons'), where('bookId', '==', bookId), orderBy('order', 'asc')) : query(collection(db, 'lessons'), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        const container = document.getElementById('lessonsList');
+        container.innerHTML = '';
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const bookName = books.find(b => b.id === data.bookId)?.name || '-';
+            const div = document.createElement('div'); div.className = 'item';
+            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><br><small>${data.description || ''} | Kitap: ${bookName} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editLesson('${doc.id}')">✏️</button><button class="btn btn-danger" onclick="deleteLesson('${doc.id}')">🗑️</button></div>`;
+            container.appendChild(div);
+        });
+        const wordLessonFilter = document.getElementById('wordLessonFilter');
+        if (wordLessonFilter && !bookId) {
+            const allLessons = await getDocs(collection(db, 'lessons'));
+            wordLessonFilter.innerHTML = '<option value="">Tüm Dersler</option>';
+            allLessons.docs.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.data().name; wordLessonFilter.appendChild(opt); });
+        }
+    }
+
+    async function loadWords(lessonId = '') {
+        let q = lessonId ? query(collection(db, 'words'), where('lessonId', '==', lessonId)) : collection(db, 'words');
+        const snapshot = await getDocs(q);
+        const container = document.getElementById('wordsList');
+        container.innerHTML = '';
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div'); div.className = 'item';
+            div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><br><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning" onclick="editWord('${doc.id}')">✏️</button><button class="btn btn-danger" onclick="deleteWord('${doc.id}')">🗑️</button></div>`;
+            container.appendChild(div);
+        });
+    }
+
+    async function loadUsers() {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const container = document.getElementById('usersList');
+        container.innerHTML = '';
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div'); div.className = 'item';
+            div.innerHTML = `<div class="item-info"><strong>${data.name || '-'}</strong><br><small>${data.email} | Kelime: ${data.totalWordsViewed || 0} | Kayıt: ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-'}</small></div>`;
+            container.appendChild(div);
+        });
+    }
+
+    window.editBook = (id) => { const book = books.find(b => b.id === id); if(book){ document.getElementById('bookModalTitle').innerText = 'Kitap Düzenle'; document.getElementById('editBookId').value = id; document.getElementById('bookName').value = book.name; document.getElementById('bookDesc').value = book.description || ''; document.getElementById('bookOrder').value = book.order || 0; openModal('bookModal'); } };
+    window.editLesson = async (id) => { const snap = await getDoc(doc(db, 'lessons', id)); if(snap.exists()){ const data = snap.data(); document.getElementById('lessonModalTitle').innerText = 'Ders Düzenle'; document.getElementById('editLessonId').value = id; document.getElementById('lessonName').value = data.name; document.getElementById('lessonDesc').value = data.description || ''; document.getElementById('lessonOrder').value = data.order || 0; document.getElementById('lessonBookSelect').value = data.bookId || ''; openModal('lessonModal'); } };
+    window.editWord = async (id) => { const snap = await getDoc(doc(db, 'words', id)); if(snap.exists()){ const data = snap.data(); document.getElementById('wordModalTitle').innerText = 'Kelime Düzenle'; document.getElementById('editWordId').value = id; document.getElementById('wordArabic').value = data.arabic; document.getElementById('wordTurkish').value = data.turkish; document.getElementById('wordLessonSelect').value = data.lessonId || ''; openModal('wordModal'); } };
+    window.deleteBook = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'books', id)); loadBooks(); loadStats(); } };
+    window.deleteLesson = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'lessons', id)); loadLessons(document.getElementById('lessonBookFilter').value); loadStats(); } };
+    window.deleteWord = async (id) => { if(confirm('Sil?')){ await deleteDoc(doc(db, 'words', id)); loadWords(document.getElementById('wordLessonFilter').value); loadStats(); } };
+
+    document.getElementById('addBookBtn').onclick = () => { document.getElementById('bookModalTitle').innerText = 'Yeni Kitap Ekle'; document.getElementById('editBookId').value = ''; document.getElementById('bookName').value = ''; document.getElementById('bookDesc').value = ''; document.getElementById('bookOrder').value = ''; openModal('bookModal'); };
+    document.getElementById('addLessonBtn').onclick = () => { document.getElementById('lessonModalTitle').innerText = 'Yeni Ders Ekle'; document.getElementById('editLessonId').value = ''; document.getElementById('lessonName').value = ''; document.getElementById('lessonDesc').value = ''; document.getElementById('lessonOrder').value = ''; openModal('lessonModal'); };
+    document.getElementById('addWordBtn').onclick = () => { document.getElementById('wordModalTitle').innerText = 'Yeni Kelime Ekle'; document.getElementById('editWordId').value = ''; document.getElementById('wordArabic').value = ''; document.getElementById('wordTurkish').value = ''; openModal('wordModal'); };
+    document.getElementById('saveBookBtn').onclick = async () => { const id = document.getElementById('editBookId').value; const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 }; if(id) await updateDoc(doc(db, 'books', id), data); else await setDoc(doc(collection(db, 'books')), data); closeModal('bookModal'); loadBooks(); loadStats(); };
+    document.getElementById('saveLessonBtn').onclick = async () => { const id = document.getElementById('editLessonId').value; const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelect').value }; if(id) await updateDoc(doc(db, 'lessons', id), data); else await setDoc(doc(collection(db, 'lessons')), data); closeModal('lessonModal'); loadLessons(document.getElementById('lessonBookFilter').value); loadStats(); };
+    document.getElementById('saveWordBtn').onclick = async () => { const id = document.getElementById('editWordId').value; const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelect').value, createdAt: new Date().toISOString() }; if(id) await updateDoc(doc(db, 'words', id), data); else await setDoc(doc(collection(db, 'words')), data); closeModal('wordModal'); loadWords(document.getElementById('wordLessonFilter').value); loadStats(); };
+    document.getElementById('lessonBookFilter').onchange = (e) => loadLessons(e.target.value);
+    document.getElementById('wordBookFilter').onchange = async (e) => { const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', e.target.value))); const filter = document.getElementById('wordLessonFilter'); filter.innerHTML = '<option value="">Tüm Dersler</option>'; lessonsSnap.docs.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.data().name; filter.appendChild(opt); }); loadWords(); };
+    document.getElementById('wordLessonFilter').onchange = (e) => loadWords(e.target.value);
+    document.getElementById('refreshUsersBtn').onclick = loadUsers;
+    document.getElementById('themeBtn').onclick = () => { document.body.style.background = document.body.style.background.includes('0f172a') ? 'linear-gradient(135deg, #f5f7fa, #e8edf5)' : 'linear-gradient(135deg, #0f172a, #1e1b4b)'; };
+    document.getElementById('logoutBtn').onclick = async () => { await signOut(auth); document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('adminPanel').classList.add('hidden'); };
+    document.getElementById('doLoginBtn').onclick = () => { const pwd = document.getElementById('adminPassword').value; if(pwd === 'admin123'){ document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('adminPanel').classList.remove('hidden'); loadBooks(); loadLessons(); loadWords(); loadUsers(); loadStats(); } else { alert('Hatalı şifre!'); } };
+    document.getElementById('adminPassword').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doLoginBtn').click(); });
+
+    async function loadWordSelects() {
+        const lessonsSnap = await getDocs(collection(db, 'lessons'));
+        const select = document.getElementById('wordLessonSelect');
+        select.innerHTML = '';
+        lessonsSnap.docs.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.data().name; select.appendChild(opt); });
+    }
+    loadWordSelects();
+</script>
+</body>
+</html>
