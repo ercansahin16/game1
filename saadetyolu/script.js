@@ -1,22 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDoc, 
-    getDocs, 
-    setDoc, 
-    updateDoc, 
-    deleteDoc,
-    query,
-    where,
-    orderBy
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { 
-    getAuth, 
-    signOut,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -40,14 +24,11 @@ let lessons = [];
 let currentLessonWords = [];
 let currentWordIndex = 0;
 let currentWordList = [];
-let moveType = null;
-let moveItemId = null;
-let moveCurrentParentId = null;
 
-// Hadisler
 const hadiths = [
     { text: "İlim öğrenmek her Müslüman'a farzdır.", source: "İbni Mace" },
-    { text: "Kim ilim öğrenmek için bir yol tutarsa, Allah onu cennete giden bir yola iletir.", source: "Müslim" }
+    { text: "Kim ilim öğrenmek için bir yol tutarsa, Allah onu cennete giden bir yola iletir.", source: "Müslim" },
+    { text: "Rahman olan Allah, Kur'an'ı öğreteni sever.", source: "Buhari" }
 ];
 
 let speechSynthesis = window.speechSynthesis;
@@ -55,7 +36,6 @@ let currentUtterance = null;
 
 // ========== SAYFA YÜKLENME ==========
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM yüklendi");
     if (window.location.pathname.includes('admin.html')) {
         initAdminPage();
         return;
@@ -131,8 +111,7 @@ function loadTheme() {
 }
 
 async function loadRecentWords() {
-    const q = query(collection(db, 'words'), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(query(collection(db, 'words'), orderBy('createdAt', 'desc')));
     const container = document.getElementById('recentWordsList');
     if (container) {
         container.innerHTML = '';
@@ -149,6 +128,8 @@ async function loadRecentWords() {
 async function loadBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    document.getElementById('totalBooksCount').innerText = books.length;
+    
     const container = document.getElementById('booksGrid');
     if (container) {
         container.innerHTML = '';
@@ -160,6 +141,7 @@ async function loadBooks() {
             container.appendChild(card);
         });
     }
+    
     const featured = document.getElementById('featuredBooksGrid');
     if (featured) {
         featured.innerHTML = '';
@@ -171,7 +153,6 @@ async function loadBooks() {
             featured.appendChild(card);
         });
     }
-    document.getElementById('totalBooksCount').innerText = books.length;
 }
 
 async function selectBook(bookId, bookName) {
@@ -414,6 +395,10 @@ window.logout = async function() {
 
 // ========== ADMIN PANEL ==========
 let adminAuthenticated = false;
+let currentEditingBookId = null;
+let currentEditingLessonId = null;
+let moveType = null;
+let moveItemId = null;
 
 function showNotificationAdmin(msg) {
     const n = document.getElementById('notification');
@@ -422,9 +407,7 @@ function showNotificationAdmin(msg) {
 }
 
 async function initAdminPage() {
-    console.log("Admin sayfası başlatılıyor...");
-    
-    // Sidebar menü
+    // Sidebar
     const sidebar = document.getElementById('adminSidebar');
     const menuToggle = document.getElementById('menuToggleBtn');
     const sidebarClose = document.getElementById('sidebarCloseBtn');
@@ -432,18 +415,9 @@ async function initAdminPage() {
     const themeBtn = document.getElementById('sidebarThemeBtn');
     const logoutBtn = document.getElementById('sidebarLogoutBtn');
     
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('mobile-open');
-        });
-    }
-    if (sidebarClose) {
-        sidebarClose.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-        });
-    }
+    if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+    if (sidebarClose) sidebarClose.addEventListener('click', () => sidebar.classList.remove('mobile-open'));
     
-    // Tab geçişleri
     sidebarItems.forEach(item => {
         item.addEventListener('click', () => {
             const tabId = item.getAttribute('data-tab');
@@ -455,33 +429,16 @@ async function initAdminPage() {
         });
     });
     
-    // Tema değiştir
-    if (themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            if (document.body.classList.contains('dark-mode')) {
-                document.body.classList.remove('dark-mode');
-                document.body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.body.classList.remove('light-mode');
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark');
-            }
-        });
-    }
+    if (themeBtn) themeBtn.addEventListener('click', () => window.toggleTheme());
+    if (logoutBtn) logoutBtn.addEventListener('click', logoutAdmin);
     
-    // Çıkış
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logoutAdmin);
-    }
-    
-    // Giriş butonu
+    // Giriş
     document.getElementById('adminLoginBtn')?.addEventListener('click', () => {
         const password = document.getElementById('adminPassword').value;
         if (password === "admin123") {
             sessionStorage.setItem('admin_auth', 'true');
             document.getElementById('adminLoginScreen').style.display = 'none';
-            document.getElementById('adminContent').style.classList.remove('hidden');
+            document.getElementById('adminContent').classList.remove('hidden');
             loadAllData();
             showNotificationAdmin('✅ Admin girişi başarılı!');
         } else {
@@ -500,28 +457,22 @@ async function initAdminPage() {
     document.getElementById('saveLessonBtn')?.addEventListener('click', saveLesson);
     document.getElementById('saveWordBtn')?.addEventListener('click', saveWord);
     document.getElementById('refreshUsersBtn')?.addEventListener('click', loadAllUsers);
-    document.getElementById('moveLessonBtn')?.addEventListener('click', () => openMoveModal('lesson'));
-    document.getElementById('moveWordBtn')?.addEventListener('click', () => openMoveModal('word'));
-    document.getElementById('confirmMoveBtn')?.addEventListener('click', confirmMove);
     
     // Filtreler
     document.getElementById('lessonBookFilter')?.addEventListener('change', (e) => loadLessonsByBook(e.target.value));
     document.getElementById('wordBookFilter')?.addEventListener('change', (e) => loadWordLessonsByBook(e.target.value));
     document.getElementById('wordLessonFilter')?.addEventListener('change', (e) => loadWordsByLesson(e.target.value));
     
-    // Oturum kontrolü
+    // Modal dışı tıklama
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal.id); });
+    });
+    
     if (sessionStorage.getItem('admin_auth') === 'true') {
         document.getElementById('adminLoginScreen').style.display = 'none';
         document.getElementById('adminContent').classList.remove('hidden');
         loadAllData();
     }
-    
-    // Modal dışına tıklama ile kapatma
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal(modal.id);
-        });
-    });
 }
 
 async function loadAllData() {
@@ -536,34 +487,37 @@ async function updateSidebarStats() {
     const users = await getDocs(collection(db, 'users'));
     const words = await getDocs(collection(db, 'words'));
     const lessons = await getDocs(collection(db, 'lessons'));
-    document.getElementById('sidebarTotalUsers').innerText = users.size;
-    document.getElementById('sidebarTotalWords').innerText = words.size;
-    document.getElementById('sidebarTotalLessons').innerText = lessons.size;
+    const sidebarTotalUsers = document.getElementById('sidebarTotalUsers');
+    const sidebarTotalWords = document.getElementById('sidebarTotalWords');
+    const sidebarTotalLessons = document.getElementById('sidebarTotalLessons');
+    if (sidebarTotalUsers) sidebarTotalUsers.innerText = users.size;
+    if (sidebarTotalWords) sidebarTotalWords.innerText = words.size;
+    if (sidebarTotalLessons) sidebarTotalLessons.innerText = lessons.size;
 }
 
 async function loadAllUsers() {
     const snapshot = await getDocs(collection(db, 'users'));
     const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    document.getElementById('totalUsersCount').innerText = users.length;
-    document.getElementById('sidebarTotalUsers').innerText = users.length;
+    const totalUsersEl = document.getElementById('totalUsersCount');
+    if (totalUsersEl) totalUsersEl.innerText = users.length;
+    const sidebarTotalUsers = document.getElementById('sidebarTotalUsers');
+    if (sidebarTotalUsers) sidebarTotalUsers.innerText = users.length;
     let totalWords = 0;
     users.forEach(u => totalWords += u.totalWordsViewed || 0);
-    document.getElementById('totalWordsViewed').innerText = totalWords;
+    const totalWordsViewedEl = document.getElementById('totalWordsViewed');
+    if (totalWordsViewedEl) totalWordsViewedEl.innerText = totalWords;
     const tbody = document.getElementById('usersTableBody');
     if (tbody) {
         tbody.innerHTML = '';
-        users.forEach(user => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${user.name || '-'}</td>
-                <td>${user.email}</td>
-                <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}</td>
-                <td>${user.selectedLessons?.length || 0}</td>
-                <td class="user-word-count">${user.totalWordsViewed || 0}</td>
-                <td>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : '-'}</td>
-            `;
-            tbody.appendChild(row);
-        });
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Henüz kullanıcı yok</td></tr>';
+        } else {
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${user.name || '-'}</td><td>${user.email}</td><td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}</td><td>${user.selectedLessons?.length || 0}</td><td class="user-word-count">${user.totalWordsViewed || 0}</td><td>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : '-'}</td>`;
+                tbody.appendChild(row);
+            });
+        }
     }
 }
 
@@ -577,16 +531,7 @@ async function loadAllBooks() {
         books.forEach(book => {
             const div = document.createElement('div');
             div.className = 'item-row';
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong>${book.name}</strong>
-                    <small>${book.description || 'Açıklama yok'} | Sıra: ${book.order || 0}</small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn-edit" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-delete" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
+            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || 'Açıklama yok'} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn-edit" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
             container.appendChild(div);
         });
     }
@@ -599,21 +544,11 @@ async function loadLessonFilters() {
     const modalSelect = document.getElementById('lessonBookSelect');
     if (filter) {
         filter.innerHTML = '<option value="">Tüm Kitaplar</option>';
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.textContent = book.name;
-            filter.appendChild(option);
-        });
+        books.forEach(book => { const option = document.createElement('option'); option.value = book.id; option.textContent = book.name; filter.appendChild(option); });
     }
     if (modalSelect) {
         modalSelect.innerHTML = '';
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.textContent = book.name;
-            modalSelect.appendChild(option);
-        });
+        books.forEach(book => { const option = document.createElement('option'); option.value = book.id; option.textContent = book.name; modalSelect.appendChild(option); });
     }
 }
 
@@ -621,34 +556,18 @@ async function loadWordFilters() {
     const bookFilter = document.getElementById('wordBookFilter');
     if (bookFilter) {
         bookFilter.innerHTML = '<option value="">Tüm Kitaplar</option>';
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.textContent = book.name;
-            bookFilter.appendChild(option);
-        });
+        books.forEach(book => { const option = document.createElement('option'); option.value = book.id; option.textContent = book.name; bookFilter.appendChild(option); });
     }
     const wordLessonSelect = document.getElementById('wordLessonSelect');
     if (wordLessonSelect) {
         const snapshot = await getDocs(collection(db, 'lessons'));
         wordLessonSelect.innerHTML = '<option value="">Ders Seçin</option>';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = data.name;
-            wordLessonSelect.appendChild(option);
-        });
+        snapshot.docs.forEach(doc => { const option = document.createElement('option'); option.value = doc.id; option.textContent = doc.data().name; wordLessonSelect.appendChild(option); });
     }
 }
 
 async function loadLessonsByBook(bookId) {
-    let q;
-    if (bookId) {
-        q = query(collection(db, 'lessons'), where('bookId', '==', bookId));
-    } else {
-        q = collection(db, 'lessons');
-    }
+    let q = bookId ? query(collection(db, 'lessons'), where('bookId', '==', bookId)) : collection(db, 'lessons');
     const snapshot = await getDocs(q);
     const container = document.getElementById('lessonsList');
     if (container) {
@@ -658,51 +577,27 @@ async function loadLessonsByBook(bookId) {
             const bookName = books.find(b => b.id === data.bookId)?.name || '-';
             const div = document.createElement('div');
             div.className = 'item-row';
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong>${data.name}</strong>
-                    <small>${data.description || ''} | Kitap: ${bookName} | Sıra: ${data.order || 0}</small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn-edit" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-delete" onclick="deleteLesson('${doc.id}')"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
+            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Kitap: ${bookName} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn-edit" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="deleteLesson('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
             container.appendChild(div);
         });
     }
     document.getElementById('totalLessonsCount').innerText = snapshot.size;
-    document.getElementById('sidebarTotalLessons').innerText = snapshot.size;
+    const sidebarTotalLessons = document.getElementById('sidebarTotalLessons');
+    if (sidebarTotalLessons) sidebarTotalLessons.innerText = snapshot.size;
 }
 
 async function loadWordLessonsByBook(bookId) {
-    let q;
-    if (bookId) {
-        q = query(collection(db, 'lessons'), where('bookId', '==', bookId));
-    } else {
-        q = collection(db, 'lessons');
-    }
+    let q = bookId ? query(collection(db, 'lessons'), where('bookId', '==', bookId)) : collection(db, 'lessons');
     const snapshot = await getDocs(q);
     const lessonFilter = document.getElementById('wordLessonFilter');
     if (lessonFilter) {
         lessonFilter.innerHTML = '<option value="">Tüm Dersler</option>';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = data.name;
-            lessonFilter.appendChild(option);
-        });
+        snapshot.docs.forEach(doc => { const option = document.createElement('option'); option.value = doc.id; option.textContent = doc.data().name; lessonFilter.appendChild(option); });
     }
 }
 
 async function loadWordsByLesson(lessonId) {
-    let q;
-    if (lessonId) {
-        q = query(collection(db, 'words'), where('lessonId', '==', lessonId));
-    } else {
-        q = collection(db, 'words');
-    }
+    let q = lessonId ? query(collection(db, 'words'), where('lessonId', '==', lessonId)) : collection(db, 'words');
     const snapshot = await getDocs(q);
     const container = document.getElementById('wordsList');
     if (container) {
@@ -711,24 +606,16 @@ async function loadWordsByLesson(lessonId) {
             const data = doc.data();
             const div = document.createElement('div');
             div.className = 'item-row';
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong class="word-arabic">${data.arabic}</strong>
-                    <small>${data.turkish}</small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn-edit" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-delete" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
+            div.innerHTML = `<div class="item-info"><strong class="word-arabic">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn-edit" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
             container.appendChild(div);
         });
     }
     document.getElementById('totalWordsCount').innerText = snapshot.size;
-    document.getElementById('sidebarTotalWords').innerText = snapshot.size;
+    const sidebarTotalWords = document.getElementById('sidebarTotalWords');
+    if (sidebarTotalWords) sidebarTotalWords.innerText = snapshot.size;
 }
 
-// ========== CRUD İŞLEMLERİ ==========
+// ========== CRUD ==========
 function openBookModal(bookId = null) {
     if (bookId) {
         const book = books.find(b => b.id === bookId);
@@ -776,15 +663,8 @@ function openWordModal(wordId = null) {
     openModal('wordModal');
 }
 
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.add('visible');
-}
-
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('visible');
-};
+function openModal(modalId) { const modal = document.getElementById(modalId); if (modal) modal.classList.add('visible'); }
+window.closeModal = function(modalId) { const modal = document.getElementById(modalId); if (modal) modal.classList.remove('visible'); };
 
 async function saveBook() {
     const id = document.getElementById('editBookId').value;
@@ -793,13 +673,8 @@ async function saveBook() {
     const order = parseInt(document.getElementById('bookOrder').value) || 0;
     if (!name) { showNotificationAdmin('Kitap adı gerekli!'); return; }
     try {
-        if (id) {
-            await updateDoc(doc(db, 'books', id), { name, description, order });
-            showNotificationAdmin('Kitap güncellendi!');
-        } else {
-            await setDoc(doc(collection(db, 'books')), { name, description, order });
-            showNotificationAdmin('Yeni kitap eklendi!');
-        }
+        if (id) { await updateDoc(doc(db, 'books', id), { name, description, order }); showNotificationAdmin('Kitap güncellendi!'); }
+        else { await setDoc(doc(collection(db, 'books')), { name, description, order }); showNotificationAdmin('Yeni kitap eklendi!'); }
         closeModal('bookModal');
         await loadAllBooks();
         await updateSidebarStats();
@@ -815,13 +690,8 @@ async function saveLesson() {
     if (!name) { showNotificationAdmin('Ders adı gerekli!'); return; }
     if (!bookId) { showNotificationAdmin('Lütfen bir kitap seçin!'); return; }
     try {
-        if (id) {
-            await updateDoc(doc(db, 'lessons', id), { name, description, order, bookId });
-            showNotificationAdmin('Ders güncellendi!');
-        } else {
-            await setDoc(doc(collection(db, 'lessons')), { name, description, order, bookId });
-            showNotificationAdmin('Yeni ders eklendi!');
-        }
+        if (id) { await updateDoc(doc(db, 'lessons', id), { name, description, order, bookId }); showNotificationAdmin('Ders güncellendi!'); }
+        else { await setDoc(doc(collection(db, 'lessons')), { name, description, order, bookId }); showNotificationAdmin('Yeni ders eklendi!'); }
         closeModal('lessonModal');
         await loadAllBooks();
         await loadLessonsByBook(document.getElementById('lessonBookFilter').value);
@@ -837,13 +707,8 @@ async function saveWord() {
     if (!arabic || !turkish) { showNotificationAdmin('Her iki alan da gerekli!'); return; }
     if (!lessonId) { showNotificationAdmin('Lütfen bir ders seçin!'); return; }
     try {
-        if (id) {
-            await updateDoc(doc(db, 'words', id), { arabic, turkish });
-            showNotificationAdmin('Kelime güncellendi!');
-        } else {
-            await setDoc(doc(collection(db, 'words')), { arabic, turkish, lessonId, createdAt: new Date().toISOString() });
-            showNotificationAdmin('Yeni kelime eklendi!');
-        }
+        if (id) { await updateDoc(doc(db, 'words', id), { arabic, turkish }); showNotificationAdmin('Kelime güncellendi!'); }
+        else { await setDoc(doc(collection(db, 'words')), { arabic, turkish, lessonId, createdAt: new Date().toISOString() }); showNotificationAdmin('Yeni kelime eklendi!'); }
         closeModal('wordModal');
         await loadWordsByLesson(document.getElementById('wordLessonFilter').value);
         await updateSidebarStats();
@@ -889,62 +754,6 @@ window.deleteWord = async (id) => {
     await loadWordsByLesson(document.getElementById('wordLessonFilter').value);
     await updateSidebarStats();
 };
-
-// ========== TAŞIMA ==========
-function openMoveModal(type) {
-    moveType = type;
-    if (type === 'lesson') {
-        moveItemId = currentEditingLessonId;
-        document.getElementById('moveModalTitle').innerText = 'Dersi Taşı';
-        document.getElementById('moveItemLabel').innerText = 'Hedef Kitap:';
-    } else {
-        moveItemId = currentEditingWordId;
-        document.getElementById('moveModalTitle').innerText = 'Kelimeyi Taşı';
-        document.getElementById('moveItemLabel').innerText = 'Hedef Ders:';
-    }
-    openModal('moveModal');
-    loadMoveTargets();
-}
-
-async function loadMoveTargets() {
-    const select = document.getElementById('moveTargetSelect');
-    select.innerHTML = '<option>Yükleniyor...</option>';
-    if (moveType === 'lesson') {
-        const snapshot = await getDocs(collection(db, 'books'));
-        select.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const opt = document.createElement('option');
-            opt.value = doc.id;
-            opt.textContent = doc.data().name;
-            select.appendChild(opt);
-        });
-    } else {
-        const snapshot = await getDocs(collection(db, 'lessons'));
-        select.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const opt = document.createElement('option');
-            opt.value = doc.id;
-            opt.textContent = doc.data().name;
-            select.appendChild(opt);
-        });
-    }
-}
-
-async function confirmMove() {
-    const targetId = document.getElementById('moveTargetSelect').value;
-    if (!targetId) { showNotificationAdmin('Lütfen bir hedef seçin!'); return; }
-    try {
-        if (moveType === 'lesson') {
-            await updateDoc(doc(db, 'lessons', moveItemId), { bookId: targetId });
-            showNotificationAdmin('Ders taşındı!');
-        } else {
-            await updateDoc(doc(db, 'words', moveItemId), { lessonId: targetId });
-            showNotificationAdmin('Kelime taşındı!');
-        }
-        closeModal('moveModal');
-        await loadAllBooks();
-    } catch(e) { showNotificationAdmin('Hata: ' + e.message); }
-}
 
 function logoutAdmin() {
     sessionStorage.removeItem('admin_auth');
