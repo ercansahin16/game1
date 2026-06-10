@@ -679,49 +679,72 @@
     };
 
     // Ders seçilince kelimeleri yükle
-    lessonSelect.onchange = async () => {
-        const lessonId = lessonSelect.value;
-        if (!lessonId) {
-            words = [];
-            updateWordDisplay();
-            return;
-        }
-        const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
-        words = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        currentWordIndex = 0;
+   // lessonSelect.onchange içindeki kelime yükleme kısmını güncelle
+lessonSelect.onchange = async () => {
+    const lessonId = lessonSelect.value;
+    if (!lessonId) {
+        words = [];
         updateWordDisplay();
-    };
-
-    function updateWordDisplay() {
-        if (words.length === 0) {
-            arabicWord.textContent = '---';
-            turkishWord.textContent = '';
-            turkishWord.style.opacity = '0.5';
-            currentIndexSpan.textContent = '0';
-            totalWordsSpan.textContent = '0';
-            progressFill.style.width = '0%';
-            wordCountInfo.textContent = '0 kelime';
-            return;
-        }
-        const word = words[currentWordIndex];
-        arabicWord.textContent = word.arabic;
-        turkishWord.textContent = '???';
-        turkishWord.style.opacity = '0.5';
-        currentIndexSpan.textContent = currentWordIndex + 1;
-        totalWordsSpan.textContent = words.length;
-        wordCountInfo.textContent = `${words.length} kelime`;
-        const progress = ((currentWordIndex + 1) / words.length) * 100;
-        progressFill.style.width = `${progress}%`;
+        return;
     }
+    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+    words = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Veritabanından gelen kelime:', data);
+        return { 
+            id: doc.id, 
+            arabic: data.arabic || data.Arapca || data.word || '',
+            turkish: data.turkish || data.turkce || data.meaning || data.translation || ''
+        };
+    });
+    currentWordIndex = 0;
+    updateWordDisplay();
+};
 
-    // Göster butonu
-    showBtn.onclick = () => {
-        if (words.length === 0) return;
-        const word = words[currentWordIndex];
-        turkishWord.textContent = word.turkish;
-        turkishWord.style.opacity = '1';
-        updateUserProgress();
-    };
+   // updateWordDisplay fonksiyonunu güncelle
+function updateWordDisplay() {
+    if (words.length === 0) {
+        arabicWord.textContent = '---';
+        turkishWord.textContent = '';
+        turkishWord.style.opacity = '0.5';
+        currentIndexSpan.textContent = '0';
+        totalWordsSpan.textContent = '0';
+        progressFill.style.width = '0%';
+        wordCountInfo.textContent = '0 kelime';
+        return;
+    }
+    const word = words[currentWordIndex];
+    arabicWord.textContent = word.arabic;
+    turkishWord.textContent = '???';
+    turkishWord.style.opacity = '0.5';
+    
+    // Debug için konsola yazdır
+    console.log('Kelime:', word);
+    console.log('Türkçe alanı:', word.turkish);
+    
+    currentIndexSpan.textContent = currentWordIndex + 1;
+    totalWordsSpan.textContent = words.length;
+    wordCountInfo.textContent = `${words.length} kelime`;
+    const progress = ((currentWordIndex + 1) / words.length) * 100;
+    progressFill.style.width = `${progress}%`;
+}
+
+// showBtn onclick fonksiyonunu güncelle
+showBtn.onclick = () => {
+    if (words.length === 0) return;
+    const word = words[currentWordIndex];
+    console.log('Göster butonu tıklandı, kelime:', word);
+    
+    // Eğer turkish alanı yoksa alternative alan adlarını dene
+    let turkishText = word.turkish;
+    if (!turkishText) {
+        turkishText = word.turkce || word.meaning || word.translation || 'Anlam bulunamadı';
+    }
+    
+    turkishWord.textContent = turkishText;
+    turkishWord.style.opacity = '1';
+    updateUserProgress();
+};
 
     // Ses butonu
     soundBtn.onclick = () => {
