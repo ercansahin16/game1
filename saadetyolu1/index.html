@@ -840,51 +840,54 @@
         showCurrentQuestion();
     }
     
-    function showCurrentQuestion() {
-        if (!currentExam || !currentExam.questions || examCompleted) return;
-        
-        const question = currentExam.questions[currentQuestionIndex];
-        const letters = ['A', 'B', 'C', 'D'];
-        const answeredCount = userAnswers.filter(a => a !== null).length;
-        const progressPercent = ((currentQuestionIndex + 1) / currentExam.questions.length) * 100;
-        
-        const container = document.getElementById('quizContent');
-        container.innerHTML = `
-            <div class="quiz-header">
-                <div class="quiz-info">
-                    <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
-                    <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
-                </div>
-                <div class="progress-circle" style="background: conic-gradient(#f59e0b ${progressPercent * 3.6}deg, rgba(255,255,255,0.1) 0deg)">
-                    ${Math.round(progressPercent)}%
-                </div>
+ function showCurrentQuestion() {
+    if (!currentExam || !currentExam.questions || examCompleted) return;
+    
+    const question = currentExam.questions[currentQuestionIndex];
+    const letters = ['A', 'B', 'C', 'D'];
+    const answeredCount = userAnswers.filter(a => a !== null).length;
+    const progressPercent = ((currentQuestionIndex + 1) / currentExam.questions.length) * 100;
+    
+    const container = document.getElementById('quizContent');
+    container.innerHTML = `
+        <div class="quiz-header">
+            <div class="quiz-info">
+                <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
+                <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
             </div>
-            <div class="quiz-card">
-                <div class="question-text">
-                    <i class="fas fa-question-circle" style="color: #f59e0b;"></i> ${question.question}
-                </div>
-                <div class="options" id="optionsContainer">
-                    ${question.options.map((opt, i) => `
-                        <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
-                            <div class="option-letter">${letters[i]}.</div>
-                            <div class="option-text">${opt}</div>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="progress-circle" style="background: conic-gradient(#f59e0b ${progressPercent * 3.6}deg, rgba(255,255,255,0.1) 0deg)">
+                ${Math.round(progressPercent)}%
             </div>
-            <div class="quiz-navigation">
-                <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()">
-                    <i class="fas fa-arrow-left"></i> Önceki Soru
-                </button>
-                <button class="btn btn-danger" onclick="checkAndCompleteExam()">
-                    <i class="fas fa-flag-checkered"></i> Sınavı Bitir
-                </button>
-                <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
-                    Sonraki Soru <i class="fas fa-arrow-right"></i>
-                </button>
+        </div>
+        <div class="quiz-card">
+            <div class="question-text">
+                <i class="fas fa-question-circle" style="color: #f59e0b;"></i> 
+                <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px;">Soru ${currentQuestionIndex + 1}</span>
+                ${question.question}
             </div>
-        `;
-    }
+            <div class="options" id="optionsContainer">
+                ${question.options.map((opt, i) => `
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
+                        <div class="option-letter">${letters[i]}.</div>
+                        <div class="option-text">${opt}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <div class="quiz-navigation">
+            <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()">
+                <i class="fas fa-arrow-left"></i> Önceki Soru
+            </button>
+           
+            <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
+                Sonraki Soru <i class="fas fa-arrow-right"></i>
+            </button>
+             <button class="btn btn-danger" onclick="checkAndCompleteExam()">
+                <i class="fas fa-flag-checkered"></i> Sınavı Bitir
+            </button>
+        </div>
+    `;
+}
     
     window.selectOption = (questionIdx, optionIdx) => {
         if (examCompleted) return;
