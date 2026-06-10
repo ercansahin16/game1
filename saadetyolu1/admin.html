@@ -11,6 +11,30 @@
             background: linear-gradient(135deg, #0f172a, #1e1b4b);
             min-height: 100vh;
             color: white;
+            transition: all 0.3s ease;
+        }
+        body.light-theme {
+            background: linear-gradient(135deg, #f5f7fa, #e8edf5);
+            color: #1e1b4b;
+        }
+        body.light-theme .section-card, 
+        body.light-theme .item, 
+        body.light-theme .login-card, 
+        body.light-theme select {
+            background: rgba(0,0,0,0.08);
+            color: #1e1b4b;
+        }
+        body.light-theme .sidebar {
+            background: #ffffff;
+            color: #1e1b4b;
+        }
+        body.light-theme select option {
+            background: #ffffff;
+            color: #1e1b4b;
+        }
+        body.light-theme input {
+            background: rgba(0,0,0,0.1);
+            color: #1e1b4b;
         }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .header {
@@ -32,7 +56,7 @@
             padding: 30px;
             backdrop-filter: blur(10px);
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
@@ -41,6 +65,7 @@
             background: rgba(255,255,255,0.2);
             color: white;
         }
+        textarea { min-height: 80px; resize: vertical; }
         select option { background: #1e1b4b; }
         .btn {
             padding: 10px 20px;
@@ -67,6 +92,7 @@
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 30px;
+            transition: all 0.3s ease;
         }
         .section-header {
             display: flex;
@@ -123,10 +149,17 @@
             border-radius: 20px;
             padding: 25px;
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        body.light-theme .modal-content {
+            background: #ffffff;
+            color: #1e1b4b;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        body.light-theme .modal-close { color: #1e1b4b; }
         .menu-btn {
             position: fixed;
             top: 20px;
@@ -169,6 +202,18 @@
             display: none;
         }
         .overlay.active { display: block; }
+        .question-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
         @media (max-width: 600px) {
             .select-row { flex-direction: column; align-items: stretch; }
             .action-buttons { justify-content: flex-end; }
@@ -190,6 +235,7 @@
     <div class="sidebar-item" id="goBooks"><i class="fas fa-book"></i> Kitaplar</div>
     <div class="sidebar-item" id="goLessons"><i class="fas fa-graduation-cap"></i> Dersler</div>
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
+    <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
         <div class="sidebar-item" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</div>
         <div class="sidebar-item" id="themeBtn"><i class="fas fa-moon"></i> Tema</div>
@@ -223,6 +269,10 @@
                 <div style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center;">
                     <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statWords">0</div>
                     <div>Kelime</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statExams">0</div>
+                    <div>Sınav</div>
                 </div>
             </div>
         </div>
@@ -274,6 +324,14 @@
             </div>
             <div class="items-list" id="wordsList"></div>
         </div>
+
+        <div id="examsSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-pen"></i> Sınavlar</h2>
+                <button id="addExamBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Sınav</button>
+            </div>
+            <div class="items-list" id="examsList"></div>
+        </div>
     </div>
 </div>
 
@@ -311,6 +369,17 @@
     </div>
 </div>
 
+<div id="examModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3 id="examModalTitle">Sınav Ekle</h3><button class="modal-close" onclick="closeModal('examModal')">&times;</button></div>
+        <input type="text" id="examTitle" placeholder="Sınav Adı (örn: Test 1)">
+        <div id="questionsContainer"></div>
+        <button id="addQuestionBtn" class="btn btn-success" style="margin: 10px 0;"><i class="fas fa-plus"></i> Soru Ekle</button>
+        <input type="hidden" id="editExamId">
+        <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('examModal')">İptal</button><button id="saveExamBtn" class="btn btn-success">Kaydet</button></div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -331,25 +400,38 @@
     let currentLessonBookId = null;
     let currentWordBookId = null;
     let currentWordLessonId = null;
+    let questions = [];
 
     // Menü
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
-    function toggleMenu() { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); }
+    
+    function closeMenu() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    }
+    
+    function toggleMenu() { 
+        sidebar.classList.toggle('open'); 
+        overlay.classList.toggle('active'); 
+    }
+    
     menuBtn.onclick = toggleMenu;
-    overlay.onclick = toggleMenu;
+    overlay.onclick = closeMenu;
 
-    document.getElementById('goDashboard').onclick = () => { showSection('dashboard'); toggleMenu(); };
-    document.getElementById('goBooks').onclick = () => { showSection('books'); loadBooks(); toggleMenu(); };
-    document.getElementById('goLessons').onclick = () => { showSection('lessons'); loadLessonBooks(); toggleMenu(); };
-    document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); toggleMenu(); };
+    document.getElementById('goDashboard').onclick = () => { showSection('dashboard'); closeMenu(); };
+    document.getElementById('goBooks').onclick = () => { showSection('books'); loadBooks(); closeMenu(); };
+    document.getElementById('goLessons').onclick = () => { showSection('lessons'); loadLessonBooks(); closeMenu(); };
+    document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
+    document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
 
     function showSection(section) {
         document.getElementById('dashboardSection').classList.add('hidden');
         document.getElementById('booksSection').classList.add('hidden');
         document.getElementById('lessonsSection').classList.add('hidden');
         document.getElementById('wordsSection').classList.add('hidden');
+        document.getElementById('examsSection').classList.add('hidden');
         document.getElementById(`${section}Section`).classList.remove('hidden');
     }
 
@@ -456,10 +538,12 @@
         if (!currentLessonBookId) { alert('Lütfen bir kitap seçin!'); return; }
         const book = books.find(b => b.id === currentLessonBookId);
         if (book) editBook(book.id);
+        closeMenu();
     };
     document.getElementById('deleteLessonBookBtn').onclick = () => {
         if (!currentLessonBookId) { alert('Lütfen bir kitap seçin!'); return; }
         if (confirm('Bu kitabı silmek istediğinize emin misiniz?')) deleteBook(currentLessonBookId);
+        closeMenu();
     };
 
     window.editLesson = async (id) => {
@@ -562,10 +646,12 @@
     document.getElementById('editWordLessonBtn').onclick = () => {
         if (!currentWordLessonId) { alert('Lütfen bir ders seçin!'); return; }
         editLesson(currentWordLessonId);
+        closeMenu();
     };
     document.getElementById('deleteWordLessonBtn').onclick = () => {
         if (!currentWordLessonId) { alert('Lütfen bir ders seçin!'); return; }
         if (confirm('Bu dersi silmek istediğinize emin misiniz?')) deleteLesson(currentWordLessonId);
+        closeMenu();
     };
 
     window.editWord = async (id) => {
@@ -624,14 +710,175 @@
         document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
         updateStats();
     };
+    
+    // Sınav işlemleri
+    async function loadExams() {
+        const snapshot = await getDocs(collection(db, 'exams'));
+        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const container = document.getElementById('examsList');
+        document.getElementById('statExams').innerHTML = exams.length;
+        
+        if (exams.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz sınav eklenmemiş.</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        exams.forEach(exam => {
+            const div = document.createElement('div'); 
+            div.className = 'item';
+            div.innerHTML = `
+                <div class="item-info">
+                    <strong>${exam.title}</strong>
+                    <small>${exam.questions?.length || 0} soru</small>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger icon-btn" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    window.editExam = async (id) => {
+        const snap = await getDoc(doc(db, 'exams', id));
+        if (snap.exists()) {
+            const data = snap.data();
+            document.getElementById('examModalTitle').innerHTML = 'Sınav Düzenle';
+            document.getElementById('editExamId').value = id;
+            document.getElementById('examTitle').value = data.title;
+            questions = data.questions || [];
+            renderQuestions();
+            openModal('examModal');
+        }
+    };
+    
+    window.deleteExam = async (id) => {
+        if (confirm('Bu sınavı silmek istediğinize emin misiniz?')) {
+            await deleteDoc(doc(db, 'exams', id));
+            loadExams();
+            updateStats();
+        }
+    };
+    
+    function renderQuestions() {
+        const container = document.getElementById('questionsContainer');
+        container.innerHTML = '';
+        questions.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = 'question-item';
+            div.innerHTML = `
+                <div class="question-header">
+                    <strong>Soru ${idx + 1}</strong>
+                    <button class="btn btn-danger icon-btn" onclick="removeQuestion(${idx})"><i class="fas fa-trash"></i></button>
+                </div>
+                <input type="text" placeholder="Soru metni" value="${q.question.replace(/"/g, '&quot;')}" onchange="updateQuestion(${idx}, 'question', this.value)">
+                <input type="text" placeholder="A şıkkı" value="${q.options[0]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option0', this.value)">
+                <input type="text" placeholder="B şıkkı" value="${q.options[1]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option1', this.value)">
+                <input type="text" placeholder="C şıkkı" value="${q.options[2]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option2', this.value)">
+                <input type="text" placeholder="D şıkkı" value="${q.options[3]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option3', this.value)">
+                <select onchange="updateQuestion(${idx}, 'correct', this.value)">
+                    <option value="">Doğru Şıkkı Seçin</option>
+                    <option value="0" ${q.correct === 0 ? 'selected' : ''}>A</option>
+                    <option value="1" ${q.correct === 1 ? 'selected' : ''}>B</option>
+                    <option value="2" ${q.correct === 2 ? 'selected' : ''}>C</option>
+                    <option value="3" ${q.correct === 3 ? 'selected' : ''}>D</option>
+                </select>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    window.updateQuestion = (idx, field, value) => {
+        if (field === 'question') {
+            questions[idx].question = value;
+        } else if (field.startsWith('option')) {
+            const optIdx = parseInt(field.replace('option', ''));
+            questions[idx].options[optIdx] = value;
+        } else if (field === 'correct') {
+            questions[idx].correct = parseInt(value);
+        }
+    };
+    
+    window.removeQuestion = (idx) => {
+        questions.splice(idx, 1);
+        renderQuestions();
+    };
+    
+    document.getElementById('addQuestionBtn').onclick = () => {
+        questions.push({
+            question: '',
+            options: ['', '', '', ''],
+            correct: null
+        });
+        renderQuestions();
+    };
+    
+    document.getElementById('addExamBtn').onclick = () => {
+        document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
+        document.getElementById('editExamId').value = '';
+        document.getElementById('examTitle').value = '';
+        questions = [];
+        renderQuestions();
+        openModal('examModal');
+    };
+    
+    document.getElementById('saveExamBtn').onclick = async () => {
+        const id = document.getElementById('editExamId').value;
+        const title = document.getElementById('examTitle').value;
+        
+        if (!title) {
+            alert('Lütfen sınav adını girin!');
+            return;
+        }
+        
+        if (questions.length === 0) {
+            alert('Lütfen en az bir soru ekleyin!');
+            return;
+        }
+        
+        // Soruları kontrol et
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (!q.question) {
+                alert(`${i + 1}. sorunun metnini girin!`);
+                return;
+            }
+            for (let j = 0; j < 4; j++) {
+                if (!q.options[j]) {
+                    alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`);
+                    return;
+                }
+            }
+            if (q.correct === null || q.correct === '') {
+                alert(`${i + 1}. sorunun doğru şıkkını seçin!`);
+                return;
+            }
+        }
+        
+        const data = { title, questions, createdAt: new Date().toISOString() };
+        
+        if (id) {
+            await updateDoc(doc(db, 'exams', id), data);
+        } else {
+            await setDoc(doc(collection(db, 'exams')), data);
+        }
+        
+        closeModal('examModal');
+        loadExams();
+        updateStats();
+    };
 
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
         const lessons = await getDocs(collection(db, 'lessons'));
         const words = await getDocs(collection(db, 'words'));
+        const exams = await getDocs(collection(db, 'exams'));
         document.getElementById('statBooks').innerHTML = books.size;
         document.getElementById('statLessons').innerHTML = lessons.size;
         document.getElementById('statWords').innerHTML = words.size;
+        document.getElementById('statExams').innerHTML = exams.size;
     }
 
     document.getElementById('doLoginBtn').onclick = () => {
@@ -641,6 +888,7 @@
             loadBooks();
             loadLessonBooks();
             loadWordBooks();
+            loadExams();
             updateStats();
             showSection('dashboard');
         } else { alert('Hatalı şifre!'); }
@@ -648,27 +896,41 @@
     document.getElementById('adminPassword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('doLoginBtn').click();
     });
+    
+    // Çıkış işlemi
     document.getElementById('logoutBtn').onclick = () => {
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('adminPanel').classList.add('hidden');
         document.getElementById('adminPassword').value = '';
+        closeMenu();
     };
 
+    // Tema işlemleri
     let isDark = true;
-    document.getElementById('themeBtn').onclick = () => {
+    const themeBtn = document.getElementById('themeBtn');
+    
+    function applyTheme() {
         if (isDark) {
-            document.body.style.background = 'linear-gradient(135deg, #f5f7fa, #e8edf5)';
-            document.body.style.color = '#1e1b4b';
-            document.querySelectorAll('.section-card, .item, .login-card, select').forEach(el => el.style.background = 'rgba(0,0,0,0.05)');
-            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#ffffff');
+            document.body.classList.remove('light-theme');
+            themeBtn.innerHTML = '<i class="fas fa-moon"></i> Tema';
         } else {
-            document.body.style.background = 'linear-gradient(135deg, #0f172a, #1e1b4b)';
-            document.body.style.color = 'white';
-            document.querySelectorAll('.section-card, .item, .login-card, select').forEach(el => el.style.background = 'rgba(255,255,255,0.1)');
-            document.querySelectorAll('.sidebar').forEach(el => el.style.background = '#1e1b4b');
+            document.body.classList.add('light-theme');
+            themeBtn.innerHTML = '<i class="fas fa-sun"></i> Tema';
         }
+    }
+    
+    themeBtn.onclick = () => {
         isDark = !isDark;
+        applyTheme();
+        localStorage.setItem('adminTheme', isDark ? 'dark' : 'light');
+        closeMenu();
     };
+    
+    const savedTheme = localStorage.getItem('adminTheme');
+    if (savedTheme === 'light') {
+        isDark = false;
+        applyTheme();
+    }
 </script>
 </body>
 </html>
