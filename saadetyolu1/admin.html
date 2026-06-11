@@ -44,6 +44,13 @@
         body.light-theme .modal-close {
             color: #1e1b4b;
         }
+        body.light-theme .stats-card {
+            background: rgba(0,0,0,0.08);
+            color: #1e1b4b;
+        }
+        body.light-theme .stats-card div:first-child {
+            color: #f59e0b;
+        }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .header {
             display: flex;
@@ -54,7 +61,44 @@
             border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         .logo { font-size: 24px; font-weight: bold; color: #f59e0b; }
-        .user-info { background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 30px; font-size: 14px; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-info { 
+            background: rgba(255,255,255,0.05); 
+            padding: 8px 15px; 
+            border-radius: 30px; 
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .user-info:hover { 
+            background: #ef4444; 
+            color: white;
+        }
+        .theme-icon-btn {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #f59e0b;
+            font-size: 18px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+        .theme-icon-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+        }
         .login-card {
             max-width: 400px;
             margin: 50px auto;
@@ -63,6 +107,10 @@
             border-radius: 20px;
             padding: 30px;
             backdrop-filter: blur(10px);
+        }
+        .login-card h2 {
+            margin-bottom: 20px;
+            color: #f59e0b;
         }
         input, select, textarea {
             width: 100%;
@@ -217,22 +265,54 @@
             align-items: center;
             margin-bottom: 10px;
         }
+        
+        /* Dashboard Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stats-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.08);
+        }
+        .stats-card div:first-child {
+            font-size: 42px;
+            font-weight: bold;
+            color: #f59e0b;
+            margin-bottom: 10px;
+        }
+        .stats-card div:last-child {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
         @media (max-width: 600px) {
             .select-row { flex-direction: column; align-items: stretch; }
             .action-buttons { justify-content: flex-end; }
             .section-header { flex-direction: column; align-items: flex-start; }
+            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-<button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+<button class="menu-btn hidden" id="menuBtn"><i class="fas fa-bars"></i></button>
 
 <div class="sidebar" id="sidebar">
     <div style="text-align: center; margin-bottom: 20px;">
         <h3><i class="fas fa-crown"></i> Admin Panel</h3>
-        <small>Administrator</small>
+        <small id="sidebarAdminName">Administrator</small>
     </div>
     <div class="sidebar-item" id="goDashboard"><i class="fas fa-chart-line"></i> Dashboard</div>
     <div class="sidebar-item" id="goBooks"><i class="fas fa-book"></i> Kitaplar</div>
@@ -240,8 +320,8 @@
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
-        <div class="sidebar-item" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Çıkış</div>
-        <div class="sidebar-item" id="themeBtn"><i class="fas fa-moon"></i> Tema</div>
+        <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
+        <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
     </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -249,7 +329,12 @@
 <div class="container">
     <div class="header">
         <div class="logo">🔐 Admin Panel</div>
-        <div class="user-info"><i class="fas fa-user-shield"></i> Administrator</div>
+        <div class="header-right">
+            <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
+            <div class="user-info hidden" id="logoutIconBtn">
+                <i class="fas fa-sign-out-alt"></i> Çıkış
+            </div>
+        </div>
     </div>
 
     <div id="loginScreen" class="login-card">
@@ -260,22 +345,22 @@
 
     <div id="adminPanel" class="admin-panel hidden">
         <div id="dashboardSection">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-                <div style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statBooks">0</div>
-                    <div>Kitap</div>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stats-card">
+                    <div id="statBooks">0</div>
+                    <div><i class="fas fa-book"></i> Kitap</div>
                 </div>
-                <div style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statLessons">0</div>
-                    <div>Ders</div>
+                <div class="stats-card">
+                    <div id="statLessons">0</div>
+                    <div><i class="fas fa-graduation-cap"></i> Ders</div>
                 </div>
-                <div style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statWords">0</div>
-                    <div>Kelime</div>
+                <div class="stats-card">
+                    <div id="statWords">0</div>
+                    <div><i class="fas fa-language"></i> Kelime</div>
                 </div>
-                <div style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center;">
-                    <div style="font-size: 32px; font-weight: bold; color: #f59e0b;" id="statExams">0</div>
-                    <div>Sınav</div>
+                <div class="stats-card">
+                    <div id="statExams">0</div>
+                    <div><i class="fas fa-pen"></i> Sınav</div>
                 </div>
             </div>
         </div>
@@ -404,6 +489,7 @@
     let currentWordBookId = null;
     let currentWordLessonId = null;
     let questions = [];
+    let isLoggedIn = false;
 
     // Menü
     const menuBtn = document.getElementById('menuBtn');
@@ -428,14 +514,33 @@
     document.getElementById('goLessons').onclick = () => { showSection('lessons'); loadLessonBooks(); closeMenu(); };
     document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
     document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
+    
+    // Çıkış butonları
+    document.getElementById('logoutBtnSidebar').onclick = () => { logout(); closeMenu(); };
+    document.getElementById('logoutIconBtn').onclick = () => { logout(); };
+
+    function logout() {
+        isLoggedIn = false;
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('adminPanel').classList.add('hidden');
+        document.getElementById('adminPassword').value = '';
+        menuBtn.classList.add('hidden');
+        document.getElementById('logoutIconBtn').classList.add('hidden');
+        document.getElementById('themeIconBtn').classList.remove('hidden');
+        closeMenu();
+    }
 
     function showSection(section) {
-        document.getElementById('dashboardSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
         document.getElementById('booksSection').classList.add('hidden');
         document.getElementById('lessonsSection').classList.add('hidden');
         document.getElementById('wordsSection').classList.add('hidden');
         document.getElementById('examsSection').classList.add('hidden');
-        document.getElementById(`${section}Section`).classList.remove('hidden');
+        
+        if (section !== 'dashboard') {
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById(`${section}Section`).classList.remove('hidden');
+        }
     }
 
     window.closeModal = function(id) { document.getElementById(id).classList.remove('visible'); };
@@ -714,7 +819,6 @@
         updateStats();
     };
     
-    // Sınav işlemleri
     async function loadExams() {
         const snapshot = await getDocs(collection(db, 'exams'));
         const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -841,7 +945,6 @@
             return;
         }
         
-        // Soruları kontrol et
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             if (!q.question) {
@@ -884,50 +987,52 @@
         document.getElementById('statExams').innerHTML = exams.size;
     }
 
+    // Giriş işlemi
     document.getElementById('doLoginBtn').onclick = () => {
         if (document.getElementById('adminPassword').value === 'admin123') {
+            isLoggedIn = true;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminPanel').classList.remove('hidden');
+            menuBtn.classList.remove('hidden');
+            document.getElementById('logoutIconBtn').classList.remove('hidden');
+            document.getElementById('themeIconBtn').classList.add('hidden');
             loadBooks();
             loadLessonBooks();
             loadWordBooks();
             loadExams();
             updateStats();
             showSection('dashboard');
-        } else { alert('Hatalı şifre!'); }
+        } else { 
+            alert('Hatalı şifre!'); 
+        }
     };
     document.getElementById('adminPassword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('doLoginBtn').click();
     });
-    
-    // Çıkış işlemi
-    document.getElementById('logoutBtn').onclick = () => {
-        document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('adminPanel').classList.add('hidden');
-        document.getElementById('adminPassword').value = '';
-        closeMenu();
-    };
 
     // Tema işlemleri
     let isDark = true;
-    const themeBtn = document.getElementById('themeBtn');
     
     function applyTheme() {
         if (isDark) {
             document.body.classList.remove('light-theme');
-            themeBtn.innerHTML = '<i class="fas fa-moon"></i> Tema';
+            document.getElementById('themeIconBtn').innerHTML = '<i class="fas fa-moon"></i>';
+            document.getElementById('themeBtnSidebar').innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
         } else {
             document.body.classList.add('light-theme');
-            themeBtn.innerHTML = '<i class="fas fa-sun"></i> Tema';
+            document.getElementById('themeIconBtn').innerHTML = '<i class="fas fa-sun"></i>';
+            document.getElementById('themeBtnSidebar').innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
         }
     }
     
-    themeBtn.onclick = () => {
+    function changeTheme() {
         isDark = !isDark;
         applyTheme();
         localStorage.setItem('adminTheme', isDark ? 'dark' : 'light');
-        closeMenu();
-    };
+    }
+    
+    document.getElementById('themeIconBtn').onclick = () => { changeTheme(); };
+    document.getElementById('themeBtnSidebar').onclick = () => { changeTheme(); closeMenu(); };
     
     const savedTheme = localStorage.getItem('adminTheme');
     if (savedTheme === 'light') {
