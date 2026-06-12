@@ -51,6 +51,10 @@
         body.light-theme .stats-card div:first-child {
             color: #f59e0b;
         }
+        body.light-theme .clear-data-modal {
+            background: #ffffff !important;
+            color: #1e1b4b !important;
+        }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .header {
             display: flex;
@@ -144,6 +148,8 @@
         .btn-warning { background: #f59e0b; color: #121212; }
         .btn-info { background: #3b82f6; color: white; }
         .btn-info:hover { background: #2563eb; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
         .hidden { display: none; }
         .admin-panel { margin-top: 20px; }
         .section-card {
@@ -324,6 +330,42 @@
             margin-bottom: 8px;
         }
         
+        /* Veri Temizle Modal */
+        .clear-data-modal {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .clear-option {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .clear-option:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        .clear-option.warning:hover {
+            background: rgba(239,68,68,0.2);
+        }
+        .clear-option-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .clear-option-count {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
         @media (max-width: 768px) {
             .container { padding: 12px; }
             .header { margin-bottom: 15px; padding-bottom: 10px; margin-left: 30px; }
@@ -481,6 +523,7 @@
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
+    <div class="sidebar-item" id="goClearData" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizle</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
         <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
         <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
@@ -663,7 +706,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -711,6 +754,194 @@
     
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); closeMenu(); };
     document.getElementById('logoutIconBtn').onclick = () => { logout(); };
+
+    // ========== VERİ TEMİZLEME ==========
+    async function getCollectionCount(collectionName) {
+        const snapshot = await getDocs(collection(db, collectionName));
+        return snapshot.size;
+    }
+
+    async function clearCollection(collectionName, showMessage = true) {
+        const snapshot = await getDocs(collection(db, collectionName));
+        if (snapshot.empty) return 0;
+        
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        return snapshot.size;
+    }
+
+    async function showClearDataModal() {
+        // Koleksiyonlardaki mevcut veri sayılarını al
+        const bookCount = await getCollectionCount('books');
+        const lessonCount = await getCollectionCount('lessons');
+        const wordCount = await getCollectionCount('words');
+        const examCount = await getCollectionCount('exams');
+        const userCount = await getCollectionCount('users');
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); z-index: 1001;
+            display: flex; align-items: center; justify-content: center;
+        `;
+        modal.innerHTML = `
+            <div class="clear-data-modal" style="background: #1a1a1a; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizleme</h3>
+                    <button id="closeClearModalBtn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <p style="margin-bottom: 20px; color: #ccc;">⚠️ UYARI: Bu işlemler GERİ ALINAMAZ! Seçtiğiniz veriler kalıcı olarak silinecektir.</p>
+                
+                <div id="clearBooksOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-book"></i> Kitaplar</div>
+                        <div class="clear-option-count">${bookCount} kitap</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
+                </div>
+                
+                <div id="clearLessonsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-graduation-cap"></i> Dersler</div>
+                        <div class="clear-option-count">${lessonCount} ders</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
+                </div>
+                
+                <div id="clearWordsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-language"></i> Kelimeler</div>
+                        <div class="clear-option-count">${wordCount} kelime</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
+                </div>
+                
+                <div id="clearExamsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-pen"></i> Sınavlar</div>
+                        <div class="clear-option-count">${examCount} sınav</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
+                </div>
+                
+                <div id="clearUsersOption" class="clear-option warning" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-users"></i> Kullanıcılar ve Tüm Verileri</div>
+                        <div class="clear-option-count">${userCount} kullanıcı</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
+                </div>
+                
+                <div id="clearAllOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.2); border-radius: 12px; margin-top: 15px; cursor: pointer; border: 1px solid #ef4444;">
+                    <div>
+                        <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> TÜMÜNÜ TEMİZLE</div>
+                        <div class="clear-option-count">Tüm veriler silinecek</div>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 5px 20px;">Temizle</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        const closeModal = () => modal.remove();
+        document.getElementById('closeClearModalBtn').onclick = closeModal;
+        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        
+        // Kitapları temizle
+        document.getElementById('clearBooksOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Kitaplar ve bu kitaplara ait tüm dersler ve kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('books');
+                await clearCollection('lessons');
+                await clearCollection('words');
+                alert(`✅ ${count} kitap ve ilişkili tüm veriler silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Dersleri temizle
+        document.getElementById('clearLessonsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm dersler ve bu derslere ait kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('lessons');
+                await clearCollection('words');
+                alert(`✅ ${count} ders ve ilişkili kelimeler silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Kelimeleri temizle
+        document.getElementById('clearWordsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('words');
+                alert(`✅ ${count} kelime silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Sınavları temizle
+        document.getElementById('clearExamsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm sınavlar silinecek. Emin misiniz?')) {
+                const count = await clearCollection('exams');
+                alert(`✅ ${count} sınav silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Kullanıcıları temizle
+        document.getElementById('clearUsersOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('🚨 TÜM KULLANICILAR ve tüm verileri (kelime sayıları, sınav geçmişleri) KALICI OLARAK SİLİNECEK! Bu işlem geri alınamaz. Emin misiniz?')) {
+                const count = await clearCollection('users');
+                alert(`✅ ${count} kullanıcı ve tüm verileri silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Tümünü temizle
+        document.getElementById('clearAllOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('🚨🚨🚨 TÜM VERİTABANI (kitaplar, dersler, kelimeler, sınavlar, kullanıcılar) KALICI OLARAK SİLİNECEK! Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
+                const confirm2 = confirm('SON UYARI: Tüm veriler silinecek. Devam etmek istediğinize kesinlikle emin misiniz?');
+                if (confirm2) {
+                    const collections = ['books', 'lessons', 'words', 'exams', 'users'];
+                    let total = 0;
+                    for (const col of collections) {
+                        const count = await clearCollection(col);
+                        total += count;
+                    }
+                    alert(`✅ Toplam ${total} veri silindi! Sayfa yenilenecek.`);
+                    closeModal();
+                    location.reload();
+                }
+            }
+        };
+    }
+    
+    async function refreshAllData() {
+        await loadBooks();
+        await loadLessonBooks();
+        await loadWordBooks();
+        await loadExams();
+        await loadUsers();
+        await updateStats();
+        if (currentLessonBookId) document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
+        if (currentWordBookId) document.getElementById('wordBookSelect').dispatchEvent(new Event('change'));
+    }
+
+    document.getElementById('goClearData').onclick = () => {
+        closeMenu();
+        showClearDataModal();
+    };
 
     function logout() {
         isLoggedIn = false;
