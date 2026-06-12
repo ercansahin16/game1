@@ -967,6 +967,106 @@
     color: #f59e0b;
     transition: 0.3s;
 }
+
+        /* Sınav stilleri - Tümü (!important'li) */
+.question-text {
+    font-size: 20px !important;
+    margin-bottom: 25px !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+}
+
+.options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 30px !important;
+}
+
+.option {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.03) !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    border: 1px solid transparent !important;
+}
+
+.option:hover:not(.disabled) {
+    background: rgba(255,255,255,0.08) !important;
+    transform: translateX(5px) !important;
+}
+
+.option.disabled {
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+}
+
+.option.correct {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+}
+
+.option.wrong {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+}
+
+.option.selected {
+    background: rgba(59, 130, 246, 0.3) !important;
+    border-color: #3b82f6 !important;
+}
+
+.option-letter {
+    font-weight: bold !important;
+    font-size: 18px !important;
+    width: 35px !important;
+}
+
+.option-text {
+    flex: 1 !important;
+    font-size: 16px !important;
+}
+
+/* Mobil uyum */
+@media (max-width: 768px) {
+    .question-text {
+        font-size: 16px !important;
+        margin-bottom: 18px !important;
+    }
+    .question-text span {
+        font-size: 12px !important;
+        padding: 3px 8px !important;
+    }
+    .option {
+        padding: 10px 12px !important;
+    }
+    .option-letter {
+        font-size: 14px !important;
+        width: 28px !important;
+    }
+    .option-text {
+        font-size: 13px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .question-text {
+        font-size: 15px !important;
+        margin-bottom: 15px !important;
+    }
+    .option-text {
+        font-size: 12px !important;
+    }
+    .option {
+        padding: 8px 10px !important;
+    }
+}
+        
       
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1368,55 +1468,53 @@
         showCurrentQuestion();
     }
     
-    function showCurrentQuestion() {
-        if (!currentExam || !currentExam.questions || examCompleted) return;
-        
-        const question = currentExam.questions[currentQuestionIndex];
-        const letters = ['A', 'B', 'C', 'D'];
-        const answeredCount = userAnswers.filter(a => a !== null).length;
-        const progressPercent = ((currentQuestionIndex + 1) / currentExam.questions.length) * 100;
-        
-        const container = document.getElementById('quizContent');
-        container.innerHTML = `
-            <div class="quiz-header">
-                <div class="quiz-info">
-                    <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
-                    <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
-                    <button class="btn btn-danger" onclick="checkAndCompleteExam()">
-                    <i class="fas fa-flag-checkered"></i> Sınavı Bitir
-                </button>
-                </div>
-                <div class="progress-circle" style="background: conic-gradient(#f59e0b ${progressPercent * 3.6}deg, rgba(255,255,255,0.1) 0deg)">
-                    ${Math.round(progressPercent)}%
-                </div>
-                
+ function showCurrentQuestion() {
+    if (!currentExam || !currentExam.questions || examCompleted) return;
+    
+    const question = currentExam.questions[currentQuestionIndex];
+    const letters = ['A', 'B', 'C', 'D'];
+    const answeredCount = userAnswers.filter(a => a !== null).length;
+    const progressPercent = ((currentQuestionIndex + 1) / currentExam.questions.length) * 100;
+    
+    const container = document.getElementById('quizContent');
+    container.innerHTML = `
+        <div class="quiz-header">
+            <div class="quiz-info">
+                <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
+                <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
             </div>
-            <div class="quiz-card">
-                <div class="question-text">
-                    <i class="fas fa-question-circle" style="color: #f59e0b;"></i> 
-                    <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px;">Soru ${currentQuestionIndex + 1}</span>
-                    ${question.question}
-                </div>
-                <div class="options" id="optionsContainer">
-                    ${question.options.map((opt, i) => `
-                        <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
-                            <div class="option-letter">${letters[i]}.</div>
-                            <div class="option-text">${opt}</div>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="progress-circle" style="background: conic-gradient(#f59e0b ${progressPercent * 3.6}deg, rgba(255,255,255,0.1) 0deg)">
+                ${Math.round(progressPercent)}%
             </div>
-            <div class="quiz-navigation">
-                <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()">
-                    <i class="fas fa-arrow-left"></i> Önceki Soru
-                </button>
-                
-                <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
-                    Sonraki Soru <i class="fas fa-arrow-right"></i>
-                </button>
+        </div>
+        <div class="quiz-card">
+            <div class="question-text">
+                <i class="fas fa-question-circle" style="color: #f59e0b;"></i> 
+                <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px;">Soru ${currentQuestionIndex + 1}</span>
+                ${question.question}
             </div>
-        `;
-    }
+            <div class="options" id="optionsContainer">
+                ${question.options.map((opt, i) => `
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
+                        <div class="option-letter">${letters[i]}.</div>
+                        <div class="option-text">${opt}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <div class="quiz-navigation">
+            <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()">
+                <i class="fas fa-arrow-left"></i> Önceki Soru
+            </button>
+            <button class="btn btn-danger" onclick="checkAndCompleteExam()">
+                <i class="fas fa-flag-checkered"></i> Sınavı Bitir
+            </button>
+            <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
+                Sonraki Soru <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    `;
+}
     
     window.selectOption = (questionIdx, optionIdx) => {
         if (examCompleted) return;
