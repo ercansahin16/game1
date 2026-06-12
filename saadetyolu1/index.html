@@ -687,12 +687,12 @@ body.light-theme .stats-card:hover {
 <!-- Ana İçerik (Giriş sonrası - Sadece Stat Kartları) -->
 <div id="mainContent" class="hidden">
     <div class="stats-grid">
-        <div class="stats-card" onclick="goWordsLearning()" style="cursor: pointer;">
+        <div class="stats-card" id="goToWords" style="cursor: pointer;">
             <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-book-open"></i></div>
             <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">Kelime Öğren</div>
             <div style="font-size: 12px; opacity: 0.7;">Ders seçerek kelimeleri öğrenin</div>
         </div>
-        <div class="stats-card" onclick="goExams()" style="cursor: pointer;">
+        <div class="stats-card" id="goToExams" style="cursor: pointer;">
             <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-pen"></i></div>
             <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">Sınava Gir</div>
             <div style="font-size: 12px; opacity: 0.7;">Kendinizi test edin</div>
@@ -1303,6 +1303,36 @@ function showCurrentQuestion() {
             updateWordDisplay();
         }
     });
+
+
+    // Stat kartları tıklama olayları - sayfa yüklendiğinde çalışması için
+document.addEventListener('DOMContentLoaded', function() {
+    const goToWords = document.getElementById('goToWords');
+    const goToExams = document.getElementById('goToExams');
+    
+    if (goToWords) {
+        goToWords.onclick = function() {
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('wordsLearningScreen').classList.remove('hidden');
+            document.getElementById('examsScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('profileScreen').classList.add('hidden');
+            closeMenu();
+        };
+    }
+    
+    if (goToExams) {
+        goToExams.onclick = function() {
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('wordsLearningScreen').classList.add('hidden');
+            document.getElementById('examsScreen').classList.remove('hidden');
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('profileScreen').classList.add('hidden');
+            loadExams();
+            closeMenu();
+        };
+    }
+});
 
 </script>
 </body>
