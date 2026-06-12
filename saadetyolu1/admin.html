@@ -699,6 +699,39 @@
 body.light-theme .stats-card:hover {
     background: rgba(0,0,0,0.15);
 }
+        .question-item textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-family: inherit;
+    resize: vertical;
+}
+
+body.light-theme .question-item textarea {
+    background: rgba(0,0,0,0.1);
+    color: #1e1b4b;
+}
+
+/* Mobil için textarea */
+@media (max-width: 768px) {
+    .question-item textarea {
+        padding: 10px;
+        font-size: 13px;
+        margin: 6px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .question-item textarea {
+        padding: 8px;
+        font-size: 12px;
+        margin: 5px 0;
+    }
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -1278,33 +1311,33 @@ body.light-theme .stats-card:hover {
         }
     };
     
-    function renderQuestions() {
-        const container = document.getElementById('questionsContainer');
-        container.innerHTML = '';
-        questions.forEach((q, idx) => {
-            const div = document.createElement('div');
-            div.className = 'question-item';
-            div.innerHTML = `
-                <div class="question-header">
-                    <strong>Soru ${idx + 1}</strong>
-                    <button class="btn btn-danger icon-btn" onclick="removeQuestion(${idx})"><i class="fas fa-trash"></i></button>
-                </div>
-                <input type="text" placeholder="Soru metni" value="${q.question.replace(/"/g, '&quot;')}" onchange="updateQuestion(${idx}, 'question', this.value)">
-                <input type="text" placeholder="A şıkkı" value="${q.options[0]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option0', this.value)">
-                <input type="text" placeholder="B şıkkı" value="${q.options[1]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option1', this.value)">
-                <input type="text" placeholder="C şıkkı" value="${q.options[2]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option2', this.value)">
-                <input type="text" placeholder="D şıkkı" value="${q.options[3]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option3', this.value)">
-                <select onchange="updateQuestion(${idx}, 'correct', this.value)">
-                    <option value="">Doğru Şıkkı Seçin</option>
-                    <option value="0" ${q.correct === 0 ? 'selected' : ''}>A</option>
-                    <option value="1" ${q.correct === 1 ? 'selected' : ''}>B</option>
-                    <option value="2" ${q.correct === 2 ? 'selected' : ''}>C</option>
-                    <option value="3" ${q.correct === 3 ? 'selected' : ''}>D</option>
-                </select>
-            `;
-            container.appendChild(div);
-        });
-    }
+   function renderQuestions() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    questions.forEach((q, idx) => {
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.innerHTML = `
+            <div class="question-header">
+                <strong>Soru ${idx + 1}</strong>
+                <button class="btn btn-danger icon-btn" onclick="removeQuestion(${idx})"><i class="fas fa-trash"></i></button>
+            </div>
+            <textarea rows="3" placeholder="Soru metni" onchange="updateQuestion(${idx}, 'question', this.value)">${q.question.replace(/"/g, '&quot;')}</textarea>
+            <input type="text" placeholder="A şıkkı" value="${q.options[0]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option0', this.value)">
+            <input type="text" placeholder="B şıkkı" value="${q.options[1]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option1', this.value)">
+            <input type="text" placeholder="C şıkkı" value="${q.options[2]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option2', this.value)">
+            <input type="text" placeholder="D şıkkı" value="${q.options[3]?.replace(/"/g, '&quot;') || ''}" onchange="updateQuestion(${idx}, 'option3', this.value)">
+            <select onchange="updateQuestion(${idx}, 'correct', this.value)">
+                <option value="">Doğru Şıkkı Seçin</option>
+                <option value="0" ${q.correct === 0 ? 'selected' : ''}>A</option>
+                <option value="1" ${q.correct === 1 ? 'selected' : ''}>B</option>
+                <option value="2" ${q.correct === 2 ? 'selected' : ''}>C</option>
+                <option value="3" ${q.correct === 3 ? 'selected' : ''}>D</option>
+            </select>
+        `;
+        container.appendChild(div);
+    });
+}
     
     window.updateQuestion = (idx, field, value) => {
         if (field === 'question') {
