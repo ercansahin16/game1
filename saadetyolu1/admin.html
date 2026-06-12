@@ -531,7 +531,8 @@
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
-    <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Yükleme</div>
+    <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
+    <div class="sidebar-item" id="goBulkExamUpload"><i class="fas fa-upload"></i> Toplu Soru Yükleme</div>
     <div class="sidebar-item" id="goClearData" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizle</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
         <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
@@ -756,6 +757,47 @@
     <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
 </div>
 
+
+
+    <div id="bulkExamUploadSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+    </div>
+    
+    <div class="select-row">
+        <div class="select-wrapper">
+            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+            <select id="bulkExamSelect">
+                <option value="">-- Sınav Seçin --</option>
+            </select>
+        </div>
+        <div class="action-buttons">
+            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+  {
+    "question": "Sorunun metni buraya yazılır?",
+    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
+    "correct": 0
+  }
+]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
+    </div>
+
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+    </div>
+
+    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
+</div>
+
+    
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -1007,7 +1049,7 @@
         closeMenu();
     }
 
-   function showSection(section) {
+ function showSection(section) {
     document.getElementById('dashboardSection').classList.add('hidden');
     document.getElementById('booksSection').classList.add('hidden');
     document.getElementById('lessonsSection').classList.add('hidden');
@@ -1015,6 +1057,7 @@
     document.getElementById('examsSection').classList.add('hidden');
     document.getElementById('usersSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
+    document.getElementById('bulkExamUploadSection').classList.add('hidden');
     
     if (section === 'dashboard') {
         document.getElementById('dashboardSection').classList.remove('hidden');
@@ -1030,6 +1073,8 @@
         document.getElementById('usersSection').classList.remove('hidden');
     } else if (section === 'bulkUpload') {
         document.getElementById('bulkUploadSection').classList.remove('hidden');
+    } else if (section === 'bulkExamUpload') {
+        document.getElementById('bulkExamUploadSection').classList.remove('hidden');
     }
 }
 
@@ -1827,6 +1872,167 @@ document.getElementById('downloadWordsBtn').onclick = async () => {
     setTimeout(() => {
         resultDiv.style.display = 'none';
     }, 3000);
+};
+
+
+
+    // Toplu Soru Yükleme bölümünü göster
+document.getElementById('goBulkExamUpload').onclick = () => {
+    showSection('bulkExamUpload');
+    loadBulkExams();
+    closeMenu();
+};
+
+async function loadBulkExams() {
+    const snapshot = await getDocs(collection(db, 'exams'));
+    const select = document.getElementById('bulkExamSelect');
+    select.innerHTML = '<option value="">-- Sınav Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = data.title;
+        select.appendChild(option);
+    });
+}
+
+// Soruları indir
+document.getElementById('downloadQuestionsBtn').onclick = async () => {
+    const examId = document.getElementById('bulkExamSelect').value;
+    
+    if (!examId) {
+        alert('Lütfen önce bir sınav seçin!');
+        return;
+    }
+    
+    const examRef = doc(db, 'exams', examId);
+    const examSnap = await getDoc(examRef);
+    
+    if (!examSnap.exists()) {
+        alert('Sınav bulunamadı!');
+        return;
+    }
+    
+    const examData = examSnap.data();
+    const questions = examData.questions || [];
+    
+    if (questions.length === 0) {
+        alert('Bu sınavda hiç soru yok!');
+        return;
+    }
+    
+    // Soruları JSON formatına dönüştür
+    const jsonStr = JSON.stringify(questions, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${examData.title}_sorular.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    const resultDiv = document.getElementById('bulkExamResult');
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = 'rgba(59, 130, 246, 0.1)';
+    resultDiv.style.border = '1px solid #3b82f6';
+    resultDiv.style.borderRadius = '10px';
+    resultDiv.style.padding = '15px';
+    resultDiv.innerHTML = `
+        <i class="fas fa-download" style="color: #3b82f6;"></i>
+        <strong>İndirme Tamamlandı!</strong><br>
+        📥 ${questions.length} soru "${examData.title}_sorular.json" olarak indirildi.
+    `;
+    
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 3000);
+};
+
+// Soruları yükle
+document.getElementById('bulkExamUploadBtn').onclick = async () => {
+    const examId = document.getElementById('bulkExamSelect').value;
+    const jsonInput = document.getElementById('bulkExamJsonInput').value;
+    const resultDiv = document.getElementById('bulkExamResult');
+    
+    if (!examId) {
+        alert('Lütfen bir sınav seçin!');
+        return;
+    }
+    
+    if (!jsonInput.trim()) {
+        alert('Lütfen JSON verisi girin!');
+        return;
+    }
+    
+    try {
+        const questions = JSON.parse(jsonInput);
+        
+        if (!Array.isArray(questions)) {
+            throw new Error('Veri bir dizi olmalıdır');
+        }
+        
+        // Her soruyu kontrol et
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (!q.question) {
+                throw new Error(`${i + 1}. sorunun metni eksik!`);
+            }
+            if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+                throw new Error(`${i + 1}. sorunun 4 şıkkı olmalı!`);
+            }
+            for (let j = 0; j < 4; j++) {
+                if (!q.options[j]) {
+                    throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
+                }
+            }
+            if (q.correct === undefined || q.correct === null || q.correct < 0 || q.correct > 3) {
+                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz! (0-3 arası olmalı)`);
+            }
+        }
+        
+        // Sınavı güncelle
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, {
+            questions: questions,
+            updatedAt: new Date().toISOString()
+        });
+        
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <strong>Yükleme Tamamlandı!</strong><br>
+            ✅ ${questions.length} soru başarıyla yüklendi!
+        `;
+        
+        // Sınav listesini yenile
+        loadExams();
+        updateStats();
+        
+    } catch (error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <strong>Hata!</strong><br>
+            ${error.message}
+        `;
+    }
+};
+
+// Temizle butonu
+document.getElementById('bulkExamClearBtn').onclick = () => {
+    document.getElementById('bulkExamJsonInput').value = '';
+    document.getElementById('bulkExamResult').style.display = 'none';
 };
     
 </script>
