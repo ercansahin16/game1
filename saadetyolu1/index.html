@@ -1060,27 +1060,46 @@ body.light-theme .option-text {
         updateWordDisplay();
     };
 
-    function updateWordDisplay() {
-        if (words.length === 0) {
-            arabicWord.textContent = '---';
-            turkishWord.textContent = '';
-            turkishWord.style.opacity = '0.5';
-            currentIndexSpan.textContent = '0';
-            totalWordsSpan.textContent = '0';
-            progressFill.style.width = '0%';
-            wordCountInfo.textContent = '0 kelime';
-            return;
-        }
-        const word = words[currentWordIndex];
-        arabicWord.textContent = word.arabic;
-        turkishWord.textContent = '???';
+function updateWordDisplay() {
+    if (words.length === 0) {
+        arabicWord.textContent = '---';
+        turkishWord.innerHTML = '';
         turkishWord.style.opacity = '0.5';
-        currentIndexSpan.textContent = currentWordIndex + 1;
-        totalWordsSpan.textContent = words.length;
-        wordCountInfo.textContent = `${words.length} kelime`;
-        const progress = ((currentWordIndex + 1) / words.length) * 100;
-        progressFill.style.width = `${progress}%`;
+        currentIndexSpan.textContent = '0';
+        totalWordsSpan.textContent = '0';
+        progressFill.style.width = '0%';
+        wordCountInfo.textContent = '0 kelime';
+        return;
     }
+    const word = words[currentWordIndex];
+    arabicWord.textContent = word.arabic;
+    
+    // Soru işareti görseli
+    turkishWord.innerHTML = `
+        <div style="text-align: center;">
+            <div style="font-size: 70px; color: #f59e0b; animation: pulse 2s infinite;">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div style="font-size: 12px; opacity: 0.7;">Anlamı görmek için "Göster" butonuna tıkla</div>
+        </div>
+    `;
+    turkishWord.style.opacity = '1';
+    
+    currentIndexSpan.textContent = currentWordIndex + 1;
+    totalWordsSpan.textContent = words.length;
+    wordCountInfo.textContent = `${words.length} kelime`;
+    const progress = ((currentWordIndex + 1) / words.length) * 100;
+    progressFill.style.width = `${progress}%`;
+}
+
+// showBtn onclick - AYNI KALSIN (değiştirme)
+showBtn.onclick = () => {
+    if (words.length === 0) return;
+    const word = words[currentWordIndex];
+    turkishWord.innerHTML = word.turkish;  // innerHTML kullan
+    turkishWord.style.opacity = '1';
+    updateUserProgress();
+};
 
     showBtn.onclick = () => {
         if (words.length === 0) return;
