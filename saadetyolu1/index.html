@@ -1334,65 +1334,76 @@ function showCurrentQuestion() {
         completeExam();
     };
     
-    function completeExam() {
-        examCompleted = true;
-        
-        let correct = 0;
-        currentExam.questions.forEach((q, idx) => {
-            if (userAnswers[idx] === q.correct) correct++;
-        });
-        const score = (correct / currentExam.questions.length) * 100;
-        
-        saveExamResult(currentExam.title, score, correct, currentExam.questions.length);
-        
-        const letters = ['A', 'B', 'C', 'D'];
-        let allQuestionsHTML = `
-            <div class="result-card">
-                <h2>🏆 Sınav Tamamlandı!</h2>
-                <div class="score">${Math.round(score)} / 100</div>
-                <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
-                        <div>Doğru</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 36px; color: #ef4444;">✗ ${currentExam.questions.length - correct}</div>
-                        <div>Yanlış</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 36px; color: #f59e0b;">○ ${currentExam.questions.filter((_, idx) => userAnswers[idx] === null).length}</div>
-                        <div>Boş</div>
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-arrow-left"></i> Sınavlara Dön</button>
+   function completeExam() {
+    examCompleted = true;
+    
+    let correct = 0;
+    currentExam.questions.forEach((q, idx) => {
+        if (userAnswers[idx] === q.correct) correct++;
+    });
+    
+    // Yeni puan hesaplama: Doğru sayısı / Toplam soru × 100
+    const totalQuestions = currentExam.questions.length;
+    const score = (correct / totalQuestions) * 100;
+    const roundedScore = Math.round(score);
+    
+    // Ekrana yazılacak mesaj
+    const scoreMessage = `${roundedScore} puan aldınız (${correct}/${totalQuestions} doğru)`;
+    
+    const letters = ['A', 'B', 'C', 'D'];
+    let allQuestionsHTML = `
+        <div class="result-card">
+            <h2>🏆 Sınav Tamamlandı!</h2>
+            <div class="score">${roundedScore} / 100</div>
+            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
+                ${correct}/${totalQuestions} doğru
             </div>
-            <div class="all-questions-container">
-                <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
-        `;
-        
-        currentExam.questions.forEach((q, idx) => {
-            const isCorrect = userAnswers[idx] === q.correct;
-            const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
-            const correctAnswerLetter = letters[q.correct];
-            
-            allQuestionsHTML += `
-                <div class="question-summary ${isCorrect ? 'correct-bg' : 'wrong-bg'}">
-                    <div class="question-summary-header">
-                        <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
-                        <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}">${isCorrect ? '✓ DOĞRU' : '✗ YANLIŞ'}</span>
-                    </div>
-                    <div class="question-summary-text">${q.question}</div>
-                    <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
-                    <div class="correct-answer">✅ Doğru cevap: <strong>${correctAnswerLetter}</strong> - ${q.options[q.correct]}</div>
+            <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
+                    <div>Doğru</div>
                 </div>
-            `;
-        });
+                <div style="text-align: center;">
+                    <div style="font-size: 36px; color: #ef4444;">✗ ${totalQuestions - correct}</div>
+                    <div>Yanlış</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 36px; color: #f59e0b;">○ ${currentExam.questions.filter((_, idx) => userAnswers[idx] === null).length}</div>
+                    <div>Boş</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-arrow-left"></i> Sınavlara Dön</button>
+        </div>
+        <div class="all-questions-container">
+            <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
+    `;
+    
+    currentExam.questions.forEach((q, idx) => {
+        const isCorrect = userAnswers[idx] === q.correct;
+        const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
+        const correctAnswerLetter = letters[q.correct];
         
-        allQuestionsHTML += `</div>`;
-        
-        const container = document.getElementById('quizContent');
-        container.innerHTML = allQuestionsHTML;
-    }
+        allQuestionsHTML += `
+            <div class="question-summary ${isCorrect ? 'correct-bg' : 'wrong-bg'}">
+                <div class="question-summary-header">
+                    <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
+                    <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}">${isCorrect ? '✓ DOĞRU' : '✗ YANLIŞ'}</span>
+                </div>
+                <div class="question-summary-text">${q.question}</div>
+                <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
+                <div class="correct-answer">✅ Doğru cevap: <strong>${correctAnswerLetter}</strong> - ${q.options[q.correct]}</div>
+            </div>
+        `;
+    });
+    
+    allQuestionsHTML += `</div>`;
+    
+    const container = document.getElementById('quizContent');
+    container.innerHTML = allQuestionsHTML;
+    
+    // Sınav sonucunu kaydet
+    saveExamResult(currentExam.title, score, correct, currentExam.questions.length);
+}
     
     window.togglePassword = (inputId) => {
         const input = document.getElementById(inputId);
