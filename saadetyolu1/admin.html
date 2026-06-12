@@ -505,6 +505,14 @@
         @media (max-width: 480px) {
             .question-item textarea { padding: 8px; font-size: 12px; margin: 5px 0; }
         }
+
+        .btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+.btn-secondary:hover {
+    background: #4b5563;
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -705,6 +713,8 @@
     </div>
 </div>
 
+
+
     <div id="bulkUploadSection" class="section-card hidden">
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
@@ -723,6 +733,11 @@
                 <option value="">-- Önce Kitap Seçin --</option>
             </select>
         </div>
+        <div class="action-buttons">
+            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
     </div>
 
     <div style="margin: 20px 0;">
@@ -733,14 +748,13 @@
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
     </div>
 
-    <div style="display: flex; gap: 15px;">
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
         <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
         <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
     </div>
 
     <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
 </div>
-    
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -1754,6 +1768,65 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
 document.getElementById('bulkClearBtn').onclick = () => {
     document.getElementById('bulkJsonInput').value = '';
     document.getElementById('bulkResult').style.display = 'none';
+};
+
+
+    // Mevcut kelimeleri indir
+document.getElementById('downloadWordsBtn').onclick = async () => {
+    const lessonId = document.getElementById('bulkLessonSelect').value;
+    
+    if (!lessonId) {
+        alert('Lütfen önce bir ders seçin!');
+        return;
+    }
+    
+    // Ders bilgisini al
+    const lessonRef = doc(db, 'lessons', lessonId);
+    const lessonSnap = await getDoc(lessonRef);
+    const lessonName = lessonSnap.exists() ? lessonSnap.data().name : 'ders';
+    
+    // Kelimeleri al
+    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+    const words = snapshot.docs.map(doc => ({
+        arabic: doc.data().arabic,
+        turkish: doc.data().turkish
+    }));
+    
+    if (words.length === 0) {
+        alert('Bu derste hiç kelime yok!');
+        return;
+    }
+    
+    // JSON dosyası oluştur
+    const jsonStr = JSON.stringify(words, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // İndirme bağlantısı oluştur
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${lessonName}_kelimeler.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Sonuç göster
+    const resultDiv = document.getElementById('bulkResult');
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = 'rgba(59, 130, 246, 0.1)';
+    resultDiv.style.border = '1px solid #3b82f6';
+    resultDiv.style.borderRadius = '10px';
+    resultDiv.style.padding = '15px';
+    resultDiv.innerHTML = `
+        <i class="fas fa-download" style="color: #3b82f6;"></i>
+        <strong>İndirme Tamamlandı!</strong><br>
+        📥 ${words.length} kelime "${lessonName}_kelimeler.json" olarak indirildi.
+    `;
+    
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 3000);
 };
     
 </script>
