@@ -523,6 +523,7 @@
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
+    <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Yükleme</div>
     <div class="sidebar-item" id="goClearData" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizle</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
         <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
@@ -703,6 +704,43 @@
         <div id="userDetailContent"></div>
     </div>
 </div>
+
+    <div id="bulkUploadSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
+    </div>
+    
+    <div class="select-row">
+        <div class="select-wrapper">
+            <label><i class="fas fa-book"></i> Kitap Seçin</label>
+            <select id="bulkBookSelect">
+                <option value="">-- Kitap Seçin --</option>
+            </select>
+        </div>
+        <div class="select-wrapper">
+            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+            <select id="bulkLessonSelect" disabled>
+                <option value="">-- Önce Kitap Seçin --</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+        <textarea id="bulkJsonInput" rows="10" placeholder='[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"}
+]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
+    </div>
+
+    <div style="display: flex; gap: 15px;">
+        <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
+        <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+    </div>
+
+    <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
+</div>
+    
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -955,28 +993,31 @@
         closeMenu();
     }
 
-    function showSection(section) {
-        document.getElementById('dashboardSection').classList.add('hidden');
-        document.getElementById('booksSection').classList.add('hidden');
-        document.getElementById('lessonsSection').classList.add('hidden');
-        document.getElementById('wordsSection').classList.add('hidden');
-        document.getElementById('examsSection').classList.add('hidden');
-        document.getElementById('usersSection').classList.add('hidden');
-        
-        if (section === 'dashboard') {
-            document.getElementById('dashboardSection').classList.remove('hidden');
-        } else if (section === 'books') {
-            document.getElementById('booksSection').classList.remove('hidden');
-        } else if (section === 'lessons') {
-            document.getElementById('lessonsSection').classList.remove('hidden');
-        } else if (section === 'words') {
-            document.getElementById('wordsSection').classList.remove('hidden');
-        } else if (section === 'exams') {
-            document.getElementById('examsSection').classList.remove('hidden');
-        } else if (section === 'users') {
-            document.getElementById('usersSection').classList.remove('hidden');
-        }
+   function showSection(section) {
+    document.getElementById('dashboardSection').classList.add('hidden');
+    document.getElementById('booksSection').classList.add('hidden');
+    document.getElementById('lessonsSection').classList.add('hidden');
+    document.getElementById('wordsSection').classList.add('hidden');
+    document.getElementById('examsSection').classList.add('hidden');
+    document.getElementById('usersSection').classList.add('hidden');
+    document.getElementById('bulkUploadSection').classList.add('hidden');
+    
+    if (section === 'dashboard') {
+        document.getElementById('dashboardSection').classList.remove('hidden');
+    } else if (section === 'books') {
+        document.getElementById('booksSection').classList.remove('hidden');
+    } else if (section === 'lessons') {
+        document.getElementById('lessonsSection').classList.remove('hidden');
+    } else if (section === 'words') {
+        document.getElementById('wordsSection').classList.remove('hidden');
+    } else if (section === 'exams') {
+        document.getElementById('examsSection').classList.remove('hidden');
+    } else if (section === 'users') {
+        document.getElementById('usersSection').classList.remove('hidden');
+    } else if (section === 'bulkUpload') {
+        document.getElementById('bulkUploadSection').classList.remove('hidden');
     }
+}
 
     window.closeModal = function(id) { document.getElementById(id).classList.remove('visible'); };
     function openModal(id) { document.getElementById(id).classList.add('visible'); }
@@ -1597,6 +1638,124 @@
             button.innerHTML = '<i class="fas fa-eye"></i>';
         }
     };
+
+    // Toplu Yükleme bölümünü göster
+document.getElementById('goBulkUpload').onclick = () => {
+    showSection('bulkUpload');
+    loadBulkBooks();
+    closeMenu();
+};
+
+async function loadBulkBooks() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const select = document.getElementById('bulkBookSelect');
+    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = data.name;
+        select.appendChild(option);
+    });
+}
+
+document.getElementById('bulkBookSelect').onchange = async () => {
+    const bookId = document.getElementById('bulkBookSelect').value;
+    const lessonSelect = document.getElementById('bulkLessonSelect');
+    if (!bookId) {
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        return;
+    }
+    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+    lessonSelect.disabled = false;
+    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = data.name;
+        lessonSelect.appendChild(option);
+    });
+};
+
+document.getElementById('bulkUploadBtn').onclick = async () => {
+    const lessonId = document.getElementById('bulkLessonSelect').value;
+    const jsonInput = document.getElementById('bulkJsonInput').value;
+    const resultDiv = document.getElementById('bulkResult');
+    
+    if (!lessonId) {
+        alert('Lütfen bir ders seçin!');
+        return;
+    }
+    
+    if (!jsonInput.trim()) {
+        alert('Lütfen JSON verisi girin!');
+        return;
+    }
+    
+    try {
+        const words = JSON.parse(jsonInput);
+        
+        if (!Array.isArray(words)) {
+            throw new Error('Veri bir dizi olmalıdır');
+        }
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const word of words) {
+            if (word.arabic && word.turkish) {
+                await setDoc(doc(collection(db, 'words')), {
+                    arabic: word.arabic,
+                    turkish: word.turkish,
+                    lessonId: lessonId,
+                    createdAt: new Date().toISOString()
+                });
+                successCount++;
+            } else {
+                errorCount++;
+            }
+        }
+        
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <strong>Yükleme Tamamlandı!</strong><br>
+            ✅ Başarılı: ${successCount} kelime<br>
+            ❌ Hatalı: ${errorCount} kelime
+        `;
+        
+        // Kelime listesini yenile
+        if (currentWordLessonId === lessonId) {
+            document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
+        }
+        
+        updateStats();
+        
+    } catch (error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <strong>Hata!</strong><br>
+            ${error.message}
+        `;
+    }
+};
+
+document.getElementById('bulkClearBtn').onclick = () => {
+    document.getElementById('bulkJsonInput').value = '';
+    document.getElementById('bulkResult').style.display = 'none';
+};
+    
 </script>
 </body>
 </html>
