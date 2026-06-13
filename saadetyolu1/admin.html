@@ -619,6 +619,7 @@
 </head>
 <body>
 
+<!-- Hamburger Menü -->
 <button class="menu-btn hidden" id="menuBtn"><i class="fas fa-bars"></i></button>
 
 <div class="sidebar" id="sidebar">
@@ -694,14 +695,12 @@
             </div>
         </div>
 
+        <!-- KİTAPLAR BÖLÜMÜ (DÜZELTİLDİ) -->
         <div id="booksSection" class="section-card hidden">
-   <div class="section-header">
-    <h2><i class="fas fa-language"></i> Kelimeler</h2>
-    <div class="word-count" style="background: rgba(245,158,11,0.2); padding: 6px 12px; border-radius: 20px; font-size: 13px;">
-        <i class="fas fa-database"></i> <span id="wordCountDisplay">0</span> kelime
-    </div>
-    <button id="addWordBtn" class="btn btn-success" disabled><i class="fas fa-plus"></i> Yeni Kelime</button>
-</div>
+            <div class="section-header">
+                <h2><i class="fas fa-book"></i> Kitaplar</h2>
+                <button id="addBookBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Kitap</button>
+            </div>
             <div class="items-list" id="booksList"></div>
         </div>
 
@@ -723,9 +722,13 @@
             <div class="items-list" id="lessonsList"></div>
         </div>
 
+        <!-- KELİMELER BÖLÜMÜ (KELİME SAYACI EKLENDİ) -->
         <div id="wordsSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-language"></i> Kelimeler</h2>
+                <div class="word-count" style="background: rgba(245,158,11,0.2); padding: 6px 12px; border-radius: 20px; font-size: 13px;">
+                    <i class="fas fa-database"></i> <span id="wordCountDisplay">0</span> kelime
+                </div>
                 <button id="addWordBtn" class="btn btn-success" disabled><i class="fas fa-plus"></i> Yeni Kelime</button>
             </div>
             <div class="select-row">
@@ -758,6 +761,69 @@
                 <h2><i class="fas fa-users"></i> Kullanıcılar</h2>
             </div>
             <div class="items-list" id="usersList"></div>
+        </div>
+
+        <!-- Toplu Kelime Yükleme -->
+        <div id="bulkUploadSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
+            </div>
+            <div class="select-row">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                    <select id="bulkBookSelect"><option value="">-- Kitap Seçin --</option></select>
+                </div>
+                <div class="select-wrapper">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                    <select id="bulkLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
+                </div>
+                <div class="action-buttons">
+                    <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
+                </div>
+            </div>
+            <div style="margin: 20px 0;">
+                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+                <textarea id="bulkJsonInput" rows="10" placeholder='[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"}
+]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
+                <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+            </div>
+            <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
+        </div>
+
+        <!-- Toplu Soru Yükleme -->
+        <div id="bulkExamUploadSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+            </div>
+            <div class="select-row">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+                    <select id="bulkExamSelect"><option value="">-- Sınav Seçin --</option></select>
+                </div>
+                <div class="action-buttons">
+                    <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir"><i class="fas fa-download"></i></button>
+                </div>
+            </div>
+            <div style="margin: 20px 0;">
+                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+                <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+  {
+    "question": "Sorunun metni buraya yazılır?",
+    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
+    "correct": 0
+  }
+]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+                <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+            </div>
+            <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
         </div>
     </div>
 </div>
@@ -817,90 +883,6 @@
         <div id="userDetailContent"></div>
     </div>
 </div>
-
-
-
-    <div id="bulkUploadSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
-    </div>
-    
-    <div class="select-row">
-        <div class="select-wrapper">
-            <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="bulkBookSelect">
-                <option value="">-- Kitap Seçin --</option>
-            </select>
-        </div>
-        <div class="select-wrapper">
-            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkLessonSelect" disabled>
-                <option value="">-- Önce Kitap Seçin --</option>
-            </select>
-        </div>
-        <div class="action-buttons">
-            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
-
-    <div style="margin: 20px 0;">
-        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
-        <textarea id="bulkJsonInput" rows="10" placeholder='[
-  {"arabic": "كِتَاب", "turkish": "kitap"},
-  {"arabic": "قَلَم", "turkish": "kalem"}
-]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-    </div>
-
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
-        <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-    </div>
-
-    <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
-</div>
-
-
-
-    <div id="bulkExamUploadSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
-    </div>
-    
-    <div class="select-row">
-        <div class="select-wrapper">
-            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
-            <select id="bulkExamSelect">
-                <option value="">-- Sınav Seçin --</option>
-            </select>
-        </div>
-        <div class="action-buttons">
-            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
-
-    <div style="margin: 20px 0;">
-        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
-        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
-  {
-    "question": "Sorunun metni buraya yazılır?",
-    "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
-    "correct": 0
-  }
-]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-    </div>
-
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-    </div>
-
-    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
-</div>
-
     
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
