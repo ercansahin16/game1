@@ -509,6 +509,11 @@
             min-width: 100px;
         }
 
+    .question-summary.empty-bg {
+    border-left: 4px solid #f59e0b;
+}
+    
+
       /* === MOBİL DÜZENLEMELER === */
 @media (max-width: 768px) {
     .container { padding: 12px; }
@@ -1450,13 +1455,22 @@ function showCurrentQuestion() {
 };
     
 function completeExam() {
-    if (examCompleted) return; // Sınav zaten tamamlandıysa tekrar yapma
+    if (examCompleted) return;
     examCompleted = true;
     stopTimer();
     
     let correct = 0;
+    let wrong = 0;
+    let empty = 0;
+    
     currentExam.questions.forEach((q, idx) => {
-        if (userAnswers[idx] === q.correct) correct++;
+        if (userAnswers[idx] === null) {
+            empty++;
+        } else if (userAnswers[idx] === q.correct) {
+            correct++;
+        } else {
+            wrong++;
+        }
     });
     
     const totalQuestions = currentExam.questions.length;
@@ -1465,7 +1479,6 @@ function completeExam() {
     
     const letters = ['A', 'B', 'C', 'D'];
     
-    // Sadece BİR KERE sonuçları göster
     let resultHTML = `
         <div class="result-card">
             <h2>🏆 Sınav Tamamlandı!</h2>
@@ -1479,11 +1492,11 @@ function completeExam() {
                     <div>Doğru</div>
                 </div>
                 <div style="text-align: center;">
-                    <div style="font-size: 36px; color: #ef4444;">✗ ${totalQuestions - correct}</div>
+                    <div style="font-size: 36px; color: #ef4444;">✗ ${wrong}</div>
                     <div>Yanlış</div>
                 </div>
                 <div style="text-align: center;">
-                    <div style="font-size: 36px; color: #f59e0b;">○ ${currentExam.questions.filter((_, idx) => userAnswers[idx] === null).length}</div>
+                    <div style="font-size: 36px; color: #f59e0b;">○ ${empty}</div>
                     <div>Boş</div>
                 </div>
             </div>
@@ -1495,14 +1508,31 @@ function completeExam() {
     
     currentExam.questions.forEach((q, idx) => {
         const isCorrect = userAnswers[idx] === q.correct;
+        const isWrong = userAnswers[idx] !== null && userAnswers[idx] !== q.correct;
+        const isEmpty = userAnswers[idx] === null;
+        
+        let statusText = '';
+        let statusColor = '';
+        
+        if (isCorrect) {
+            statusText = '✓ DOĞRU';
+            statusColor = '#10b981';
+        } else if (isWrong) {
+            statusText = '✗ YANLIŞ';
+            statusColor = '#ef4444';
+        } else {
+            statusText = '○ BOŞ';
+            statusColor = '#f59e0b';
+        }
+        
         const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
         const correctAnswerLetter = letters[q.correct];
         
         resultHTML += `
-            <div class="question-summary ${isCorrect ? 'correct-bg' : 'wrong-bg'}">
+            <div class="question-summary ${isCorrect ? 'correct-bg' : (isWrong ? 'wrong-bg' : 'empty-bg')}">
                 <div class="question-summary-header">
                     <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
-                    <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}">${isCorrect ? '✓ DOĞRU' : '✗ YANLIŞ'}</span>
+                    <span style="color: ${statusColor}">${statusText}</span>
                 </div>
                 <div class="question-summary-text">${q.question}</div>
                 <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
@@ -1516,8 +1546,7 @@ function completeExam() {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // Sınav sonucunu kaydet
-    saveExamResult(currentExam.title, score, correct, currentExam.questions.length);
+    saveExamResult(currentExam.title, score, correct, totalQuestions);
 }
     
     window.togglePassword = (inputId) => {
