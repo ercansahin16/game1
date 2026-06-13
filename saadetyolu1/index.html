@@ -1700,69 +1700,36 @@ async function loadExamsByLesson(lessonId) {
 }
 
 // Sınavları listele (mevcut fonksiyonu güncelle)
-function displayExams(docs) {
+function displayExams(exams) {
     const container = document.getElementById('examsList');
-    const exams = docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
     
-    if (exams.length === 0) {
+    if (!exams || exams.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:40px;">Sınav bulunamadı</div>';
+        document.getElementById('examCountInfo').textContent = '0 sınav';
         return;
     }
     
+    document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
     container.innerHTML = '';
+    
     exams.forEach(exam => {
-        const card = document.createElement('div');
-        card.className = 'exam-card';
-        card.onclick = () => startExam(exam);
-        card.innerHTML = `
-            <div class="exam-title">📚 ${exam.title}</div>
-            <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
+        // exam zaten bir obje, tekrar .data() çağırma
+        const examData = exam.data ? exam.data() : exam;
+        
+        const examCard = document.createElement('div');
+        examCard.className = 'exam-card';
+        examCard.onclick = () => startExam(examData);
+        examCard.innerHTML = `
+            <div class="exam-title">📚 ${examData.title}</div>
+            <div class="exam-info">📝 ${examData.questions?.length || 0} soru</div>
         `;
-        container.appendChild(card);
+        container.appendChild(examCard);
     });
 }
 
 
 
-// GEÇİCİ - SINAVLARA bookId VE lessonId EKLE (SONRA SİL)
-(async function addIdsToExams() {
-    console.log('%c========== SINAVLARA ID EKLEME BAŞLIYOR ==========', 'color: #f59e0b; font-size: 16px');
-    
-    // Kitap ID (sabit)
-    const BOOK_ID = 'O9dytN2karIUtmkxzs6p';
-    
-    // Ders ID'leri
-    const LESSONS = {
-        'Ders-1': 'uL7ojmp2tyLHj0mHjSDi',
-        'Ders-2': 'mrGPiyKaTHEBHpSFG9jc'
-    };
-    
-    const examsSnap = await getDocs(collection(db, 'exams'));
-    let count = 0;
-    
-    for (const doc of examsSnap.docs) {
-        const title = doc.data().title;
-        let lessonId = null;
-        
-        if (title.includes('Ders-1')) lessonId = LESSONS['Ders-1'];
-        else if (title.includes('Ders-2')) lessonId = LESSONS['Ders-2'];
-        
-        if (lessonId) {
-            await updateDoc(doc.ref, { 
-                bookId: BOOK_ID, 
-                lessonId: lessonId 
-            });
-            count++;
-            console.log('✅ Güncellendi:', title);
-        } else {
-            console.log('⚠️ Atlandı:', title);
-        }
-    }
-    
-    console.log(`========== ${count} sınav güncellendi! ==========`);
-    console.log('Şimdi sayfayı yenileyin ve test edin.');
-})();
+
 </script>
 </body>
 </html>
