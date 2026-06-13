@@ -834,9 +834,9 @@
 
 <div id="wordCard" class="word-card" style="position: relative;">
     <div style="position: absolute; top: 10px; right: 10px;">
-       <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
-    <i class="fas fa-search-plus"></i>
-</button>
+        <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
+            <i class="fas fa-search-plus"></i>
+        </button>
     </div>
     <div class="arabic-word" id="arabicWord">---</div>
     <div class="turkish-word" id="turkishWord"></div>
@@ -983,6 +983,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    let isZoomed = false; // Zoom durumu
 
     let currentUser = null;
     let books = [];
@@ -1125,24 +1126,27 @@ window.goExams = () => {
 function updateWordDisplay() {
     if (words.length === 0) {
         arabicWord.textContent = '---';
-        turkishWord.innerHTML = '';
-        turkishWord.style.opacity = '0.5';
+        turkishWord.textContent = '';
         currentIndexSpan.textContent = '0';
         totalWordsSpan.textContent = '0';
         progressFill.style.width = '0%';
         wordCountInfo.textContent = '0 kelime';
         return;
     }
+    
     const word = words[currentWordIndex];
     arabicWord.textContent = word.arabic;
-    
-    // Dolgun ve bodur soru işareti
-    turkishWord.innerHTML = `
-        <div style="text-align: center;">
-            <div style="font-size: 24px; font-weight: bold; color: #f59e0b; animation: pulse 2s infinite;">?</div>
-        </div>
-    `;
+    turkishWord.innerHTML = `<div class="big-question">?</div>`;
     turkishWord.style.opacity = '1';
+    
+    // Zoom durumunu KORU (sıfırlama)
+    if (isZoomed) {
+        arabicWord.style.fontSize = '56px';
+        arabicWord.style.fontWeight = '700';
+    } else {
+        arabicWord.style.fontSize = '';
+        arabicWord.style.fontWeight = '';
+    }
     
     currentIndexSpan.textContent = currentWordIndex + 1;
     totalWordsSpan.textContent = words.length;
@@ -1155,8 +1159,14 @@ function updateWordDisplay() {
 showBtn.onclick = () => {
     if (words.length === 0) return;
     const word = words[currentWordIndex];
-    turkishWord.innerHTML = word.turkish;  // innerHTML kullan
-    turkishWord.style.opacity = '1';
+    turkishWord.innerHTML = word.turkish;
+    
+    // Zoom durumunu KORU
+    if (isZoomed) {
+        arabicWord.style.fontSize = '56px';
+        arabicWord.style.fontWeight = '700';
+    }
+    
     updateUserProgress();
 };
 
@@ -1824,20 +1834,18 @@ function displayExams(exams) {
 
 
 
-
 document.getElementById('zoomBtn').onclick = () => {
-    const w = document.getElementById('arabicWord');
-    if (w.style.fontSize === '56px') {
-        w.style.fontSize = '';
-        w.style.fontWeight = '';
-        document.getElementById('zoomBtn').innerHTML = '<i class="fas fa-search-plus"></i>';
+    const arabicWord = document.getElementById('arabicWord');
+    if (!isZoomed) {
+        arabicWord.style.fontSize = '56px';
+        arabicWord.style.fontWeight = '700';
+        isZoomed = true;
     } else {
-        w.style.fontSize = '56px';
-        w.style.fontWeight = '700';
-        document.getElementById('zoomBtn').innerHTML = '<i class="fas fa-search-minus"></i>';
+        arabicWord.style.fontSize = '';
+        arabicWord.style.fontWeight = '';
+        isZoomed = false;
     }
 };
-
 
 
 </script>
