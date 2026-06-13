@@ -886,7 +886,7 @@
     
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, , updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -1225,7 +1225,7 @@ if (addBookBtn) {
         const id = document.getElementById('editBookId').value;
         const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 };
         if (id) await updateDoc(doc(db, 'books', id), data);
-        else await setDoc(doc(collection(db, 'books')), data);
+        else await (doc(collection(db, 'books')), data);
         closeModal('bookModal');
         loadBooks();
         loadLessonBooks();
@@ -1321,7 +1321,7 @@ if (addBookBtn) {
         const id = document.getElementById('editLessonId').value;
         const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelectModal').value };
         if (id) await updateDoc(doc(db, 'lessons', id), data);
-        else await setDoc(doc(collection(db, 'lessons')), data);
+        else await (doc(collection(db, 'lessons')), data);
         closeModal('lessonModal');
         document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
         updateStats();
@@ -1456,7 +1456,7 @@ if (addBookBtn) {
     const id = document.getElementById('editWordId').value;
     const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelectModal').value, createdAt: new Date().toISOString() };
     if (id) await updateDoc(doc(db, 'words', id), data);
-    else await setDoc(doc(collection(db, 'words')), data);
+    else await (doc(collection(db, 'words')), data);
     closeModal('wordModal');
     document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
     updateStats();
@@ -1617,7 +1617,7 @@ if (addBookBtn) {
         if (id) {
             await updateDoc(doc(db, 'exams', id), data);
         } else {
-            await setDoc(doc(collection(db, 'exams')), data);
+            await (doc(collection(db, 'exams')), data);
         }
         
         closeModal('examModal');
@@ -1855,12 +1855,12 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
     const jsonInput = document.getElementById('bulkJsonInput').value;
     const resultDiv = document.getElementById('bulkResult');
 
-     // === BURAYI EKLE (resultDiv kontrolü) ===
+
     if (!resultDiv) {
         console.error('resultDiv bulunamadı!');
         return;
     }
-    // === EKLEME BURADA BİTİYOR ===
+  
     
     if (!lessonId) {
         alert('Lütfen bir ders seçin!');
@@ -2189,6 +2189,60 @@ document.getElementById('wordLessonSelect').onchange = async () => {
     updateWordCountDisplay(snapshot.size);
     document.getElementById('statWords').innerHTML = snapshot.size;
 };
+
+
+
+
+
+
+
+
+    // ===== GEÇİCİ - KİTAP VE DERS ID'LERİNİ GÖSTER =====
+(async function showIds() {
+    console.log('%c========== KİTAP VE DERS ID BULUCU ==========', 'color: #f59e0b; font-size: 16px');
+    
+    // Kitapları listele
+    console.log('\n%c📚 KİTAPLAR:', 'color: #10b981; font-size: 14px');
+    const booksSnap = await getDocs(collection(db, 'books'));
+    booksSnap.forEach(doc => {
+        console.log(`  📖 Kitap ID: ${doc.id}`);
+        console.log(`     📌 Adı: ${doc.data().name}`);
+        console.log(`     📝 Sıra: ${doc.data().order || '-'}`);
+        console.log('  -------------------------');
+    });
+    
+    // Dersleri listele
+    console.log('\n%c📗 DERSLER:', 'color: #3b82f6; font-size: 14px');
+    const lessonsSnap = await getDocs(collection(db, 'lessons'));
+    lessonsSnap.forEach(doc => {
+        const data = doc.data();
+        console.log(`  📘 Ders ID: ${doc.id}`);
+        console.log(`     📌 Adı: ${data.name}`);
+        console.log(`     📖 Kitap ID: ${data.bookId || '-'}`);
+        console.log(`     📝 Sıra: ${data.order || '-'}`);
+        console.log('  -------------------------');
+    });
+    
+    // Sınavları listele (mevcut durum)
+    console.log('\n%c📝 SINAVLAR (mevcut):', 'color: #f59e0b; font-size: 14px');
+    const examsSnap = await getDocs(collection(db, 'exams'));
+    if (examsSnap.empty) {
+        console.log('  Henüz sınav yok');
+    } else {
+        examsSnap.forEach(doc => {
+            const data = doc.data();
+            console.log(`  📋 Sınav ID: ${doc.id}`);
+            console.log(`     📌 Başlık: ${data.title}`);
+            console.log(`     📖 Kitap ID: ${data.bookId || '❌ EKLE (yok)'}`);
+            console.log(`     📗 Ders ID: ${data.lessonId || '❌ EKLE (yok)'}`);
+            console.log(`     ❓ Soru sayısı: ${data.questions?.length || 0}`);
+            console.log('  -------------------------');
+        });
+    }
+    
+    console.log('\n%c========== İŞLEM TAMAM ==========', 'color: #10b981; font-size: 16px');
+    console.log('Bu kodu şimdi scriptten silebilirsin.');
+})();
     
 </script>
 </body>
