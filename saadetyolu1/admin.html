@@ -770,13 +770,30 @@
             <div class="items-list" id="wordsList"></div>
         </div>
 
-        <div id="examsSection" class="section-card hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-pen"></i> Sınavlar</h2>
-                <button id="addExamBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Sınav</button>
-            </div>
-            <div class="items-list" id="examsList"></div>
+      <div id="examsSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-pen"></i> Sınavlar</h2>
+        <button id="addExamBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Sınav</button>
+    </div>
+    
+    <!-- KİTAP VE DERS SEÇİMİ (FİLTRELEME İÇİN) -->
+    <div class="select-row" style="margin-bottom: 20px;">
+        <div class="select-wrapper">
+            <label><i class="fas fa-book"></i> Kitap Seçin</label>
+            <select id="adminExamBookSelect">
+                <option value="">-- Tüm Kitaplar --</option>
+            </select>
         </div>
+        <div class="select-wrapper">
+            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+            <select id="adminExamLessonSelect" disabled>
+                <option value="">-- Önce Kitap Seçin --</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="items-list" id="examsList"></div>
+</div>
 
         <div id="usersSection" class="section-card hidden">
             <div class="section-header">
@@ -1534,34 +1551,7 @@ if (addBookBtn) {
     }
 };
     
-    async function loadExams() {
-        const snapshot = await getDocs(collection(db, 'exams'));
-        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('examsList');
-        document.getElementById('statExams').innerHTML = exams.length;
-        
-        if (exams.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz sınav eklenmemiş.</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        exams.forEach(exam => {
-            const div = document.createElement('div'); 
-            div.className = 'item';
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong>${exam.title}</strong>
-                    <small>${exam.questions?.length || 0} soru</small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger icon-btn" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
+  
     
    window.editExam = async (id) => {
     const snap = await getDoc(doc(db, 'exams', id));
@@ -2382,6 +2372,129 @@ document.getElementById('goBulkExamUpload').onclick = () => {
     loadBulkExamBooks();
     closeMenu();
 };
+
+
+
+
+
+
+async function loadExams() {
+    // Önce kitapları yükle (dropdown için)
+    await loadAdminExamBooks();
+    // Sonra tüm sınavları göster
+    await loadAllExams();
+}
+
+// Admin paneli - Kitapları yükle
+async function loadAdminExamBooks() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const select = document.getElementById('adminExamBookSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Tüm Kitaplar --</option>';
+    snapshot.docs.forEach(doc => {
+        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+}
+
+// Admin paneli - Tüm sınavları getir
+async function loadAllExams() {
+    const snapshot = await getDocs(collection(db, 'exams'));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayAdminExams(exams);
+}
+
+// Admin paneli - Kitaba göre sınavları getir
+async function loadExamsByBook(bookId) {
+    const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayAdminExams(exams);
+}
+
+// Admin paneli - Derse göre sınavları getir
+async function loadExamsByLesson(lessonId) {
+    const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayAdminExams(exams);
+}
+
+// Admin paneli - Sınavları listele
+function displayAdminExams(exams) {
+    const container = document.getElementById('examsList');
+    document.getElementById('statExams').innerHTML = exams.length;
+    
+    if (exams.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz sınav eklenmemiş.</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    exams.forEach(exam => {
+        const div = document.createElement('div'); 
+        div.className = 'item';
+        div.innerHTML = `
+            <div class="item-info">
+                <strong>${exam.title}</strong>
+                <small>${exam.questions?.length || 0} soru</small>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger icon-btn" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Kitap seçilince dersleri ve sınavları filtrele
+const adminExamBookSelect = document.getElementById('adminExamBookSelect');
+if (adminExamBookSelect) {
+    adminExamBookSelect.onchange = async () => {
+        const bookId = adminExamBookSelect.value;
+        const lessonSelect = document.getElementById('adminExamLessonSelect');
+        
+        if (!bookId) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            await loadAllExams();
+            return;
+        }
+        
+        // Dersleri yükle
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Tüm Dersler --</option>';
+        snapshot.docs.forEach(doc => {
+            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        });
+        
+        // Bu kitaba ait sınavları göster
+        await loadExamsByBook(bookId);
+    };
+}
+
+// Ders seçilince sınavları filtrele
+const adminExamLessonSelect = document.getElementById('adminExamLessonSelect');
+if (adminExamLessonSelect) {
+    adminExamLessonSelect.onchange = async () => {
+        const lessonId = adminExamLessonSelect.value;
+        if (lessonId) {
+            await loadExamsByLesson(lessonId);
+        } else {
+            const bookId = document.getElementById('adminExamBookSelect').value;
+            if (bookId) {
+                await loadExamsByBook(bookId);
+            } else {
+                await loadAllExams();
+            }
+        }
+    };
+}
+
+
+
+
+
+
 
 </script>
 </body>
