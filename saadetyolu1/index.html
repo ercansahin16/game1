@@ -1043,23 +1043,18 @@
         closeMenu();
     };
 
-window.goExams = () => {
+window.goExams = async () => {
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
     document.getElementById('examsScreen').style.display = 'block';
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
     
+    // Kullanıcının sınav geçmişini yükle
+    await loadUserExamHistory();
+    
     loadExamBooks();
     
-    // Ders dropdown'ını sıfırla
-    const lessonSelect = document.getElementById('examLessonSelect');
-    if (lessonSelect) {
-        lessonSelect.disabled = true;
-        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-    }
-    
-    // Sınav listesini temizle
     const container = document.getElementById('examsList');
     container.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen önce bir kitap seçin</div>';
     document.getElementById('examCountInfo').textContent = '0 sınav';
@@ -1731,6 +1726,7 @@ const examBookSelect = document.getElementById('examBookSelect');
 
     
 // Kitap seçilince dersleri yükle
+// Kitap seçilince dersleri yükle
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
@@ -1745,6 +1741,9 @@ if (examBookSelect) {
             return;
         }
         
+        // Kullanıcının sınav geçmişini yükle
+        await loadUserExamHistory();
+        
         // Dersleri yükle
         const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         lessonSelect.disabled = false;
@@ -1753,8 +1752,7 @@ if (examBookSelect) {
             lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
         });
         
-        // Sınavları GÖSTERME, sadece mesaj göster
-        container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen önce bir ders seçiniz...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
         document.getElementById('examCountInfo').textContent = '0 sınav';
     };
 }
@@ -1804,6 +1802,7 @@ async function loadExamsByLesson(lessonId) {
 }
 
 // Sınavları listele (mevcut fonksiyonu güncelle)
+// Sınavları listele (puan durumuna göre)
 function displayExams(exams) {
     const container = document.getElementById('examsList');
     
@@ -1816,22 +1815,59 @@ function displayExams(exams) {
     document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
     container.innerHTML = '';
     
+    // Kullanıcının sınav geçmişini al
+    const userExams = currentUser ? (userExamHistory || []) : [];
+    
     exams.forEach(exam => {
-        // exam zaten bir obje, tekrar .data() çağırma
-        const examData = exam.data ? exam.data() : exam;
+        // Bu sınava daha önce girilmiş mi kontrol et
+        const existingResult = userExams.find(e => e.title === exam.title);
+        
+        let statusHTML = '';
+        let statusColor = '';
+        
+        if (existingResult) {
+            const score = Math.round(existingResult.score);
+            if (score < 50) {
+                statusHTML = `<span style="color: #ef4444;">📊 ${score} Puan (⚡ Tekrar Dene)</span>`;
+                statusColor = '#ef4444';
+            } else if (score < 70) {
+                statusHTML = `<span style="color: #f59e0b;">📊 ${score} Puan (👍 İyi)</span>`;
+                statusColor = '#f59e0b';
+            } else {
+                statusHTML = `<span style="color: #10b981;">📊 ${score} Puan (🏆 Mükemmel)</span>`;
+                statusColor = '#10b981';
+            }
+        } else {
+            statusHTML = `<span style="color: #3b82f6;">🆕 Yeni</span>`;
+        }
         
         const examCard = document.createElement('div');
         examCard.className = 'exam-card';
-        examCard.onclick = () => startExam(examData);
+        examCard.onclick = () => startExam(exam);
         examCard.innerHTML = `
-            <div class="exam-title">📚 ${examData.title}</div>
-            <div class="exam-info">📝 ${examData.questions?.length || 0} soru</div>
+            <div class="exam-title">📚 ${exam.title}</div>
+            <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
+            <div style="margin-top: 8px; font-size: 13px;">${statusHTML}</div>
         `;
         container.appendChild(examCard);
     });
 }
 
 
+
+    // Kullanıcının sınav geçmişini global bir değişkende tut
+let userExamHistory = [];
+
+// Profil açılırken veya giriş yapınca yükle
+async function loadUserExamHistory() {
+    if (!currentUser) return;
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+        userExamHistory = userDoc.data().examsCompleted || [];
+    }
+}
+    
 
 
 
