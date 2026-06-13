@@ -866,6 +866,23 @@
 <div id="examModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3 id="examModalTitle">Sınav Ekle</h3><button class="modal-close" onclick="closeModal('examModal')">&times;</button></div>
+        
+        <!-- Kitap ve Ders Seçimi -->
+        <div class="select-row" style="margin-bottom: 15px;">
+            <div class="select-wrapper">
+                <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                <select id="examBookSelect">
+                    <option value="">-- Kitap Seçin --</option>
+                </select>
+            </div>
+            <div class="select-wrapper">
+                <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                <select id="examLessonSelect" disabled>
+                    <option value="">-- Önce Kitap Seçin --</option>
+                </select>
+            </div>
+        </div>
+        
         <input type="text" id="examTitle" placeholder="Sınav Adı (örn: Test 1)">
         <div id="questionsContainer"></div>
         <button id="addQuestionBtn" class="btn btn-success" style="margin: 10px 0;"><i class="fas fa-plus"></i> Soru Ekle</button>
@@ -1497,18 +1514,35 @@ if (addBookBtn) {
         });
     }
     
-    window.editExam = async (id) => {
-        const snap = await getDoc(doc(db, 'exams', id));
-        if (snap.exists()) {
-            const data = snap.data();
-            document.getElementById('examModalTitle').innerHTML = 'Sınav Düzenle';
-            document.getElementById('editExamId').value = id;
-            document.getElementById('examTitle').value = data.title;
-            questions = data.questions || [];
-            renderQuestions();
-            openModal('examModal');
+   window.editExam = async (id) => {
+    const snap = await getDoc(doc(db, 'exams', id));
+    if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById('examModalTitle').innerHTML = 'Sınav Düzenle';
+        document.getElementById('editExamId').value = id;
+        document.getElementById('examTitle').value = data.title;
+        document.getElementById('examBookSelect').value = data.bookId || '';
+        
+        // Dersleri yükle
+        if (data.bookId) {
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', data.bookId)));
+            const lessonSelect = document.getElementById('examLessonSelect');
+            lessonSelect.disabled = false;
+            lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+            snapshot.docs.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.data().name;
+                if (doc.id === data.lessonId) option.selected = true;
+                lessonSelect.appendChild(option);
+            });
         }
-    };
+        
+        questions = data.questions || [];
+        renderQuestions();
+        openModal('examModal');
+    }
+};
     
     window.deleteExam = async (id) => {
         if (confirm('Bu sınavı silmek istediğinize emin misiniz?')) {
@@ -1580,50 +1614,39 @@ if (addBookBtn) {
         openModal('examModal');
     };
     
-    document.getElementById('saveExamBtn').onclick = async () => {
-        const id = document.getElementById('editExamId').value;
-        const title = document.getElementById('examTitle').value;
-        
-        if (!title) {
-            alert('Lütfen sınav adını girin!');
-            return;
+   document.getElementById('saveExamBtn').onclick = async () => {
+    const id = document.getElementById('editExamId').value;
+    const title = document.getElementById('examTitle').value;
+    const bookId = document.getElementById('examBookSelect').value;
+    const lessonId = document.getElementById('examLessonSelect').value;
+    
+    if (!title) { alert('Lütfen sınav adını girin!'); return; }
+    if (!bookId) { alert('Lütfen kitap seçin!'); return; }
+    if (!lessonId) { alert('Lütfen ders seçin!'); return; }
+    if (questions.length === 0) { alert('Lütfen en az bir soru ekleyin!'); return; }
+    
+    // Soruları kontrol et
+    for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.question) { alert(`${i + 1}. sorunun metnini girin!`); return; }
+        for (let j = 0; j < 4; j++) {
+            if (!q.options[j]) { alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`); return; }
         }
-        
-        if (questions.length === 0) {
-            alert('Lütfen en az bir soru ekleyin!');
-            return;
-        }
-        
-        for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
-            if (!q.question) {
-                alert(`${i + 1}. sorunun metnini girin!`);
-                return;
-            }
-            for (let j = 0; j < 4; j++) {
-                if (!q.options[j]) {
-                    alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`);
-                    return;
-                }
-            }
-            if (q.correct === null || q.correct === '') {
-                alert(`${i + 1}. sorunun doğru şıkkını seçin!`);
-                return;
-            }
-        }
-        
-        const data = { title, questions, createdAt: new Date().toISOString() };
-        
-        if (id) {
-            await updateDoc(doc(db, 'exams', id), data);
-        } else {
-            await (doc(collection(db, 'exams')), data);
-        }
-        
-        closeModal('examModal');
-        loadExams();
-        updateStats();
-    };
+        if (q.correct === null || q.correct === '') { alert(`${i + 1}. sorunun doğru şıkkını seçin!`); return; }
+    }
+    
+    const data = { title, bookId, lessonId, questions, createdAt: new Date().toISOString() };
+    
+    if (id) {
+        await updateDoc(doc(db, 'exams', id), data);
+    } else {
+        await setDoc(doc(collection(db, 'exams')), data);
+    }
+    
+    closeModal('examModal');
+    loadExams();
+    updateStats();
+};
 
     // ========== KULLANICILAR ==========
     async function loadUsers() {
@@ -1751,6 +1774,7 @@ window.updateWordCountDisplay = function(count) {
             loadExams();
             loadUsers();
             updateStats();
+            loadExamBooks();
             showSection('dashboard');
         } else { 
             alert('Hatalı şifre!'); 
@@ -2193,55 +2217,39 @@ document.getElementById('wordLessonSelect').onchange = async () => {
 
 
 
-
-
-
-// ===== GEÇİCİ - KİTAP VE DERS ID'LERİNİ GÖSTER =====
-(async function showIds() {
-    console.log('%c========== KİTAP VE DERS ID BULUCU ==========', 'color: #f59e0b; font-size: 16px');
-    
-    // Kitapları listele
-    console.log('\n%c📚 KİTAPLAR:', 'color: #10b981; font-size: 14px');
-    const booksSnap = await getDocs(collection(db, 'books'));
-    booksSnap.forEach(doc => {
-        console.log('  📖 Kitap ID: ' + doc.id);
-        console.log('     📌 Adı: ' + doc.data().name);
-        console.log('     📝 Sıra: ' + (doc.data().order || '-'));
-        console.log('  -------------------------');
+    // Kitapları yükle (Sınav modalı için)
+async function loadExamBooks() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const select = document.getElementById('examBookSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
     });
-    
-    // Dersleri listele
-    console.log('\n%c📗 DERSLER:', 'color: #3b82f6; font-size: 14px');
-    const lessonsSnap = await getDocs(collection(db, 'lessons'));
-    lessonsSnap.forEach(doc => {
-        const data = doc.data();
-        console.log('  📘 Ders ID: ' + doc.id);
-        console.log('     📌 Adı: ' + data.name);
-        console.log('     📖 Kitap ID: ' + (data.bookId || '-'));
-        console.log('     📝 Sıra: ' + (data.order || '-'));
-        console.log('  -------------------------');
-    });
-    
-    // Sınavları listele (mevcut durum)
-    console.log('\n%c📝 SINAVLAR (mevcut):', 'color: #f59e0b; font-size: 14px');
-    const examsSnap = await getDocs(collection(db, 'exams'));
-    if (examsSnap.empty) {
-        console.log('  Henüz sınav yok');
-    } else {
-        examsSnap.forEach(doc => {
-            const data = doc.data();
-            console.log('  📋 Sınav ID: ' + doc.id);
-            console.log('     📌 Başlık: ' + data.title);
-            console.log('     📖 Kitap ID: ' + (data.bookId || '❌ EKLE (yok)'));
-            console.log('     📗 Ders ID: ' + (data.lessonId || '❌ EKLE (yok)'));
-            console.log('     ❓ Soru sayısı: ' + (data.questions?.length || 0));
-            console.log('  -------------------------');
+}
+
+// Kitap seçilince dersleri yükle
+const examBookSelect = document.getElementById('examBookSelect');
+if (examBookSelect) {
+    examBookSelect.onchange = async () => {
+        const bookId = examBookSelect.value;
+        const lessonSelect = document.getElementById('examLessonSelect');
+        if (!bookId) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            return;
+        }
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        snapshot.docs.forEach(doc => {
+            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
         });
-    }
-    
-    console.log('\n%c========== İŞLEM TAMAM ==========', 'color: #10b981; font-size: 16px');
-    console.log('Bu kodu şimdi scriptten silebilirsin.');
-})();
+    };
+}
+
+
+
 </script>
 </body>
 </html>
