@@ -1228,39 +1228,18 @@
     };
 
 
-    // Admin.html'de olmayan ID'ler için boş element oluştur (geçici çözüm)
-if (!document.getElementById('goToWords')) {
-    const dummy = document.createElement('div');
-    dummy.id = 'goToWords';
-    dummy.style.display = 'none';
-    document.body.appendChild(dummy);
-}
-if (!document.getElementById('goToExams')) {
-    const dummy = document.createElement('div');
-    dummy.id = 'goToExams';
-    dummy.style.display = 'none';
-    document.body.appendChild(dummy);
-}
-if (!document.getElementById('goHome')) {
-    const dummy = document.createElement('div');
-    dummy.id = 'goHome';
-    dummy.style.display = 'none';
-    document.body.appendChild(dummy);
-}
-if (!document.getElementById('goWordsLearning')) {
-    const dummy = document.createElement('div');
-    dummy.id = 'goWordsLearning';
-    dummy.style.display = 'none';
-    document.body.appendChild(dummy);
-}
+
     
-  document.getElementById('addBookBtn').onclick = () => {
+document.getElementById('addBookBtn').onclick = () => {
     document.getElementById('bookModalTitle').innerHTML = 'Yeni Kitap Ekle';
     document.getElementById('editBookId').value = '';
     document.getElementById('bookName').value = '';
     document.getElementById('bookDesc').value = '';
-    // Güvenli kullanım: books varsa length+1 yoksa 1
-    const nextOrder = books && books.length ? books.length + 1 : 1;
+    // Güvenli kullanım: books varsa ve dizi ise length+1, değilse 1
+    let nextOrder = 1;
+    if (books && Array.isArray(books) && books.length > 0) {
+        nextOrder = books.length + 1;
+    }
     document.getElementById('bookOrder').value = nextOrder;
     openModal('bookModal');
 };
