@@ -810,15 +810,32 @@
     </div>
 
     <!-- Sınavlar Ekranı -->
-    <div id="examsScreen" style="display: none;">
-        <div class="words-area">
-            <div class="words-header">
-                <h3><i class="fas fa-pen"></i> Sınavlar</h3>
-                <div class="word-count" id="examCountInfo">0 sınav</div>
-            </div>
-            <div id="examsList" class="exams-grid"></div>
+  <div id="examsScreen" class="hidden">
+    <div class="words-area">
+        <div class="words-header">
+            <h3><i class="fas fa-pen"></i> Sınavlar</h3>
+            <div class="word-count" id="examCountInfo">0 sınav</div>
         </div>
+        
+        <!-- KİTAP VE DERS SEÇİMİ -->
+        <div class="select-area" style="margin-bottom: 20px;">
+            <div class="select-box">
+                <label><i class="fas fa-book"></i> Kitap Seçiniz</label>
+                <select id="examBookSelect">
+                    <option value="">-- Tüm Kitaplar --</option>
+                </select>
+            </div>
+            <div class="select-box">
+                <label><i class="fas fa-graduation-cap"></i> Ders Seçiniz</label>
+                <select id="examLessonSelect" disabled>
+                    <option value="">-- Önce Kitap Seçin --</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="examsList" class="exams-grid"></div>
     </div>
+</div>
 
     <!-- Sınav Çözme Ekranı -->
     <div id="quizScreen" style="display: none;">
@@ -973,15 +990,16 @@
         closeMenu();
     };
 
-    window.goExams = function() {
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('wordsLearningScreen').style.display = 'none';
-        document.getElementById('examsScreen').style.display = 'block';
-        document.getElementById('quizScreen').style.display = 'none';
-        document.getElementById('profileScreen').style.display = 'none';
-        loadExams();
-        closeMenu();
-    };
+   window.goExams = () => {
+    document.getElementById('mainContent').classList.add('hidden');
+    document.getElementById('wordsLearningScreen').classList.add('hidden');
+    document.getElementById('examsScreen').classList.remove('hidden');
+    document.getElementById('quizScreen').classList.add('hidden');
+    document.getElementById('profileScreen').classList.add('hidden');
+    loadExamBooks();  // BUNU EKLE
+    loadExams();      // BUNU EKLE
+    closeMenu();
+};
 
     window.showProfile = function() {
         document.getElementById('mainContent').style.display = 'none';
@@ -1605,6 +1623,95 @@ document.getElementById('goHelp').onclick = () => {
         }, 2000);
     };
 };
+
+
+
+
+
+
+    // Kitapları yükle (Sınavlar için)
+async function loadExamBooks() {
+    const snapshot = await getDocs(collection(db, 'books'));
+    const select = document.getElementById('examBookSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Tüm Kitaplar --</option>';
+    snapshot.docs.forEach(doc => {
+        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+}
+
+// Kitap seçilince dersleri yükle
+const examBookSelect = document.getElementById('examBookSelect');
+if (examBookSelect) {
+    examBookSelect.onchange = async () => {
+        const bookId = examBookSelect.value;
+        const lessonSelect = document.getElementById('examLessonSelect');
+        if (!bookId) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            loadExams(); // Tüm sınavları göster
+            return;
+        }
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Tüm Dersler --</option>';
+        snapshot.docs.forEach(doc => {
+            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        });
+        loadExamsByBook(bookId);
+    };
+}
+
+// Ders seçilince sınavları filtrele
+const examLessonSelect = document.getElementById('examLessonSelect');
+if (examLessonSelect) {
+    examLessonSelect.onchange = () => {
+        const lessonId = examLessonSelect.value;
+        if (lessonId) {
+            loadExamsByLesson(lessonId);
+        } else {
+            const bookId = document.getElementById('examBookSelect').value;
+            if (bookId) loadExamsByBook(bookId);
+            else loadExams();
+        }
+    };
+}
+
+// Kitaba göre sınavları getir
+async function loadExamsByBook(bookId) {
+    const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
+    displayExams(snapshot.docs);
+}
+
+// Derse göre sınavları getir
+async function loadExamsByLesson(lessonId) {
+    const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+    displayExams(snapshot.docs);
+}
+
+// Sınavları listele (mevcut fonksiyonu güncelle)
+function displayExams(docs) {
+    const container = document.getElementById('examsList');
+    const exams = docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
+    
+    if (exams.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px;">Sınav bulunamadı</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    exams.forEach(exam => {
+        const card = document.createElement('div');
+        card.className = 'exam-card';
+        card.onclick = () => startExam(exam);
+        card.innerHTML = `
+            <div class="exam-title">📚 ${exam.title}</div>
+            <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
+        `;
+        container.appendChild(card);
+    });
+}
 </script>
 </body>
 </html>
