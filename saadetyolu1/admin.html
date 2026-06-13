@@ -695,10 +695,14 @@
         </div>
 
         <div id="booksSection" class="section-card hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-book"></i> Kitaplar</h2>
-                <button id="addBookBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Kitap</button>
-            </div>
+           <div class="section-header">
+    <h2><i class="fas fa-language"></i> Kelimeler 
+        <span style="font-size: 14px; background: rgba(245,158,11,0.2); padding: 4px 10px; border-radius: 20px; margin-left: 10px;">
+            <i class="fas fa-database"></i> Kelime Sayısı: <span id="wordCountDisplay">0</span>
+        </span>
+    </h2>
+    <button id="addWordBtn" class="btn btn-success" disabled><i class="fas fa-plus"></i> Yeni Kelime</button>
+</div>
             <div class="items-list" id="booksList"></div>
         </div>
 
@@ -1371,26 +1375,30 @@
         });
     };
 
-    document.getElementById('wordLessonSelect').onchange = async () => {
-        currentWordLessonId = document.getElementById('wordLessonSelect').value;
-        const addBtn = document.getElementById('addWordBtn');
-        if (!currentWordLessonId) {
-            addBtn.disabled = true;
-            document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">Lütfen bir ders seçin</div>';
-            return;
-        }
-        addBtn.disabled = false;
-        const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
-        const container = document.getElementById('wordsList');
-        container.innerHTML = '';
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
-        document.getElementById('statWords').innerHTML = snapshot.size;
-    };
+   document.getElementById('wordLessonSelect').onchange = async () => {
+    currentWordLessonId = document.getElementById('wordLessonSelect').value;
+    const addBtn = document.getElementById('addWordBtn');
+    if (!currentWordLessonId) {
+        addBtn.disabled = true;
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">Lütfen bir ders seçin</div>';
+        updateWordCountDisplay(0);
+        return;
+    }
+    addBtn.disabled = false;
+    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
+    const container = document.getElementById('wordsList');
+    container.innerHTML = '';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement('div'); div.className = 'item';
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+        container.appendChild(div);
+    });
+    
+    // Kelime sayısını güncelle
+    updateWordCountDisplay(snapshot.size);
+    document.getElementById('statWords').innerHTML = snapshot.size;
+};
 
     document.getElementById('editWordLessonBtn').onclick = () => {
         if (!currentWordLessonId) { alert('Lütfen bir ders seçin!'); return; }
@@ -1426,13 +1434,19 @@
         }
     };
     
-    window.deleteWord = async (id) => {
-        if (confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) {
-            await deleteDoc(doc(db, 'words', id));
-            document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
-            updateStats();
+ window.deleteWord = async (id) => {
+    if (confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) {
+        await deleteDoc(doc(db, 'words', id));
+        document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
+        updateStats();
+        
+        // Kelime sayısını güncelle
+        if (currentWordLessonId) {
+            const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
+            updateWordCountDisplay(snapshot.size);
         }
-    };
+    }
+};
 
     document.getElementById('addWordBtn').onclick = async () => {
         if (!currentWordLessonId) { alert('Lütfen önce bir ders seçin!'); return; }
@@ -1453,15 +1467,21 @@
         openModal('wordModal');
     };
     
-    document.getElementById('saveWordBtn').onclick = async () => {
-        const id = document.getElementById('editWordId').value;
-        const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelectModal').value, createdAt: new Date().toISOString() };
-        if (id) await updateDoc(doc(db, 'words', id), data);
-        else await setDoc(doc(collection(db, 'words')), data);
-        closeModal('wordModal');
-        document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
-        updateStats();
-    };
+  document.getElementById('saveWordBtn').onclick = async () => {
+    const id = document.getElementById('editWordId').value;
+    const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelectModal').value, createdAt: new Date().toISOString() };
+    if (id) await updateDoc(doc(db, 'words', id), data);
+    else await setDoc(doc(collection(db, 'words')), data);
+    closeModal('wordModal');
+    document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
+    updateStats();
+    
+    // Kelime sayısını güncelle
+    if (currentWordLessonId) {
+        const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
+        updateWordCountDisplay(snapshot.size);
+    }
+};
     
     async function loadExams() {
         const snapshot = await getDocs(collection(db, 'exams'));
@@ -2134,6 +2154,42 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
 document.getElementById('bulkExamClearBtn').onclick = () => {
     document.getElementById('bulkExamJsonInput').value = '';
     document.getElementById('bulkExamResult').style.display = 'none';
+};
+
+
+
+    // Kelimeler listelendikten sonra sayıyı güncelle
+function updateWordCountDisplay(count) {
+    const wordCountDisplay = document.getElementById('wordCountDisplay');
+    if (wordCountDisplay) {
+        wordCountDisplay.textContent = count;
+    }
+}
+
+// Mevcut wordLessonSelect.onchange içinde, snapshot.size geldikten sonra ekle:
+document.getElementById('wordLessonSelect').onchange = async () => {
+    currentWordLessonId = document.getElementById('wordLessonSelect').value;
+    const addBtn = document.getElementById('addWordBtn');
+    if (!currentWordLessonId) {
+        addBtn.disabled = true;
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">Lütfen bir ders seçin</div>';
+        updateWordCountDisplay(0); // Sıfırla
+        return;
+    }
+    addBtn.disabled = false;
+    const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
+    const container = document.getElementById('wordsList');
+    container.innerHTML = '';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement('div'); div.className = 'item';
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+        container.appendChild(div);
+    });
+    
+    // Kelime sayısını güncelle
+    updateWordCountDisplay(snapshot.size);
+    document.getElementById('statWords').innerHTML = snapshot.size;
 };
     
 </script>
