@@ -673,6 +673,30 @@
 .arabic-word {
     transition: all 0.3s ease;
 }
+
+
+    /* Zoom ikonu */
+.zoom-icon {
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+.zoom-icon:hover {
+    background: rgba(245, 158, 11, 0.4);
+    transform: scale(1.05);
+}
+.zoom-icon i {
+    font-size: 16px;
+}
+
+.arabic-word {
+    transition: all 0.3s ease;
+}
     
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -807,14 +831,14 @@
     </div>
   
 
-           <div id="wordCard" class="word-card">
-    <div class="arabic-word" id="arabicWord">---</div>
-    <div class="turkish-word" id="turkishWord"></div>
-    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-        <button id="zoomBtn" class="btn btn-info" style="background: #3b82f6; color: white; padding: 6px 14px; border-radius: 40px; font-size: 12px;">
-            <i class="fas fa-search-plus"></i> Büyüt
+   <div id="wordCard" class="word-card" style="position: relative;">
+    <div style="position: absolute; top: 10px; right: 10px;">
+        <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
+            <i class="fas fa-search-plus"></i>
         </button>
     </div>
+    <div class="arabic-word" id="arabicWord">---</div>
+    <div class="turkish-word" id="turkishWord"></div>
 </div>
 
            
@@ -1538,18 +1562,28 @@ function showCurrentQuestion() {
             closeMenu();
         } catch(e) { alert('Hata: ' + e.message); }
     };
-    document.getElementById('doRegisterBtn').onclick = async () => {
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const name = document.getElementById('regName').value;
-        if (password.length < 6) { alert('Şifre en az 6 karakter!'); return; }
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, password);
-            await setDoc(doc(db, 'users', cred.user.uid), { name, email, totalWordsViewed: 0, examsCompleted: [], averageScore: 0, createdAt: new Date().toISOString() });
-            alert('Kayıt başarılı! Giriş yapabilirsiniz.');
-            document.getElementById('showLoginBtn').click();
-        } catch(e) { alert('Hata: ' + e.message); }
-    };
+document.getElementById('doRegisterBtn').onclick = async () => {
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const name = document.getElementById('regName').value;
+    if (password.length < 6) { alert('Şifre en az 6 karakter!'); return; }
+    try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        // KULLANICIYI FIRESTORE'A KAYDET (BURASI ÖNEMLİ)
+        await setDoc(doc(db, 'users', cred.user.uid), { 
+            name: name || email.split('@')[0], 
+            email: email, 
+            totalWordsViewed: 0, 
+            examsCompleted: [], 
+            averageScore: 0, 
+            createdAt: new Date().toISOString() 
+        });
+        alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+        document.getElementById('showLoginBtn').click();
+    } catch(e) { 
+        alert('Hata: ' + e.message); 
+    }
+};
     document.getElementById('doForgotBtn').onclick = async () => {
         const email = document.getElementById('forgotEmail').value;
         if (!email) { alert('E-posta girin!'); return; }
@@ -1810,6 +1844,47 @@ if (zoomBtn) {
     };
 }
 
+
+
+    // Zoom özelliği (sağ üst köşede mercek ikonu)
+let isZoomed = false;
+const zoomBtn = document.getElementById('zoomBtn');
+const arabicWord = document.getElementById('arabicWord');
+
+if (zoomBtn) {
+    zoomBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!isZoomed) {
+            arabicWord.style.fontSize = '56px';
+            arabicWord.style.fontWeight = '700';
+            zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+            isZoomed = true;
+        } else {
+            arabicWord.style.fontSize = '';
+            arabicWord.style.fontWeight = '';
+            zoomBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+            isZoomed = false;
+        }
+    };
+}
+
+    // Mobilde daha küçük zoom
+if (zoomBtn && window.innerWidth <= 768) {
+    zoomBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!isZoomed) {
+            arabicWord.style.fontSize = '42px';
+            arabicWord.style.fontWeight = '700';
+            zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+            isZoomed = true;
+        } else {
+            arabicWord.style.fontSize = '';
+            arabicWord.style.fontWeight = '';
+            zoomBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+            isZoomed = false;
+        }
+    };
+}
 
 </script>
 </body>
