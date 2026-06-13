@@ -2379,10 +2379,13 @@ document.getElementById('goBulkExamUpload').onclick = () => {
 
 
 async function loadExams() {
-    // Önce kitapları yükle (dropdown için)
+    // Sadece kitapları yükle, sınavları GÖSTERME
     await loadAdminExamBooks();
-    // Sonra tüm sınavları göster
-    await loadAllExams();
+    
+    // Sınav listesini temizle ve uyarı mesajı göster
+    const container = document.getElementById('examsList');
+    container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen önce bir kitap seçin</div>';
+    document.getElementById('statExams').innerHTML = '0';
 }
 
 // Admin paneli - Kitapları yükle
@@ -2445,47 +2448,61 @@ function displayAdminExams(exams) {
     });
 }
 
-// Kitap seçilince dersleri ve sınavları filtrele
+
+
+    
+// Kitap seçilince dersleri yükle
 const adminExamBookSelect = document.getElementById('adminExamBookSelect');
 if (adminExamBookSelect) {
     adminExamBookSelect.onchange = async () => {
         const bookId = adminExamBookSelect.value;
         const lessonSelect = document.getElementById('adminExamLessonSelect');
+        const container = document.getElementById('examsList');
         
         if (!bookId) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            await loadAllExams();
+            container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
         // Dersleri yükle
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Tüm Dersler --</option>';
+        lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
         snapshot.docs.forEach(doc => {
             lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
         });
         
-        // Bu kitaba ait sınavları göster
-        await loadExamsByBook(bookId);
+        // Sınavları GÖSTERME, sadece mesaj göster
+        container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+        document.getElementById('statExams').innerHTML = '0';
     };
 }
 
-// Ders seçilince sınavları filtrele
+// Ders seçilince sınavları getir
 const adminExamLessonSelect = document.getElementById('adminExamLessonSelect');
 if (adminExamLessonSelect) {
     adminExamLessonSelect.onchange = async () => {
         const lessonId = adminExamLessonSelect.value;
-        if (lessonId) {
-            await loadExamsByLesson(lessonId);
+        const container = document.getElementById('examsList');
+        
+        if (!lessonId) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+            document.getElementById('statExams').innerHTML = '0';
+            return;
+        }
+        
+        // Derse ait sınavları getir
+        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (exams.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz sınav yok</div>';
+            document.getElementById('statExams').innerHTML = '0';
         } else {
-            const bookId = document.getElementById('adminExamBookSelect').value;
-            if (bookId) {
-                await loadExamsByBook(bookId);
-            } else {
-                await loadAllExams();
-            }
+            displayAdminExams(exams);
         }
     };
 }
