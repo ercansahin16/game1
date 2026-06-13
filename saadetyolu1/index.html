@@ -994,6 +994,8 @@
     let userAnswers = [];
     let examCompleted = false;
     let currentQuestionIndex = 0;
+    let timerInterval = null;
+let timeLeft = 30;
 
     const bookSelect = document.getElementById('bookSelect');
     const lessonSelect = document.getElementById('lessonSelect');
@@ -1339,15 +1341,24 @@ showBtn.onclick = () => {
         });
     }
     
-    function startExam(exam) {
-        currentExam = exam;
-        userAnswers = new Array(exam.questions.length).fill(null);
-        examCompleted = false;
-        currentQuestionIndex = 0;
-        document.getElementById('examsScreen').style.display = 'none';
-        document.getElementById('quizScreen').style.display = 'block';
-        showCurrentQuestion();
+   function startExam(exam) {
+    // Sınav başlatma onayı
+    if (!confirm(`"${exam.title}" sınavına başlamak istediğinize emin misiniz?\n\nHer soru için 30 saniyeniz olacak.\nSüre dolduğunda otomatik olarak bir sonraki soruya geçilecektir.\n\nBaşarılar!`)) {
+        return;
     }
+    
+    currentExam = exam;
+    userAnswers = new Array(exam.questions.length).fill(null);
+    examCompleted = false;
+    currentQuestionIndex = 0;
+    timerInterval = null;
+    timeLeft = 30;
+    
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('quizScreen').style.display = 'block';
+    showCurrentQuestion();
+    startTimer();
+}
     
 function showCurrentQuestion() {
     if (!currentExam || !currentExam.questions || examCompleted) return;
@@ -1363,14 +1374,17 @@ function showCurrentQuestion() {
                 <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
                 <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
             </div>
+            <div id="questionTimer" style="font-size: 14px; font-weight: bold; color: #f59e0b;">
+                <i class="fas fa-hourglass-half"></i> Kalan Süre: ${timeLeft} sn
+            </div>
             <button class="btn btn-danger" onclick="checkAndCompleteExam()" style="padding: 6px 12px; font-size: 12px;">
-                <i class="fas fa-flag-checkered"></i> Bitir
+                <i class="fas fa-flag-checkered"></i> Sınavı Bitir
             </button>
         </div>
         <div class="quiz-card">
             <div class="question-text">
                 <i class="fas fa-question-circle" style="color: #f59e0b;"></i> 
-                <span style="background: #f59e0b20; padding: 3px 10px; border-radius: 20px; margin-right: 8px; font-size: 13px;">Soru ${currentQuestionIndex + 1}</span>
+                <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px;">Soru ${currentQuestionIndex + 1}</span>
                 <span style="white-space: pre-wrap;">${question.question}</span>
             </div>
             <div class="options" id="optionsContainer">
@@ -1383,28 +1397,39 @@ function showCurrentQuestion() {
             </div>
         </div>
         <div class="quiz-navigation">
-            <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()">
-                <i class="fas fa-arrow-left"></i> <span class="nav-text">Önceki</span>
-            </button>
             <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
-                <span class="nav-text">Sonraki</span> <i class="fas fa-arrow-right"></i>
+                Sonraki Soru <i class="fas fa-arrow-right"></i>
             </button>
         </div>
     `;
 }
     
-    window.selectOption = (questionIdx, optionIdx) => {
-        if (examCompleted) return;
-        userAnswers[questionIdx] = optionIdx;
-        showCurrentQuestion();
-    };
+   window.selectOption = (questionIdx, optionIdx) => {
+    if (examCompleted) return;
+    userAnswers[questionIdx] = optionIdx;
     
-    window.nextQuestion = () => {
-        if (currentQuestionIndex < currentExam.questions.length - 1) {
-            currentQuestionIndex++;
-            showCurrentQuestion();
-        }
-    };
+    // Cevap verildi, sonraki soruya geç
+    stopTimer();
+    if (currentQuestionIndex < currentExam.questions.length - 1) {
+        currentQuestionIndex++;
+        showCurrentQuestion();
+        startTimer();
+    } else {
+        // Son soru cevaplandı, sınavı bitir
+        completeExam();
+    }
+};
+    
+   window.nextQuestion = () => {
+    if (examCompleted) return;
+    
+    stopTimer();
+    if (currentQuestionIndex < currentExam.questions.length - 1) {
+        currentQuestionIndex++;
+        showCurrentQuestion();
+        startTimer();
+    }
+};
     
     window.previousQuestion = () => {
         if (currentQuestionIndex > 0) {
@@ -1413,21 +1438,14 @@ function showCurrentQuestion() {
         }
     };
     
-    window.checkAndCompleteExam = () => {
-        const unanswered = [];
-        userAnswers.forEach((answer, idx) => {
-            if (answer === null) unanswered.push(idx + 1);
-        });
-        
-        if (unanswered.length > 0) {
-            const unansweredText = unanswered.join(', ');
-            const confirmMessage = `⚠️ ${unanswered.length} soru cevaplanmamış!\n\nCevaplanmayan sorular: ${unansweredText}\n\nYine de sınavı bitirmek istiyor musunuz?`;
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-        }
+   window.checkAndCompleteExam = () => {
+    stopTimer();
+    if (confirm('Sınavı şimdi bitirmek istediğinize emin misiniz?')) {
         completeExam();
-    };
+    } else {
+        startTimer(); // Timer'ı geri başlat
+    }
+};
     
   function completeExam() {
     examCompleted = true;
@@ -1471,17 +1489,31 @@ function showCurrentQuestion() {
         const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
         const correctAnswerLetter = letters[q.correct];
         
-        allQuestionsHTML += `
-            <div class="question-summary ${isCorrect ? 'correct-bg' : 'wrong-bg'}">
-                <div class="question-summary-header">
-                    <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
-                    <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}">${isCorrect ? '✓ DOĞRU' : '✗ YANLIŠ'}</span>
-                </div>
-                <div class="question-summary-text">${q.question}</div>
-                <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
-                <div class="correct-answer">✅ Doğru cevap: <strong>${correctAnswerLetter}</strong> - ${q.options[q.correct]}</div>
+        // Sınav bittiğinde
+allQuestionsHTML += `
+    <div class="result-card">
+        <h2>🏆 Sınav Tamamlandı!</h2>
+        <div class="score">${roundedScore} Puan</div>
+        <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
+            ${correct}/${totalQuestions} doğru
+        </div>
+        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
+                <div>Doğru</div>
             </div>
-        `;
+            <div style="text-align: center;">
+                <div style="font-size: 36px; color: #ef4444;">✗ ${totalQuestions - correct}</div>
+                <div>Yanlış</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 36px; color: #f59e0b;">○ ${currentExam.questions.filter((_, idx) => userAnswers[idx] === null).length}</div>
+                <div>Boş</div>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-redo"></i> Tekrar Dene</button>
+    </div>
+`;
     });
     
     allQuestionsHTML += `</div>`;
@@ -1891,6 +1923,56 @@ document.getElementById('zoomBtn').onclick = () => {
     }
 };
 
+
+    function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timeLeft = 30;
+    updateTimerDisplay();
+    
+    timerInterval = setInterval(() => {
+        if (examCompleted) return;
+        
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            // Süre doldu, boş cevap olarak kaydet ve sonraki soruya geç
+            if (userAnswers[currentQuestionIndex] === null) {
+                userAnswers[currentQuestionIndex] = null; // Boş bırak
+            }
+            // Sonraki soruya geç
+            if (currentQuestionIndex < currentExam.questions.length - 1) {
+                currentQuestionIndex++;
+                showCurrentQuestion();
+                startTimer();
+            } else {
+                // Sınav bitti
+                clearInterval(timerInterval);
+                completeExam();
+            }
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const timerElement = document.getElementById('questionTimer');
+    if (timerElement) {
+        timerElement.innerHTML = `<i class="fas fa-hourglass-half"></i> Kalan Süre: ${timeLeft} sn`;
+        if (timeLeft <= 10) {
+            timerElement.style.color = '#ef4444';
+        } else {
+            timerElement.style.color = '#f59e0b';
+        }
+    }
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
 
 </script>
 </body>
