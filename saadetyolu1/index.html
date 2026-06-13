@@ -1046,15 +1046,17 @@ let timeLeft = 30;
     };
 
 window.goExams = async () => {
+    // Timer'ı durdur
+    stopTimer();
+    examCompleted = false;
+    
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
     document.getElementById('examsScreen').style.display = 'block';
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
     
-    // Kullanıcının sınav geçmişini yükle
     await loadUserExamHistory();
-    
     loadExamBooks();
     
     const container = document.getElementById('examsList');
@@ -1447,8 +1449,10 @@ function showCurrentQuestion() {
     }
 };
     
-  function completeExam() {
+function completeExam() {
+    if (examCompleted) return; // Sınav zaten tamamlandıysa tekrar yapma
     examCompleted = true;
+    stopTimer();
     
     let correct = 0;
     currentExam.questions.forEach((q, idx) => {
@@ -1460,10 +1464,15 @@ function showCurrentQuestion() {
     const roundedScore = Math.round(score);
     
     const letters = ['A', 'B', 'C', 'D'];
-    let allQuestionsHTML = `
+    
+    // Sadece BİR KERE sonuçları göster
+    let resultHTML = `
         <div class="result-card">
             <h2>🏆 Sınav Tamamlandı!</h2>
             <div class="score">${roundedScore} Puan</div>
+            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
+                ${correct}/${totalQuestions} doğru
+            </div>
             <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                 <div style="text-align: center;">
                     <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
@@ -1478,7 +1487,7 @@ function showCurrentQuestion() {
                     <div>Boş</div>
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-arrow-left"></i> Sınavlara Dön</button>
+            <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-redo"></i> Tekrar Dene</button>
         </div>
         <div class="all-questions-container">
             <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
@@ -1489,38 +1498,25 @@ function showCurrentQuestion() {
         const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
         const correctAnswerLetter = letters[q.correct];
         
-        // Sınav bittiğinde
-allQuestionsHTML += `
-    <div class="result-card">
-        <h2>🏆 Sınav Tamamlandı!</h2>
-        <div class="score">${roundedScore} Puan</div>
-        <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
-            ${correct}/${totalQuestions} doğru
-        </div>
-        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-            <div style="text-align: center;">
-                <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
-                <div>Doğru</div>
+        resultHTML += `
+            <div class="question-summary ${isCorrect ? 'correct-bg' : 'wrong-bg'}">
+                <div class="question-summary-header">
+                    <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
+                    <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}">${isCorrect ? '✓ DOĞRU' : '✗ YANLIŞ'}</span>
+                </div>
+                <div class="question-summary-text">${q.question}</div>
+                <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
+                <div class="correct-answer">✅ Doğru cevap: <strong>${correctAnswerLetter}</strong> - ${q.options[q.correct]}</div>
             </div>
-            <div style="text-align: center;">
-                <div style="font-size: 36px; color: #ef4444;">✗ ${totalQuestions - correct}</div>
-                <div>Yanlış</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 36px; color: #f59e0b;">○ ${currentExam.questions.filter((_, idx) => userAnswers[idx] === null).length}</div>
-                <div>Boş</div>
-            </div>
-        </div>
-        <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-redo"></i> Tekrar Dene</button>
-    </div>
-`;
+        `;
     });
     
-    allQuestionsHTML += `</div>`;
+    resultHTML += `</div>`;
     
     const container = document.getElementById('quizContent');
-    container.innerHTML = allQuestionsHTML;
+    container.innerHTML = resultHTML;
     
+    // Sınav sonucunu kaydet
     saveExamResult(currentExam.title, score, correct, currentExam.questions.length);
 }
     
