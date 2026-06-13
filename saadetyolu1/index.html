@@ -1725,25 +1725,43 @@ function displayExams(docs) {
 
 
 
-
-    // GEÇİCİ - SINAVLARIN ID'LERİNİ KONTROL ET (SONRA SİL)
-(async function checkExams() {
-    console.log('%c========== SINAV KONTROL ==========', 'color: #f59e0b; font-size: 16px');
+// GEÇİCİ - SINAVLARA bookId VE lessonId EKLE (SONRA SİL)
+(async function addIdsToExams() {
+    console.log('%c========== SINAVLARA ID EKLEME BAŞLIYOR ==========', 'color: #f59e0b; font-size: 16px');
+    
+    // Kitap ID (sabit)
+    const BOOK_ID = 'O9dytN2karIUtmkxzs6p';
+    
+    // Ders ID'leri
+    const LESSONS = {
+        'Ders-1': 'uL7ojmp2tyLHj0mHjSDi',
+        'Ders-2': 'mrGPiyKaTHEBHpSFG9jc'
+    };
     
     const examsSnap = await getDocs(collection(db, 'exams'));
-    if (examsSnap.empty) {
-        console.log('Henüz sınav yok');
-    } else {
-        examsSnap.forEach(doc => {
-            const data = doc.data();
-            console.log('📋 Sınav:', data.title);
-            console.log('   bookId:', data.bookId || '❌ EKLENMEMİŞ');
-            console.log('   lessonId:', data.lessonId || '❌ EKLENMEMİŞ');
-            console.log('   -------------------------');
-        });
+    let count = 0;
+    
+    for (const doc of examsSnap.docs) {
+        const title = doc.data().title;
+        let lessonId = null;
+        
+        if (title.includes('Ders-1')) lessonId = LESSONS['Ders-1'];
+        else if (title.includes('Ders-2')) lessonId = LESSONS['Ders-2'];
+        
+        if (lessonId) {
+            await updateDoc(doc.ref, { 
+                bookId: BOOK_ID, 
+                lessonId: lessonId 
+            });
+            count++;
+            console.log('✅ Güncellendi:', title);
+        } else {
+            console.log('⚠️ Atlandı:', title);
+        }
     }
     
-    console.log('========== İŞLEM TAMAM ==========');
+    console.log(`========== ${count} sınav güncellendi! ==========`);
+    console.log('Şimdi sayfayı yenileyin ve test edin.');
 })();
 </script>
 </body>
