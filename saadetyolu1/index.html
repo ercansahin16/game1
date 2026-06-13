@@ -990,20 +990,21 @@
         closeMenu();
     };
 
- window.goExams = () => {
-    // Statları gizle
+window.goExams = () => {
     document.getElementById('mainContent').style.display = 'none';
-    // Kelime ekranını gizle
     document.getElementById('wordsLearningScreen').style.display = 'none';
-    // Sınav ekranını göster
     document.getElementById('examsScreen').style.display = 'block';
-    // Diğerlerini gizle
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
     
-    // Kitapları ve sınavları yükle
+    // Sadece kitapları yükle, sınavları GÖSTERME
     loadExamBooks();
-    loadExams();
+    
+    // Sınav listesini temizle ve "Lütfen kitap seçin" mesajı göster
+    const container = document.getElementById('examsList');
+    container.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen önce bir kitap seçin</div>';
+    document.getElementById('examCountInfo').textContent = '0 sınav';
+    
     closeMenu();
 };
 
@@ -1640,7 +1641,7 @@ async function loadExamBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     const select = document.getElementById('examBookSelect');
     if (!select) return;
-    select.innerHTML = '<option value="">-- Tüm Kitaplar --</option>';
+    select.innerHTML = '<option value="" selected>-- Kitap Seçin --</option>';
     snapshot.docs.forEach(doc => {
         select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
     });
