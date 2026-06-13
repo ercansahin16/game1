@@ -796,35 +796,62 @@
         </div>
 
         <!-- Toplu Soru Yükleme -->
-        <div id="bulkExamUploadSection" class="section-card hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
-            </div>
-            <div class="select-row">
-                <div class="select-wrapper">
-                    <label><i class="fas fa-pen"></i> Sınav Seçin</label>
-                    <select id="bulkExamSelect"><option value="">-- Sınav Seçin --</option></select>
-                </div>
-                <div class="action-buttons">
-                    <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir"><i class="fas fa-download"></i></button>
-                </div>
-            </div>
-            <div style="margin: 20px 0;">
-                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
-                <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+     <div id="bulkExamUploadSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+    </div>
+    
+    <!-- KİTAP VE DERS SEÇİMİ (YENİ) -->
+    <div class="select-row" style="margin-bottom: 15px;">
+        <div class="select-wrapper">
+            <label><i class="fas fa-book"></i> Kitap Seçin</label>
+            <select id="bulkExamBookSelect">
+                <option value="">-- Kitap Seçin --</option>
+            </select>
+        </div>
+        <div class="select-wrapper">
+            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+            <select id="bulkExamLessonSelect" disabled>
+                <option value="">-- Önce Kitap Seçin --</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- SINAV SEÇİMİ -->
+    <div class="select-row" style="margin-bottom: 15px;">
+        <div class="select-wrapper">
+            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+            <select id="bulkExamSelect" disabled>
+                <option value="">-- Önce Ders Seçin --</option>
+            </select>
+        </div>
+        <div class="action-buttons">
+            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
   {
     "question": "Sorunun metni buraya yazılır?",
     "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
     "correct": 0
   }
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-            </div>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-                <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-            </div>
-            <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
-        </div>
+    </div>
+
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+    </div>
+
+    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
+</div>
+
+        
     </div>
 </div>
 
@@ -2019,12 +2046,7 @@ document.getElementById('downloadWordsBtn').onclick = async () => {
 
 
 
-    // Toplu Soru Yükleme bölümünü göster
-document.getElementById('goBulkExamUpload').onclick = () => {
-    showSection('bulkExamUpload');
-    loadBulkExams();
-    closeMenu();
-};
+
 
 async function loadBulkExams() {
     const snapshot = await getDocs(collection(db, 'exams'));
@@ -2249,6 +2271,74 @@ if (examBookSelect) {
 }
 
 
+
+
+    // Toplu Soru Yükleme - Kitapları yükle
+async function loadBulkExamBooks() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const select = document.getElementById('bulkExamBookSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+}
+
+// Kitap seçilince dersleri yükle
+const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
+if (bulkExamBookSelect) {
+    bulkExamBookSelect.onchange = async () => {
+        const bookId = bulkExamBookSelect.value;
+        const lessonSelect = document.getElementById('bulkExamLessonSelect');
+        const examSelect = document.getElementById('bulkExamSelect');
+        
+        if (!bookId) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            examSelect.disabled = true;
+            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            return;
+        }
+        
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        snapshot.docs.forEach(doc => {
+            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        });
+        examSelect.disabled = true;
+        examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+    };
+}
+
+// Ders seçilince sınavları yükle
+const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
+if (bulkExamLessonSelect) {
+    bulkExamLessonSelect.onchange = async () => {
+        const lessonId = bulkExamLessonSelect.value;
+        const examSelect = document.getElementById('bulkExamSelect');
+        
+        if (!lessonId) {
+            examSelect.disabled = true;
+            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            return;
+        }
+        
+        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        examSelect.disabled = false;
+        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
+        snapshot.docs.forEach(doc => {
+            examSelect.innerHTML += `<option value="${doc.id}">${doc.data().title}</option>`;
+        });
+    };
+}
+
+    // BUNU EKLE
+document.getElementById('goBulkExamUpload').onclick = () => {
+    showSection('bulkExamUpload');
+    loadBulkExamBooks();
+    closeMenu();
+};
 
 </script>
 </body>
