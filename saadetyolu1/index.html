@@ -990,14 +990,20 @@
         closeMenu();
     };
 
-   window.goExams = () => {
-    document.getElementById('mainContent').classList.add('hidden');
-    document.getElementById('wordsLearningScreen').classList.add('hidden');
-    document.getElementById('examsScreen').classList.remove('hidden');
-    document.getElementById('quizScreen').classList.add('hidden');
-    document.getElementById('profileScreen').classList.add('hidden');
-    loadExamBooks();  // BUNU EKLE
-    loadExams();      // BUNU EKLE
+ window.goExams = () => {
+    // Statları gizle
+    document.getElementById('mainContent').style.display = 'none';
+    // Kelime ekranını gizle
+    document.getElementById('wordsLearningScreen').style.display = 'none';
+    // Sınav ekranını göster
+    document.getElementById('examsScreen').style.display = 'block';
+    // Diğerlerini gizle
+    document.getElementById('quizScreen').style.display = 'none';
+    document.getElementById('profileScreen').style.display = 'none';
+    
+    // Kitapları ve sınavları yükle
+    loadExamBooks();
+    loadExams();
     closeMenu();
 };
 
@@ -1679,14 +1685,18 @@ if (examLessonSelect) {
 
 // Kitaba göre sınavları getir
 async function loadExamsByBook(bookId) {
+    if (!bookId) return;
     const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
-    displayExams(snapshot.docs);
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayExams(exams);
 }
 
 // Derse göre sınavları getir
 async function loadExamsByLesson(lessonId) {
+    if (!lessonId) return;
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-    displayExams(snapshot.docs);
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayExams(exams);
 }
 
 // Sınavları listele (mevcut fonksiyonu güncelle)
