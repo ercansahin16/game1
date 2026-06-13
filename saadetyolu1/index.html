@@ -997,10 +997,16 @@ window.goExams = () => {
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
     
-    // Sadece kitapları yükle, sınavları GÖSTERME
     loadExamBooks();
     
-    // Sınav listesini temizle ve "Lütfen kitap seçin" mesajı göster
+    // Ders dropdown'ını sıfırla
+    const lessonSelect = document.getElementById('examLessonSelect');
+    if (lessonSelect) {
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+    }
+    
+    // Sınav listesini temizle
     const container = document.getElementById('examsList');
     container.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen önce bir kitap seçin</div>';
     document.getElementById('examCountInfo').textContent = '0 sınav';
@@ -1649,37 +1655,61 @@ async function loadExamBooks() {
 
 // Kitap seçilince dersleri yükle
 const examBookSelect = document.getElementById('examBookSelect');
+
+    
+// Kitap seçilince dersleri yükle
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
         const lessonSelect = document.getElementById('examLessonSelect');
+        const container = document.getElementById('examsList');
+        
         if (!bookId) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            loadExams(); // Tüm sınavları göster
+            container.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
             return;
         }
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        
+        // Dersleri yükle
+        const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Tüm Dersler --</option>';
-        snapshot.docs.forEach(doc => {
+        lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        lessonsSnapshot.docs.forEach(doc => {
             lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
         });
-        loadExamsByBook(bookId);
+        
+        // Sınavları GÖSTERME, sadece mesaj göster
+        container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen önce bir ders seçin</div>';
+        document.getElementById('examCountInfo').textContent = '0 sınav';
     };
 }
 
 // Ders seçilince sınavları filtrele
 const examLessonSelect = document.getElementById('examLessonSelect');
+    
+// Ders seçilince sınavları getir
 if (examLessonSelect) {
-    examLessonSelect.onchange = () => {
+    examLessonSelect.onchange = async () => {
         const lessonId = examLessonSelect.value;
-        if (lessonId) {
-            loadExamsByLesson(lessonId);
+        const container = document.getElementById('examsList');
+        
+        if (!lessonId) {
+            container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
+            return;
+        }
+        
+        // Derse ait sınavları getir
+        const examsSnapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        const exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (exams.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:40px;">Bu derste henüz sınav yok</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
         } else {
-            const bookId = document.getElementById('examBookSelect').value;
-            if (bookId) loadExamsByBook(bookId);
-            else loadExams();
+            displayExams(exams);
         }
     };
 }
