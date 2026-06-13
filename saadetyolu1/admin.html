@@ -498,6 +498,28 @@
     resize: vertical;
     font-size: 22px;
 }
+
+
+    /* Loader stili */
+.loader {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #f59e0b;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.btn-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
         
         /* JSON textarea için açık tema */
         body.light-theme .question-item textarea {
@@ -1902,24 +1924,35 @@ document.getElementById('bulkBookSelect').onchange = async () => {
 };
 
 document.getElementById('bulkUploadBtn').onclick = async () => {
+    const btn = document.getElementById('bulkUploadBtn');
+    const originalText = btn.innerHTML;
+    
+    // Loader ekle
+    btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
+    btn.disabled = true;
+    
     const lessonId = document.getElementById('bulkLessonSelect').value;
     const jsonInput = document.getElementById('bulkJsonInput').value;
     const resultDiv = document.getElementById('bulkResult');
-
-
+    
     if (!resultDiv) {
         console.error('resultDiv bulunamadı!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         return;
     }
-  
     
     if (!lessonId) {
         alert('Lütfen bir ders seçin!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         return;
     }
     
     if (!jsonInput.trim()) {
         alert('Lütfen JSON verisi girin!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         return;
     }
     
@@ -1959,7 +1992,6 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
             ❌ Hatalı: ${errorCount} kelime
         `;
         
-        // Kelime listesini yenile
         if (currentWordLessonId === lessonId) {
             document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
         }
@@ -1977,6 +2009,10 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
             <strong>Hata!</strong><br>
             ${error.message}
         `;
+    } finally {
+        // Loader kaldır
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 };
 
@@ -2118,17 +2154,28 @@ document.getElementById('downloadQuestionsBtn').onclick = async () => {
 
 // Soruları yükle
 document.getElementById('bulkExamUploadBtn').onclick = async () => {
+    const btn = document.getElementById('bulkExamUploadBtn');
+    const originalText = btn.innerHTML;
+    
+    // Loader ekle
+    btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
+    btn.disabled = true;
+    
     const examId = document.getElementById('bulkExamSelect').value;
     const jsonInput = document.getElementById('bulkExamJsonInput').value;
     const resultDiv = document.getElementById('bulkExamResult');
     
     if (!examId) {
         alert('Lütfen bir sınav seçin!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         return;
     }
     
     if (!jsonInput.trim()) {
         alert('Lütfen JSON verisi girin!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         return;
     }
     
@@ -2139,26 +2186,20 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
             throw new Error('Veri bir dizi olmalıdır');
         }
         
-        // Her soruyu kontrol et
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
-            if (!q.question) {
-                throw new Error(`${i + 1}. sorunun metni eksik!`);
-            }
+            if (!q.question) throw new Error(`${i + 1}. sorunun metni eksik!`);
             if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
                 throw new Error(`${i + 1}. sorunun 4 şıkkı olmalı!`);
             }
             for (let j = 0; j < 4; j++) {
-                if (!q.options[j]) {
-                    throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
-                }
+                if (!q.options[j]) throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
             }
             if (q.correct === undefined || q.correct === null || q.correct < 0 || q.correct > 3) {
-                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz! (0-3 arası olmalı)`);
+                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz!`);
             }
         }
         
-        // Sınavı güncelle
         const examRef = doc(db, 'exams', examId);
         await updateDoc(examRef, {
             questions: questions,
@@ -2176,7 +2217,6 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
             ✅ ${questions.length} soru başarıyla yüklendi!
         `;
         
-        // Sınav listesini yenile
         loadExams();
         updateStats();
         
@@ -2191,6 +2231,9 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
             <strong>Hata!</strong><br>
             ${error.message}
         `;
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 };
 
