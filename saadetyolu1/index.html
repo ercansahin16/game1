@@ -798,6 +798,9 @@
         </div>
     </div>
 
+
+    
+
     <!-- Ana İçerik (Stat Kartları) -->
     <div id="mainContent" style="display: none;">
         <div class="stats-grid">
@@ -811,6 +814,11 @@
                 <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">Sınava Gir</div>
                 <div style="font-size: 12px; opacity: 0.7;">Kendinizi test edin</div>
             </div>
+            <div class="stats-card" id="goKarma" style="cursor: pointer;">
+    <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-dice"></i></div>
+    <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Karma Kelime</div>
+    <div style="font-size: 12px; opacity: 0.7;">Rastgele kelimelerle kendini test et</div>
+</div>   
         </div>
     </div>
 
@@ -900,6 +908,41 @@
         <div id="quizContent"></div>
     </div>
 </div>
+
+    <!-- Sınav Çözme Ekranı -->
+<div id="quizScreen" style="display: none;">
+    <div class="words-area">
+        <div id="quizContent"></div>
+    </div>
+</div>
+
+<!-- Karma Kelime Ekranı -->
+<div id="karmaScreen" style="display: none;">
+    <div class="words-area">
+        <div class="words-header">
+            <h3><i class="fas fa-dice"></i> Karma Kelime</h3>
+            <div class="word-count" id="karmaStats">0 kelime</div>
+        </div>
+        <div id="karmaCard" class="word-card">
+            <div class="arabic-word" id="karmaArabicWord">---</div>
+            <div class="turkish-word" id="karmaTurkishWord"></div>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                <button id="karmaShowBtn" class="btn btn-show"><i class="fas fa-eye"></i> Anlamı Göster</button>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;">
+                <button id="karmaCorrectBtn" class="btn btn-success" style="background: #10b981;"><i class="fas fa-check"></i> Doğru Bildim</button>
+                <button id="karmaWrongBtn" class="btn btn-danger" style="background: #ef4444;"><i class="fas fa-times"></i> Yanlış Bildim</button>
+            </div>
+        </div>
+        <div id="karmaResult" style="margin-top: 20px; text-align: center;"></div>
+    </div>
+</div>
+
+<!-- Profil Ekranı -->
+<div id="profileScreen" style="display: none;">
+    ...
+</div>
+    
 
     <!-- Profil Ekranı -->
     <div id="profileScreen" style="display: none;">
@@ -1004,6 +1047,10 @@
     let lessonsList = []; // Derslerin listesi
         // Kullanıcının sınav geçmişini global bir değişkende tut
     let userExamHistory = [];
+    // ========== KARMA KELİME ==========
+let karmaWords = [];           // Tüm kelimeler
+let currentKarmaWord = null;   // Şu anki kelime
+let karmaShown = false;        // Anlam gösterildi mi?
 
     const bookSelect = document.getElementById('bookSelect');
     const lessonSelect = document.getElementById('lessonSelect');
@@ -1762,6 +1809,7 @@ document.getElementById('doRegisterBtn').onclick = async () => {
         themeIconBtn.classList.add('hidden');
         
         await loadBooks();
+        await loadKarmaWords();
         await loadLessonsList();  // <---- EKLENDİ
         await loadUserStats();    // <---- loadUserStats zaten vardı, async yap
         await loadUserExamHistory(); // <---- EKLENDİ (sınav geçmişi için)
@@ -2225,6 +2273,103 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 
+
+
+
+    document.getElementById('goKarma').onclick = () => {
+    goKarmaGame();
+};
+
+window.goKarmaGame = () => {
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('wordsLearningScreen').style.display = 'none';
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('quizScreen').style.display = 'none';
+    document.getElementById('profileScreen').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'block';
+    
+    // Rastgele kelime göster
+    nextKarmaWord();
+    
+    closeMenu();
+};
+
+
+
+
+// Karma kelimeleri yükle
+async function loadKarmaWords() {
+    const snapshot = await getDocs(collection(db, 'words'));
+    karmaWords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('🎲 Karma kelimeler yüklendi:', karmaWords.length);
+    nextKarmaWord();
+}
+
+// Rastgele kelime getir
+function nextKarmaWord() {
+    if (karmaWords.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * karmaWords.length);
+    currentKarmaWord = karmaWords[randomIndex];
+    karmaShown = false;
+    
+    document.getElementById('karmaArabicWord').textContent = currentKarmaWord.arabic;
+    document.getElementById('karmaTurkishWord').innerHTML = '<div class="big-question">?</div>';
+    document.getElementById('karmaResult').innerHTML = '';
+    
+    // Butonları aktif et
+    document.getElementById('karmaShowBtn').disabled = false;
+    document.getElementById('karmaCorrectBtn').disabled = false;
+    document.getElementById('karmaWrongBtn').disabled = false;
+}
+
+// Anlamı göster
+document.getElementById('karmaShowBtn').onclick = () => {
+    if (!currentKarmaWord) return;
+    document.getElementById('karmaTurkishWord').innerHTML = currentKarmaWord.turkish;
+    karmaShown = true;
+};
+
+// Doğru bildim
+document.getElementById('karmaCorrectBtn').onclick = async () => {
+    if (!currentKarmaWord) return;
+    if (!karmaShown) {
+        alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
+        return;
+    }
+    
+    // İstatistik kaydet (daha sonra eklenecek)
+    document.getElementById('karmaResult').innerHTML = '<span style="color: #10b981;">✅ Doğru! +10 puan</span>';
+    
+    // Butonları geçici olarak devre dışı bırak
+    document.getElementById('karmaCorrectBtn').disabled = true;
+    document.getElementById('karmaWrongBtn').disabled = true;
+    
+    // 1 saniye sonra yeni kelimeye geç
+    setTimeout(() => {
+        nextKarmaWord();
+    }, 1000);
+};
+
+// Yanlış bildim
+document.getElementById('karmaWrongBtn').onclick = async () => {
+    if (!currentKarmaWord) return;
+    if (!karmaShown) {
+        alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
+        return;
+    }
+    
+    // İstatistik kaydet (daha sonra eklenecek)
+    document.getElementById('karmaResult').innerHTML = `<span style="color: #ef4444;">❌ Yanlış! Doğrusu: ${currentKarmaWord.turkish}</span>`;
+    
+    // Butonları geçici olarak devre dışı bırak
+    document.getElementById('karmaCorrectBtn').disabled = true;
+    document.getElementById('karmaWrongBtn').disabled = true;
+    
+    // 1.5 saniye sonra yeni kelimeye geç
+    setTimeout(() => {
+        nextKarmaWord();
+    }, 1500);
+};
 </script>
 </body>
 </html>
