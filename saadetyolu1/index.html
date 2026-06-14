@@ -2504,8 +2504,9 @@ window.goRanking = () => {
 
 
 
-// Liderlik tablosunu yükle
 async function loadRanking() {
+    console.log('🏆 Liderlik tablosu yükleniyor...');
+    
     const snapshot = await getDocs(collection(db, 'users'));
     const users = [];
     
@@ -2513,8 +2514,11 @@ async function loadRanking() {
         const data = doc.data();
         const stats = data.karmaStats || { total: 0, correct: 0 };
         const rate = stats.total > 0 ? (stats.correct / stats.total * 100) : 0;
+        
+        console.log(`👤 ${data.name}: total=${stats.total}, correct=${stats.correct}, rate=${rate}%`);
+        
         users.push({
-            name: data.name || data.email.split('@')[0],
+            name: data.name || data.email?.split('@')[0],
             rate: rate,
             correct: stats.correct,
             total: stats.total
@@ -2526,7 +2530,6 @@ async function loadRanking() {
     
     document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
     
-    // Liste HTML'i oluştur
     let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
     users.forEach((user, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
@@ -2567,6 +2570,38 @@ async function loadRanking() {
     document.getElementById('goRanking').onclick = () => {
     goRanking();
 };
+
+
+
+
+
+    // ===== GEÇİCİ TEST - KARMA İSTATİSTİKLERİ =====
+(async function testKarmaStats() {
+    console.log('%c========== KARMA STATS TESTİ ==========', 'color: #f59e0b; font-size: 16px');
+    
+    if (!currentUser) {
+        console.log('❌ Giriş yapmış kullanıcı yok');
+        return;
+    }
+    
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data();
+    
+    console.log('📝 Kullanıcı:', currentUser.email);
+    console.log('📊 karmaStats:', userData?.karmaStats);
+    console.log('📊 Tüm kullanıcı verisi:', userData);
+    
+    if (userData?.karmaStats) {
+        const stats = userData.karmaStats;
+        console.log(`   Toplam: ${stats.total}, Doğru: ${stats.correct}, Yanlış: ${stats.wrong}`);
+        console.log(`   Başarı: ${stats.total > 0 ? (stats.correct / stats.total * 100).toFixed(1) : 0}%`);
+    } else {
+        console.log('❌ karmaStats alanı bulunamadı!');
+    }
+    
+    console.log('%c========== TEST BİTTİ ==========', 'color: #10b981; font-size: 16px');
+})();
 </script>
 </body>
 </html>
