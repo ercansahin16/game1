@@ -2024,8 +2024,17 @@ async function loadUserExamHistory() {
     const userRef = doc(db, 'users', currentUser.uid);
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
-        userExamHistory = userDoc.data().examsCompleted || [];
-        console.log('📊 Sınav geçmişi yüklendi:', userExamHistory.length);
+        // En son girilen sınavı al (son kayıt en altta)
+        const allExams = userDoc.data().examsCompleted || [];
+        
+        // Aynı sınavdan en sonuncuyu al (son giren)
+        const uniqueExams = {};
+        allExams.forEach(exam => {
+            uniqueExams[exam.title] = exam; // Sonraki aynı başlıklı olan öncekini ezer
+        });
+        
+        userExamHistory = Object.values(uniqueExams);
+        console.log('📊 Sınav geçmişi yüklendi (benzersiz):', userExamHistory.length);
     }
 }
     
