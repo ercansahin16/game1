@@ -2106,52 +2106,40 @@ function stopTimer() {
 
 
 
-
-// ===== GEÇİCİ TEST - SINAV PUANLARINI KONTROL ET =====
-(async function testScores() {
-    console.log('%c========== SINAV PUAN TESTİ ==========', 'color: #f59e0b; font-size: 16px');
+// Giriş YAPTIKTAN SONRA çalıştır
+(async function test() {
+    console.log('=== KULLANICI KONTROL ===');
+    console.log('currentUser:', currentUser?.email);
     
     if (!currentUser) {
-        console.log('❌ Lütfen önce giriş yapın');
+        console.log('Giriş yapın');
         return;
     }
     
-    // 1. Kullanıcının sınav geçmişini al
+    // 1. Kullanıcı geçmişini kontrol et
     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     const history = userDoc.data()?.examsCompleted || [];
-    console.log('📊 TOPLAM SINAV KAYDI:', history.length);
+    console.log('Kullanıcı geçmişi:', history);
     
     // 2. Ders-1 ID'sini bul
     const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('name', '==', 'Ders-1')));
-    if (lessonsSnap.empty) {
-        console.log('❌ Ders-1 bulunamadı');
-        return;
-    }
     const lessonId = lessonsSnap.docs[0].id;
     
-    // 3. Ders-1'deki sınavları al
+    // 3. Sınavları al
     const examsSnap = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     const exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    console.log('📚 Ders-1 Sınavları:');
-    exams.forEach(exam => {
+    // 4. Her sınava puan ekle
+    const examsWithScores = exams.map(exam => {
         const result = history.find(h => h.title === exam.title);
-        if (result) {
-            console.log(`   ✅ ${exam.title}: ${result.score} PUAN`);
-        } else {
-            console.log(`   🆕 ${exam.title}: HENÜZ ÇÖZÜLMEDİ`);
-        }
+        console.log(exam.title, '-> result:', result);
+        return { ...exam, userScore: result?.score || null };
     });
     
-    // 4. Özellikle Ders-1/Sınav-3'ü kontrol et
-    const targetExam = history.find(h => h.title === 'Ders-1/Sınav-3');
-    if (targetExam) {
-        console.log('%c🎯 Ders-1/Sınav-3 PUANI: ' + targetExam.score, 'color: #10b981; font-size: 14px');
-    } else {
-        console.log('%c🎯 Ders-1/Sınav-3: KAYIT BULUNAMADI', 'color: #ef4444; font-size: 14px');
-    }
-    
-    console.log('%c========== TEST BİTTİ ==========', 'color: #10b981; font-size: 16px');
+    // 5. Sonuçları göster
+    examsWithScores.forEach(e => {
+        console.log('📊', e.title, 'Puan:', e.userScore);
+    });
 })();
 
 </script>
