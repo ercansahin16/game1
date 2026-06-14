@@ -1000,7 +1000,8 @@
     let examCompleted = false;
     let currentQuestionIndex = 0;
     let timerInterval = null;
-let timeLeft = 30;
+    let timeLeft = 30;
+    let lessonsList = []; // Derslerin listesi
 
     const bookSelect = document.getElementById('bookSelect');
     const lessonSelect = document.getElementById('lessonSelect');
@@ -1393,9 +1394,17 @@ function showCurrentQuestion() {
     const letters = ['A', 'B', 'C', 'D'];
     const answeredCount = userAnswers.filter(a => a !== null).length;
     
+    // Kitap ve ders bilgilerini al
+    const bookName = getBookNameById(currentExam.bookId);
+    const lessonName = getLessonNameById(currentExam.lessonId);
+    
     const container = document.getElementById('quizContent');
     container.innerHTML = `
         <div class="quiz-header">
+            <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 10px;">
+                <div style="font-size: 12px; color: #f59e0b;"><i class="fas fa-book"></i> ${bookName}</div>
+                <div style="font-size: 12px; color: #f59e0b;"><i class="fas fa-graduation-cap"></i> ${lessonName}</div>
+            </div>
             <div class="quiz-info">
                 <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
                 <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
@@ -1447,7 +1456,38 @@ function showCurrentQuestion() {
 };
 
 
-    function completeExam() {
+
+async function loadLessonsList() {
+    const snapshot = await getDocs(collection(db, 'lessons'));
+    lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('📗 Dersler yüklendi:', lessonsList.length);
+}
+
+// Ders adını bul
+function getLessonNameById(lessonId) {
+    if (!lessonId) return 'Ders bilgisi yok';
+    const lesson = lessonsList.find(l => l.id === lessonId);
+    return lesson ? lesson.name : 'Ders bulunamadı';
+}
+
+    
+    // Kitap ID'sine göre kitap adını bul
+function getBookNameById(bookId) {
+    if (!bookId) return 'Kitap bilgisi yok';
+    const book = books.find(b => b.id === bookId);
+    return book ? book.name : 'Kitap bulunamadı';
+}
+
+// Ders ID'sine göre ders adını bul
+function getLessonNameById(lessonId) {
+    if (!lessonId) return 'Ders bilgisi yok';
+    // Ders bilgilerini lessons dizisinde tutuyor musun? 
+    // Eğer tutmuyorsan Firestore'dan çekmen gerekir
+    return 'Ders Adı'; // Burayı düzenle
+}
+
+    
+  function completeExam() {
     if (examCompleted) return;
     examCompleted = true;
     stopTimer();
@@ -1472,8 +1512,16 @@ function showCurrentQuestion() {
     
     const letters = ['A', 'B', 'C', 'D'];
     
+    // Kitap ve ders bilgilerini al
+    const bookName = getBookNameById(currentExam.bookId);
+    const lessonName = getLessonNameById(currentExam.lessonId);
+    
     let resultHTML = `
         <div class="result-card">
+            <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 15px;">
+                <div style="font-size: 13px; color: #f59e0b;"><i class="fas fa-book"></i> ${bookName}</div>
+                <div style="font-size: 13px; color: #f59e0b;"><i class="fas fa-graduation-cap"></i> ${lessonName}</div>
+            </div>
             <h2>🏆 Sınav Tamamlandı!</h2>
             <div class="score">${roundedScore} Puan</div>
             <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
@@ -1539,41 +1587,13 @@ function showCurrentQuestion() {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // Sınav sonucunu kaydet
+    // SADECE SONUCU KAYDET
     (async () => {
         try {
             await saveExamResult(currentExam.title, score, correct, totalQuestions);
-            console.log('✅ Sınav sonucu kaydedildi');
-            
-            // Kullanıcının güncel sınav geçmişini al
-            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-            const userData = userDoc.data();
-            const updatedHistory = userData?.examsCompleted || [];
-            
-            // Sınavlar sayfası açıksa listeyi yenile
-            const examsScreen = document.getElementById('examsScreen');
-            if (examsScreen && examsScreen.style.display === 'block') {
-                const lessonId = document.getElementById('examLessonSelect').value;
-                const bookId = document.getElementById('examBookSelect').value;
-                
-                let exams = [];
-                if (lessonId) {
-                    const examsSnap = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-                    exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                } else if (bookId) {
-                    const examsSnap = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
-                    exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                }
-                
-                const examsWithScores = exams.map(exam => {
-                    const result = updatedHistory.find(h => h.title === exam.title);
-                    return { ...exam, userScore: result?.score || null };
-                });
-                
-                displayExams(examsWithScores);
-            }
+            console.log('✅ Sınav sonucu kaydedildi:', currentExam.title, score, 'Puan');
         } catch (error) {
-            console.error('Hata:', error);
+            console.error('Kayıt hatası:', error);
         }
     })();
 }
@@ -1736,41 +1756,50 @@ document.getElementById('doRegisterBtn').onclick = async () => {
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); };
     document.getElementById('logoutIconBtn').onclick = () => { logout(); };
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            menuBtn.classList.remove('hidden');
-            document.getElementById('mainHeader').style.display = 'flex';
-            document.getElementById('userBadge').style.display = 'flex';
-            document.getElementById('logoutIconBtn').classList.remove('hidden');
-            document.getElementById('userNameDisplay').textContent = user.email.split('@')[0];
-            document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0]}`;
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'flex';
-            themeIconBtn.classList.add('hidden');
-            await loadBooks();
-            loadUserStats();
-        } else {
-            currentUser = null;
-            menuBtn.classList.add('hidden');
-            document.getElementById('mainHeader').style.display = 'none';
-            document.getElementById('userBadge').style.display = 'none';
-            document.getElementById('logoutIconBtn').classList.add('hidden');
-            document.getElementById('sidebarUserName').innerHTML = 'Misafir';
-            document.getElementById('loginScreen').style.display = 'block';
-            document.getElementById('mainContent').style.display = 'none';
-            document.getElementById('wordsLearningScreen').style.display = 'none';
-            document.getElementById('examsScreen').style.display = 'none';
-            document.getElementById('quizScreen').style.display = 'none';
-            document.getElementById('profileScreen').style.display = 'none';
-            themeIconBtn.classList.remove('hidden');
-            bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            lessonSelect.disabled = true;
-            words = [];
-            updateWordDisplay();
-        }
-    });
+   onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        menuBtn.classList.remove('hidden');
+        document.getElementById('mainHeader').style.display = 'flex';
+        document.getElementById('userBadge').style.display = 'flex';
+        document.getElementById('logoutIconBtn').classList.remove('hidden');
+        document.getElementById('userNameDisplay').textContent = user.email.split('@')[0];
+        document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0]}`;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'flex';
+        themeIconBtn.classList.add('hidden');
+        
+        await loadBooks();
+        await loadLessonsList();  // <---- EKLENDİ
+        await loadUserStats();    // <---- loadUserStats zaten vardı, async yap
+        await loadUserExamHistory(); // <---- EKLENDİ (sınav geçmişi için)
+        
+        // Zoom başlangıç durumu
+        isZoomed = true;
+        const zoomBtn = document.getElementById('zoomBtn');
+        if (zoomBtn) zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+        
+    } else {
+        currentUser = null;
+        menuBtn.classList.add('hidden');
+        document.getElementById('mainHeader').style.display = 'none';
+        document.getElementById('userBadge').style.display = 'none';
+        document.getElementById('logoutIconBtn').classList.add('hidden');
+        document.getElementById('sidebarUserName').innerHTML = 'Misafir';
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('wordsLearningScreen').style.display = 'none';
+        document.getElementById('examsScreen').style.display = 'none';
+        document.getElementById('quizScreen').style.display = 'none';
+        document.getElementById('profileScreen').style.display = 'none';
+        themeIconBtn.classList.remove('hidden');
+        bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        lessonSelect.disabled = true;
+        words = [];
+        updateWordDisplay();
+    }
+});
 
 
     // Yardım / İletişim
@@ -1996,6 +2025,7 @@ async function loadUserExamHistory() {
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
         userExamHistory = userDoc.data().examsCompleted || [];
+        console.log('📊 Sınav geçmişi yüklendi:', userExamHistory.length);
     }
 }
     
