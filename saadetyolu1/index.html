@@ -1858,8 +1858,7 @@ async function loadExamBooks() {
     });
 }
 
-// Kitap seçilince dersleri yükle
-const examBookSelect = document.getElementById('examBookSelect');
+
 
     
 // Kitap seçilince dersleri yükle
@@ -1906,7 +1905,7 @@ if (examLessonSelect) {
     
     
     // Ders seçilince sınavları getir (puanlarla birlikte)
-const examLessonSelect = document.getElementById('examLessonSelect');
+
 if (examLessonSelect) {
     examLessonSelect.onchange = async () => {
         const lessonId = examLessonSelect.value;
@@ -2105,6 +2104,53 @@ function stopTimer() {
 }
 
 
+
+
+    // ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
+document.addEventListener('DOMContentLoaded', function() {
+    const examBookSelect = document.getElementById('examBookSelect');
+    const examLessonSelect = document.getElementById('examLessonSelect');
+    
+    if (examBookSelect) {
+        examBookSelect.onchange = async () => {
+            const bookId = examBookSelect.value;
+            const lessonSelect = document.getElementById('examLessonSelect');
+            
+            if (!bookId) {
+                if (lessonSelect) {
+                    lessonSelect.disabled = true;
+                    lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+                }
+                const examsList = document.getElementById('examsList');
+                if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+                return;
+            }
+            
+            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            if (lessonSelect) {
+                lessonSelect.disabled = false;
+                lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+                lessonsSnapshot.docs.forEach(doc => {
+                    lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+                });
+            }
+            const examsList = document.getElementById('examsList');
+            if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+        };
+    }
+    
+    if (examLessonSelect) {
+        examLessonSelect.onchange = async () => {
+            const lessonId = examLessonSelect.value;
+            if (!lessonId) {
+                const examsList = document.getElementById('examsList');
+                if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+                return;
+            }
+            await loadExamsByLesson(lessonId);
+        };
+    }
+});
 
 
 
