@@ -2154,6 +2154,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
+
+
+
+
+
+
+    // ========== GEÇİCİ TEST KODU - SINAV SÜRECİ İZLEME ==========
+(function setupTestLogger() {
+    console.log('%c🔵 TEST KODU AKTİF - Sınav süreci izlenecek', 'color: #3b82f6; font-size: 14px');
+    
+    // Orijinal startExam fonksiyonunu yedekle
+    const originalStartExam = window.startExam;
+    window.startExam = function(exam) {
+        console.log('%c🎯 SINAV BAŞLATILDI: ' + exam.title, 'color: #f59e0b; font-size: 14px');
+        console.log('   📚 Kitap ID:', exam.bookId);
+        console.log('   📗 Ders ID:', exam.lessonId);
+        console.log('   ❓ Soru sayısı:', exam.questions?.length);
+        originalStartExam(exam);
+    };
+    
+    // Orijinal completeExam fonksiyonunu yedekle
+    const originalCompleteExam = window.completeExam;
+    window.completeExam = function() {
+        console.log('%c🏁 SINAV TAMAMLANDI!', 'color: #10b981; font-size: 14px');
+        console.log('   📊 Alınan puan:', currentExam?.title, (userAnswers.filter((a,i) => a === currentExam?.questions[i]?.correct).length / currentExam?.questions?.length * 100).toFixed(1) + ' Puan');
+        originalCompleteExam();
+    };
+    
+    // Orijinal goExams fonksiyonunu yedekle
+    const originalGoExams = window.goExams;
+    window.goExams = async function() {
+        console.log('%c🔙 Sınavlar sayfasına dönülüyor...', 'color: #f59e0b; font-size: 14px');
+        await originalGoExams();
+        console.log('%c📋 Sınav listesi yenilendi', 'color: #3b82f6');
+        
+        // Mevcut seçili dersi kontrol et
+        const lessonSelect = document.getElementById('examLessonSelect');
+        if (lessonSelect && lessonSelect.value) {
+            console.log('   📗 Seçili ders:', lessonSelect.options[lessonSelect.selectedIndex]?.text);
+            console.log('   🆔 Ders ID:', lessonSelect.value);
+        }
+    };
+    
+    // LoadExamsByLesson fonksiyonunu izle
+    const originalLoadExamsByLesson = window.loadExamsByLesson;
+    window.loadExamsByLesson = async function(lessonId) {
+        console.log('%c🔄 Ders değişti, sınavlar yükleniyor...', 'color: #f59e0b');
+        console.log('   📗 Ders ID:', lessonId);
+        await originalLoadExamsByLesson(lessonId);
+        console.log('%c✅ Sınav listesi güncellendi', 'color: #10b981');
+        
+        // Güncel puanları göster
+        const cards = document.querySelectorAll('.exam-card');
+        console.log('   📊 Güncel puan durumu:');
+        cards.forEach(card => {
+            const title = card.querySelector('.exam-title')?.textContent;
+            const status = card.querySelector('div:last-child')?.textContent;
+            console.log(`      ${title} -> ${status}`);
+        });
+    };
+    
+    console.log('%c🟢 TEST KODU HAZIR - Sınav çözmeye başlayabilirsin', 'color: #10b981; font-size: 14px');
+    console.log('   📝 Adımlar: Sınav başlat -> Bitir -> Tekrar Dene -> Dropdown değiştir');
+})();
+
+
 </script>
 </body>
 </html>
