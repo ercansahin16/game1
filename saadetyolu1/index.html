@@ -1898,36 +1898,27 @@ if (examLessonSelect) {
         // YENİ GÜNCELLENMİŞ FONKSİYONU ÇAĞIR
         await loadExamsByLesson(lessonId);
     };
-}
 
-// Ders seçilince sınavları filtrele
-const examLessonSelect = document.getElementById('examLessonSelect');
     
-// Ders seçilince sınavları getir
+}
+    
+    
+    // Ders seçilince sınavları getir (puanlarla birlikte)
+const examLessonSelect = document.getElementById('examLessonSelect');
 if (examLessonSelect) {
     examLessonSelect.onchange = async () => {
         const lessonId = examLessonSelect.value;
-        const container = document.getElementById('examsList');
-        
         if (!lessonId) {
-            container.innerHTML = '<div style="text-align:center; padding:40px;">📝 Şimdi de bir ders seçiniz...</div>';
-            document.getElementById('examCountInfo').textContent = '0 sınav';
+            document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
             return;
         }
-        
-        // Derse ait sınavları getir
-        const examsSnapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-        const exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (exams.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:40px;">Bu derste henüz sınav yok</div>';
-            document.getElementById('examCountInfo').textContent = '0 sınav';
-        } else {
-            displayExams(exams);
-        }
+        // Puanları ekleyen fonksiyonu çağır
+        await loadExamsByLesson(lessonId);
     };
 }
 
+
+    
 // Kitaba göre sınavları getir
 async function loadExamsByBook(bookId) {
     if (!bookId) return;
@@ -2115,51 +2106,6 @@ function stopTimer() {
 
 
 
-
-
-
-
-
-// Giriş YAPTIKTAN SONRA çalıştır
-(async function test() {
-    console.log('=== KULLANICI KONTROL ===');
-    console.log('currentUser:', currentUser?.email);
-    
-    if (!currentUser) {
-        console.log('Giriş yapın');
-        return;
-    }
-    
-    // 1. Kullanıcı geçmişini kontrol et
-    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-    const history = userDoc.data()?.examsCompleted || [];
-    console.log('Kullanıcı geçmişi:', history);
-    
-    // 2. Ders-1 ID'sini bul
-    const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('name', '==', 'Ders-1')));
-    const lessonId = lessonsSnap.docs[0].id;
-    
-    // 3. Sınavları al
-    const examsSnap = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-    const exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // 4. Her sınava puan ekle
-    const examsWithScores = exams.map(exam => {
-        const result = history.find(h => h.title === exam.title);
-        console.log(exam.title, '-> result:', result);
-        return { ...exam, userScore: result?.score || null };
-    });
-    
-    // 5. Sonuçları göster
-    examsWithScores.forEach(e => {
-        console.log('📊', e.title, 'Puan:', e.userScore);
-    });
-})();
-
-    // Ders seçildikten sonra konsolda çalıştır
-const lessonId = document.getElementById('examLessonSelect').value;
-console.log('Seçili ders ID:', lessonId);
-await loadExamsByLesson(lessonId);
 
 </script>
 </body>
