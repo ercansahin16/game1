@@ -1943,14 +1943,19 @@ async function loadExamsByBook(bookId) {
 // Derse göre sınavları getir
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
+    
+    // Sınavları getir
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Kullanıcının puanlarını ekle
+    // Kullanıcının güncel puanlarını getir
     if (currentUser) {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         const userData = userDoc.data();
         const userHistory = userData?.examsCompleted || [];
+        console.log('📊 Güncel sınav geçmişi:', userHistory);
+        
+        // Her sınava puanını ekle
         exams = exams.map(exam => {
             const result = userHistory.find(h => h.title === exam.title);
             return { ...exam, userScore: result?.score || null };
@@ -1962,7 +1967,7 @@ async function loadExamsByLesson(lessonId) {
 
 
 
-    function displayExams(exams) {
+function displayExams(exams) {
     const container = document.getElementById('examsList');
     
     if (!exams || exams.length === 0) {
@@ -1975,8 +1980,8 @@ async function loadExamsByLesson(lessonId) {
     container.innerHTML = '';
     
     exams.forEach(exam => {
-        // exam.userScore varsa onu kullan (completeExam'den gelen)
         let userScore = exam.userScore;
+        console.log('Sınav:', exam.title, 'Puan:', userScore); // DEBUG
         
         let statusHTML = '';
         if (userScore !== null && userScore !== undefined) {
@@ -2102,42 +2107,49 @@ function stopTimer() {
 
 
 
-    // ===== GEÇİCİ TEST KODU (SONRA SİL) =====
-(async function testExamScores() {
+// ===== GEÇİCİ TEST - SINAV PUANLARINI KONTROL ET =====
+(async function testScores() {
     console.log('%c========== SINAV PUAN TESTİ ==========', 'color: #f59e0b; font-size: 16px');
     
     if (!currentUser) {
-        console.log('❌ Giriş yapmış kullanıcı yok');
+        console.log('❌ Lütfen önce giriş yapın');
         return;
     }
     
-    // 1. Kullanıcı geçmişini kontrol et
+    // 1. Kullanıcının sınav geçmişini al
     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     const history = userDoc.data()?.examsCompleted || [];
-    console.log('📊 Kullanıcı geçmişi:', history);
+    console.log('📊 TOPLAM SINAV KAYDI:', history.length);
     
-    // 2. Ders-1'deki sınavları kontrol et
+    // 2. Ders-1 ID'sini bul
     const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('name', '==', 'Ders-1')));
     if (lessonsSnap.empty) {
         console.log('❌ Ders-1 bulunamadı');
         return;
     }
     const lessonId = lessonsSnap.docs[0].id;
-    console.log('📗 Ders-1 ID:', lessonId);
     
+    // 3. Ders-1'deki sınavları al
     const examsSnap = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     const exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('📚 Sınavlar:', exams.map(e => ({ title: e.title, soruSayisi: e.questions?.length })));
     
-    // 3. Her sınav için kullanıcının puanını bul
+    console.log('📚 Ders-1 Sınavları:');
     exams.forEach(exam => {
         const result = history.find(h => h.title === exam.title);
         if (result) {
-            console.log(`✅ ${exam.title}: ${result.score} Puan`);
+            console.log(`   ✅ ${exam.title}: ${result.score} PUAN`);
         } else {
-            console.log(`🆕 ${exam.title}: Henüz çözülmedi`);
+            console.log(`   🆕 ${exam.title}: HENÜZ ÇÖZÜLMEDİ`);
         }
     });
+    
+    // 4. Özellikle Ders-1/Sınav-3'ü kontrol et
+    const targetExam = history.find(h => h.title === 'Ders-1/Sınav-3');
+    if (targetExam) {
+        console.log('%c🎯 Ders-1/Sınav-3 PUANI: ' + targetExam.score, 'color: #10b981; font-size: 14px');
+    } else {
+        console.log('%c🎯 Ders-1/Sınav-3: KAYIT BULUNAMADI', 'color: #ef4444; font-size: 14px');
+    }
     
     console.log('%c========== TEST BİTTİ ==========', 'color: #10b981; font-size: 16px');
 })();
