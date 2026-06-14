@@ -818,7 +818,12 @@
     <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-dice"></i></div>
     <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Karma Kelime</div>
     <div style="font-size: 12px; opacity: 0.7;">Rastgele kelimelerle kendini test et</div>
-</div>   
+</div>  
+            <div class="stats-card" id="goRanking" style="cursor: pointer;">
+    <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-trophy"></i></div>
+    <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🏆 Sıralama</div>
+    <div style="font-size: 12px; opacity: 0.7;">Kullanıcılar arası liderlik tablosu</div>
+</div>
         </div>
     </div>
 
@@ -935,6 +940,18 @@
             </div>
         </div>
         <div id="karmaResult" style="margin-top: 20px; text-align: center;"></div>
+    </div>
+</div>
+
+    <!-- Sıralama Ekranı -->
+<div id="rankingScreen" style="display: none;">
+    <div class="words-area">
+        <div class="words-header">
+            <h3><i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu</h3>
+            <div class="word-count" id="rankingCount">0 oyuncu</div>
+        </div>
+        <div id="rankingList" style="max-height: 500px; overflow-y: auto;"></div>
+        <div id="userRank" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
     </div>
 </div>
 
@@ -1826,6 +1843,7 @@ document.getElementById('doRegisterBtn').onclick = async () => {
         
         await loadBooks();
         await loadKarmaWords();
+        await loadKarmaStats();
         await loadLessonsList();  // <---- EKLENDİ
         await loadUserStats();    // <---- loadUserStats zaten vardı, async yap
         await loadUserExamHistory(); // <---- EKLENDİ (sınav geçmişi için)
@@ -2408,6 +2426,125 @@ document.getElementById('karmaWrongBtn').onclick = async () => {
     setTimeout(() => {
         nextKarmaWord();
     }, 1500);
+};
+
+
+
+    // Karma kelime istatistiklerini kaydet
+async function saveKarmaStats(correct) {
+    if (!currentUser) return;
+    
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data() || {};
+    let stats = userData.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    
+    stats.total++;
+    if (correct) {
+        stats.correct++;
+    } else {
+        stats.wrong++;
+    }
+    
+    await updateDoc(userRef, { karmaStats: stats });
+    
+    // Ekranda istatistikleri güncelle
+    updateKarmaStatsDisplay(stats);
+}
+
+// Ekranda istatistikleri göster
+function updateKarmaStatsDisplay(stats) {
+    const total = stats.total || 0;
+    const correct = stats.correct || 0;
+    const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
+    
+    document.getElementById('karmaStats').innerHTML = `
+        <i class="fas fa-chart-line"></i> ${correct}/${total} (${rate}%)
+    `;
+}
+
+// Kullanıcının istatistiklerini yükle
+async function loadKarmaStats() {
+    if (!currentUser) return;
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const stats = userDoc.data()?.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    updateKarmaStatsDisplay(stats);
+}
+
+
+
+    // Sıralama sayfasına git
+window.goRanking = () => {
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'none';
+    document.getElementById('rankingScreen').style.display = 'block';
+    loadRanking();
+    closeMenu();
+};
+
+// Liderlik tablosunu yükle
+async function loadRanking() {
+    const snapshot = await getDocs(collection(db, 'users'));
+    const users = [];
+    
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const stats = data.karmaStats || { total: 0, correct: 0 };
+        const rate = stats.total > 0 ? (stats.correct / stats.total * 100) : 0;
+        users.push({
+            name: data.name || data.email.split('@')[0],
+            rate: rate,
+            correct: stats.correct,
+            total: stats.total
+        });
+    });
+    
+    // Başarı oranına göre sırala
+    users.sort((a, b) => b.rate - a.rate);
+    
+    document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
+    
+    // Liste HTML'i oluştur
+    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+    users.forEach((user, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-weight: bold; width: 30px;">${medal}</span>
+                    <span>${index + 1}.</span>
+                    <span><i class="fas fa-user"></i> ${user.name}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="color: #f59e0b; font-weight: bold;">${Math.round(user.rate)}%</span>
+                    <span style="font-size: 11px; opacity: 0.7;"> (${user.correct}/${user.total})</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    document.getElementById('rankingList').innerHTML = html;
+    
+    // Kullanıcının kendi sırasını bul
+    const currentUserName = currentUser?.email?.split('@')[0];
+    const userRank = users.findIndex(u => u.name === currentUserName) + 1;
+    const userData = users.find(u => u.name === currentUserName);
+    
+    if (userData) {
+        document.getElementById('userRank').innerHTML = `
+            <div style="text-align: center;">
+                <strong>📍 Senin Sıralaman</strong><br>
+                <span style="font-size: 24px; color: #f59e0b;">${userRank}. sırada</span><br>
+                <span>Başarı: ${Math.round(userData.rate)}% (${userData.correct}/${userData.total})</span>
+            </div>
+        `;
+    }
+}
+
+    document.getElementById('goRanking').onclick = () => {
+    goRanking();
 };
 </script>
 </body>
