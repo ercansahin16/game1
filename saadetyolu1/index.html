@@ -2093,6 +2093,55 @@ function stopTimer() {
     }
 }
 
+
+
+
+
+
+
+
+
+
+    // ===== GEÇİCİ TEST KODU (SONRA SİL) =====
+(async function testExamScores() {
+    console.log('%c========== SINAV PUAN TESTİ ==========', 'color: #f59e0b; font-size: 16px');
+    
+    if (!currentUser) {
+        console.log('❌ Giriş yapmış kullanıcı yok');
+        return;
+    }
+    
+    // 1. Kullanıcı geçmişini kontrol et
+    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    const history = userDoc.data()?.examsCompleted || [];
+    console.log('📊 Kullanıcı geçmişi:', history);
+    
+    // 2. Ders-1'deki sınavları kontrol et
+    const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('name', '==', 'Ders-1')));
+    if (lessonsSnap.empty) {
+        console.log('❌ Ders-1 bulunamadı');
+        return;
+    }
+    const lessonId = lessonsSnap.docs[0].id;
+    console.log('📗 Ders-1 ID:', lessonId);
+    
+    const examsSnap = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+    const exams = examsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('📚 Sınavlar:', exams.map(e => ({ title: e.title, soruSayisi: e.questions?.length })));
+    
+    // 3. Her sınav için kullanıcının puanını bul
+    exams.forEach(exam => {
+        const result = history.find(h => h.title === exam.title);
+        if (result) {
+            console.log(`✅ ${exam.title}: ${result.score} Puan`);
+        } else {
+            console.log(`🆕 ${exam.title}: Henüz çözülmedi`);
+        }
+    });
+    
+    console.log('%c========== TEST BİTTİ ==========', 'color: #10b981; font-size: 16px');
+})();
+
 </script>
 </body>
 </html>
