@@ -1944,22 +1944,28 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
+    console.log('🔄 loadExamsByLesson çalıştı, lessonId:', lessonId);
+    
     // Sınavları getir
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
+    console.log('📚 Sınavlar bulundu:', exams.length);
+    
     // Kullanıcının güncel puanlarını getir
     if (currentUser) {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        const userData = userDoc.data();
-        const userHistory = userData?.examsCompleted || [];
-        console.log('📊 Güncel sınav geçmişi:', userHistory);
+        const userHistory = userDoc.data()?.examsCompleted || [];
+        console.log('📊 Kullanıcı geçmişi:', userHistory);
         
         // Her sınava puanını ekle
         exams = exams.map(exam => {
             const result = userHistory.find(h => h.title === exam.title);
+            console.log(`   ${exam.title} -> bulundu:`, result ? `${result.score} Puan` : 'YOK');
             return { ...exam, userScore: result?.score || null };
         });
+    } else {
+        console.log('❌ currentUser yok!');
     }
     
     displayExams(exams);
