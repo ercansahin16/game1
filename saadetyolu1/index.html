@@ -1861,23 +1861,18 @@ const examBookSelect = document.getElementById('examBookSelect');
 
     
 // Kitap seçilince dersleri yükle
-// Kitap seçilince dersleri yükle
+// Kitap seçilince
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
         const lessonSelect = document.getElementById('examLessonSelect');
-        const container = document.getElementById('examsList');
         
         if (!bookId) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            container.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
-            document.getElementById('examCountInfo').textContent = '0 sınav';
+            document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
             return;
         }
-        
-        // Kullanıcının sınav geçmişini yükle
-        await loadUserExamHistory();
         
         // Dersleri yükle
         const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
@@ -1887,8 +1882,21 @@ if (examBookSelect) {
             lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
         });
         
-        container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
-        document.getElementById('examCountInfo').textContent = '0 sınav';
+        document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+    };
+}
+
+// Ders seçilince - BURASI ÖNEMLİ
+if (examLessonSelect) {
+    examLessonSelect.onchange = async () => {
+        const lessonId = examLessonSelect.value;
+        if (!lessonId) {
+            document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+            return;
+        }
+        
+        // YENİ GÜNCELLENMİŞ FONKSİYONU ÇAĞIR
+        await loadExamsByLesson(lessonId);
     };
 }
 
@@ -2147,6 +2155,11 @@ function stopTimer() {
         console.log('📊', e.title, 'Puan:', e.userScore);
     });
 })();
+
+    // Ders seçildikten sonra konsolda çalıştır
+const lessonId = document.getElementById('examLessonSelect').value;
+console.log('Seçili ders ID:', lessonId);
+await loadExamsByLesson(lessonId);
 
 </script>
 </body>
