@@ -1473,117 +1473,7 @@ function showCurrentQuestion() {
     }
 };
     
-function completeExam() {
-    if (examCompleted) return;
-    examCompleted = true;
-    stopTimer();
-    
-    let correct = 0;
-    let wrong = 0;
-    let empty = 0;
-    
-    currentExam.questions.forEach((q, idx) => {
-        if (userAnswers[idx] === null) {
-            empty++;
-        } else if (userAnswers[idx] === q.correct) {
-            correct++;
-        } else {
-            wrong++;
-        }
-    });
-    
-    const totalQuestions = currentExam.questions.length;
-    const score = (correct / totalQuestions) * 100;
-    const roundedScore = Math.round(score);
-    
-    const letters = ['A', 'B', 'C', 'D'];
-    
-    let resultHTML = `
-        <div class="result-card">
-            <h2>🏆 Sınav Tamamlandı!</h2>
-            <div class="score">${roundedScore} Puan</div>
-            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
-                ${correct}/${totalQuestions} doğru
-            </div>
-            <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-                <div style="text-align: center;">
-                    <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
-                    <div>Doğru</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 36px; color: #ef4444;">✗ ${wrong}</div>
-                    <div>Yanlış</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 36px; color: #f59e0b;">○ ${empty}</div>
-                    <div>Boş</div>
-                </div>
-            </div>
-            <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-redo"></i> Tekrar Dene</button>
-        </div>
-        <div class="all-questions-container">
-            <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
-    `;
-    
-    currentExam.questions.forEach((q, idx) => {
-        const isCorrect = userAnswers[idx] === q.correct;
-        const isWrong = userAnswers[idx] !== null && userAnswers[idx] !== q.correct;
-        const isEmpty = userAnswers[idx] === null;
-        
-        let statusText = '';
-        let statusColor = '';
-        
-        if (isCorrect) {
-            statusText = '✓ DOĞRU';
-            statusColor = '#10b981';
-        } else if (isWrong) {
-            statusText = '✗ YANLIŞ';
-            statusColor = '#ef4444';
-        } else {
-            statusText = '○ BOŞ';
-            statusColor = '#f59e0b';
-        }
-        
-        const userAnswerLetter = userAnswers[idx] !== null ? letters[userAnswers[idx]] : 'Cevaplanmamış';
-        const correctAnswerLetter = letters[q.correct];
-        
-        resultHTML += `
-            <div class="question-summary ${isCorrect ? 'correct-bg' : (isWrong ? 'wrong-bg' : 'empty-bg')}">
-                <div class="question-summary-header">
-                    <span><i class="fas fa-question-circle"></i> Soru ${idx + 1}</span>
-                    <span style="color: ${statusColor}">${statusText}</span>
-                </div>
-                <div class="question-summary-text">${q.question}</div>
-                <div class="user-answer">📝 Sizin cevabınız: <strong>${userAnswerLetter}</strong> ${userAnswers[idx] !== null ? `- ${q.options[userAnswers[idx]]}` : ''}</div>
-                <div class="correct-answer">✅ Doğru cevap: <strong>${correctAnswerLetter}</strong> - ${q.options[q.correct]}</div>
-            </div>
-        `;
-    });
-    
-    resultHTML += `</div>`;
-    
-    const container = document.getElementById('quizContent');
-    container.innerHTML = resultHTML;
-    
-    // Sınav sonucunu kaydet ve geçmişi güncelle
-    (async () => {
-        await saveExamResult(currentExam.title, score, correct, totalQuestions);
-        await loadUserExamHistory();
-        
-        // Sınavlar sayfası açıksa listeyi güncelle
-        const examsScreen = document.getElementById('examsScreen');
-        if (examsScreen && examsScreen.style.display === 'block') {
-            const lessonId = document.getElementById('examLessonSelect').value;
-            const bookId = document.getElementById('examBookSelect').value;
-            
-            if (lessonId) {
-                await loadExamsByLesson(lessonId);
-            } else if (bookId) {
-                await loadExamsByBook(bookId);
-            }
-        }
-    })();
-}
+
     
     window.togglePassword = (inputId) => {
         const input = document.getElementById(inputId);
@@ -1882,7 +1772,19 @@ if (examLessonSelect) {
 async function loadExamsByBook(bookId) {
     if (!bookId) return;
     const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Kullanıcının puanlarını ekle
+    if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.data();
+        const userHistory = userData?.examsCompleted || [];
+        exams = exams.map(exam => {
+            const result = userHistory.find(h => h.title === exam.title);
+            return { ...exam, userScore: result?.score || null };
+        });
+    }
+    
     displayExams(exams);
 }
 
@@ -1890,13 +1792,25 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Kullanıcının puanlarını ekle
+    if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.data();
+        const userHistory = userData?.examsCompleted || [];
+        exams = exams.map(exam => {
+            const result = userHistory.find(h => h.title === exam.title);
+            return { ...exam, userScore: result?.score || null };
+        });
+    }
+    
     displayExams(exams);
 }
 
-// Sınavları listele (mevcut fonksiyonu güncelle)
-// Sınavları listele (puan durumuna göre)
-function displayExams(exams) {
+
+
+    function displayExams(exams) {
     const container = document.getElementById('examsList');
     
     if (!exams || exams.length === 0) {
@@ -1908,27 +1822,18 @@ function displayExams(exams) {
     document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
     container.innerHTML = '';
     
-    // Kullanıcının sınav geçmişini al
-    const userExams = currentUser ? (userExamHistory || []) : [];
-    
     exams.forEach(exam => {
-        // Bu sınava daha önce girilmiş mi kontrol et
-        const existingResult = userExams.find(e => e.title === exam.title);
+        // exam.userScore varsa onu kullan (completeExam'den gelen)
+        let userScore = exam.userScore;
         
         let statusHTML = '';
-        let statusColor = '';
-        
-        if (existingResult) {
-            const score = Math.round(existingResult.score);
-            if (score < 50) {
-                statusHTML = `<span style="color: #ef4444;">📊 ${score} Puan (⚡ Tekrar Dene)</span>`;
-                statusColor = '#ef4444';
-            } else if (score < 70) {
-                statusHTML = `<span style="color: #f59e0b;">📊 ${score} Puan (👍 İyi)</span>`;
-                statusColor = '#f59e0b';
+        if (userScore !== null && userScore !== undefined) {
+            if (userScore < 50) {
+                statusHTML = `<span style="color: #ef4444;">📊 ${Math.round(userScore)} Puan (⚡ Tekrar Dene)</span>`;
+            } else if (userScore < 70) {
+                statusHTML = `<span style="color: #f59e0b;">📊 ${Math.round(userScore)} Puan (👍 İyi)</span>`;
             } else {
-                statusHTML = `<span style="color: #10b981;">📊 ${score} Puan (🏆 Mükemmel)</span>`;
-                statusColor = '#10b981';
+                statusHTML = `<span style="color: #10b981;">📊 ${Math.round(userScore)} Puan (🏆 Mükemmel)</span>`;
             }
         } else {
             statusHTML = `<span style="color: #3b82f6;">🆕 Yeni</span>`;
