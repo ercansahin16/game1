@@ -1565,12 +1565,24 @@ function completeExam() {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // Sınav sonucunu kaydet ve sayfayı yenile
-    saveExamResult(currentExam.title, score, correct, totalQuestions).then(() => {
-        setTimeout(() => {
-            location.reload();
-        }, 500);
-    });
+    // Sınav sonucunu kaydet ve geçmişi güncelle
+    (async () => {
+        await saveExamResult(currentExam.title, score, correct, totalQuestions);
+        await loadUserExamHistory();
+        
+        // Sınavlar sayfası açıksa listeyi güncelle
+        const examsScreen = document.getElementById('examsScreen');
+        if (examsScreen && examsScreen.style.display === 'block') {
+            const lessonId = document.getElementById('examLessonSelect').value;
+            const bookId = document.getElementById('examBookSelect').value;
+            
+            if (lessonId) {
+                await loadExamsByLesson(lessonId);
+            } else if (bookId) {
+                await loadExamsByBook(bookId);
+            }
+        }
+    })();
 }
     
     window.togglePassword = (inputId) => {
