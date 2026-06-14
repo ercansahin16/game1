@@ -1946,31 +1946,26 @@ async function loadExamsByLesson(lessonId) {
     
     console.log('🔄 loadExamsByLesson çalıştı, lessonId:', lessonId);
     
-    // Sınavları getir
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     console.log('📚 Sınavlar bulundu:', exams.length);
     
-    // Kullanıcının güncel puanlarını getir
-    if (currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        const userHistory = userDoc.data()?.examsCompleted || [];
-        console.log('📊 Kullanıcı geçmişi:', userHistory);
+    // BURASI ÖNEMLİ: userExamHistory KULLAN (global benzersiz)
+    if (currentUser && userExamHistory) {
+        console.log('📊 Kullanıcı geçmişi (benzersiz):', userExamHistory);
         
-        // Her sınava puanını ekle
         exams = exams.map(exam => {
-            const result = userHistory.find(h => h.title === exam.title);
+            const result = userExamHistory.find(h => h.title === exam.title);
             console.log(`   ${exam.title} -> bulundu:`, result ? `${result.score} Puan` : 'YOK');
             return { ...exam, userScore: result?.score || null };
         });
     } else {
-        console.log('❌ currentUser yok!');
+        console.log('❌ currentUser veya userExamHistory yok!');
     }
     
     displayExams(exams);
 }
-
 
 
 function displayExams(exams) {
@@ -1987,16 +1982,17 @@ function displayExams(exams) {
     
     exams.forEach(exam => {
         let userScore = exam.userScore;
-        console.log('Sınav:', exam.title, 'Puan:', userScore); // DEBUG
+        console.log('📊', exam.title, 'Puan:', userScore);
         
         let statusHTML = '';
-        if (userScore !== null && userScore !== undefined) {
-            if (userScore < 50) {
-                statusHTML = `<span style="color: #ef4444;">📊 ${Math.round(userScore)} Puan (⚡ Tekrar Dene)</span>`;
-            } else if (userScore < 70) {
-                statusHTML = `<span style="color: #f59e0b;">📊 ${Math.round(userScore)} Puan (👍 İyi)</span>`;
+        if (userScore !== null && userScore !== undefined && userScore > 0) {
+            const score = Math.round(userScore);
+            if (score < 50) {
+                statusHTML = `<span style="color: #ef4444;">📊 ${score} Puan (⚡ Tekrar Dene)</span>`;
+            } else if (score < 70) {
+                statusHTML = `<span style="color: #f59e0b;">📊 ${score} Puan (👍 İyi)</span>`;
             } else {
-                statusHTML = `<span style="color: #10b981;">📊 ${Math.round(userScore)} Puan (🏆 Mükemmel)</span>`;
+                statusHTML = `<span style="color: #10b981;">📊 ${score} Puan (🏆 Mükemmel)</span>`;
             }
         } else {
             statusHTML = `<span style="color: #3b82f6;">🆕 Yeni</span>`;
