@@ -2378,52 +2378,59 @@ document.getElementById('karmaShowBtn').onclick = () => {
 };
 
 // Doğru bildim
+// Doğru bildim
 document.getElementById('karmaCorrectBtn').onclick = async () => {
+    console.log('Doğru butonu tıklandı');
     if (!currentKarmaWord) return;
     if (!karmaShown) {
         alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
         return;
     }
     
-    // İstatistik kaydet (daha sonra eklenecek)
-    document.getElementById('karmaResult').innerHTML = '<span style="color: #10b981;">✅ Doğru! +10 puan</span>';
+    await saveKarmaStats(true);
     
-    // Butonları geçici olarak devre dışı bırak
+    document.getElementById('karmaResult').innerHTML = '<span style="color: #10b981;">✅ Doğru! +1</span>';
+    
     document.getElementById('karmaCorrectBtn').disabled = true;
     document.getElementById('karmaWrongBtn').disabled = true;
     
-    // 1 saniye sonra yeni kelimeye geç
     setTimeout(() => {
         nextKarmaWord();
-    }, 1000);
+        document.getElementById('karmaCorrectBtn').disabled = false;
+        document.getElementById('karmaWrongBtn').disabled = false;
+    }, 800);
 };
 
 // Yanlış bildim
 document.getElementById('karmaWrongBtn').onclick = async () => {
+    console.log('Yanlış butonu tıklandı');
     if (!currentKarmaWord) return;
     if (!karmaShown) {
         alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
         return;
     }
     
-    // İstatistik kaydet (daha sonra eklenecek)
+    await saveKarmaStats(false);
+    
     document.getElementById('karmaResult').innerHTML = `<span style="color: #ef4444;">❌ Yanlış! Doğrusu: ${currentKarmaWord.turkish}</span>`;
     
-    // Butonları geçici olarak devre dışı bırak
     document.getElementById('karmaCorrectBtn').disabled = true;
     document.getElementById('karmaWrongBtn').disabled = true;
     
-    // 1.5 saniye sonra yeni kelimeye geç
     setTimeout(() => {
         nextKarmaWord();
+        document.getElementById('karmaCorrectBtn').disabled = false;
+        document.getElementById('karmaWrongBtn').disabled = false;
     }, 1500);
 };
 
 
 
-    // Karma kelime istatistiklerini kaydet
+// Karma kelime istatistiklerini kaydet
 async function saveKarmaStats(correct) {
     if (!currentUser) return;
+    
+    console.log('💾 saveKarmaStats çağrıldı, correct:', correct);
     
     const userRef = doc(db, 'users', currentUser.uid);
     const userDoc = await getDoc(userRef);
@@ -2437,7 +2444,10 @@ async function saveKarmaStats(correct) {
         stats.wrong++;
     }
     
+    console.log('📊 Yeni istatistikler:', stats);
+    
     await updateDoc(userRef, { karmaStats: stats });
+    console.log('✅ Kaydedildi');
     
     // Ekranda istatistikleri güncelle
     updateKarmaStatsDisplay(stats);
