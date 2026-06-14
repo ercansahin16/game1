@@ -1106,21 +1106,12 @@ window.goHome = () => {
         mainContent.classList.remove('hidden');
     }
     
-    // Diğer ekranları gizle
-    const karmaScreen = document.getElementById('karmaScreen');
-    if (karmaScreen) karmaScreen.style.display = 'none';
-    
-    const wordsScreen = document.getElementById('wordsLearningScreen');
-    if (wordsScreen) wordsScreen.style.display = 'none';
-    
-    const examsScreen = document.getElementById('examsScreen');
-    if (examsScreen) examsScreen.style.display = 'none';
-    
-    const quizScreen = document.getElementById('quizScreen');
-    if (quizScreen) quizScreen.style.display = 'none';
-    
-    const profileScreen = document.getElementById('profileScreen');
-    if (profileScreen) profileScreen.style.display = 'none';
+    // Tüm ekranları gizle
+    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'examsScreen', 'quizScreen', 'profileScreen'];
+    screens.forEach(screen => {
+        const el = document.getElementById(screen);
+        if (el) el.style.display = 'none';
+    });
     
     // Logo yazısını eski haline döndür
     const homeLogo = document.getElementById('homeLogo');
@@ -2464,24 +2455,54 @@ function updateKarmaStatsDisplay(stats) {
 }
 
 // Kullanıcının istatistiklerini yükle
+// Kullanıcının istatistiklerini yükle
 async function loadKarmaStats() {
     if (!currentUser) return;
     const userRef = doc(db, 'users', currentUser.uid);
     const userDoc = await getDoc(userRef);
     const stats = userDoc.data()?.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    console.log('📊 Karma istatistikler:', stats);
     updateKarmaStatsDisplay(stats);
 }
 
 
 
     // Sıralama sayfasına git
+// Sıralama sayfasına git
 window.goRanking = () => {
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('karmaScreen').style.display = 'none';
-    document.getElementById('rankingScreen').style.display = 'block';
+    console.log('goRanking çalıştı');
+    
+    // Stat kartlarını gizle
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = 'none';
+    
+    // Diğer ekranları gizle
+    const karmaScreen = document.getElementById('karmaScreen');
+    if (karmaScreen) karmaScreen.style.display = 'none';
+    
+    const wordsScreen = document.getElementById('wordsLearningScreen');
+    if (wordsScreen) wordsScreen.style.display = 'none';
+    
+    const examsScreen = document.getElementById('examsScreen');
+    if (examsScreen) examsScreen.style.display = 'none';
+    
+    const quizScreen = document.getElementById('quizScreen');
+    if (quizScreen) quizScreen.style.display = 'none';
+    
+    const profileScreen = document.getElementById('profileScreen');
+    if (profileScreen) profileScreen.style.display = 'none';
+    
+    // Sıralama ekranını göster
+    const rankingScreen = document.getElementById('rankingScreen');
+    if (rankingScreen) rankingScreen.style.display = 'block';
+    
+    // Sıralamayı yükle
     loadRanking();
+    
     closeMenu();
 };
+
+
 
 // Liderlik tablosunu yükle
 async function loadRanking() {
