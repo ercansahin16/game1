@@ -3049,10 +3049,10 @@ window.startQuizWords = async () => {
 // Sonraki kelimeyi yükle
 // Sandıktan kaç kere kelime alındığını tut
 
-
 async function loadNextQuizWord() {
-    console.log('🔄 loadNextQuizWord - Eski index:', eskiIndex, 'Yeni index:', yeniIndex);
+    console.log('🔄 loadNextQuizWord - eskiIndex:', eskiIndex, 'yeniIndex:', yeniIndex);
     console.log('📦 Sandık boyutu:', quizSandik.length);
+    console.log('📊 Toplam kelime:', quizWordsAll.length);
     
     quizAnswered = false;
     
@@ -3072,29 +3072,32 @@ async function loadNextQuizWord() {
         }
     }
     // Sandıktan kelime al (her 10 kelimede bir)
-    else if (quizSandik.length > 0 && (eskiIndex + yeniIndex) % 10 === 0 && !sandikAktif) {
+    else if (quizSandik.length > 0 && (eskiIndex + (quizWordsAll.length - 1 - yeniIndex)) % 10 === 0 && !sandikAktif) {
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         word = quizSandik[randomIndex];
         isFromSandik = true;
         sandikAktif = true;
         sandikAlmaSayaci++;
-        console.log('📦 Sandıktan kelime alındı');
+        console.log('📦 Sandıktan kelime alındı (sıra kontrol)');
     } 
     // Normal kelime al (bir eski, bir yeni)
     else {
         if (eskiSira) {
-            // Eski kelime (baştan)
             word = quizWordsAll[eskiIndex];
             eskiIndex++;
-            console.log('📖 Eski kelime:', word.arabic, 'Yeni eski index:', eskiIndex);
+            console.log('📖 Eski kelime:', word.arabic, 'eskiIndex:', eskiIndex);
         } else {
-            // Yeni kelime (sondan)
             word = quizWordsAll[yeniIndex];
             yeniIndex--;
-            console.log('📖 Yeni kelime:', word.arabic, 'Yeni yeni index:', yeniIndex);
+            console.log('📖 Yeni kelime:', word.arabic, 'yeniIndex:', yeniIndex);
         }
-        eskiSira = !eskiSira;  // Sırayı değiştir
+        eskiSira = !eskiSira;
         sandikAktif = false;
+    }
+    
+    if (!word) {
+        console.log('⚠️ Kelime bulunamadı!');
+        return;
     }
     
     currentQuizWord = { ...word, isFromSandik };
@@ -3103,8 +3106,12 @@ async function loadNextQuizWord() {
     // Toplam soru sayısını güncelle
     const totalQuestions = quizWordsAll.length + quizSandik.length;
     const gidilenSoruSayisi = eskiIndex + (quizWordsAll.length - 1 - yeniIndex);
+    
+    console.log('📊 Gidilen soru sayısı:', gidilenSoruSayisi, '/ Toplam:', totalQuestions);
+    
     document.getElementById('karmaTotal').textContent = totalQuestions;
-    document.getElementById('karmaCurrent').textContent = Math.min(gidilenSoruSayisi + 1, totalQuestions);
+    document.getElementById('karmaCurrent').textContent = gidilenSoruSayisi + 1;
+    document.getElementById('karmaProgressFill').style.width = ((gidilenSoruSayisi + 1) / totalQuestions) * 100 + '%';
 }
 
 // Kelimeyi ekranda göster
@@ -3115,14 +3122,13 @@ function displayQuizWord(word) {
     
     document.getElementById('karmaArabicWord').textContent = word.arabic;
     
-    // Toplam soru sayısını göster (normal kelime sayısı + sandıktaki kelimeler)
     const totalQuestions = quizWordsAll.length + quizSandik.length;
-    const currentQuestion = Math.min(quizNormalIndex + 1, totalQuestions);
+    const gidilenSoruSayisi = eskiIndex + (quizWordsAll.length - 1 - yeniIndex);
     
-    document.getElementById('karmaCurrent').textContent = currentQuestion;
+    document.getElementById('karmaCurrent').textContent = gidilenSoruSayisi + 1;
     document.getElementById('karmaTotal').textContent = totalQuestions;
     
-    const progress = (currentQuestion / totalQuestions) * 100;
+    const progress = ((gidilenSoruSayisi + 1) / totalQuestions) * 100;
     document.getElementById('karmaProgressFill').style.width = `${progress}%`;
     
     const container = document.getElementById('karmaOptions');
@@ -3140,7 +3146,6 @@ function displayQuizWord(word) {
     quizAnswered = false;
     document.querySelectorAll('.option-quiz').forEach(opt => opt.classList.remove('disabled'));
 }
-
 // Seçenek seçildiğinde
 async function selectQuizOption(selectedDiv, word, correctIndex) {
     if (quizAnswered) return;
