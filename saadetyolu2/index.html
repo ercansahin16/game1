@@ -1223,35 +1223,26 @@ body.light-theme .arabic-quiz-word {
         appId: "1:450775848659:web:ca192a401da3f887e1e626"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    let isZoomed = true; // Zoom durumu
+   const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+let isZoomed = true; // Zoom durumu
 
-    let currentUser = null;
-    let books = [];
-    let lessons = [];
-    let words = [];
-    let currentWordIndex = 0;
-    let currentExam = null;
-    let userAnswers = [];
-    let examCompleted = false;
-    let currentQuestionIndex = 0;
-    let timerInterval = null;
-    let timeLeft = 30;
-    let lessonsList = []; // Derslerin listesi 
-    let userExamHistory = [];// Kullanıcının sınav geçmişini global bir değişkende tut
-    // Yeni değişkenler ekle (diğer let tanımlarının yanına)
-let eskiIndex = 0;           // Baştan başla (eski kelimeler)
-let yeniIndex = 0;           // Sondan başla (yeni kelimeler)
-let eskiSira = true;         // Sıra hangi tarafta?
+let currentUser = null;
+let books = [];
+let lessons = [];
+let words = [];
+let currentWordIndex = 0;
+let currentExam = null;
+let userAnswers = [];
+let examCompleted = false;
+let currentQuestionIndex = 0;
+let timerInterval = null;
+let timeLeft = 30;
+let lessonsList = []; // Derslerin listesi 
+let userExamHistory = []; // Kullanıcının sınav geçmişini global bir değişkende tut
 
-// startQuizWords içinde sıfırla:
-
-    // ========== Yarışma ==========
-    let karmaWords = [];           // Tüm kelimeler
-
-    // ========== Yarışma TEST SİSTEMİ ==========
+// ========== YARIŞMA (KARMA KELİME) DEĞİŞKENLERİ ==========
 let quizWordsAll = [];           // Tüm kelimeler
 let currentQuizWord = null;      // Mevcut kelime
 let quizScore = 0;               // Toplam puan
@@ -1259,18 +1250,15 @@ let quizAnswered = false;        // Cevaplandı mı?
 let quizSandik = [];             // Sandıktaki kelimeler
 let quizCorrectCount = 0;        // Doğru sayısı
 let quizTotalQuestions = 0;      // Toplam soru sayısı
-let sandikAlmaSayaci = 0;        // SANDIK SAYACI (YENİ) - EKLE
-let sandikAktif = false;         // SANDIK AKTİF Mİ? (YENİ) - EKLE
+let sandikAlmaSayaci = 0;        // Sandık sayacı (kaç kere sandıktan alındı)
+let sandikAktif = false;         // Sandık aktif mi? (sürekli sandıktan almamak için)
 
-    // startQuizWords içinde, kelimeler yüklendikten sonra:
-if (quizWordsAll && quizWordsAll.length > 0) {
-    eskiIndex = 0;
-    yeniIndex = quizWordsAll.length - 1;
-    eskiSira = true;
-    sandikAlmaSayaci = 0;
-    sandikAktif = false;
-    console.log('📌 Indexler ayarlandı - Eski:', eskiIndex, 'Yeni:', yeniIndex);
-}
+// Çift yönlü kelime getirme için (bir eski, bir yeni)
+let baslangicIndex = 0;          // Baştan başla (eski kelimeler)
+let bitisIndex = 0;              // Sondan başla (yeni kelimeler)
+let siraSoldan = true;           // true: soldan (eski), false: sağdan (yeni)
+
+
 
     const bookSelect = document.getElementById('bookSelect');
     const lessonSelect = document.getElementById('lessonSelect');
