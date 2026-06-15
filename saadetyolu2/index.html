@@ -2496,69 +2496,65 @@ document.addEventListener('DOMContentLoaded', function() {
     const gecBtn = document.getElementById('gecBtn');
     
     if (bilmedimBtn) {
-        bilmedimBtn.onclick = async () => {
-            if (typeof quizAnswered !== 'undefined' && quizAnswered) return;
-            if (typeof currentQuizWord === 'undefined' || !currentQuizWord) return;
-            
-            quizAnswered = true;
-            
-            const allOptions = document.querySelectorAll('.option-quiz');
-            allOptions.forEach(opt => {
-                if (opt.dataset.isCorrect === 'true') {
-                    opt.classList.add('correct-highlight');
-                }
-            });
-            
-            showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
-            
-            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-                await saveSandikToFirestore();
-                const sandikCountEl = document.getElementById('sandikCount');
-                if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
-                const sandikProfileEl = document.getElementById('sandikCountProfile');
-                if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
-            }
-            
-            allOptions.forEach(opt => opt.classList.add('disabled'));
-            
-            setTimeout(() => {
-                if (typeof loadNextQuizWord === 'function') loadNextQuizWord();
-            }, 1000);
-        };
+        // Bilemedim butonu
+bilmedimBtn.onclick = async () => {
+    if (quizAnswered || !currentQuizWord) return;
+    quizAnswered = true;
+    
+    const allOptions = document.querySelectorAll('.option-quiz');
+    allOptions.forEach(opt => {
+        if (opt.dataset.isCorrect === 'true') {
+            opt.classList.add('correct-highlight');
+        }
+    });
+    
+    showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
+    
+    // Sandığa ekle (puan değişmez)
+    if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+    }
+    
+    allOptions.forEach(opt => opt.classList.add('disabled'));
+    
+    // 1 SANİYE SONRA GEÇ
+    setTimeout(() => {
+        loadNextQuizWord();
+    }, 1000);
+};
     }
     
     if (gecBtn) {
-        gecBtn.onclick = async () => {
-            if (typeof quizAnswered !== 'undefined' && quizAnswered) return;
-            if (typeof currentQuizWord === 'undefined' || !currentQuizWord) return;
-            
-            quizAnswered = true;
-            
-            const allOptions = document.querySelectorAll('.option-quiz');
-            allOptions.forEach(opt => {
-                if (opt.dataset.isCorrect === 'true') {
-                    opt.classList.add('correct-highlight');
-                }
-            });
-            
-            showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
-            
-            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-                await saveSandikToFirestore();
-                const sandikCountEl = document.getElementById('sandikCount');
-                if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
-                const sandikProfileEl = document.getElementById('sandikCountProfile');
-                if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
-            }
-            
-            allOptions.forEach(opt => opt.classList.add('disabled'));
-            
-            setTimeout(() => {
-                if (typeof loadNextQuizWord === 'function') loadNextQuizWord();
-            }, 1000);
-        };
+        // Geç butonu
+gecBtn.onclick = async () => {
+    if (quizAnswered || !currentQuizWord) return;
+    quizAnswered = true;
+    
+    const allOptions = document.querySelectorAll('.option-quiz');
+    allOptions.forEach(opt => {
+        if (opt.dataset.isCorrect === 'true') {
+            opt.classList.add('correct-highlight');
+        }
+    });
+    
+    showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
+    
+    // Sandığa ekle (puan değişmez)
+    if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+    }
+    
+    allOptions.forEach(opt => opt.classList.add('disabled'));
+    
+    // 1 SANİYE SONRA GEÇ
+    setTimeout(() => {
+        loadNextQuizWord();
+    }, 1000);
+};
     }
     
     // ========== YARDIM MODALI ==========
@@ -2971,19 +2967,18 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         selectedDiv.classList.add('correct-highlight');
         showTempMessage('✅ Doğru! +10 puan', '#10b981');
         
+        // Sandıktan geldiyse çıkar
         if (word.isFromSandik) {
             quizSandik = quizSandik.filter(w => w.id !== word.id);
             await saveSandikToFirestore();
-            document.getElementById('sandikCount').textContent = quizSandik.length;
-            if (document.getElementById('sandikCountProfile')) {
-                document.getElementById('sandikCountProfile').textContent = quizSandik.length;
-            }
+            updateSandikDisplay();
         }
     } else {
         // YANLIŞ CEVAP
         quizScore = Math.max(0, quizScore - 5);
         selectedDiv.classList.add('wrong-highlight');
         
+        // Doğru cevabı göster
         allOptions.forEach(opt => {
             if (opt.dataset.isCorrect === 'true') {
                 opt.classList.add('correct-highlight');
@@ -2991,13 +2986,11 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
+        // Sandığa ekle
         if (!quizSandik.some(w => w.id === word.id)) {
             quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
             await saveSandikToFirestore();
-            document.getElementById('sandikCount').textContent = quizSandik.length;
-            if (document.getElementById('sandikCountProfile')) {
-                document.getElementById('sandikCountProfile').textContent = quizSandik.length;
-            }
+            updateSandikDisplay();
         }
     }
     
@@ -3009,7 +3002,7 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     // Tüm şıkları devre dışı bırak
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
-    // 1 saniye sonra sonraki kelimeye geç
+    // 1 SANİYE SONRA SONRAKİ KELİMEYE GEÇ
     setTimeout(() => {
         loadNextQuizWord();
     }, 1000);
@@ -3075,6 +3068,13 @@ document.getElementById('gecBtn').onclick = async () => {
     }, 1000);
 };
 
+
+    function updateSandikDisplay() {
+    const sandikCountEl = document.getElementById('sandikCount');
+    if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
+    const sandikProfileEl = document.getElementById('sandikCountProfile');
+    if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
+}
 // Sandığı Firestore'a kaydet
 async function saveSandikToFirestore() {
     if (!currentUser) return;
