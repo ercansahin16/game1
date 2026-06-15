@@ -2430,6 +2430,7 @@ function stopTimer() {
 
     // ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
 document.addEventListener('DOMContentLoaded', function() {
+    // ========== SINAV FİLTRELEME ==========
     const examBookSelect = document.getElementById('examBookSelect');
     const examLessonSelect = document.getElementById('examLessonSelect');
     
@@ -2451,25 +2452,118 @@ document.addEventListener('DOMContentLoaded', function() {
             const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             if (lessonSelect) {
                 lessonSelect.disabled = false;
-                lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+                lessonSelect.innerHTML = '<option value="" selected>-- Tüm Dersler --</option>';
                 lessonsSnapshot.docs.forEach(doc => {
                     lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
                 });
             }
-            const examsList = document.getElementById('examsList');
-            if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
         };
     }
     
     if (examLessonSelect) {
         examLessonSelect.onchange = async () => {
             const lessonId = examLessonSelect.value;
-            if (!lessonId) {
-                const examsList = document.getElementById('examsList');
-                if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
-                return;
-            }
             await loadExamsByLesson(lessonId);
+        };
+    }
+    
+    // ========== KARMA KELİME BUTONLARI ==========
+    const bilmedimBtn = document.getElementById('bilmedimBtn');
+    const gecBtn = document.getElementById('gecBtn');
+    
+    if (bilmedimBtn) {
+        bilmedimBtn.onclick = async () => {
+            if (typeof quizAnswered !== 'undefined' && quizAnswered) return;
+            if (typeof currentQuizWord === 'undefined' || !currentQuizWord) return;
+            
+            quizAnswered = true;
+            
+            const allOptions = document.querySelectorAll('.option-quiz');
+            allOptions.forEach(opt => {
+                if (opt.dataset.isCorrect === 'true') {
+                    opt.classList.add('correct-highlight');
+                }
+            });
+            
+            showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
+            
+            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+                await saveSandikToFirestore();
+                const sandikCountEl = document.getElementById('sandikCount');
+                if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
+                const sandikProfileEl = document.getElementById('sandikCountProfile');
+                if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
+            }
+            
+            allOptions.forEach(opt => opt.classList.add('disabled'));
+            
+            setTimeout(() => {
+                if (typeof loadNextQuizWord === 'function') loadNextQuizWord();
+            }, 1000);
+        };
+    }
+    
+    if (gecBtn) {
+        gecBtn.onclick = async () => {
+            if (typeof quizAnswered !== 'undefined' && quizAnswered) return;
+            if (typeof currentQuizWord === 'undefined' || !currentQuizWord) return;
+            
+            quizAnswered = true;
+            
+            const allOptions = document.querySelectorAll('.option-quiz');
+            allOptions.forEach(opt => {
+                if (opt.dataset.isCorrect === 'true') {
+                    opt.classList.add('correct-highlight');
+                }
+            });
+            
+            showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
+            
+            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+                await saveSandikToFirestore();
+                const sandikCountEl = document.getElementById('sandikCount');
+                if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
+                const sandikProfileEl = document.getElementById('sandikCountProfile');
+                if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
+            }
+            
+            allOptions.forEach(opt => opt.classList.add('disabled'));
+            
+            setTimeout(() => {
+                if (typeof loadNextQuizWord === 'function') loadNextQuizWord();
+            }, 1000);
+        };
+    }
+    
+    // ========== YARDIM MODALI ==========
+    const showKarmaHelp = document.getElementById('showKarmaHelp');
+    if (showKarmaHelp) {
+        showKarmaHelp.onclick = () => {
+            const modal = document.createElement('div');
+            modal.className = 'modal visible';
+            modal.style.cssText = 'position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index:1001;';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
+                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <div style="line-height: 1.6;">
+                        <p><strong>📖 Nasıl çalışır?</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>✅ <strong style="color:#10b981;">Doğru cevap:</strong> +10 puan</li>
+                            <li>❌ <strong style="color:#ef4444;">Yanlış cevap:</strong> -5 puan, kelime sandığa gider</li>
+                            <li>💡 <strong style="color:#f59e0b;">Bilemedim:</strong> Puan değişmez, kelime sandığa gider</li>
+                            <li>⏩ <strong>Geç:</strong> Puan değişmez, kelime sandığa gider</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>📦 Sandık:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="this.closest('.modal').remove()" style="margin-top: 20px; width:100%;">Anladım</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
         };
     }
 });
@@ -2482,59 +2576,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-
-    // ========== GEÇİCİ TEST KODU - SINAV SÜRECİ İZLEME ==========
-(function setupTestLogger() {
-  
-    
-    // Orijinal startExam fonksiyonunu yedekle
-    const originalStartExam = window.startExam;
-    window.startExam = function(exam) {
-       
-        originalStartExam(exam);
-    };
-    
-    // Orijinal completeExam fonksiyonunu yedekle
-    const originalCompleteExam = window.completeExam;
-    window.completeExam = function() {
- 
-        originalCompleteExam();
-    };
-    
-    // Orijinal goExams fonksiyonunu yedekle
-    const originalGoExams = window.goExams;
-    window.goExams = async function() {
-       
-        await originalGoExams();
-       
-        
-        // Mevcut seçili dersi kontrol et
-        const lessonSelect = document.getElementById('examLessonSelect');
-        if (lessonSelect && lessonSelect.value) {
-            console.log('   📗 Seçili ders:', lessonSelect.options[lessonSelect.selectedIndex]?.text);
-            console.log('   🆔 Ders ID:', lessonSelect.value);
-        }
-    };
-    
-    // LoadExamsByLesson fonksiyonunu izle
-    const originalLoadExamsByLesson = window.loadExamsByLesson;
-    window.loadExamsByLesson = async function(lessonId) {
-      
-        await originalLoadExamsByLesson(lessonId);
-     
-        
-        // Güncel puanları göster
-        const cards = document.querySelectorAll('.exam-card');
-      
-        cards.forEach(card => {
-            const title = card.querySelector('.exam-title')?.textContent;
-            const status = card.querySelector('div:last-child')?.textContent;
-          
-        });
-    };
-    
-  
-})();
 
 
 
