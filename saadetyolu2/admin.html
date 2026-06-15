@@ -634,6 +634,29 @@
             .select-row { flex-wrap: wrap; }
             .select-wrapper { min-width: 45%; }
         }
+
+
+
+
+
+
+
+
+
+
+    /* Sandık Sıfırlama Butonu Stili */
+#resetAllSandikBtn {
+    transition: all 0.3s ease;
+}
+
+#resetAllSandikBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#resetResult {
+    transition: all 0.3s ease;
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -663,6 +686,27 @@
         <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
     </div>
 </div>
+
+
+
+    <!-- Admin Paneli - Sandık Sıfırlama Butonu -->
+<div class="section-card" id="resetSandikSection" style="margin-top: 20px;">
+    <div class="section-header">
+        <h2><i class="fas fa-trash-alt"></i> Sandık Yönetimi</h2>
+    </div>
+    <div style="background: rgba(239,68,68,0.1); border-radius: 16px; padding: 20px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 10px;">📦</div>
+        <h3 style="color: #ef4444; margin-bottom: 10px;">Tüm Kullanıcıların Sandığını Sıfırla</h3>
+        <p style="margin-bottom: 20px; font-size: 14px;">Bu işlem TÜM kullanıcıların sandığındaki kelimeleri KALICI olarak silecektir. Geri alınamaz!</p>
+        <button id="resetAllSandikBtn" class="btn btn-danger" style="padding: 12px 24px; font-size: 16px;">
+            <i class="fas fa-trash-alt"></i> Tüm Sandıkları Sıfırla
+        </button>
+        <div id="resetResult" style="margin-top: 15px; display: none;"></div>
+    </div>
+</div>
+
+
+    
 <div class="overlay" id="overlay"></div>
 
 <div class="container">
@@ -2510,6 +2554,102 @@ if (adminExamLessonSelect) {
 
 
 
+
+
+
+
+
+
+
+
+    // Tüm kullanıcıların sandığını sıfırla
+document.getElementById('resetAllSandikBtn')?.addEventListener('click', async () => {
+    const resultDiv = document.getElementById('resetResult');
+    
+    // Çift onay
+    const confirm1 = confirm('🚨 UYARI: Bu işlem TÜM kullanıcıların sandığındaki kelimeleri KALICI OLARAK silecektir! Devam etmek istediğinize emin misiniz?');
+    
+    if (!confirm1) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const confirm2 = confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Tüm kullanıcıların sandıkları silinecek. Emin misiniz?');
+    
+    if (!confirm2) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    // Butonu devre dışı bırak
+    const btn = document.getElementById('resetAllSandikBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = 'rgba(59,130,246,0.1)';
+    resultDiv.style.border = '1px solid #3b82f6';
+    resultDiv.style.borderRadius = '10px';
+    resultDiv.style.padding = '10px';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm kullanıcıların sandıkları sıfırlanıyor...</span>';
+    
+    try {
+        // Tüm kullanıcıları getir
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        let errorCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            try {
+                const userRef = doc(db, 'users', userDoc.id);
+                await updateDoc(userRef, { 
+                    quizSandik: [],
+                    quizScore: 0  // İstersen puanı da sıfırla
+                });
+                updatedCount++;
+                console.log(`✅ ${userDoc.id} sandığı sıfırlandı`);
+            } catch (error) {
+                errorCount++;
+                console.error(`❌ ${userDoc.id} sıfırlanamadı:`, error);
+            }
+        }
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `
+            <span style="color: #10b981;">
+                ✅ Sıfırlama tamamlandı!<br>
+                📦 ${updatedCount} kullanıcının sandığı sıfırlandı.<br>
+                ${errorCount > 0 ? `⚠️ ${errorCount} kullanıcıda hata oluştu.` : ''}
+            </span>
+        `;
+        
+    } catch (error) {
+        console.error('Sıfırlama hatası:', error);
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.innerHTML = `<span style="color: #ef4444;">❌ Hata: ${error.message}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Tüm Sandıkları Sıfırla';
+        
+        setTimeout(() => {
+            resultDiv.style.display = 'none';
+        }, 5000);
+    }
+});
 
 
 
