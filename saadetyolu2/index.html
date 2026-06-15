@@ -3385,6 +3385,47 @@ async function loadLeaderboard() {
 
 
 
+    // YARIŞMA TEST KODU
+(async function testYarisma() {
+    console.log('🔍 YARIŞMA TEST BAŞLIYOR...');
+    
+    // 1. Kelimeleri kontrol et
+    const wordsSnap = await getDocs(collection(db, 'words'));
+    const words = wordsSnap.docs.map(doc => doc.data());
+    console.log(`📝 Toplam kelime: ${words.length}`);
+    
+    if (words.length === 0) {
+        console.log('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
+        return;
+    }
+    
+    // 2. Örnek kelime göster
+    console.log('📖 Örnek kelime:', words[0]);
+    
+    // 3. startQuizWords fonksiyonunu manuel çalıştır
+    if (typeof startQuizWords === 'function') {
+        console.log('✅ startQuizWords fonksiyonu bulundu, çalıştırılıyor...');
+        await startQuizWords();
+    } else {
+        console.log('❌ startQuizWords fonksiyonu bulunamadı!');
+        
+        // Manuel olarak yarışma ekranını aç
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('karmaScreen').style.display = 'block';
+        
+        // İlk kelimeyi göster
+        const firstWord = words[0];
+        document.getElementById('karmaArabicWord').textContent = firstWord.arabic;
+        document.getElementById('karmaTotal').textContent = words.length;
+        console.log('📖 İlk kelime manuel yüklendi:', firstWord.arabic);
+    }
+    
+    console.log('✅ TEST TAMAMLANDI');
+})();
+
+
+
+
 
 
 
