@@ -3030,10 +3030,9 @@ window.startQuizWords = async () => {
 
 // Sonraki kelimeyi yükle
 async function loadNextQuizWord() {
-    console.log('🔄 loadNextQuizWord - Normal index:', quizNormalIndex, '/ Toplam:', quizWordsAll.length);
+    console.log('🔄 loadNextQuizWord - Normal index:', quizNormalIndex, '/ Toplam normal:', quizWordsAll.length);
     console.log('📦 Sandık boyutu:', quizSandik.length);
     
-    // Önceki cevap durumunu sıfırla
     quizAnswered = false;
     
     let word;
@@ -3041,7 +3040,6 @@ async function loadNextQuizWord() {
     
     // Normal kelimeler bitti mi?
     if (quizNormalIndex >= quizWordsAll.length) {
-        // Sadece sandıktan devam et
         if (quizSandik.length > 0) {
             const randomIndex = Math.floor(Math.random() * quizSandik.length);
             word = quizSandik[randomIndex];
@@ -3052,12 +3050,13 @@ async function loadNextQuizWord() {
             return;
         }
     }
-    // Her 10 normal kelimede bir sandıktan al (10'un katları ve sandık doluysa)
-    else if (quizSandik.length > 0 && quizNormalIndex > 0 && (quizNormalIndex) % 10 === 0) {
+    // Sandıktan kelime al (normal index 10 ve katlarıysa VE sandık doluysa)
+    else if (quizSandik.length > 0 && (quizNormalIndex + 1) % 10 === 0) {
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         word = quizSandik[randomIndex];
         isFromSandik = true;
-        console.log('📦 10 kelimede bir sandıktan:', word.arabic);
+        console.log('📦 Sandıktan kelime (her 10 soruda bir):', word.arabic, '- Sıradaki soru:', quizNormalIndex + 1);
+        // Normal index ARTMAZ, sadece sandıktan alır
     } 
     // Normal kelime al
     else {
@@ -3153,7 +3152,6 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     
     // Puan ve başarı yüzdesini güncelle
     document.getElementById('karmaScore').textContent = quizScore;
-    const answeredSoFar = quizCorrectCount + (quizNormalIndex - quizCorrectCount);
     const percent = quizTotalQuestions > 0 ? Math.round((quizCorrectCount / quizTotalQuestions) * 100) : 0;
     document.getElementById('karmaPercent').textContent = percent;
     
@@ -3161,7 +3159,7 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
     // 1 SANİYE SONRA SONRAKİ KELİMEYE GEÇ
-    console.log('⏳ 1 saniye bekleniyor...');
+    console.log('⏳ 1 saniye bekleniyor... Mevcut index:', quizNormalIndex);
     setTimeout(() => {
         console.log('⏩ Sonraki kelimeye geçiliyor...');
         quizAnswered = false;
