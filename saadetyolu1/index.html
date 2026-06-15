@@ -1533,7 +1533,7 @@ function showCurrentQuestion() {
 async function loadLessonsList() {
     const snapshot = await getDocs(collection(db, 'lessons'));
     lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('📗 Dersler yüklendi:', lessonsList.length);
+    
 }
 
 // Ders adını bul (TEK TANE)
@@ -1654,7 +1654,7 @@ function getBookNameById(bookId) {
     (async () => {
         try {
             await saveExamResult(currentExam.title, score, correct, totalQuestions);
-            console.log('✅ Sınav sonucu kaydedildi:', currentExam.title, score, 'Puan');
+            
         } catch (error) {
             console.error('Kayıt hatası:', error);
         }
@@ -2017,20 +2017,19 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
-    console.log('🔄 loadExamsByLesson çalıştı, lessonId:', lessonId);
-    
+   
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    console.log('📚 Sınavlar bulundu:', exams.length);
+   
     
     // BURASI ÖNEMLİ: userExamHistory KULLAN (global benzersiz)
     if (currentUser && userExamHistory) {
-        console.log('📊 Kullanıcı geçmişi (benzersiz):', userExamHistory);
+       
         
         exams = exams.map(exam => {
             const result = userExamHistory.find(h => h.title === exam.title);
-            console.log(`   ${exam.title} -> bulundu:`, result ? `${result.score} Puan` : 'YOK');
+          
             return { ...exam, userScore: result?.score || null };
         });
     } else {
@@ -2055,7 +2054,7 @@ function displayExams(exams) {
     
     exams.forEach(exam => {
         let userScore = exam.userScore;
-        console.log('📊', exam.title, 'Puan:', userScore);
+       
         
         let statusHTML = '';
         if (userScore !== null && userScore !== undefined && userScore > 0) {
@@ -2102,7 +2101,7 @@ async function loadUserExamHistory() {
         });
         
         userExamHistory = Object.values(lastExams);
-        console.log('📊 Sınav geçmişi yüklendi (en son puan):', userExamHistory);
+       
     }
 }
     
@@ -2240,32 +2239,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== GEÇİCİ TEST KODU - SINAV SÜRECİ İZLEME ==========
 (function setupTestLogger() {
-    console.log('%c🔵 TEST KODU AKTİF - Sınav süreci izlenecek', 'color: #3b82f6; font-size: 14px');
+  
     
     // Orijinal startExam fonksiyonunu yedekle
     const originalStartExam = window.startExam;
     window.startExam = function(exam) {
-        console.log('%c🎯 SINAV BAŞLATILDI: ' + exam.title, 'color: #f59e0b; font-size: 14px');
-        console.log('   📚 Kitap ID:', exam.bookId);
-        console.log('   📗 Ders ID:', exam.lessonId);
-        console.log('   ❓ Soru sayısı:', exam.questions?.length);
+       
         originalStartExam(exam);
     };
     
     // Orijinal completeExam fonksiyonunu yedekle
     const originalCompleteExam = window.completeExam;
     window.completeExam = function() {
-        console.log('%c🏁 SINAV TAMAMLANDI!', 'color: #10b981; font-size: 14px');
-        console.log('   📊 Alınan puan:', currentExam?.title, (userAnswers.filter((a,i) => a === currentExam?.questions[i]?.correct).length / currentExam?.questions?.length * 100).toFixed(1) + ' Puan');
+ 
         originalCompleteExam();
     };
     
     // Orijinal goExams fonksiyonunu yedekle
     const originalGoExams = window.goExams;
     window.goExams = async function() {
-        console.log('%c🔙 Sınavlar sayfasına dönülüyor...', 'color: #f59e0b; font-size: 14px');
+       
         await originalGoExams();
-        console.log('%c📋 Sınav listesi yenilendi', 'color: #3b82f6');
+       
         
         // Mevcut seçili dersi kontrol et
         const lessonSelect = document.getElementById('examLessonSelect');
@@ -2278,23 +2273,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // LoadExamsByLesson fonksiyonunu izle
     const originalLoadExamsByLesson = window.loadExamsByLesson;
     window.loadExamsByLesson = async function(lessonId) {
-        console.log('%c🔄 Ders değişti, sınavlar yükleniyor...', 'color: #f59e0b');
-        console.log('   📗 Ders ID:', lessonId);
+      
         await originalLoadExamsByLesson(lessonId);
-        console.log('%c✅ Sınav listesi güncellendi', 'color: #10b981');
+     
         
         // Güncel puanları göster
         const cards = document.querySelectorAll('.exam-card');
-        console.log('   📊 Güncel puan durumu:');
+      
         cards.forEach(card => {
             const title = card.querySelector('.exam-title')?.textContent;
             const status = card.querySelector('div:last-child')?.textContent;
-            console.log(`      ${title} -> ${status}`);
+          
         });
     };
     
-    console.log('%c🟢 TEST KODU HAZIR - Sınav çözmeye başlayabilirsin', 'color: #10b981; font-size: 14px');
-    console.log('   📝 Adımlar: Sınav başlat -> Bitir -> Tekrar Dene -> Dropdown değiştir');
+  
 })();
 
 
@@ -2303,7 +2296,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Karma Kelime sayfasına git
 window.goKarmaGame = () => {
-    console.log('goKarmaGame çalıştı');
+  
     
     // ANA SAYFA STAT KARTLARINI GİZLE (kesin çözüm)
     const mainContent = document.getElementById('mainContent');
@@ -2339,7 +2332,7 @@ window.goKarmaGame = () => {
 
 // Kart tıklama olayı
 document.getElementById('goKarma').onclick = () => {
-    console.log('Karma kart tıklandı');
+   
     goKarmaGame();
 };
 
@@ -2349,7 +2342,7 @@ document.getElementById('goKarma').onclick = () => {
 async function loadKarmaWords() {
     const snapshot = await getDocs(collection(db, 'words'));
     karmaWords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('🎲 Karma kelimeler yüklendi:', karmaWords.length);
+   
     nextKarmaWord();
 }
 
@@ -2380,7 +2373,7 @@ document.getElementById('karmaShowBtn').onclick = () => {
 // Doğru bildim
 // Doğru bildim
 document.getElementById('karmaCorrectBtn').onclick = async () => {
-    console.log('Doğru butonu tıklandı');
+   
     if (!currentKarmaWord) return;
     if (!karmaShown) {
         alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
@@ -2403,7 +2396,7 @@ document.getElementById('karmaCorrectBtn').onclick = async () => {
 
 // Yanlış bildim
 document.getElementById('karmaWrongBtn').onclick = async () => {
-    console.log('Yanlış butonu tıklandı');
+   
     if (!currentKarmaWord) return;
     if (!karmaShown) {
         alert('⚠️ Lütfen önce "Anlamı Göster" butonuna tıklayın!');
@@ -2430,7 +2423,7 @@ document.getElementById('karmaWrongBtn').onclick = async () => {
 async function saveKarmaStats(correct) {
     if (!currentUser) return;
     
-    console.log('💾 saveKarmaStats çağrıldı, correct:', correct);
+  
     
     const userRef = doc(db, 'users', currentUser.uid);
     const userDoc = await getDoc(userRef);
@@ -2444,10 +2437,10 @@ async function saveKarmaStats(correct) {
         stats.wrong++;
     }
     
-    console.log('📊 Yeni istatistikler:', stats);
+   
     
     await updateDoc(userRef, { karmaStats: stats });
-    console.log('✅ Kaydedildi');
+    
     
     // Ekranda istatistikleri güncelle
     updateKarmaStatsDisplay(stats);
@@ -2471,7 +2464,7 @@ async function loadKarmaStats() {
     const userRef = doc(db, 'users', currentUser.uid);
     const userDoc = await getDoc(userRef);
     const stats = userDoc.data()?.karmaStats || { total: 0, correct: 0, wrong: 0 };
-    console.log('📊 Karma istatistikler:', stats);
+    
     updateKarmaStatsDisplay(stats);
 }
 
@@ -2480,7 +2473,7 @@ async function loadKarmaStats() {
     // Sıralama sayfasına git
 // Sıralama sayfasına git
 window.goRanking = () => {
-    console.log('goRanking çalıştı');
+   
     
     // Stat kartlarını gizle
     const mainContent = document.getElementById('mainContent');
@@ -2515,7 +2508,7 @@ window.goRanking = () => {
 
 
 async function loadRanking() {
-    console.log('🏆 Liderlik tablosu yükleniyor...');
+    
     
     const snapshot = await getDocs(collection(db, 'users'));
     const users = [];
@@ -2525,7 +2518,7 @@ async function loadRanking() {
         const stats = data.karmaStats || { total: 0, correct: 0 };
         const rate = stats.total > 0 ? (stats.correct / stats.total * 100) : 0;
         
-        console.log(`👤 ${data.name}: total=${stats.total}, correct=${stats.correct}, rate=${rate}%`);
+        
         
         users.push({
             name: data.name || data.email?.split('@')[0],
