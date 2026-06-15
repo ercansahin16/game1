@@ -2563,6 +2563,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== SINAV FİLTRELEME ==========
     const examBookSelect = document.getElementById('examBookSelect');
     const examLessonSelect = document.getElementById('examLessonSelect');
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen && loginScreen.style.display !== 'none') {
+        document.getElementById('karmaScreen').style.display = 'none';
+        document.getElementById('rankingScreen').style.display = 'none';
+    }
     
     if (examBookSelect) {
         examBookSelect.onchange = async () => {
@@ -3385,49 +3390,7 @@ async function loadLeaderboard() {
 
 
 
-    // GEÇİCİ TEST KODU - Karmayı manuel başlat
-(async function testKarma() {
-    console.log('🔍 TEST BAŞLADI');
-    
-    // 1. Kelimeleri kontrol et
-    console.log('1. Kelimeler kontrol ediliyor...');
-    const booksSnap = await getDocs(collection(db, 'books'));
-    const lessonsSnap = await getDocs(collection(db, 'lessons'));
-    const wordsSnap = await getDocs(collection(db, 'words'));
-    
-    console.log(`📚 Kitap: ${booksSnap.size}`);
-    console.log(`📖 Ders: ${lessonsSnap.size}`);
-    console.log(`📝 Kelime: ${wordsSnap.size}`);
-    
-    if (wordsSnap.size === 0) {
-        console.log('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
-        return;
-    }
-    
-    // 2. startQuizWords fonksiyonunu kontrol et
-    console.log('2. startQuizWords fonksiyonu:', typeof startQuizWords);
-    
-    if (typeof startQuizWords === 'function') {
-        console.log('✅ startQuizWords var, çalıştırılıyor...');
-        await startQuizWords();
-    } else {
-        console.log('❌ startQuizWords fonksiyonu bulunamadı!');
-        
-        // Geçici olarak manuel karma ekranı aç
-        console.log('🔄 Manuel karma ekranı açılıyor...');
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('karmaScreen').style.display = 'block';
-        
-        // Kelimeleri göster
-        const words = wordsSnap.docs.map(doc => doc.data());
-        console.log('Örnek kelimeler:', words.slice(0, 3));
-        
-        document.getElementById('karmaTotal').textContent = wordsSnap.size;
-        document.getElementById('karmaArabicWord').textContent = words[0]?.arabic || 'Kelime yok';
-    }
-    
-    console.log('✅ TEST TAMAMLANDI');
-})();
+ 
 
 </script>
 </body>
