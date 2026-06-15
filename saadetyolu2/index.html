@@ -2906,20 +2906,32 @@ window.startQuizWords = async () => {
 async function loadNextQuizWord() {
     console.log('loadNextQuizWord çalıştı, index:', quizNormalIndex);
     
-    if (quizAnswered) return;
+    // Önceki cevap durumunu sıfırla
+    quizAnswered = false;
     
     let word;
+    let isFromSandik = false;
     
-    if (quizNormalIndex < quizWordsAll.length) {
+    // Sandıktan kelime al (her 10 kelimede bir)
+    if (quizSandik.length > 0 && quizNormalIndex > 0 && quizNormalIndex % 10 === 0) {
+        const randomIndex = Math.floor(Math.random() * quizSandik.length);
+        word = quizSandik[randomIndex];
+        isFromSandik = true;
+        console.log('📦 Sandıktan kelime geliyor:', word.arabic);
+    } 
+    // Normal kelime al
+    else if (quizNormalIndex < quizWordsAll.length) {
         word = quizWordsAll[quizNormalIndex];
         quizNormalIndex++;
-        console.log('Kelime yükleniyor:', word.arabic);
-    } else {
+        console.log('📖 Normal kelime:', word.arabic);
+    } 
+    // Test bitti
+    else {
         finishQuizWords();
         return;
     }
     
-    currentQuizWord = { ...word, isFromSandik: false };
+    currentQuizWord = { ...word, isFromSandik };
     displayQuizWord(word);
 }
 
@@ -2961,7 +2973,6 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     const allOptions = document.querySelectorAll('.option-quiz');
     
     if (isCorrect) {
-        // DOĞRU CEVAP
         quizScore += 10;
         quizCorrectCount++;
         selectedDiv.classList.add('correct-highlight');
@@ -2974,7 +2985,6 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
             updateSandikDisplay();
         }
     } else {
-        // YANLIŞ CEVAP
         quizScore = Math.max(0, quizScore - 5);
         selectedDiv.classList.add('wrong-highlight');
         
@@ -2986,11 +2996,13 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
-        // Sandığa ekle
-        if (!quizSandik.some(w => w.id === word.id)) {
+        // HER ZAMAN sandığa ekle (daha önce eklenmemişse)
+        const alreadyInSandik = quizSandik.some(w => w.id === word.id);
+        if (!alreadyInSandik) {
             quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
             await saveSandikToFirestore();
             updateSandikDisplay();
+            console.log('📦 Sandığa eklendi:', word.arabic, 'Toplam sandık:', quizSandik.length);
         }
     }
     
@@ -3003,7 +3015,10 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
     // 1 SANİYE SONRA SONRAKİ KELİMEYE GEÇ
+    console.log('⏳ 1 saniye bekleniyor...');
     setTimeout(() => {
+        console.log('⏩ Sonraki kelimeye geçiliyor...');
+        quizAnswered = false;  // ÖNEMLİ: Yeni kelime için sıfırla
         loadNextQuizWord();
     }, 1000);
 }
@@ -3069,11 +3084,12 @@ document.getElementById('gecBtn').onclick = async () => {
 };
 
 
-    function updateSandikDisplay() {
+ function updateSandikDisplay() {
     const sandikCountEl = document.getElementById('sandikCount');
     if (sandikCountEl) sandikCountEl.textContent = quizSandik.length;
     const sandikProfileEl = document.getElementById('sandikCountProfile');
     if (sandikProfileEl) sandikProfileEl.textContent = quizSandik.length;
+    console.log('🔄 Sandık güncellendi:', quizSandik.length);
 }
 // Sandığı Firestore'a kaydet
 async function saveSandikToFirestore() {
