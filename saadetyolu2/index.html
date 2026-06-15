@@ -3021,7 +3021,7 @@ async function loadNextQuizWord() {
     let isFromSandik = false;
     
     const toplamGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    console.log('📊 Toplam gösterilen (öncesi):', toplamGosterilen);
+    console.log('📊 Toplam gösterilen (mevcut):', toplamGosterilen);
     
     // Normal kelimeler bitti mi?
     if (baslangicIndex > bitisIndex) {
@@ -3065,11 +3065,6 @@ async function loadNextQuizWord() {
     }
     
     currentQuizWord = { ...word, isFromSandik };
-    
-    // displayQuizWord çağrılmadan önce toplam gösterilen güncelle
-    const yeniToplamGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    console.log('📊 Yeni toplam gösterilen:', yeniToplamGosterilen);
-    
     displayQuizWord(word);
 }
 
@@ -3081,10 +3076,10 @@ function displayQuizWord(word) {
     
     document.getElementById('karmaArabicWord').textContent = word.arabic;
     
-    // DOĞRU HESAPLAMA: Şu ana kadar gösterilen normal kelime sayısı
+    // DOĞRU HESAPLAMA: gidilenNormalKelime zaten gösterilen kelime sayısı
     const gidilenNormalKelime = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    // +1 ekle çünkü şu an gösterilen kelime de dahil
-    const soruNo = gidilenNormalKelime + 1;
+    // EKLEME! Çünkü gidilenNormalKelime şu ana kadar GÖSTERİLEN kelime sayısı
+    const soruNo = gidilenNormalKelime;
     
     console.log('📊 baslangicIndex:', baslangicIndex, 'bitisIndex:', bitisIndex);
     console.log('📊 gidilenNormalKelime:', gidilenNormalKelime, 'Soru No:', soruNo);
@@ -3571,7 +3566,10 @@ async function loadLeaderboard() {
 
 
 
-
+// Mevcut soru numarasını düzelt
+const gidilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
+document.getElementById('karmaCurrent').textContent = gidilen;
+console.log('Düzeltilmiş soru no:', gidilen);
  
 
 </script>
