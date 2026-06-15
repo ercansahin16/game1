@@ -3008,6 +3008,8 @@ window.startQuizWords = async () => {
     quizScore = 0;
     quizCorrectCount = 0;
     quizAnswered = false;
+    sandikAlmaSayaci = 0;      // SANDIK SAYACI (YENİ)
+    sandikAktif = false;       // SANDIK AKTİF Mİ? (YENİ)
     
     // Toplam soru sayısını göster (normal + sandık)
     const totalQuestions = quizWordsAll.length + quizSandik.length;
@@ -3029,9 +3031,13 @@ window.startQuizWords = async () => {
 };
 
 // Sonraki kelimeyi yükle
+// Sandıktan kaç kere kelime alındığını tut
+let sandikAlmaSayaci = 0;
+
 async function loadNextQuizWord() {
     console.log('🔄 loadNextQuizWord - Normal index:', quizNormalIndex, '/ Toplam normal:', quizWordsAll.length);
     console.log('📦 Sandık boyutu:', quizSandik.length);
+    console.log('🔢 Sandık alma sayacı:', sandikAlmaSayaci);
     
     quizAnswered = false;
     
@@ -3050,23 +3056,30 @@ async function loadNextQuizWord() {
             return;
         }
     }
-    // Her 10 normal kelimede bir sandıktan al (normal index 10,20,30... ve sandık doluysa)
-    else if (quizSandik.length > 0 && quizNormalIndex > 0 && quizNormalIndex % 10 === 0) {
+    // Her 10 normal kelimede bir sandıktan al (sadece 1 kere)
+    else if (quizSandik.length > 0 && (quizNormalIndex + sandikAlmaSayaci) % 10 === 0 && !sandikAktif) {
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         word = quizSandik[randomIndex];
         isFromSandik = true;
-        console.log('📦 10 kelimede bir sandıktan:', word.arabic, '(Normal index:', quizNormalIndex, ')');
-        // Burada quizNormalIndex ARTTIRMA! Sadece sandıktan al
+        sandikAktif = true;
+        sandikAlmaSayaci++;
+        console.log('📦 Sandıktan kelime alındı (sıra:', quizNormalIndex + sandikAlmaSayaci, ')');
     } 
     // Normal kelime al
     else {
         word = quizWordsAll[quizNormalIndex];
         quizNormalIndex++;
+        sandikAktif = false;
         console.log('📖 Normal kelime:', word.arabic, 'Yeni index:', quizNormalIndex);
     }
     
     currentQuizWord = { ...word, isFromSandik };
     displayQuizWord(word);
+    
+    // Toplam soru sayısını güncelle
+    const totalQuestions = quizWordsAll.length + quizSandik.length;
+    document.getElementById('karmaTotal').textContent = totalQuestions;
+    document.getElementById('karmaCurrent').textContent = Math.min(quizNormalIndex + sandikAlmaSayaci, totalQuestions);
 }
 
 // Kelimeyi ekranda göster
