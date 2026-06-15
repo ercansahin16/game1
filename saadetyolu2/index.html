@@ -1987,42 +1987,168 @@ function getBookNameById(bookId) {
         document.getElementById('forgotForm').style.display = 'block';
     };
 
-    document.getElementById('doLoginBtn').onclick = async () => {
-        try {
-            await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
-            closeMenu();
-        } catch(e) { alert('Hata: ' + e.message); }
-    };
-document.getElementById('doRegisterBtn').onclick = async () => {
+  document.getElementById('doLoginBtn').onclick = async () => {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!email.trim()) {
+        alert('❌ Lütfen e-posta adresinizi girin!');
+        return;
+    }
+    
+    if (!password.trim()) {
+        alert('❌ Lütfen şifrenizi girin!');
+        return;
+    }
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        closeMenu();
+        
+        // Formları temizle
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        
+    } catch(error) {
+        console.error('Giriş hatası:', error);
+        
+        let errorMessage = '❌ Giriş başarısız! ';
+        
+        switch(error.code) {
+            case 'auth/invalid-email':
+                errorMessage += 'Geçersiz e-posta adresi.';
+                break;
+            case 'auth/user-disabled':
+                errorMessage += 'Bu hesap devre dışı bırakılmış. Lütfen yöneticiyle iletişime geçin.';
+                break;
+            case 'auth/user-not-found':
+                errorMessage += 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.';
+                break;
+            case 'auth/wrong-password':
+                errorMessage += 'Hatalı şifre. Lütfen tekrar deneyin.';
+                break;
+            default:
+                errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+        }
+        
+        alert(errorMessage);
+    }
+};
+
+
+
+    document.getElementById('doRegisterBtn').onclick = async () => {
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
     const name = document.getElementById('regName').value;
-    if (password.length < 6) { alert('Şifre en az 6 karakter!'); return; }
+    
+    // Boş alan kontrolü
+    if (!name.trim()) {
+        alert('❌ Lütfen adınızı soyadınızı girin!');
+        return;
+    }
+    
+    if (!email.trim()) {
+        alert('❌ Lütfen e-posta adresinizi girin!');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('❌ Şifre en az 6 karakter olmalı!');
+        return;
+    }
+    
     try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        // KULLANICIYI FIRESTORE'A KAYDET (BURASI ÖNEMLİ)
+        
+        // Kullanıcı verilerini Firestore'a kaydet
         await setDoc(doc(db, 'users', cred.user.uid), { 
-            name: name || email.split('@')[0], 
+            name: name.trim(), 
             email: email, 
             totalWordsViewed: 0, 
             examsCompleted: [], 
-            averageScore: 0, 
+            averageScore: 0,
+            quizSandik: [],
+            quizScore: 0,
             createdAt: new Date().toISOString() 
         });
-        alert('Kayıt başarılı! Giriş yapabilirsiniz.');
-        document.getElementById('showLoginBtn').click();
-    } catch(e) { 
-        alert('Hata: ' + e.message); 
+        
+        alert('✅ Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+        document.getElementById('showLoginBtn').click(); // Giriş formuna geç
+        
+        // Formları temizle
+        document.getElementById('regName').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        
+    } catch(error) {
+        console.error('Kayıt hatası:', error);
+        
+        // Kullanıcı dostu hata mesajları
+        let errorMessage = '❌ Kayıt başarısız! ';
+        
+        switch(error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage += 'Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi kullanın veya giriş yapın.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Geçersiz e-posta adresi. Lütfen doğru bir e-posta adresi girin.';
+                break;
+            case 'auth/weak-password':
+                errorMessage += 'Şifre çok zayıf. Lütfen en az 6 karakterli bir şifre girin.';
+                break;
+            case 'auth/operation-not-allowed':
+                errorMessage += 'E-posta/Şifre kaydı aktif değil. Lütfen site yöneticisine başvurun.';
+                break;
+            default:
+                errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+        }
+        
+        alert(errorMessage);
     }
 };
+    
+  
     document.getElementById('doForgotBtn').onclick = async () => {
-        const email = document.getElementById('forgotEmail').value;
-        if (!email) { alert('E-posta girin!'); return; }
-        try {
-            await sendPasswordResetEmail(auth, email);
-            document.getElementById('forgotMessage').innerHTML = '<span style="color:#10b981;">✅ Bağlantı gönderildi!</span>';
-        } catch(e) { document.getElementById('forgotMessage').innerHTML = '<span style="color:#ef4444;">❌ ' + e.message + '</span>'; }
-    };
+    const email = document.getElementById('forgotEmail').value;
+    
+    if (!email.trim()) {
+        alert('❌ Lütfen e-posta adresinizi girin!');
+        return;
+    }
+    
+    try {
+        await sendPasswordResetEmail(auth, email);
+        document.getElementById('forgotMessage').innerHTML = '<span style="color:#10b981;">✅ Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!</span>';
+        
+        // 3 saniye sonra mesajı temizle
+        setTimeout(() => {
+            document.getElementById('forgotMessage').innerHTML = '';
+        }, 5000);
+        
+    } catch(error) {
+        let errorMessage = '';
+        
+        switch(error.code) {
+            case 'auth/invalid-email':
+                errorMessage = '❌ Geçersiz e-posta adresi.';
+                break;
+            case 'auth/user-not-found':
+                errorMessage = '❌ Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.';
+                break;
+            default:
+                errorMessage = '❌ Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+        }
+        
+        document.getElementById('forgotMessage').innerHTML = `<span style="color:#ef4444;">${errorMessage}</span>`;
+        
+        setTimeout(() => {
+            document.getElementById('forgotMessage').innerHTML = '';
+        }, 5000);
+    }
+};
+
+    
     document.getElementById('updatePasswordBtn').onclick = async () => {
         const newPass = document.getElementById('newPassword').value;
         const confirmPass = document.getElementById('confirmPassword').value;
