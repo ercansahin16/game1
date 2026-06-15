@@ -547,7 +547,7 @@
         }
         .zoom-icon i { font-size: 16px; }
 
-        /* ========== KARMA KELİME TEST STİLLERİ ========== */
+        /* ========== Yarışma TEST STİLLERİ ========== */
         .quiz-words-header {
             display: flex;
             justify-content: space-between;
@@ -788,6 +788,98 @@
             .quiz-navigation { gap: 8px; }
             .quiz-navigation .btn { padding: 6px 8px; font-size: 11px; }
         }
+
+
+
+    /* Yardım Modalı - Orta boy, tema uyumlu */
+.help-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.help-modal-content {
+    background: #1a1a1a;
+    border-radius: 20px;
+    padding: 25px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    animation: modalFadeIn 0.3s ease;
+}
+
+body.light-theme .help-modal-content {
+    background: #ffffff;
+    color: #1e1b4b;
+}
+
+.help-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 15px;
+}
+
+body.light-theme .help-modal-header {
+    border-bottom-color: rgba(0,0,0,0.1);
+}
+
+.help-modal-header h3 {
+    color: #f59e0b;
+    font-size: 20px;
+    margin: 0;
+}
+
+.help-modal-close {
+    background: none;
+    border: none;
+    color: #f59e0b;
+    font-size: 24px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.help-modal-close:hover {
+    transform: scale(1.1);
+}
+
+.help-modal-body {
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.help-modal-body ul {
+    margin: 15px 0 15px 20px;
+    padding: 0;
+}
+
+.help-modal-body li {
+    margin-bottom: 10px;
+}
+
+.help-modal-body .correct { color: #10b981; }
+.help-modal-body .wrong { color: #ef4444; }
+.help-modal-body .neutral { color: #f59e0b; }
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -810,7 +902,7 @@
     <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
     <div class="sidebar-item" onclick="goWordsLearning()"><i class="fas fa-book-open"></i> Kelime Öğren</div>
     <div class="sidebar-item" onclick="goExams()"><i class="fas fa-pen"></i> Sınavlar</div>
-    <div class="sidebar-item" onclick="startQuizWords()"><i class="fas fa-random"></i> Karma Kelime</div>
+    <div class="sidebar-item" onclick="startQuizWords()"><i class="fas fa-random"></i> Yarışmaya Hazır mısın?</div>
     <div class="sidebar-item" onclick="showLeaderboard()"><i class="fas fa-trophy"></i> Sıralama</div>
     <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
@@ -898,8 +990,8 @@
             </div>
             <div class="stats-card" id="goKarma" style="cursor: pointer;">
                 <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-dice"></i></div>
-                <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Karma Kelime</div>
-                <div style="font-size: 12px; opacity: 0.7;">Rastgele kelimelerle kendini test et</div>
+                <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Yarışmaya Hazır mısın?</div>
+                <div style="font-size: 12px; opacity: 0.7;">Diğer oyuncularla rekabete gir,Sıralamana bak.</div>
             </div>
             <div class="stats-card" id="goRanking" style="cursor: pointer;">
                 <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-trophy"></i></div>
@@ -1141,10 +1233,10 @@
     let lessonsList = []; // Derslerin listesi
         // Kullanıcının sınav geçmişini global bir değişkende tut
     let userExamHistory = [];
-    // ========== KARMA KELİME ==========
+    // ========== Yarışma ==========
 let karmaWords = [];           // Tüm kelimeler
 
-    // ========== KARMA KELİME TEST SİSTEMİ ==========
+    // ========== Yarışma TEST SİSTEMİ ==========
 let quizWordsAll = [];           // Tüm kelimeler
 let currentQuizWord = null;      // Mevcut kelime
 let quizScore = 0;               // Toplam puan
@@ -2344,7 +2436,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    // ========== KARMA KELİME BUTONLARI ==========
+    // ========== Yarışma BUTONLARI ==========
     const bilmedimBtn = document.getElementById('bilmedimBtn');
     const gecBtn = document.getElementById('gecBtn');
     
@@ -2412,33 +2504,41 @@ gecBtn.onclick = async () => {
     
     // ========== YARDIM MODALI ==========
     const showKarmaHelp = document.getElementById('showKarmaHelp');
-    if (showKarmaHelp) {
-        showKarmaHelp.onclick = () => {
-            const modal = document.createElement('div');
-            modal.className = 'modal visible';
-            modal.style.cssText = 'position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index:1001;';
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 500px;">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
-                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
-                    </div>
-                    <div style="line-height: 1.6;">
-                        <p><strong>📖 Nasıl çalışır?</strong></p>
-                        <ul style="margin-left: 20px; margin-top: 10px;">
-                            <li>✅ <strong style="color:#10b981;">Doğru cevap:</strong> +10 puan</li>
-                            <li>❌ <strong style="color:#ef4444;">Yanlış cevap:</strong> -5 puan, kelime sandığa gider</li>
-                            <li>💡 <strong style="color:#f59e0b;">Bilemedim:</strong> Puan değişmez, kelime sandığa gider</li>
-                            <li>⏩ <strong>Geç:</strong> Puan değişmez, kelime sandığa gider</li>
-                        </ul>
-                        <p style="margin-top: 15px;"><strong>📦 Sandık:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="this.closest('.modal').remove()" style="margin-top: 20px; width:100%;">Anladım</button>
+if (showKarmaHelp) {
+    showKarmaHelp.onclick = () => {
+        // Eski modal varsa kaldır
+        const existingModal = document.querySelector('.help-modal');
+        if (existingModal) existingModal.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'help-modal';
+        modal.innerHTML = `
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
+                    <button class="help-modal-close">&times;</button>
                 </div>
-            `;
-            document.body.appendChild(modal);
-        };
-    }
+                <div class="help-modal-body">
+                    <p><strong>📖 Nasıl çalışır?</strong></p>
+                    <ul>
+                        <li><strong class="correct">✅ Doğru cevap:</strong> +10 puan, yeşil tik</li>
+                        <li><strong class="wrong">❌ Yanlış cevap:</strong> -5 puan, kırmızı çarpı, kelime sandığa gider</li>
+                        <li><strong class="neutral">💡 Bilemedim:</strong> Puan değişmez, doğru cevap gösterilir, kelime sandığa gider</li>
+                        <li><strong class="neutral">⏩ Geç:</strong> Puan değişmez, kelime sandığa gider</li>
+                    </ul>
+                    <p><strong>📦 Sandık Sistemi:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
+                    <p><strong>🏆 Puanlama:</strong> Doğru +10, Yanlış -5, Bilemedim/Geç 0</p>
+                </div>
+                <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="this.closest('.help-modal').remove()">Anladım</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Kapatma işlemleri
+        modal.querySelector('.help-modal-close').onclick = () => modal.remove();
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    };
+}
 });
 
 
@@ -2957,7 +3057,7 @@ async function finishQuizWords() {
     const container = document.getElementById('karmaOptions');
     container.innerHTML = `
         <div class="result-card">
-            <h2>🎉 Karma Kelime Testi Tamamlandı!</h2>
+            <h2>🎉 Yarışma Tamamlandı!</h2>
             <div class="score">${quizScore} Puan</div>
             <div style="margin: 20px 0;">
                 <p>✅ Doğru: ${quizCorrectCount}</p>
@@ -2996,7 +3096,7 @@ document.getElementById('showKarmaHelp').onclick = () => {
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
+                <h3><i class="fas fa-question-circle"></i> Yarışma Sistemi</h3>
                 <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
             </div>
             <div style="line-height: 1.6;">
