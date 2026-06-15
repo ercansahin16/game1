@@ -726,12 +726,13 @@
     <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
     <div class="sidebar-item" onclick="goWordsLearning()"><i class="fas fa-book-open"></i> Kelime Öğren</div>
     <div class="sidebar-item" onclick="goExams()"><i class="fas fa-pen"></i> Sınavlar</div>
+    <div class="sidebar-item" onclick="startQuizWords()"><i class="fas fa-random"></i> Karma Kelime</div>
+    <div class="sidebar-item" onclick="showLeaderboard()"><i class="fas fa-trophy"></i> Sıralama</div>
     <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
     <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
         <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
-         <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
+        <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
         <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-       
     </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -798,9 +799,6 @@
         </div>
     </div>
 
-
-    
-
     <!-- Ana İçerik (Stat Kartları) -->
     <div id="mainContent" style="display: none;">
         <div class="stats-grid">
@@ -815,15 +813,15 @@
                 <div style="font-size: 12px; opacity: 0.7;">Kendinizi test edin</div>
             </div>
             <div class="stats-card" id="goKarma" style="cursor: pointer;">
-    <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-dice"></i></div>
-    <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Karma Kelime</div>
-    <div style="font-size: 12px; opacity: 0.7;">Rastgele kelimelerle kendini test et</div>
-</div>  
+                <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-dice"></i></div>
+                <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🎲 Karma Kelime</div>
+                <div style="font-size: 12px; opacity: 0.7;">Rastgele kelimelerle kendini test et</div>
+            </div>
             <div class="stats-card" id="goRanking" style="cursor: pointer;">
-    <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-trophy"></i></div>
-    <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🏆 Sıralama</div>
-    <div style="font-size: 12px; opacity: 0.7;">Kullanıcılar arası liderlik tablosu</div>
-</div>
+                <div style="font-size: 36px; color: #f59e0b;"><i class="fas fa-trophy"></i></div>
+                <div style="font-size: 18px; font-weight: bold; margin-top: 10px;">🏆 Sıralama</div>
+                <div style="font-size: 12px; opacity: 0.7;">Kullanıcılar arası liderlik tablosu</div>
+            </div>
         </div>
     </div>
 
@@ -843,123 +841,105 @@
                 </select>
             </div>
         </div>
-       <div class="words-area">
-    <div class="words-header">
-        <h3><i class="fas fa-language"></i> Kelimeler</h3>
-        <div class="word-count" id="wordCountInfo">0 kelime</div>
-    </div>
-  
-
-<div id="wordCard" class="word-card" style="position: relative;">
-    <div style="position: absolute; top: 10px; right: 10px;">
-        <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
-            <i class="fas fa-search-plus"></i>
-        </button>
-    </div>
-    <div class="arabic-word" id="arabicWord">---</div>
-    <div class="turkish-word" id="turkishWord"></div>
-</div>
-
-           
-    
-    <div class="navigation">
-        <div class="progress-info">
-            <span id="currentIndex">0</span> / <span id="totalWords">0</span>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+        <div class="words-area">
+            <div class="words-header">
+                <h3><i class="fas fa-language"></i> Kelimeler</h3>
+                <div class="word-count" id="wordCountInfo">0 kelime</div>
+            </div>
+            <div id="wordCard" class="word-card">
+                <div class="arabic-word" id="arabicWord">---</div>
+                <div class="turkish-word" id="turkishWord"></div>
+            </div>
+            <div class="navigation">
+                <div class="progress-info">
+                    <span id="currentIndex">0</span> / <span id="totalWords">0</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="prevBtn" class="btn btn-nav"><i class="fas fa-arrow-left"></i> Önceki</button>
+                    <button id="showBtn" class="btn btn-show"><i class="fas fa-eye"></i> Göster</button>
+                    <button id="nextBtn" class="btn btn-nav">Sonraki <i class="fas fa-arrow-right"></i></button>
+                </div>
             </div>
         </div>
-        
-        <div class="button-group">
-            <button id="prevBtn" class="btn btn-nav"><i class="fas fa-arrow-left"></i> Önceki</button>
-            <button id="showBtn" class="btn btn-show"><i class="fas fa-eye"></i> Göster</button>
-            <button id="nextBtn" class="btn btn-nav">Sonraki <i class="fas fa-arrow-right"></i></button>
-        </div>
-    </div>
-</div>
     </div>
 
     <!-- Sınavlar Ekranı -->
-  <div id="examsScreen" class="hidden">
-    <div class="words-area">
-        <div class="words-header">
-            <h3><i class="fas fa-pen"></i> Sınavlar</h3>
-            <div class="word-count" id="examCountInfo">0 sınav</div>
-        </div>
-        
-        <!-- KİTAP VE DERS SEÇİMİ -->
-        <div class="select-area" style="margin-bottom: 20px;">
-            <div class="select-box">
-                <label><i class="fas fa-book"></i> Kitap Seçiniz</label>
-                <select id="examBookSelect">
-                    <option value="">-- Tüm Kitaplar --</option>
-                </select>
+    <div id="examsScreen" class="hidden">
+        <div class="words-area">
+            <div class="words-header">
+                <h3><i class="fas fa-pen"></i> Sınavlar</h3>
+                <div class="word-count" id="examCountInfo">0 sınav</div>
             </div>
-            <div class="select-box">
-                <label><i class="fas fa-graduation-cap"></i> Ders Seçiniz</label>
-                <select id="examLessonSelect" disabled>
-                    <option value="">-- Önce Kitap Seçin --</option>
-                </select>
+            <div class="select-area" style="margin-bottom: 20px;">
+                <div class="select-box">
+                    <label><i class="fas fa-book"></i> Kitap Seçiniz</label>
+                    <select id="examBookSelect">
+                        <option value="">-- Tüm Kitaplar --</option>
+                    </select>
+                </div>
+                <div class="select-box">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçiniz</label>
+                    <select id="examLessonSelect" disabled>
+                        <option value="">-- Önce Kitap Seçin --</option>
+                    </select>
+                </div>
             </div>
+            <div id="examsList" class="exams-grid"></div>
         </div>
-        
-        <div id="examsList" class="exams-grid"></div>
     </div>
-</div>
 
     <!-- Sınav Çözme Ekranı -->
     <div id="quizScreen" style="display: none;">
-    <div class="words-area">
-        <div id="quizContent"></div>
-    </div>
-</div>
-
-    <!-- Sınav Çözme Ekranı -->
-<div id="quizScreen" style="display: none;">
-    <div class="words-area">
-        <div id="quizContent"></div>
-    </div>
-</div>
-
-<!-- Karma Kelime Ekranı -->
-<div id="karmaScreen" style="display: none;">
-    <div class="words-area">
-        <div class="words-header">
-            <h3><i class="fas fa-dice"></i> Karma Kelime</h3>
-            <div class="word-count" id="karmaStats">0 kelime</div>
+        <div class="words-area">
+            <div id="quizContent"></div>
         </div>
-        <div id="karmaCard" class="word-card">
-            <div class="arabic-word" id="karmaArabicWord">---</div>
-            <div class="turkish-word" id="karmaTurkishWord"></div>
-            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
-                <button id="karmaShowBtn" class="btn btn-show"><i class="fas fa-eye"></i> Anlamı Göster</button>
+    </div>
+
+    <!-- Karma Kelime Ekranı (4 ŞIKLI SİSTEM) -->
+    <div id="karmaScreen" style="display: none;">
+        <div class="words-area">
+            <div class="quiz-words-header">
+                <div class="quiz-words-info">
+                    <div><i class="fas fa-brain"></i> Puan: <span id="karmaScore">0</span></div>
+                    <div><i class="fas fa-percent"></i> Başarı: <span id="karmaPercent">0</span>%</div>
+                    <div><i class="fas fa-box"></i> Sandık: <span id="sandikCount">0</span></div>
+                </div>
+                <button class="btn-help" id="showKarmaHelp"><i class="fas fa-question-circle"></i></button>
             </div>
-            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;">
-                <button id="karmaCorrectBtn" class="btn btn-success" style="background: #10b981;"><i class="fas fa-check"></i> Doğru Bildim</button>
-                <button id="karmaWrongBtn" class="btn btn-danger" style="background: #ef4444;"><i class="fas fa-times"></i> Yanlış Bildim</button>
+            <div class="quiz-word-card">
+                <div class="arabic-quiz-word" id="karmaArabicWord">---</div>
+                <div class="options-quiz" id="karmaOptions"></div>
+                <div class="quiz-actions">
+                    <button id="bilmedimBtn" class="btn btn-warning"><i class="fas fa-lightbulb"></i> Bilemedim</button>
+                    <button id="gecBtn" class="btn btn-secondary"><i class="fas fa-forward"></i> Geç</button>
+                </div>
+            </div>
+            <div class="quiz-progress">
+                <div class="progress-info">
+                    <span id="karmaCurrent">0</span> / <span id="karmaTotal">0</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="karmaProgressFill"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="karmaResult" style="margin-top: 20px; text-align: center;"></div>
     </div>
-</div>
 
     <!-- Sıralama Ekranı -->
-<div id="rankingScreen" style="display: none;">
-    <div class="words-area">
-        <div class="words-header">
-            <h3><i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu</h3>
-            <div class="word-count" id="rankingCount">0 oyuncu</div>
+    <div id="rankingScreen" style="display: none;">
+        <div class="words-area">
+            <div class="words-header">
+                <h3><i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu</h3>
+                <div class="word-count" id="rankingCount">0 oyuncu</div>
+            </div>
+            <div id="rankingList" class="leaderboard-list"></div>
+            <div id="userRank" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
+            <button class="btn btn-nav" style="margin-top: 20px; width: 100%;" onclick="goHome()">← Ana Sayfaya Dön</button>
         </div>
-        <div id="rankingList" style="max-height: 500px; overflow-y: auto;"></div>
-        <div id="userRank" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
     </div>
-</div>
-
-<!-- Profil Ekranı -->
-<div id="profileScreen" style="display: none;">
-    ...
-</div>
-    
 
     <!-- Profil Ekranı -->
     <div id="profileScreen" style="display: none;">
@@ -999,6 +979,10 @@
                 <div class="profile-stat-card">
                     <div id="averageScore">0</div>
                     <div>Ortalama Puan</div>
+                </div>
+                <div class="profile-stat-card">
+                    <div id="sandikCountProfile">0</div>
+                    <div><i class="fas fa-box"></i> Sandıktaki Kelime</div>
                 </div>
             </div>
 
