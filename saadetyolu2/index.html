@@ -2981,7 +2981,7 @@ window.startQuizWords = async () => {
         console.log('📦 Sandık yüklendi:', quizSandik.length, 'kelime');
     }
     
-    // Değişkenleri sıfırla (SADECE BUNLAR)
+    // ========== TÜM DEĞİŞKENLERİ SIFIRLA ==========
     quizScore = 0;
     quizCorrectCount = 0;
     quizAnswered = false;
@@ -2998,8 +2998,10 @@ window.startQuizWords = async () => {
     document.getElementById('sandikCount').textContent = quizSandik.length;
     document.getElementById('karmaScore').textContent = '0';
     document.getElementById('karmaPercent').textContent = '0';
-    document.getElementById('karmaCurrent').textContent = '0';
+    document.getElementById('karmaCurrent').textContent = '0';  // 0'dan başla, ilk kelimede 1 olacak
     document.getElementById('karmaProgressFill').style.width = '0%';
+    
+    console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
     
     if (quizWordsAll.length > 0) {
         loadNextQuizWord();
@@ -3072,15 +3074,15 @@ function displayQuizWord(word) {
     
     document.getElementById('karmaArabicWord').textContent = word.arabic;
     
-    // Toplam soru ve gidilen soru sayısını hesapla
-    const totalQuestions = quizWordsAll.length + quizSandik.length;
-    const gidilenSoru = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex) + 1;
+    // Gidilen soru sayısını doğru hesapla
+    const gidilenSoru = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
+    const soruNo = gidilenSoru + 1;
     
-    console.log('📊 Soru:', gidilenSoru, '/', totalQuestions);
+    console.log('📊 Gidilen soru:', gidilenSoru, 'Soru No:', soruNo);
     
-    document.getElementById('karmaCurrent').textContent = gidilenSoru;
-    document.getElementById('karmaTotal').textContent = totalQuestions;
-    document.getElementById('karmaProgressFill').style.width = (gidilenSoru / totalQuestions) * 100 + '%';
+    document.getElementById('karmaCurrent').textContent = soruNo;
+    document.getElementById('karmaTotal').textContent = quizWordsAll.length + quizSandik.length;
+    document.getElementById('karmaProgressFill').style.width = (soruNo / (quizWordsAll.length + quizSandik.length)) * 100 + '%';
     
     const container = document.getElementById('karmaOptions');
     container.innerHTML = options.map((opt, i) => `
