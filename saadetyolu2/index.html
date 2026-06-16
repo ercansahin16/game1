@@ -2554,9 +2554,9 @@ function stopTimer() {
 
 
 
-    // ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
+// ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
 document.addEventListener('DOMContentLoaded', function() {
-   // ========== GİRİŞ EKRANINDA TÜM EKRANLARI GİZLE ==========
+    // ========== GİRİŞ EKRANINDA TÜM EKRANLARI GİZLE ==========
     const loginScreen = document.getElementById('loginScreen');
     const karmaScreen = document.getElementById('karmaScreen');
     const rankingScreen = document.getElementById('rankingScreen');
@@ -2581,10 +2581,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== SINAV FİLTRELEME ==========
     const examBookSelect = document.getElementById('examBookSelect');
     const examLessonSelect = document.getElementById('examLessonSelect');
-    if (loginScreen && loginScreen.style.display !== 'none') {
-        document.getElementById('karmaScreen').style.display = 'none';
-        document.getElementById('rankingScreen').style.display = 'none';
-    }
     
     if (examBookSelect) {
         examBookSelect.onchange = async () => {
@@ -2619,117 +2615,102 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    // ========== Yarışma BUTONLARI ==========
+    // ========== YARIŞMA BUTONLARI ==========
     const bilmedimBtn = document.getElementById('bilmedimBtn');
     const gecBtn = document.getElementById('gecBtn');
     
     if (bilmedimBtn) {
-        // Bilemedim butonu
-bilmedimBtn.onclick = async () => {
-    if (quizAnswered || !currentQuizWord) return;
-    quizAnswered = true;
-    
-    const allOptions = document.querySelectorAll('.option-quiz');
-    allOptions.forEach(opt => {
-        if (opt.dataset.isCorrect === 'true') {
-            opt.classList.add('correct-highlight');
-        }
-    });
-    
-    showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
-    
-    // Sandığa ekle (puan değişmez)
-    if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-        await saveSandikToFirestore();
-        updateSandikDisplay();
-    }
-    
-    allOptions.forEach(opt => opt.classList.add('disabled'));
-    
-    // 1 SANİYE SONRA GEÇ
-    setTimeout(() => {
-        loadNextQuizWord();
-    }, 1000);
-};
+        bilmedimBtn.onclick = async () => {
+            if (quizAnswered || !currentQuizWord) return;
+            quizAnswered = true;
+            
+            const allOptions = document.querySelectorAll('.option-quiz');
+            allOptions.forEach(opt => {
+                if (opt.dataset.isCorrect === 'true') {
+                    opt.classList.add('correct-highlight');
+                }
+            });
+            
+            showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
+            
+            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+                await saveSandikToFirestore();
+                updateSandikDisplay();
+            }
+            
+            allOptions.forEach(opt => opt.classList.add('disabled'));
+            
+            setTimeout(() => {
+                loadNextQuizWord();
+            }, 1000);
+        };
     }
     
     if (gecBtn) {
-        // Geç butonu
-gecBtn.onclick = async () => {
-    if (quizAnswered || !currentQuizWord) return;
-    quizAnswered = true;
-    
-    const allOptions = document.querySelectorAll('.option-quiz');
-    allOptions.forEach(opt => {
-        if (opt.dataset.isCorrect === 'true') {
-            opt.classList.add('correct-highlight');
-        }
-    });
-    
-    showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
-    
-    // Sandığa ekle (puan değişmez)
-    if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-        await saveSandikToFirestore();
-        updateSandikDisplay();
-    }
-    
-    allOptions.forEach(opt => opt.classList.add('disabled'));
-    
-    // 1 SANİYE SONRA GEÇ
-    setTimeout(() => {
-        loadNextQuizWord();
-    }, 1000);
-};
+        gecBtn.onclick = async () => {
+            if (quizAnswered || !currentQuizWord) return;
+            quizAnswered = true;
+            
+            const allOptions = document.querySelectorAll('.option-quiz');
+            allOptions.forEach(opt => {
+                if (opt.dataset.isCorrect === 'true') {
+                    opt.classList.add('correct-highlight');
+                }
+            });
+            
+            showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
+            
+            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+                quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+                await saveSandikToFirestore();
+                updateSandikDisplay();
+            }
+            
+            allOptions.forEach(opt => opt.classList.add('disabled'));
+            
+            setTimeout(() => {
+                loadNextQuizWord();
+            }, 1000);
+        };
     }
     
     // ========== YARDIM MODALI ==========
     const showKarmaHelp = document.getElementById('showKarmaHelp');
-if (showKarmaHelp) {
-    showKarmaHelp.onclick = () => {
-        // Eski modal varsa kaldır
-        const existingModal = document.querySelector('.help-modal');
-        if (existingModal) existingModal.remove();
-        
-        const modal = document.createElement('div');
-        modal.className = 'help-modal';
-        modal.innerHTML = `
-            <div class="help-modal-content">
-                <div class="help-modal-header">
-                    <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
-                    <button class="help-modal-close">&times;</button>
+    if (showKarmaHelp) {
+        showKarmaHelp.onclick = () => {
+            const existingModal = document.querySelector('.help-modal');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.className = 'help-modal';
+            modal.innerHTML = `
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
+                        <button class="help-modal-close">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>📖 Nasıl çalışır?</strong></p>
+                        <ul>
+                            <li><strong class="correct">✅ Doğru cevap:</strong> +10 puan, yeşil tik</li>
+                            <li><strong class="wrong">❌ Yanlış cevap:</strong> -5 puan, kırmızı çarpı, kelime sandığa gider</li>
+                            <li><strong class="neutral">💡 Bilemedim:</strong> Puan değişmez, doğru cevap gösterilir, kelime sandığa gider</li>
+                            <li><strong class="neutral">⏩ Geç:</strong> Puan değişmez, kelime sandığa gider</li>
+                        </ul>
+                        <p><strong>📦 Sandık Sistemi:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
+                        <p><strong>🏆 Puanlama:</strong> Doğru +10, Yanlış -5, Bilemedim/Geç 0</p>
+                    </div>
+                    <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="this.closest('.help-modal').remove()">Anladım</button>
                 </div>
-                <div class="help-modal-body">
-                    <p><strong>📖 Nasıl çalışır?</strong></p>
-                    <ul>
-                        <li><strong class="correct">✅ Doğru cevap:</strong> +10 puan, yeşil tik</li>
-                        <li><strong class="wrong">❌ Yanlış cevap:</strong> -5 puan, kırmızı çarpı, kelime sandığa gider</li>
-                        <li><strong class="neutral">💡 Bilemedim:</strong> Puan değişmez, doğru cevap gösterilir, kelime sandığa gider</li>
-                        <li><strong class="neutral">⏩ Geç:</strong> Puan değişmez, kelime sandığa gider</li>
-                    </ul>
-                    <p><strong>📦 Sandık Sistemi:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
-                    <p><strong>🏆 Puanlama:</strong> Doğru +10, Yanlış -5, Bilemedim/Geç 0</p>
-                </div>
-                <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="this.closest('.help-modal').remove()">Anladım</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        // Kapatma işlemleri
-        modal.querySelector('.help-modal-close').onclick = () => modal.remove();
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    };
-}
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.help-modal-close').onclick = () => modal.remove();
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        };
+    }
 });
-
-
-
-
-
-
-
 
 
 
