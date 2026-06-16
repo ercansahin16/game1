@@ -3059,7 +3059,7 @@ window.startQuizWords = async () => {
 // Sonraki kelimeyi yükle
 // Sandıktan kaç kere kelime alındığını tut
 async function loadNextQuizWord() {
-    console.log('🔄 Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
+    console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
     
     quizAnswered = false;
     
@@ -3067,54 +3067,62 @@ async function loadNextQuizWord() {
     let isFromSandik = false;
     
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    const sandikGosterilen = sandikAlmaSayaci;
-    
-    console.log('📊 Normal gösterilen:', normalGosterilen, 'Sandık gösterilen:', sandikGosterilen);
+    console.log('📊 Normal gösterilen:', normalGosterilen);
     console.log('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
     
-    // Sandıktan kelime al (her 10 kelimede bir)
-    if (quizSandik.length > 0 && normalGosterilen > 0 && normalGosterilen % 10 === 0 && !sandikAktif && baslangicIndex <= bitisIndex) {
-        // Sandıktan rastgele KALDIR (silmek için değil, sadece göstermek için)
-        const randomIndex = Math.floor(Math.random() * quizSandik.length);
-        word = quizSandik[randomIndex];
-        isFromSandik = true;
-        sandikAktif = true;
-        sandikAlmaSayaci++;
-        console.log('📦 Sandıktan kelime alındı (10 kelimede bir):', word.arabic);
-    }
-    // Normal kelimeler bitti
-    else if (baslangicIndex > bitisIndex) {
-        if (quizSandik.length > 0) {
+    // SANDIKTAN KELİME AL (ÖNCE KONTROL ET)
+    if (quizSandik.length > 0) {
+        // Normal kelimeler bitti mi?
+        if (baslangicIndex > bitisIndex) {
+            // Normal bitti, sandıktan al
             const randomIndex = Math.floor(Math.random() * quizSandik.length);
             word = quizSandik[randomIndex];
             isFromSandik = true;
-            console.log('📦 Normal bitti, sandıktan:', word.arabic);
+            console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
+        }
+        // Her 10 normal kelimede bir sandıktan al
+        else if (normalGosterilen > 0 && normalGosterilen % 10 === 0 && !sandikAktif) {
+            const randomIndex = Math.floor(Math.random() * quizSandik.length);
+            word = quizSandik[randomIndex];
+            isFromSandik = true;
+            sandikAktif = true;
+            sandikAlmaSayaci++;
+            console.log('📦 10 kelimede bir sandıktan alındı:', word.arabic);
+        }
+    }
+    
+    // Normal kelime al (eğer sandıktan alınmadıysa)
+    if (!word) {
+        if (baslangicIndex <= bitisIndex) {
+            if (siraSoldan) {
+                word = quizWordsAll[baslangicIndex];
+                baslangicIndex++;
+                console.log('📖 Eski kelime:', word.arabic);
+            } else {
+                word = quizWordsAll[bitisIndex];
+                bitisIndex--;
+                console.log('📖 Yeni kelime:', word.arabic);
+            }
+            siraSoldan = !siraSoldan;
+            sandikAktif = false;
         } else {
+            // Normal kelimeler bitti ve sandık boş
+            console.log('⚠️ Normal kelimeler bitti, sandık boş!');
             finishQuizWords();
             return;
         }
     }
-    // Normal kelime al
-    else {
-        if (siraSoldan) {
-            word = quizWordsAll[baslangicIndex];
-            baslangicIndex++;
-            console.log('📖 Eski kelime:', word.arabic);
-        } else {
-            word = quizWordsAll[bitisIndex];
-            bitisIndex--;
-            console.log('📖 Yeni kelime:', word.arabic);
-        }
-        siraSoldan = !siraSoldan;
-        sandikAktif = false;
-    }
     
     if (!word) {
+        console.log('❌ Kelime bulunamadı!');
         finishQuizWords();
         return;
     }
     
-    currentQuizWord = { ...word, isFromSandik };
+    // ÖNEMLİ: isFromSandik değerini KORU
+    currentQuizWord = { ...word, isFromSandik: isFromSandik };
+    console.log('📌 Mevcut kelime:', currentQuizWord.arabic, 'Sandıktan mı?', currentQuizWord.isFromSandik);
+    
     displayQuizWord(word);
 }
 
@@ -3193,29 +3201,26 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         showTempMessage('✅ Doğru! +10 puan', '#10b981');
         
         // ===== SANDIKTAN KESİN DÜŞÜR =====
-        if (word.isFromSandik) {
-            console.log('📦 SANDIKTAN DÜŞÜRME: ÖNCE', quizSandik.map(w => w.arabic));
+        // word.isFromSandik veya currentQuizWord.isFromSandik kontrol et
+        const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
+        
+        if (sandikKontrol) {
+            console.log('📦 SANDIKTAN DÜŞÜRME DENENİYOR:', word.arabic);
+            console.log('📦 Düşürme öncesi sandık:', quizSandik.map(w => w.arabic));
             
-            // KESİN DÜŞÜRME - ID ile filtrele
+            // KESİN DÜŞÜRME
             const oncekiSayi = quizSandik.length;
             quizSandik = quizSandik.filter(w => w.id !== word.id);
             const sonrakiSayi = quizSandik.length;
             
-            if (oncekiSayi !== sonrakiSayi) {
+            if (oncekiSayi > sonrakiSayi) {
                 console.log('✅ Sandıktan çıkarıldı (DOĞRU):', word.arabic);
                 await saveSandikToFirestore();
                 updateSandikDisplay();
-                console.log('📦 SANDIKTAN DÜŞÜRME: SONRA', quizSandik.map(w => w.arabic));
+                console.log('📦 Düşürme sonrası sandık:', quizSandik.map(w => w.arabic));
             } else {
                 console.log('⚠️ Kelime sandıktan çıkarılamadı! ID:', word.id);
                 console.log('⚠️ Sandıktaki ID\'ler:', quizSandik.map(w => w.id));
-            }
-            
-            // Sandık boşaldıysa kontrol et
-            if (quizSandik.length === 0 && baslangicIndex > bitisIndex) {
-                console.log('🎉 Tüm kelimeler bitti!');
-                setTimeout(() => finishQuizWords(), 500);
-                return;
             }
         }
     } else {
@@ -3230,7 +3235,8 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
         // Sandığa ekle (sadece normal kelimeler)
-        if (!word.isFromSandik) {
+        const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
+        if (!sandikKontrol) {
             const alreadyInSandik = quizSandik.some(w => w.id === word.id);
             if (!alreadyInSandik) {
                 quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
@@ -3243,7 +3249,7 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     
     // Puan ve başarı yüzdesini güncelle
     document.getElementById('karmaScore').textContent = quizScore;
-    const percent = Math.round((quizCorrectCount / quizTotalQuestions) * 100);
+    const percent = quizTotalQuestions > 0 ? Math.round((quizCorrectCount / quizTotalQuestions) * 100) : 0;
     document.getElementById('karmaPercent').textContent = percent;
     
     allOptions.forEach(opt => opt.classList.add('disabled'));
