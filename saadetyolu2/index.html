@@ -3070,28 +3070,29 @@ async function loadNextQuizWord() {
     console.log('📊 Normal gösterilen:', normalGosterilen);
     console.log('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
     
-    // SANDIKTAN KELİME AL (ÖNCE KONTROL ET)
-    if (quizSandik.length > 0) {
-        // Normal kelimeler bitti mi?
-        if (baslangicIndex > bitisIndex) {
-            // Normal bitti, sandıktan al
+    // Normal kelimeler bitti mi?
+    if (baslangicIndex > bitisIndex) {
+        if (quizSandik.length > 0) {
             const randomIndex = Math.floor(Math.random() * quizSandik.length);
             word = quizSandik[randomIndex];
             isFromSandik = true;
             console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
-        }
-        // Her 10 normal kelimede bir sandıktan al
-        else if (normalGosterilen > 0 && normalGosterilen % 10 === 0 && !sandikAktif) {
-            const randomIndex = Math.floor(Math.random() * quizSandik.length);
-            word = quizSandik[randomIndex];
-            isFromSandik = true;
-            sandikAktif = true;
-            sandikAlmaSayaci++;
-            console.log('📦 10 kelimede bir sandıktan alındı:', word.arabic);
+        } else {
+            finishQuizWords();
+            return;
         }
     }
+    // Her 10 kelimede bir sandıktan al
+    else if (quizSandik.length > 0 && normalGosterilen > 0 && normalGosterilen % 10 === 0 && !sandikAktif) {
+        const randomIndex = Math.floor(Math.random() * quizSandik.length);
+        word = quizSandik[randomIndex];
+        isFromSandik = true;
+        sandikAktif = true;
+        sandikAlmaSayaci++;
+        console.log('📦 10 kelimede bir sandıktan alındı:', word.arabic);
+    }
     
-    // Normal kelime al (eğer sandıktan alınmadıysa)
+    // Normal kelime al
     if (!word) {
         if (baslangicIndex <= bitisIndex) {
             if (siraSoldan) {
@@ -3106,22 +3107,21 @@ async function loadNextQuizWord() {
             siraSoldan = !siraSoldan;
             sandikAktif = false;
         } else {
-            // Normal kelimeler bitti ve sandık boş
-            console.log('⚠️ Normal kelimeler bitti, sandık boş!');
             finishQuizWords();
             return;
         }
     }
     
     if (!word) {
-        console.log('❌ Kelime bulunamadı!');
         finishQuizWords();
         return;
     }
     
-    // ÖNEMLİ: isFromSandik değerini KORU
     currentQuizWord = { ...word, isFromSandik: isFromSandik };
-    console.log('📌 Mevcut kelime:', currentQuizWord.arabic, 'Sandıktan mı?', currentQuizWord.isFromSandik);
+    
+    // ===== TOPLAM SORUYU GÜNCELLE =====
+    const toplamSoru = quizWordsAll.length + quizSandik.length;
+    document.getElementById('karmaTotal').textContent = toplamSoru;
     
     displayQuizWord(word);
 }
@@ -3148,17 +3148,18 @@ function displayQuizWord(word) {
         console.log('📦 Mevcut sandık içeriği:', quizSandik.map(w => w.arabic));
     }
     
-    // Soru numarasını hesapla
+    // ===== DOĞRU HESAPLAMA =====
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
     const sandikGosterilen = sandikAlmaSayaci;
     const soruNo = normalGosterilen + sandikGosterilen;
+    const toplamSoru = quizWordsAll.length + quizSandik.length;
     
-    console.log('📊 Soru No:', soruNo, '| Normal:', normalGosterilen, '| Sandık:', sandikGosterilen);
+    console.log('📊 Soru No:', soruNo, '| Normal:', normalGosterilen, '| Sandık:', sandikGosterilen, '| Toplam:', toplamSoru);
     
-    document.getElementById('karmaCurrent').textContent = soruNo;
-    document.getElementById('karmaTotal').textContent = quizWordsAll.length + quizSandik.length;
+    document.getElementById('karmaCurrent').textContent = soruNo > 0 ? soruNo : 1;
+    document.getElementById('karmaTotal').textContent = toplamSoru;
     
-    const progress = (soruNo / (quizWordsAll.length + quizSandik.length)) * 100;
+    const progress = (soruNo / toplamSoru) * 100;
     document.getElementById('karmaProgressFill').style.width = `${progress}%`;
     
     // Seviye bilgisini güncelle
@@ -3184,7 +3185,6 @@ function displayQuizWord(word) {
     quizAnswered = false;
     document.querySelectorAll('.option-quiz').forEach(opt => opt.classList.remove('disabled'));
 }
-
     
 // Seçenek seçildiğinde
 async function selectQuizOption(selectedDiv, word, correctIndex) {
@@ -3201,14 +3201,12 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         showTempMessage('✅ Doğru! +10 puan', '#10b981');
         
         // ===== SANDIKTAN KESİN DÜŞÜR =====
-        // word.isFromSandik veya currentQuizWord.isFromSandik kontrol et
         const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
         
         if (sandikKontrol) {
             console.log('📦 SANDIKTAN DÜŞÜRME DENENİYOR:', word.arabic);
             console.log('📦 Düşürme öncesi sandık:', quizSandik.map(w => w.arabic));
             
-            // KESİN DÜŞÜRME
             const oncekiSayi = quizSandik.length;
             quizSandik = quizSandik.filter(w => w.id !== word.id);
             const sonrakiSayi = quizSandik.length;
@@ -3234,7 +3232,6 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
-        // Sandığa ekle (sadece normal kelimeler)
         const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
         if (!sandikKontrol) {
             const alreadyInSandik = quizSandik.some(w => w.id === word.id);
@@ -3247,10 +3244,13 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         }
     }
     
-    // Puan ve başarı yüzdesini güncelle
+    // ===== PUAN VE BAŞARI YÜZDESİ =====
     document.getElementById('karmaScore').textContent = quizScore;
-    const percent = quizTotalQuestions > 0 ? Math.round((quizCorrectCount / quizTotalQuestions) * 100) : 0;
-    document.getElementById('karmaPercent').textContent = percent;
+    
+    // DOĞRU YÜZDE HESAPLAMA - Toplam soru üzerinden
+    const toplamSoru = quizWordsAll.length + quizSandik.length;
+    const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
+    document.getElementById('karmaPercent').textContent = percent > 100 ? 100 : percent;
     
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
@@ -3349,6 +3349,11 @@ async function finishQuizWords() {
     
     const container = document.getElementById('karmaOptions');
     
+    // ===== DOĞRU YÜZDE =====
+    const toplamSoru = quizWordsAll.length + quizSandik.length;
+    const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
+    const finalPercent = percent > 100 ? 100 : percent;
+    
     // Seviye tamamlandı
     if (normalBitti && sandikBitti && mevcutSeviye < toplamSeviye) {
         container.innerHTML = `
@@ -3357,7 +3362,7 @@ async function finishQuizWords() {
                 <div class="score">${quizScore} Puan</div>
                 <div style="margin: 20px 0;">
                     <p>✅ Doğru: ${quizCorrectCount}</p>
-                    <p>📊 Başarı: ${Math.round((quizCorrectCount / quizTotalQuestions) * 100)}%</p>
+                    <p>📊 Başarı: ${finalPercent}%</p>
                     <p style="color: #f59e0b;">🏆 ${mevcutSeviye}/${toplamSeviye}</p>
                 </div>
                 <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
@@ -3375,6 +3380,7 @@ async function finishQuizWords() {
                 <div style="font-size: 48px;">🎊</div>
                 <div class="score">${quizScore} Puan</div>
                 <p style="color: #10b981;">🌟 TÜM SEVİYELER TAMAMLANDI!</p>
+                <p>📊 Başarı: ${finalPercent}%</p>
                 <button class="btn btn-primary" onclick="goHome()">Ana Sayfaya Dön</button>
             </div>
         `;
@@ -3386,6 +3392,7 @@ async function finishQuizWords() {
         <div class="result-card">
             <h2>📦 Sandıkta ${quizSandik.length} kelime kaldı!</h2>
             <div class="score">${quizScore} Puan</div>
+            <p>📊 Başarı: ${finalPercent}%</p>
             <button class="btn btn-primary" onclick="devamEt()">📦 Sandıktan Devam Et</button>
             <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
         </div>
