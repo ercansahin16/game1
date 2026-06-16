@@ -1312,24 +1312,25 @@ window.goHome = () => {
         mainContent.classList.remove('hidden');
     }
     
-    // Tüm ekranları gizle ('karmaScreen' ve 'rankingScreen' EKLENDİ)
-    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'examsScreen', 'quizScreen', 'profileScreen'];
+    // Tüm ekranları gizle
+    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'quizScreen', 'profileScreen', 'examsScreen'];
     screens.forEach(screen => {
         const el = document.getElementById(screen);
         if (el) {
             if (screen === 'examsScreen') {
                 el.classList.add('hidden');
+                el.style.display = 'none';  // EKSTRA GÜVENLİK
             } else {
                 el.style.display = 'none';
             }
         }
     });
     
-    // Giriş ekranını kontrol et (eğer giriş yapılmamışsa)
-    const loginScreen = document.getElementById('loginScreen');
-    if (loginScreen && !currentUser) {
-        loginScreen.style.display = 'block';
-        mainContent.style.display = 'none';
+    // Giriş yapılmamışsa giriş ekranını göster
+    if (!currentUser) {
+        const loginScreen = document.getElementById('loginScreen');
+        if (loginScreen) loginScreen.style.display = 'block';
+        if (mainContent) mainContent.style.display = 'none';
     }
     
     // Logo yazısını eski haline döndür
@@ -1374,7 +1375,10 @@ const zoomBtn = document.getElementById('zoomBtn');
 if (zoomBtn) {
     zoomBtn.onclick = toggleZoom;
 }
-window.goExams = async () => {
+
+
+
+    window.goExams = async () => {
     // Timer'ı durdur
     stopTimer();
     examCompleted = false;
@@ -1382,8 +1386,11 @@ window.goExams = async () => {
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
     document.getElementById('examsScreen').style.display = 'block';
+    document.getElementById('examsScreen').classList.remove('hidden');  // EKLE
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'none';
+    document.getElementById('rankingScreen').style.display = 'none';
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
@@ -1398,6 +1405,7 @@ window.goExams = async () => {
     
     closeMenu();
 };
+    
 
 window.showProfile = function() {
     // Ana sayfayı gizle
