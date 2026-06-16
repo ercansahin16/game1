@@ -3734,6 +3734,51 @@ console.log('Düzeltilmiş soru no:', gidilen);
 
 
 
+
+
+
+
+
+
+    // Global erişim için (script içine ekle)
+window.getKarmaStatus = function() {
+    const ekranKelime = document.getElementById('karmaArabicWord')?.textContent || '---';
+    console.log('===== KARMA DURUM =====');
+    console.log('1. Ekrandaki kelime:', ekranKelime);
+    console.log('2. Sandık sayısı:', quizSandik?.length || 0);
+    console.log('3. Sandık kelimeleri:', quizSandik?.map(w => w.arabic) || []);
+    console.log('4. Normal index:', baslangicIndex, 'Bitiş index:', bitisIndex);
+    console.log('5. Seviye:', mevcutSeviye, '/', toplamSeviye);
+    console.log('6. Puan:', quizScore);
+    console.log('7. Doğru sayısı:', quizCorrectCount);
+    
+    // Ekrandaki kelime sandıkta var mı?
+    const sandiktaVar = quizSandik?.some(w => w.arabic === ekranKelime) || false;
+    console.log('8. Ekrandaki kelime sandıkta var mı?', sandiktaVar);
+    
+    if (sandiktaVar) {
+        const kelime = quizSandik.find(w => w.arabic === ekranKelime);
+        console.log('9. Sandıktaki kelime detayı:', { id: kelime?.id, arabic: kelime?.arabic, turkish: kelime?.turkish });
+    }
+    
+    return { ekranKelime, sandikSayisi: quizSandik?.length || 0, sandiktaVar };
+};
+
+window.sandikTemizle = async function() {
+    if (!currentUser) {
+        alert('❌ Giriş yapmış kullanıcı yok!');
+        return;
+    }
+    if (confirm('📦 Sandığı tamamen sıfırlamak istediğinize emin misiniz?')) {
+        quizSandik = [];
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+        console.log('✅ Sandık sıfırlandı!');
+        alert('✅ Sandık başarıyla sıfırlandı!');
+    }
+};
+    
+
     // Global erişim için (script içine ekle)
 window.getSandik = () => {
     console.log('Sandık içeriği:', quizSandik);
