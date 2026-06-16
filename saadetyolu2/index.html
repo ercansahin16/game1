@@ -3192,28 +3192,28 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         selectedDiv.classList.add('correct-highlight');
         showTempMessage('✅ Doğru! +10 puan', '#10b981');
         
-        // ===== SANDIKTAN DÜŞÜR - KESİN ÇÖZÜM =====
+        // ===== SANDIKTAN KESİN DÜŞÜR =====
         if (word.isFromSandik) {
-            console.log('📦 SANDIKTAN DÜŞÜRME DENENİYOR:', word.arabic, 'ID:', word.id);
-            console.log('📦 Mevcut sandık (öncesi):', quizSandik.map(w => w.arabic));
+            console.log('📦 SANDIKTAN DÜŞÜRME: ÖNCE', quizSandik.map(w => w.arabic));
             
             // KESİN DÜŞÜRME - ID ile filtrele
             const oncekiSayi = quizSandik.length;
             quizSandik = quizSandik.filter(w => w.id !== word.id);
             const sonrakiSayi = quizSandik.length;
             
-            if (oncekiSayi > sonrakiSayi) {
+            if (oncekiSayi !== sonrakiSayi) {
                 console.log('✅ Sandıktan çıkarıldı (DOĞRU):', word.arabic);
                 await saveSandikToFirestore();
                 updateSandikDisplay();
+                console.log('📦 SANDIKTAN DÜŞÜRME: SONRA', quizSandik.map(w => w.arabic));
             } else {
-                console.log('⚠️ Kelime sandıktan çıkarılamadı! ID eşleşmiyor:', word.id);
+                console.log('⚠️ Kelime sandıktan çıkarılamadı! ID:', word.id);
                 console.log('⚠️ Sandıktaki ID\'ler:', quizSandik.map(w => w.id));
             }
             
             // Sandık boşaldıysa kontrol et
             if (quizSandik.length === 0 && baslangicIndex > bitisIndex) {
-                console.log('🎉 Tüm kelimeler bitti! Seviye tamamlandı!');
+                console.log('🎉 Tüm kelimeler bitti!');
                 setTimeout(() => finishQuizWords(), 500);
                 return;
             }
