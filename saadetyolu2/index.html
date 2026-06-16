@@ -4226,6 +4226,31 @@ async function firestoreOperation(operation, fallbackData = null) {
     }
 }
 
+    // Tüm hataları yakalayan güvenli fonksiyon
+async function safeOperation(operation) {
+    try {
+        return await operation();
+    } catch (error) {
+        console.error('İşlem hatası:', error);
+        
+        // Kullanıcı dostu mesaj
+        let userMessage = '❌ Bir hata oluştu: ';
+        if (error.message && error.message.includes('offline')) {
+            userMessage = '⚠️ İnternet bağlantınız kesik. Lütfen bağlantınızı kontrol edin.';
+        } else if (error.message) {
+            userMessage += error.message;
+        } else {
+            userMessage += 'Bilinmeyen hata.';
+        }
+        
+        if (typeof showTempMessage === 'function') {
+            showTempMessage(userMessage, '#ef4444');
+        } else {
+            alert(userMessage);
+        }
+        return null;
+    }
+}
 // Örnek kullanım
 // await firestoreOperation(() => updateDoc(userRef, data));
 
