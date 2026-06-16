@@ -1308,12 +1308,21 @@ window.goHome = () => {
     const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'examsScreen', 'quizScreen', 'profileScreen'];
     screens.forEach(screen => {
         const el = document.getElementById(screen);
-        if (el) el.style.display = 'none';
+        if (el) {
+            if (screen === 'examsScreen') {
+                el.classList.add('hidden');
+            } else {
+                el.style.display = 'none';
+            }
+        }
     });
     
-    // examsScreen özelinde classList'i de temizle (güvenlik için)
-    const examsScreen = document.getElementById('examsScreen');
-    if (examsScreen) examsScreen.classList.add('hidden');
+    // Giriş ekranını kontrol et (eğer giriş yapılmamışsa)
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen && !currentUser) {
+        loginScreen.style.display = 'block';
+        mainContent.style.display = 'none';
+    }
     
     // Logo yazısını eski haline döndür
     const homeLogo = document.getElementById('homeLogo');
