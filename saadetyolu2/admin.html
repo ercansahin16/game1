@@ -2838,10 +2838,11 @@ document.getElementById('resetAllSandikBtn').onclick = async () => {
 };
 
 // ===== 2. Tüm Kullanıcıların Puanını Sıfırla =====
+// ===== 2. Tüm Kullanıcıların Puanını Sıfırla (Sıralama dahil) =====
 document.getElementById('resetAllScoresBtn').onclick = async () => {
     const resultDiv = document.getElementById('resetScoresResult');
     
-    if (!confirm('🚨 TÜM kullanıcıların puanları sıfırlanacak! Devam?')) {
+    if (!confirm('🚨 TÜM kullanıcıların puanları ve sıralama verileri sıfırlanacak! Devam?')) {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
         setTimeout(() => resultDiv.style.display = 'none', 3000);
@@ -2863,14 +2864,19 @@ document.getElementById('resetAllScoresBtn').onclick = async () => {
             await updateDoc(doc(db, 'users', userDoc.id), { 
                 quizScore: 0,
                 averageScore: 0,
-                examsCompleted: []
+                examsCompleted: [],
+                // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+                karmaStats: { total: 0, correct: 0, wrong: 0 }
             });
             updatedCount++;
         }
         
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
         resultDiv.style.background = 'rgba(16,185,129,0.1)';
         resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının puanı sıfırlandı!`;
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının puanları ve sıralama verileri sıfırlandı!`;
     } catch (error) {
         resultDiv.style.background = 'rgba(239,68,68,0.1)';
         resultDiv.innerHTML = `❌ Hata: ${error.message}`;
@@ -2882,10 +2888,11 @@ document.getElementById('resetAllScoresBtn').onclick = async () => {
 };
 
 // ===== 3. Tüm Verileri Sıfırla (Sandık + Puan) =====
+// ===== 3. Tüm Verileri Sıfırla (Sandık + Puan + Sıralama) =====
 document.getElementById('resetAllDataBtn').onclick = async () => {
     const resultDiv = document.getElementById('resetAllDataResult');
     
-    if (!confirm('🔥 TÜM kullanıcı verileri (sandık, puan, sınav geçmişi) KALICI OLARAK silinecek! Devam?')) {
+    if (!confirm('🔥 TÜM kullanıcı verileri (sandık, puan, sınav geçmişi, sıralama istatistikleri) KALICI OLARAK silinecek! Devam?')) {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
         setTimeout(() => resultDiv.style.display = 'none', 3000);
@@ -2912,20 +2919,35 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
         
         for (const userDoc of usersSnapshot.docs) {
             await updateDoc(doc(db, 'users', userDoc.id), { 
+                // Sandık
                 quizSandik: [],
+                // Karma Puan
                 quizScore: 0,
+                // Sınav Puanı
                 averageScore: 0,
+                // Sınav Geçmişi
                 examsCompleted: [],
-                totalWordsViewed: 0
+                // Kelime sayısı
+                totalWordsViewed: 0,
+                // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+                karmaStats: { total: 0, correct: 0, wrong: 0 },
+                // Son aktiflik
+                lastActive: null
             });
             updatedCount++;
         }
         
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
         resultDiv.style.background = 'rgba(16,185,129,0.1)';
         resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının tüm verileri sıfırlandı!`;
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının tüm verileri (sıralama dahil) sıfırlandı!`;
     } catch (error) {
         resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
         resultDiv.innerHTML = `❌ Hata: ${error.message}`;
     } finally {
         btn.disabled = false;
@@ -3024,6 +3046,7 @@ document.getElementById('resetUserSandikBtn').onclick = async () => {
 };
 
 // ===== 6. Tek Kullanıcının Puanını Sıfırla =====
+// ===== 6. Tek Kullanıcının Puanını Sıfırla (Sıralama dahil) =====
 document.getElementById('resetUserScoreBtn').onclick = async () => {
     const userId = document.getElementById('userScoreSelect').value;
     const resultDiv = document.getElementById('resetUserScoreResult');
@@ -3038,7 +3061,7 @@ document.getElementById('resetUserScoreBtn').onclick = async () => {
     const userSelect = document.getElementById('userScoreSelect');
     const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
     
-    if (!confirm(`🏆 "${userName}" kullanıcısının puanları sıfırlansın?`)) {
+    if (!confirm(`🏆 "${userName}" kullanıcısının puanları ve sıralama verileri sıfırlansın?`)) {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
         setTimeout(() => resultDiv.style.display = 'none', 3000);
@@ -3053,11 +3076,17 @@ document.getElementById('resetUserScoreBtn').onclick = async () => {
         await updateDoc(doc(db, 'users', userId), { 
             quizScore: 0,
             averageScore: 0,
-            examsCompleted: []
+            examsCompleted: [],
+            // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+            karmaStats: { total: 0, correct: 0, wrong: 0 }
         });
+        
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
         resultDiv.style.background = 'rgba(16,185,129,0.1)';
         resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `✅ "${userName}" puanları sıfırlandı!`;
+        resultDiv.innerHTML = `✅ "${userName}" puanları ve sıralama verileri sıfırlandı!`;
     } catch (error) {
         resultDiv.style.background = 'rgba(239,68,68,0.1)';
         resultDiv.innerHTML = `❌ Hata: ${error.message}`;
