@@ -2974,13 +2974,27 @@ window.startQuizWords = async () => {
     console.log('🏁 Yarışma başlatılıyor... Seviye:', mevcutSeviye);
     
     // Ana sayfayı gizle
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('wordsLearningScreen').style.display = 'none';
-    document.getElementById('examsScreen').classList.add('hidden');
-    document.getElementById('quizScreen').style.display = 'none';
-    document.getElementById('profileScreen').style.display = 'none';
-    document.getElementById('rankingScreen').style.display = 'none';
-    document.getElementById('karmaScreen').style.display = 'block';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = 'none';
+    
+    const wordsLearningScreen = document.getElementById('wordsLearningScreen');
+    if (wordsLearningScreen) wordsLearningScreen.style.display = 'none';
+    
+    const examsScreen = document.getElementById('examsScreen');
+    if (examsScreen) examsScreen.classList.add('hidden');
+    
+    const quizScreen = document.getElementById('quizScreen');
+    if (quizScreen) quizScreen.style.display = 'none';
+    
+    const profileScreen = document.getElementById('profileScreen');
+    if (profileScreen) profileScreen.style.display = 'none';
+    
+    const rankingScreen = document.getElementById('rankingScreen');
+    if (rankingScreen) rankingScreen.style.display = 'none';
+    
+    const karmaScreen = document.getElementById('karmaScreen');
+    if (karmaScreen) karmaScreen.style.display = 'block';
+    
     closeMenu();
     
     // Tüm kelimeleri yükle
@@ -2996,15 +3010,20 @@ window.startQuizWords = async () => {
     
     console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - ${seviyeKelimeListesi.length} kelime`);
     
-    // Sandığı yükle
+    // Sandığı yükle (KORU - SIFIRLAMA)
     if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
-        quizSandik = userDoc.exists() && userDoc.data().quizSandik ? userDoc.data().quizSandik : [];
-        console.log('📦 Sandık yüklendi:', quizSandik.length, 'kelime');
+        if (userDoc.exists() && userDoc.data().quizSandik) {
+            quizSandik = userDoc.data().quizSandik;
+            console.log('📦 Sandık yüklendi (korundu):', quizSandik.length, 'kelime');
+        } else {
+            quizSandik = [];
+            console.log('📦 Sandık boş');
+        }
     }
     
-    // Tüm değişkenleri sıfırla
+    // Tüm değişkenleri sıfırla (SADECE NORMAL KELİMELER İÇİN)
     quizScore = 0;
     quizCorrectCount = 0;
     quizAnswered = false;
@@ -3017,7 +3036,7 @@ window.startQuizWords = async () => {
     quizWordsAll = seviyeKelimeListesi;
     seviyeTamamlandi = false;
     
-    // Toplam soru sayısını göster
+    // Toplam soru sayısını göster (normal + sandık)
     const totalQuestions = seviyeKelimeListesi.length + quizSandik.length;
     document.getElementById('karmaTotal').textContent = totalQuestions;
     document.getElementById('sandikCount').textContent = quizSandik.length;
@@ -3052,7 +3071,10 @@ window.startQuizWords = async () => {
     if (seviyeKelimeListesi.length > 0) {
         loadNextQuizWord();
     } else {
-        document.getElementById('karmaOptions').innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu seviyede kelime yok.</div>';
+        const karmaOptions = document.getElementById('karmaOptions');
+        if (karmaOptions) {
+            karmaOptions.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu seviyede kelime yok.</div>';
+        }
     }
 };
 
@@ -3345,17 +3367,28 @@ async function saveSandikToFirestore() {
 // Testi bitir
 async function finishQuizWords() {
     const normalBitti = baslangicIndex > bitisIndex;
-    const sandikBitti = quizSandik.length === 0;
-    
     const container = document.getElementById('karmaOptions');
     
-    // ===== DOĞRU YÜZDE =====
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
-    // Seviye tamamlandı
-    if (normalBitti && sandikBitti && mevcutSeviye < toplamSeviye) {
+    // Seviye tamamlandı (normal kelimeler bitti)
+    if (normalBitti && mevcutSeviye < toplamSeviye) {
+        // Sandığı KORU (sıfırlama)
+        if (currentUser) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, { 
+                quizSandik: quizSandik, 
+                quizScore: quizScore,
+                mevcutSeviye: mevcutSeviye
+            });
+        }
+        
+        const sandikMesaji = quizSandik.length > 0 
+            ? `📦 ${quizSandik.length} kelime sonraki seviyeye taşındı!` 
+            : '🎉 Tüm kelimeler öğrenildi!';
+        
         container.innerHTML = `
             <div class="result-card">
                 <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
@@ -3364,6 +3397,8 @@ async function finishQuizWords() {
                     <p>✅ Doğru: ${quizCorrectCount}</p>
                     <p>📊 Başarı: ${finalPercent}%</p>
                     <p style="color: #f59e0b;">🏆 ${mevcutSeviye}/${toplamSeviye}</p>
+                    <p style="color: #f59e0b;">${sandikMesaji}</p>
+                    ${quizSandik.length > 0 ? `<p style="font-size: 12px; opacity: 0.7;">📦 Sandıktaki kelimeler: ${quizSandik.map(w => w.arabic).join(', ')}</p>` : ''}
                 </div>
                 <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
                 <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
@@ -3373,7 +3408,11 @@ async function finishQuizWords() {
     }
     
     // Tüm seviyeler bitti
-    if (normalBitti && sandikBitti && mevcutSeviye >= toplamSeviye) {
+    if (normalBitti && mevcutSeviye >= toplamSeviye) {
+        const sandikMesaji = quizSandik.length > 0 
+            ? `📦 ${quizSandik.length} kelime sandıkta kaldı!` 
+            : '🌟 Tüm kelimeler öğrenildi!';
+        
         container.innerHTML = `
             <div class="result-card">
                 <h2>🏆 TEBRİKLER!</h2>
@@ -3381,18 +3420,30 @@ async function finishQuizWords() {
                 <div class="score">${quizScore} Puan</div>
                 <p style="color: #10b981;">🌟 TÜM SEVİYELER TAMAMLANDI!</p>
                 <p>📊 Başarı: ${finalPercent}%</p>
+                <p>${sandikMesaji}</p>
+                ${quizSandik.length > 0 ? `<p style="font-size: 12px; opacity: 0.7;">📦 Sandıktaki kelimeler: ${quizSandik.map(w => w.arabic).join(', ')}</p>` : ''}
                 <button class="btn btn-primary" onclick="goHome()">Ana Sayfaya Dön</button>
             </div>
         `;
+        
+        if (currentUser) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, { 
+                quizSandik: quizSandik, 
+                quizScore: quizScore,
+                mevcutSeviye: mevcutSeviye
+            });
+        }
         return;
     }
     
-    // Sandıkta kelime kaldı
+    // Normal kelimeler devam ederken sandıkta kelime kaldı
     container.innerHTML = `
         <div class="result-card">
             <h2>📦 Sandıkta ${quizSandik.length} kelime kaldı!</h2>
             <div class="score">${quizScore} Puan</div>
             <p>📊 Başarı: ${finalPercent}%</p>
+            <p>📦 Sandıktaki kelimeler: ${quizSandik.map(w => w.arabic).join(', ')}</p>
             <button class="btn btn-primary" onclick="devamEt()">📦 Sandıktan Devam Et</button>
             <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
         </div>
@@ -3404,7 +3455,8 @@ window.sonrakiSeviye = function() {
     if (mevcutSeviye < toplamSeviye) {
         mevcutSeviye++;
         console.log(`🎉 Seviye ${mevcutSeviye} başlıyor!`);
-        showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor!`, '#10b981');
+        console.log(`📦 Sandık ${quizSandik.length} kelime ile devam ediliyor...`);
+        showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor! ${quizSandik.length > 0 ? `📦 ${quizSandik.length} kelime sandıkta` : ''}`, '#10b981');
         setTimeout(() => {
             startQuizWords();
         }, 1000);
@@ -3754,6 +3806,7 @@ console.log('Düzeltilmiş soru no:', gidilen);
 
 
     // Global erişim için (script içine ekle)
+// ===== GLOBAL SANDIK KONTROL FONKSİYONLARI (KONSOL İÇİN) =====
 window.getKarmaStatus = function() {
     const ekranKelime = document.getElementById('karmaArabicWord')?.textContent || '---';
     console.log('===== KARMA DURUM =====');
@@ -3765,13 +3818,16 @@ window.getKarmaStatus = function() {
     console.log('6. Puan:', quizScore);
     console.log('7. Doğru sayısı:', quizCorrectCount);
     
-    // Ekrandaki kelime sandıkta var mı?
     const sandiktaVar = quizSandik?.some(w => w.arabic === ekranKelime) || false;
     console.log('8. Ekrandaki kelime sandıkta var mı?', sandiktaVar);
     
     if (sandiktaVar) {
         const kelime = quizSandik.find(w => w.arabic === ekranKelime);
-        console.log('9. Sandıktaki kelime detayı:', { id: kelime?.id, arabic: kelime?.arabic, turkish: kelime?.turkish });
+        console.log('9. Sandıktaki kelime detayı:', { 
+            id: kelime?.id, 
+            arabic: kelime?.arabic, 
+            turkish: kelime?.turkish 
+        });
     }
     
     return { ekranKelime, sandikSayisi: quizSandik?.length || 0, sandiktaVar };
@@ -3782,12 +3838,23 @@ window.sandikTemizle = async function() {
         alert('❌ Giriş yapmış kullanıcı yok!');
         return;
     }
-    if (confirm('📦 Sandığı tamamen sıfırlamak istediğinize emin misiniz?')) {
+    if (!confirm('📦 Sandığı tamamen sıfırlamak istediğinize emin misiniz?')) {
+        return;
+    }
+    try {
         quizSandik = [];
         await saveSandikToFirestore();
         updateSandikDisplay();
         console.log('✅ Sandık sıfırlandı!');
         alert('✅ Sandık başarıyla sıfırlandı!');
+        // Seviye bilgisini güncelle
+        const seviyeEl = document.getElementById('seviyeBilgi');
+        if (seviyeEl) {
+            seviyeEl.innerHTML = `🏆 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${quizWordsAll?.length || 0} kelime | 📦 0 sandık`;
+        }
+    } catch (error) {
+        console.error('❌ Sandık sıfırlama hatası:', error);
+        alert('❌ Bir hata oluştu!');
     }
 };
     
