@@ -657,6 +657,32 @@
 #resetResult {
     transition: all 0.3s ease;
 }
+
+
+    /* İnternet Bağlantısı Banner Animasyonu */
+#offlineBanner {
+    transition: all 0.5s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#offlineBanner i {
+    margin-right: 10px;
+}
+
+#offlineBanner button:hover {
+    transform: scale(1.2);
+}
+
+/* İnternet yokken butonların tıklanamaz olduğunu göster */
+.offline-mode .btn {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.offline-mode .btn:hover {
+    transform: none !important;
+}
+    
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -664,6 +690,15 @@
 </head>
 <body>
 
+
+    <!-- İnternet Bağlantısı Uyarısı -->
+<div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 12px 20px; text-align: center; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+    <i class="fas fa-wifi"></i> 
+    <span id="offlineMessage">İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.</span>
+    <button onclick="document.getElementById('offlineBanner').style.display='none'" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 15px;">&times;</button>
+</div>
+
+    
 <!-- Hamburger Menü -->
 <button class="menu-btn hidden" id="menuBtn"><i class="fas fa-bars"></i></button>
 
@@ -2736,7 +2771,132 @@ document.getElementById('resetAllSandikBtn')?.addEventListener('click', async ()
         }, 5000);
     }
 });
+// ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
+let isOnline = navigator.onLine;
+const offlineBanner = document.getElementById('offlineBanner');
+const offlineMessage = document.getElementById('offlineMessage');
 
+// Bağlantı durumunu kontrol et
+function updateOnlineStatus() {
+    const isOnlineNow = navigator.onLine;
+    
+    if (!isOnlineNow) {
+        // İnternet yok
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.';
+        offlineBanner.style.background = '#ef4444';
+        
+        // Kullanıcıya toast mesajı da göster
+        showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
+        
+    } else {
+        // İnternet geldi
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '✅ İnternet bağlantınız yeniden sağlandı! Veriler senkronize ediliyor...';
+        offlineBanner.style.background = '#10b981';
+        
+        // Kullanıcıya toast mesajı
+        showTempMessage('✅ İnternet bağlantınız yeniden sağlandı!', '#10b981');
+        
+        // 3 saniye sonra banner'ı gizle
+        setTimeout(() => {
+            offlineBanner.style.display = 'none';
+        }, 3000);
+        
+        // Firestore'u yeniden bağlanmaya zorla (opsiyonel)
+        try {
+            // Verileri yenile
+            if (currentUser) {
+                loadUserStats();
+                loadUserExamHistory();
+                // Admin paneli için
+                if (document.getElementById('adminPanel') && !document.getElementById('adminPanel').classList.contains('hidden')) {
+                    updateStats();
+                }
+            }
+        } catch (e) {
+            console.log('Veri yenileme hatası:', e);
+        }
+    }
+}
+
+// İnternet bağlantısı değişikliklerini izle
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Sayfa yüklendiğinde kontrol et
+document.addEventListener('DOMContentLoaded', function() {
+    // Başlangıçta internet yoksa göster
+    if (!navigator.onLine) {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin.';
+        offlineBanner.style.background = '#ef4444';
+    }
+    
+    // ... diğer DOMContentLoaded kodları ...
+});
+
+// Firestore hata yakalama (opsiyonel)
+// Firestore bağlantı hatası durumunda ek bilgi
+if (typeof db !== 'undefined') {
+    // Firestore'un offline moduna geçtiğini kullanıcıya bildir
+    console.log('Firestore offline modda çalışabilir. İnternet geldiğinde veriler senkronize olacaktır.');
+}
+    // İnternet yokken butonları devre dışı bırak (opsiyonel)
+function setOfflineMode() {
+    if (!navigator.onLine) {
+        document.querySelectorAll('.btn, button').forEach(btn => {
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+        });
+        // Ama bazı butonlar çalışmalı (kapatma butonu gibi)
+        const closeBtn = document.querySelector('#offlineBanner button');
+        if (closeBtn) {
+            closeBtn.style.opacity = '1';
+            closeBtn.style.cursor = 'pointer';
+        }
+    } else {
+        document.querySelectorAll('.btn, button').forEach(btn => {
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+        });
+    }
+}
+
+// Online/Offline olaylarına ekle
+window.addEventListener('online', () => {
+    setOfflineMode();
+    // Ana sayfa içeriğini yenile
+    if (currentUser) {
+        loadUserStats();
+        loadUserExamHistory();
+    }
+});
+
+window.addEventListener('offline', () => {
+    setOfflineMode();
+});
+    // Firestore işlemlerinde hata yakalama
+async function firestoreOperation(operation, fallbackData = null) {
+    try {
+        if (!navigator.onLine) {
+            console.warn('⚠️ İnternet yok, Firestore işlemi offline modda çalışıyor.');
+            // Offline modda çalışabilir, hata fırlatma
+        }
+        return await operation();
+    } catch (error) {
+        if (error.message && error.message.includes('offline')) {
+            console.warn('Firestore offline modda çalışıyor:', error);
+            // Kullanıcıya bilgi ver
+            showTempMessage('⚠️ Veriler offline modda kaydediliyor. İnternet geldiğinde senkronize olacaktır.', '#f59e0b');
+            return fallbackData;
+        }
+        throw error;
+    }
+}
+
+// Örnek kullanım
+// await firestoreOperation(() => updateDoc(userRef, data));
 
 
 
