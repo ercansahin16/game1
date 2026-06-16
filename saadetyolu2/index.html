@@ -2640,7 +2640,114 @@ function stopTimer() {
 }
 
 
+// ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
+let isOnline = navigator.onLine;
+const offlineBanner = document.getElementById('offlineBanner');
+const offlineMessage = document.getElementById('offlineMessage');
 
+function updateOnlineStatus() {
+    const isOnlineNow = navigator.onLine;
+    
+    if (!isOnlineNow) {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Veriler şu anda kullanılamıyor. Lütfen bağlantınızı kontrol edin.';
+        offlineBanner.style.background = '#ef4444';
+        if (typeof showTempMessage === 'function') {
+            showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
+        }
+    } else {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '✅ İnternet bağlantınız yeniden sağlandı! Veriler senkronize ediliyor...';
+        offlineBanner.style.background = '#10b981';
+        if (typeof showTempMessage === 'function') {
+            showTempMessage('✅ İnternet bağlantınız yeniden sağlandı!', '#10b981');
+        }
+        setTimeout(() => {
+            offlineBanner.style.display = 'none';
+        }, 3000);
+        
+        // Verileri yenile (sadece internet geldiğinde)
+        refreshData();
+    }
+}
+
+// Verileri yenileme fonksiyonu
+async function refreshData() {
+    try {
+        if (!navigator.onLine) {
+            console.log('⚠️ İnternet yok, veri yenilenemiyor.');
+            return;
+        }
+        
+        console.log('🔄 Veriler yenileniyor...');
+        
+        if (currentUser) {
+            // Kullanıcı verilerini yenile
+            await loadUserStats();
+            await loadUserExamHistory();
+            
+            // Ana sayfada ise kitapları yenile
+            if (document.getElementById('mainContent') && !document.getElementById('mainContent').classList.contains('hidden')) {
+                await loadBooks();
+            }
+            
+            // Yarışma ekranında ise kelimeleri yenile
+            const karmaScreen = document.getElementById('karmaScreen');
+            if (karmaScreen && karmaScreen.style.display !== 'none') {
+                // Kelimeleri yeniden yükle
+                const wordsSnapshot = await getDocs(collection(db, 'words'));
+                if (wordsSnapshot.size > 0) {
+                    console.log('✅ Kelimeler yenilendi:', wordsSnapshot.size);
+                }
+            }
+        }
+        
+        console.log('✅ Veriler başarıyla yenilendi!');
+    } catch (error) {
+        console.error('❌ Veri yenileme hatası:', error);
+        if (error.message && error.message.includes('offline')) {
+            showTempMessage('⚠️ Veriler şu anda offline modda, internet geldiğinde senkronize olacak.', '#f59e0b');
+        }
+    }
+}
+
+// Online/Offline olaylarını izle
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Firebase hatalarını yakala (Firestore offline hatası)
+function handleFirestoreError(error) {
+    if (error.message && (error.message.includes('offline') || error.message.includes('offline'))) {
+        console.warn('⚠️ Firestore offline hatası:', error);
+        showTempMessage('⚠️ Veritabanına erişilemiyor (offline mod). İnternet geldiğinde otomatik senkronize olacak.', '#f59e0b');
+        
+        // Offline banner'ı göster
+        const offlineBanner = document.getElementById('offlineBanner');
+        if (offlineBanner) {
+            offlineBanner.style.display = 'block';
+            offlineMessage.textContent = '⚠️ Veritabanına erişilemiyor! İnternet bağlantınızı kontrol edin.';
+            offlineBanner.style.background = '#ef4444';
+        }
+        return true;
+    }
+    return false;
+}
+
+// Tüm Firestore işlemlerini sarmalayan güvenli fonksiyon
+async function safeFirestoreOperation(operation, fallbackData = null) {
+    try {
+        if (!navigator.onLine) {
+            console.warn('⚠️ İnternet yok, Firestore işlemi offline modda.');
+            showTempMessage('⚠️ İnternet bağlantısı yok, değişiklikler kaydedilemeyebilir.', '#f59e0b');
+        }
+        return await operation();
+    } catch (error) {
+        if (handleFirestoreError(error)) {
+            return fallbackData;
+        }
+        throw error;
+    }
+}
 
 // ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
 document.addEventListener('DOMContentLoaded', function() {
@@ -2648,11 +2755,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const offlineBanner = document.getElementById('offlineBanner');
     const offlineMessage = document.getElementById('offlineMessage');
     
+    // Sayfa yüklendiğinde internet durumunu kontrol et
     if (!navigator.onLine) {
         if (offlineBanner) {
             offlineBanner.style.display = 'block';
             offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.';
             offlineBanner.style.background = '#ef4444';
+        }
+        // Kullanıcıya bildirim göster
+        if (typeof showTempMessage === 'function') {
+            showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
+        }
+    } else {
+        if (offlineBanner) {
+            offlineBanner.style.display = 'none';
         }
     }
     
@@ -2811,6 +2927,104 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 });
+
+// ========== İNTERNET BAĞLANTISI DEĞİŞİKLİKLERİNİ İZLE ==========
+window.addEventListener('online', function() {
+    const offlineBanner = document.getElementById('offlineBanner');
+    const offlineMessage = document.getElementById('offlineMessage');
+    
+    if (offlineBanner) {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '✅ İnternet bağlantınız yeniden sağlandı! Veriler senkronize ediliyor...';
+        offlineBanner.style.background = '#10b981';
+        
+        // Verileri yenile
+        if (typeof refreshData === 'function') {
+            refreshData();
+        } else if (currentUser) {
+            // Doğrudan verileri yenile
+            if (typeof loadUserStats === 'function') loadUserStats();
+            if (typeof loadUserExamHistory === 'function') loadUserExamHistory();
+            if (typeof loadBooks === 'function') loadBooks();
+        }
+        
+        setTimeout(() => {
+            offlineBanner.style.display = 'none';
+        }, 3000);
+    }
+});
+
+window.addEventListener('offline', function() {
+    const offlineBanner = document.getElementById('offlineBanner');
+    const offlineMessage = document.getElementById('offlineMessage');
+    
+    if (offlineBanner) {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.';
+        offlineBanner.style.background = '#ef4444';
+        
+        if (typeof showTempMessage === 'function') {
+            showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
+        }
+    }
+});
+
+// ========== VERİ YENİLEME FONKSİYONU ==========
+async function refreshData() {
+    try {
+        if (!navigator.onLine) {
+            console.log('⚠️ İnternet yok, veri yenilenemiyor.');
+            return;
+        }
+        
+        console.log('🔄 Veriler yenileniyor...');
+        
+        if (currentUser) {
+            if (typeof loadUserStats === 'function') await loadUserStats();
+            if (typeof loadUserExamHistory === 'function') await loadUserExamHistory();
+            if (typeof loadBooks === 'function') await loadBooks();
+        }
+        
+        console.log('✅ Veriler başarıyla yenilendi!');
+    } catch (error) {
+        console.error('❌ Veri yenileme hatası:', error);
+        if (error.message && error.message.includes('offline')) {
+            if (typeof showTempMessage === 'function') {
+                showTempMessage('⚠️ Veriler şu anda offline modda, internet geldiğinde senkronize olacak.', '#f59e0b');
+            }
+        }
+    }
+}
+
+    // Hata mesajlarını Türkçeleştir
+function getTurkishErrorMessage(error) {
+    const errorMessages = {
+        'offline': '⚠️ İnternet bağlantınız kesik. Lütfen bağlantınızı kontrol edin.',
+        'unavailable': '⚠️ Veritabanına erişilemiyor. Lütfen daha sonra tekrar deneyin.',
+        'permission-denied': '⛔ Bu işlem için yetkiniz yok.',
+        'not-found': '❌ İstenen veri bulunamadı.',
+        'already-exists': 'ℹ️ Bu veri zaten mevcut.',
+        'invalid-argument': '⚠️ Geçersiz veri gönderildi.',
+        'deadline-exceeded': '⏰ İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.',
+        'unauthenticated': '🔒 Lütfen tekrar giriş yapın.'
+    };
+    
+    for (const [key, message] of Object.entries(errorMessages)) {
+        if (error.message && error.message.toLowerCase().includes(key)) {
+            return message;
+        }
+    }
+    return `❌ Bir hata oluştu: ${error.message}`;
+}
+
+// Kullanım örneği
+try {
+    await someFirestoreOperation();
+} catch (error) {
+    const userMessage = getTurkishErrorMessage(error);
+    alert(userMessage);
+    showTempMessage(userMessage, '#ef4444');
+}
 
 // ========== İNTERNET BAĞLANTISI DEĞİŞİKLİKLERİNİ İZLE ==========
 window.addEventListener('online', function() {
