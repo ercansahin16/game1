@@ -2671,7 +2671,7 @@ function updateOnlineStatus() {
     }
 }
 
-// Verileri yenileme fonksiyonu
+// ========== VERİ YENİLEME FONKSİYONU (BASİT) ==========
 async function refreshData() {
     try {
         if (!navigator.onLine) {
@@ -2682,32 +2682,23 @@ async function refreshData() {
         console.log('🔄 Veriler yenileniyor...');
         
         if (currentUser) {
-            // Kullanıcı verilerini yenile
-            await loadUserStats();
-            await loadUserExamHistory();
+            // Sadece mevcut fonksiyonları çağır
+            try {
+                if (typeof loadUserStats === 'function') await loadUserStats();
+            } catch (e) { console.log('loadUserStats hatası:', e.message); }
             
-            // Ana sayfada ise kitapları yenile
-            if (document.getElementById('mainContent') && !document.getElementById('mainContent').classList.contains('hidden')) {
-                await loadBooks();
-            }
+            try {
+                if (typeof loadUserExamHistory === 'function') await loadUserExamHistory();
+            } catch (e) { console.log('loadUserExamHistory hatası:', e.message); }
             
-            // Yarışma ekranında ise kelimeleri yenile
-            const karmaScreen = document.getElementById('karmaScreen');
-            if (karmaScreen && karmaScreen.style.display !== 'none') {
-                // Kelimeleri yeniden yükle
-                const wordsSnapshot = await getDocs(collection(db, 'words'));
-                if (wordsSnapshot.size > 0) {
-                    console.log('✅ Kelimeler yenilendi:', wordsSnapshot.size);
-                }
-            }
+            try {
+                if (typeof loadBooks === 'function') await loadBooks();
+            } catch (e) { console.log('loadBooks hatası:', e.message); }
         }
         
-        console.log('✅ Veriler başarıyla yenilendi!');
+        console.log('✅ Veriler yenilendi!');
     } catch (error) {
-        console.error('❌ Veri yenileme hatası:', error);
-        if (error.message && error.message.includes('offline')) {
-            showTempMessage('⚠️ Veriler şu anda offline modda, internet geldiğinde senkronize olacak.', '#f59e0b');
-        }
+        console.log('⚠️ Veri yenileme hatası:', error.message);
     }
 }
 
@@ -2938,14 +2929,16 @@ window.addEventListener('online', function() {
         offlineMessage.textContent = '✅ İnternet bağlantınız yeniden sağlandı! Veriler senkronize ediliyor...';
         offlineBanner.style.background = '#10b981';
         
-        // Verileri yenile
-        if (typeof refreshData === 'function') {
-            refreshData();
-        } else if (currentUser) {
-            // Doğrudan verileri yenile
-            if (typeof loadUserStats === 'function') loadUserStats();
-            if (typeof loadUserExamHistory === 'function') loadUserExamHistory();
-            if (typeof loadBooks === 'function') loadBooks();
+        // Verileri yenile (güvenli)
+        try {
+            if (typeof refreshData === 'function') {
+                refreshData();
+            } else if (currentUser) {
+                if (typeof loadUserStats === 'function') loadUserStats();
+                if (typeof loadUserExamHistory === 'function') loadUserExamHistory();
+            }
+        } catch (e) {
+            console.log('Veri yenileme hatası:', e.message);
         }
         
         setTimeout(() => {
