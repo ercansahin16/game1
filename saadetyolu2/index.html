@@ -4273,6 +4273,38 @@ async function safeOperation(operation) {
 // Örnek kullanım
 // await firestoreOperation(() => updateDoc(userRef, data));
 
+
+
+
+
+
+
+
+
+
+    // Kullanıcı verilerini kontrol et (GEÇİCİ TEST)
+(async function kontrolEt() {
+    console.log('===== KULLANICI VERİLERİ KONTROLÜ =====');
+    const snapshot = await getDocs(collection(db, 'users'));
+    
+    if (snapshot.empty) {
+        console.log('❌ Hiç kullanıcı yok!');
+        return;
+    }
+    
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        console.log('👤', data.name || data.email || 'İsimsiz');
+        console.log('  📦 karmaStats:', data.karmaStats || 'YOK');
+        console.log('  🏆 quizScore:', data.quizScore || 0);
+        console.log('  📝 averageScore:', data.averageScore || 0);
+        console.log('  📦 quizSandik:', data.quizSandik?.length || 0);
+        console.log('  📚 totalWordsViewed:', data.totalWordsViewed || 0);
+        console.log('---');
+    });
+    
+    console.log('===== TOPLAM KULLANICI SAYISI: ' + snapshot.size + ' =====');
+})();
 </script>
 </body>
 </html>
