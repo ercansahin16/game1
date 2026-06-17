@@ -2495,14 +2495,12 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
-    // Sınavları getir
     const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Sınavları isme göre sırala (JavaScript ile)
+    // Sınavları alfabetik sırala
     exams.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     
-    // Kullanıcının puanlarını ekle
     if (currentUser && userExamHistory) {
         exams = exams.map(exam => {
             const result = userExamHistory.find(h => h.title === exam.title);
@@ -2517,6 +2515,11 @@ async function loadExamsByLesson(lessonId) {
 function displayExams(exams) {
     const container = document.getElementById('examsList');
     
+    // Sınavları alfabetik sırala (KESİN ÇÖZÜM)
+    if (exams && exams.length > 0) {
+        exams.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    }
+    
     if (!exams || exams.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:40px;">Sınav bulunamadı</div>';
         document.getElementById('examCountInfo').textContent = '0 sınav';
@@ -2528,7 +2531,6 @@ function displayExams(exams) {
     
     exams.forEach(exam => {
         let userScore = exam.userScore;
-       
         
         let statusHTML = '';
         if (userScore !== null && userScore !== undefined && userScore > 0) {
