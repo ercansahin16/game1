@@ -1474,8 +1474,12 @@ window.showProfile = function() {
 };
 
 async function loadBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('name', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // JavaScript ile isme göre sırala
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
     books.forEach(book => {
         const option = document.createElement('option');
@@ -1485,7 +1489,7 @@ async function loadBooks() {
     });
 }
 
-   bookSelect.onchange = async () => {
+  bookSelect.onchange = async () => {
     const bookId = bookSelect.value;
     if (!bookId) {
         lessonSelect.disabled = true;
@@ -1494,9 +1498,12 @@ async function loadBooks() {
         updateWordDisplay();
         return;
     }
-    // Dersleri İSME GÖRE sırala
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId), orderBy('name', 'asc')));
+    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
     lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // JavaScript ile isme göre sırala
+    lessons.sort((a, b) => a.name.localeCompare(b.name));
+    
     lessonSelect.disabled = false;
     lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
     lessons.forEach(lesson => {
