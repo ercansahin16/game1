@@ -3190,10 +3190,10 @@ async function loadRanking() {
     snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Toplam puan = quizScore (yarışma) + averageScore (sınav)
+        // Toplam puan = quizScore (yarışma) + averageScore (sınav) - YUVARLA
         const quizScore = data.quizScore || 0;
         const averageScore = data.averageScore || 0;
-        const totalScore = quizScore + averageScore;
+        const totalScore = Math.round(quizScore + averageScore); // YUVARLA
         
         // Sandık sayısı
         const sandikCount = data.quizSandik?.length || 0;
@@ -3206,8 +3206,8 @@ async function loadRanking() {
             name: data.name || data.email?.split('@')[0] || 'İsimsiz',
             email: data.email,
             totalScore: totalScore,
-            quizScore: quizScore,
-            averageScore: averageScore,
+            quizScore: Math.round(quizScore),
+            averageScore: Math.round(averageScore),
             sandikCount: sandikCount,
             totalWords: totalWords,
             karmaStats: data.karmaStats || { total: 0, correct: 0, wrong: 0 }
@@ -3223,10 +3223,6 @@ async function loadRanking() {
     users.forEach((user, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
         const isCurrentUser = user.id === currentUser?.uid;
-        
-        // Karma istatistiklerinden başarı oranı
-        const stats = user.karmaStats || { total: 0, correct: 0 };
-        const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
         
         html += `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};">
@@ -3253,16 +3249,12 @@ async function loadRanking() {
         const userData = users.find(u => u.id === currentUser.uid);
         
         if (userData) {
-            const stats = userData.karmaStats || { total: 0, correct: 0 };
-            const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-            
             document.getElementById('userRank').innerHTML = `
                 <div style="text-align: center;">
                     <strong>📍 Senin Sıralaman</strong><br>
                     <span style="font-size: 24px; color: #f59e0b;">${userIndex + 1}. sırada</span><br>
                     <span>🏆 Toplam Puan: ${userData.totalScore}</span>
                     <br><span style="font-size: 12px; opacity: 0.7;">📖 ${userData.totalWords} kelime | 📦 ${userData.sandikCount} sandık</span>
-                    ${stats.total > 0 ? `<br><span style="font-size: 12px; opacity: 0.7;">🎯 Başarı: ${rate}% (${stats.correct}/${stats.total})</span>` : ''}
                 </div>
             `;
         }
