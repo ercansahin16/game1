@@ -3189,34 +3189,33 @@ async function loadRanking() {
     
     snapshot.forEach(doc => {
         const data = doc.data();
-        // Karma istatistiklerini kontrol et
-        const stats = data.karmaStats || { total: 0, correct: 0, wrong: 0 };
-        const total = stats.total || 0;
-        const correct = stats.correct || 0;
-        const rate = total > 0 ? (correct / total * 100) : 0;
         
-        // Sınav puanını da ekle (opsiyonel)
+        // Toplam puan = quizScore (yarışma) + averageScore (sınav)
         const quizScore = data.quizScore || 0;
         const averageScore = data.averageScore || 0;
+        const totalScore = quizScore + averageScore;
+        
+        // Sandık sayısı
+        const sandikCount = data.quizSandik?.length || 0;
+        
+        // Kelime sayısı
+        const totalWords = data.totalWordsViewed || 0;
         
         users.push({
             id: doc.id,
             name: data.name || data.email?.split('@')[0] || 'İsimsiz',
             email: data.email,
-            rate: rate,
-            correct: correct,
-            total: total,
+            totalScore: totalScore,
             quizScore: quizScore,
             averageScore: averageScore,
-            totalScore: quizScore + averageScore
+            sandikCount: sandikCount,
+            totalWords: totalWords,
+            karmaStats: data.karmaStats || { total: 0, correct: 0, wrong: 0 }
         });
     });
     
-    // Başarı oranına göre sırala (önce oran, sonra toplam puan)
-    users.sort((a, b) => {
-        if (b.rate !== a.rate) return b.rate - a.rate;
-        return b.totalScore - a.totalScore;
-    });
+    // Toplam puana göre sırala (büyükten küçüğe)
+    users.sort((a, b) => b.totalScore - a.totalScore);
     
     document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
     
@@ -3224,17 +3223,22 @@ async function loadRanking() {
     users.forEach((user, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
         const isCurrentUser = user.id === currentUser?.uid;
+        
+        // Karma istatistiklerinden başarı oranı
+        const stats = user.karmaStats || { total: 0, correct: 0 };
+        const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+        
         html += `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};">
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <span style="font-weight: bold; width: 30px;">${medal}</span>
                     <span>${index + 1}.</span>
                     <span><i class="fas fa-user"></i> ${user.name}</span>
                     ${isCurrentUser ? '<span style="font-size: 10px; color: #f59e0b; margin-left: 5px;">(Sen)</span>' : ''}
                 </div>
                 <div style="text-align: right;">
-                    <span style="color: #f59e0b; font-weight: bold;">${Math.round(user.rate)}%</span>
-                    <span style="font-size: 11px; opacity: 0.7;"> (${user.correct}/${user.total})</span>
+                    <span style="color: #f59e0b; font-weight: bold;">${user.totalScore} P</span>
+                    <span style="font-size: 11px; opacity: 0.7;"> (📖 ${user.totalWords} kelime | 📦 ${user.sandikCount} sandık)</span>
                 </div>
             </div>
         `;
@@ -3243,18 +3247,22 @@ async function loadRanking() {
     
     document.getElementById('rankingList').innerHTML = html;
     
-    // Kullanıcının kendi sırasını bul
+    // Kullanıcının kendi sıralamasını göster
     if (currentUser) {
         const userIndex = users.findIndex(u => u.id === currentUser.uid);
         const userData = users.find(u => u.id === currentUser.uid);
         
         if (userData) {
+            const stats = userData.karmaStats || { total: 0, correct: 0 };
+            const rate = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+            
             document.getElementById('userRank').innerHTML = `
                 <div style="text-align: center;">
                     <strong>📍 Senin Sıralaman</strong><br>
                     <span style="font-size: 24px; color: #f59e0b;">${userIndex + 1}. sırada</span><br>
-                    <span>Başarı: ${Math.round(userData.rate)}% (${userData.correct}/${userData.total})</span>
-                    <br><span style="font-size: 12px; opacity: 0.7;">🏆 Toplam Puan: ${userData.totalScore}</span>
+                    <span>🏆 Toplam Puan: ${userData.totalScore}</span>
+                    <br><span style="font-size: 12px; opacity: 0.7;">📖 ${userData.totalWords} kelime | 📦 ${userData.sandikCount} sandık</span>
+                    ${stats.total > 0 ? `<br><span style="font-size: 12px; opacity: 0.7;">🎯 Başarı: ${rate}% (${stats.correct}/${stats.total})</span>` : ''}
                 </div>
             `;
         }
@@ -4282,29 +4290,6 @@ async function safeOperation(operation) {
 
 
 
-    // Kullanıcı verilerini kontrol et (GEÇİCİ TEST)
-(async function kontrolEt() {
-    console.log('===== KULLANICI VERİLERİ KONTROLÜ =====');
-    const snapshot = await getDocs(collection(db, 'users'));
-    
-    if (snapshot.empty) {
-        console.log('❌ Hiç kullanıcı yok!');
-        return;
-    }
-    
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        console.log('👤', data.name || data.email || 'İsimsiz');
-        console.log('  📦 karmaStats:', data.karmaStats || 'YOK');
-        console.log('  🏆 quizScore:', data.quizScore || 0);
-        console.log('  📝 averageScore:', data.averageScore || 0);
-        console.log('  📦 quizSandik:', data.quizSandik?.length || 0);
-        console.log('  📚 totalWordsViewed:', data.totalWordsViewed || 0);
-        console.log('---');
-    });
-    
-    console.log('===== TOPLAM KULLANICI SAYISI: ' + snapshot.size + ' =====');
-})();
 </script>
 </body>
 </html>
