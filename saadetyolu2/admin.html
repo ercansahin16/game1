@@ -1469,17 +1469,27 @@ if (addBookBtn) {
     };
 }
     
-    document.getElementById('saveBookBtn').onclick = async () => {
-        const id = document.getElementById('editBookId').value;
-        const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 };
-        if (id) await updateDoc(doc(db, 'books', id), data);
-        else await (doc(collection(db, 'books')), data);
-        closeModal('bookModal');
-        loadBooks();
-        loadLessonBooks();
-        loadWordBooks();
-        updateStats();
+   document.getElementById('saveBookBtn').onclick = async () => {
+    const id = document.getElementById('editBookId').value;
+    const data = { 
+        name: document.getElementById('bookName').value, 
+        description: document.getElementById('bookDesc').value, 
+        order: parseInt(document.getElementById('bookOrder').value) || 0 
     };
+    
+    if (id) {
+        await updateDoc(doc(db, 'books', id), data);
+    } else {
+        // ✅ DOĞRU
+        await setDoc(doc(collection(db, 'books')), data);
+    }
+    
+    closeModal('bookModal');
+    loadBooks();
+    loadLessonBooks();
+    loadWordBooks();
+    updateStats();
+};
 
     async function loadLessonBooks() {
         const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
@@ -1565,15 +1575,26 @@ if (addBookBtn) {
         openModal('lessonModal');
     };
     
-    document.getElementById('saveLessonBtn').onclick = async () => {
-        const id = document.getElementById('editLessonId').value;
-        const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelectModal').value };
-        if (id) await updateDoc(doc(db, 'lessons', id), data);
-        else await (doc(collection(db, 'lessons')), data);
-        closeModal('lessonModal');
-        document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
-        updateStats();
+  document.getElementById('saveLessonBtn').onclick = async () => {
+    const id = document.getElementById('editLessonId').value;
+    const data = { 
+        name: document.getElementById('lessonName').value, 
+        description: document.getElementById('lessonDesc').value, 
+        order: parseInt(document.getElementById('lessonOrder').value) || 0, 
+        bookId: document.getElementById('lessonBookSelectModal').value 
     };
+    
+    if (id) {
+        await updateDoc(doc(db, 'lessons', id), data);
+    } else {
+        // ✅ DOĞRU KULLANIM
+        await setDoc(doc(collection(db, 'lessons')), data);
+    }
+    
+    closeModal('lessonModal');
+    document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
+    updateStats();
+};
 
     async function loadWordBooks() {
         const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
@@ -1700,11 +1721,22 @@ if (addBookBtn) {
         openModal('wordModal');
     };
     
-  document.getElementById('saveWordBtn').onclick = async () => {
+document.getElementById('saveWordBtn').onclick = async () => {
     const id = document.getElementById('editWordId').value;
-    const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelectModal').value, createdAt: new Date().toISOString() };
-    if (id) await updateDoc(doc(db, 'words', id), data);
-    else await (doc(collection(db, 'words')), data);
+    const data = { 
+        arabic: document.getElementById('wordArabic').value, 
+        turkish: document.getElementById('wordTurkish').value, 
+        lessonId: document.getElementById('wordLessonSelectModal').value, 
+        createdAt: new Date().toISOString() 
+    };
+    
+    if (id) {
+        await updateDoc(doc(db, 'words', id), data);
+    } else {
+        // ✅ DOĞRU KULLANIM
+        await setDoc(doc(collection(db, 'words')), data);
+    }
+    
     closeModal('wordModal');
     document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
     updateStats();
