@@ -1865,7 +1865,7 @@ function getBookNameById(bookId) {
     return book ? book.name : 'Kitap bulunamadı';
 }
     
-  function completeExam() {
+ function completeExam() {
     if (examCompleted) return;
     examCompleted = true;
     stopTimer();
@@ -1890,15 +1890,19 @@ function getBookNameById(bookId) {
     
     const letters = ['A', 'B', 'C', 'D'];
     
-    // Kitap ve ders bilgilerini al
+    // Kitap, ders ve SINAV bilgilerini al
     const bookName = getBookNameById(currentExam.bookId);
     const lessonName = getLessonNameById(currentExam.lessonId);
+    const examTitle = currentExam.title || 'Sınav';
     
     let resultHTML = `
         <div class="result-card">
             <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 15px;">
-                <div style="font-size: 13px; color: #f59e0b;"><i class="fas fa-book"></i> ${bookName}</div>
-                <div style="font-size: 13px; color: #f59e0b;"><i class="fas fa-graduation-cap"></i> ${lessonName}</div>
+                <div style="font-size: 13px; color: #f59e0b; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <span><i class="fas fa-book"></i> ${bookName}</span>
+                    <span><i class="fas fa-graduation-cap"></i> ${lessonName}</span>
+                    <span><i class="fas fa-pen"></i> ${examTitle}</span>
+                </div>
             </div>
             <h2>🏆 Sınav Tamamlandı!</h2>
             <div class="score">${roundedScore} Puan</div>
@@ -1965,11 +1969,10 @@ function getBookNameById(bookId) {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // SADECE SONUCU KAYDET
+    // Sınav sonucunu kaydet
     (async () => {
         try {
             await saveExamResult(currentExam.title, score, correct, totalQuestions);
-            
         } catch (error) {
             console.error('Kayıt hatası:', error);
         }
