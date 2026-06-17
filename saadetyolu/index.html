@@ -4288,7 +4288,47 @@ async function safeOperation(operation) {
 
 
 
-
+// Sınav sıralama testi
+(async function testSiralama() {
+    console.log('===== SINAV SIRALAMA TESTİ =====');
+    
+    // 1. Mevcut sınavları getir
+    const snapshot = await getDocs(collection(db, 'exams'));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    console.log('📝 Toplam sınav:', exams.length);
+    console.log('\n📋 MEVCUT SIRALAMA:');
+    exams.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
+    
+    // 2. Alfabetik sırala
+    const sorted = [...exams].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    console.log('\n📋 ALFABETİK SIRALAMA:');
+    sorted.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
+    
+    // 3. Fark var mı?
+    const isSorted = exams.every((e, i) => e.title === sorted[i].title);
+    console.log('\n✅ Zaten sıralı mı?', isSorted ? 'EVET' : 'HAYIR');
+    
+    // 4. Eğer sıralı değilse manuel sırala (geçici)
+    if (!isSorted) {
+        console.log('\n🔄 Sınavlar alfabetik sıralanıyor...');
+        const container = document.getElementById('examsList');
+        if (container) {
+            container.innerHTML = '';
+            sorted.forEach(exam => {
+                const examCard = document.createElement('div');
+                examCard.className = 'exam-card';
+                examCard.onclick = () => startExam(exam);
+                examCard.innerHTML = `
+                    <div class="exam-title">📚 ${exam.title}</div>
+                    <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
+                `;
+                container.appendChild(examCard);
+            });
+            console.log('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
+        }
+    }
+})();
 
 </script>
 </body>
