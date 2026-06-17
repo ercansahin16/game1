@@ -214,6 +214,7 @@
             border-radius: 10px;
             background: rgba(255,255,255,0.08);
             color: white;
+            font-size:20px;
         }
         textarea { min-height: 80px; resize: vertical; }
         select option { background: #1a1a1a; }
@@ -634,6 +635,55 @@
             .select-row { flex-wrap: wrap; }
             .select-wrapper { min-width: 45%; }
         }
+
+
+
+
+
+
+
+
+
+
+    /* Sandık Sıfırlama Butonu Stili */
+#resetAllSandikBtn {
+    transition: all 0.3s ease;
+}
+
+#resetAllSandikBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#resetResult {
+    transition: all 0.3s ease;
+}
+
+
+    /* İnternet Bağlantısı Banner Animasyonu */
+#offlineBanner {
+    transition: all 0.5s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#offlineBanner i {
+    margin-right: 10px;
+}
+
+#offlineBanner button:hover {
+    transform: scale(1.2);
+}
+
+/* İnternet yokken butonların tıklanamaz olduğunu göster */
+.offline-mode .btn {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.offline-mode .btn:hover {
+    transform: none !important;
+}
+    
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -641,6 +691,15 @@
 </head>
 <body>
 
+
+    <!-- İnternet Bağlantısı Uyarısı -->
+<div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 12px 20px; text-align: center; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+    <i class="fas fa-wifi"></i> 
+    <span id="offlineMessage">İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.</span>
+    <button onclick="document.getElementById('offlineBanner').style.display='none'" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 15px;">&times;</button>
+</div>
+
+    
 <!-- Hamburger Menü -->
 <button class="menu-btn hidden" id="menuBtn"><i class="fas fa-bars"></i></button>
 
@@ -655,6 +714,7 @@
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
+    <div class="sidebar-item" id="goDataManagement"><i class="fas fa-database"></i> Veri Yönetimi</div>
     <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
     <div class="sidebar-item" id="goBulkExamUpload"><i class="fas fa-upload"></i> Toplu Soru Yükleme</div>
     <div class="sidebar-item" id="goClearData" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizle</div>
@@ -663,6 +723,7 @@
         <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
     </div>
 </div>
+
 <div class="overlay" id="overlay"></div>
 
 <div class="container">
@@ -717,7 +778,6 @@
             </div>
         </div>
 
-        <!-- KİTAPLAR BÖLÜMÜ (DÜZELTİLDİ) -->
         <div id="booksSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-book"></i> Kitaplar</h2>
@@ -744,7 +804,6 @@
             <div class="items-list" id="lessonsList"></div>
         </div>
 
-        <!-- KELİMELER BÖLÜMÜ (KELİME SAYACI EKLENDİ) -->
         <div id="wordsSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-language"></i> Kelimeler</h2>
@@ -770,36 +829,145 @@
             <div class="items-list" id="wordsList"></div>
         </div>
 
-      <div id="examsSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-pen"></i> Sınavlar</h2>
-        <button id="addExamBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Sınav</button>
-    </div>
-    
-    <!-- KİTAP VE DERS SEÇİMİ (FİLTRELEME İÇİN) -->
-    <div class="select-row" style="margin-bottom: 20px;">
-        <div class="select-wrapper">
-            <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="adminExamBookSelect">
-                <option value="">-- Tüm Kitaplar --</option>
-            </select>
+        <div id="examsSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-pen"></i> Sınavlar</h2>
+                <button id="addExamBtn" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Sınav</button>
+            </div>
+            <div class="select-row" style="margin-bottom: 20px;">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                    <select id="adminExamBookSelect">
+                        <option value="">-- Tüm Kitaplar --</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                    <select id="adminExamLessonSelect" disabled>
+                        <option value="">-- Önce Kitap Seçin --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="items-list" id="examsList"></div>
         </div>
-        <div class="select-wrapper">
-            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="adminExamLessonSelect" disabled>
-                <option value="">-- Önce Kitap Seçin --</option>
-            </select>
-        </div>
-    </div>
-    
-    <div class="items-list" id="examsList"></div>
-</div>
 
         <div id="usersSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-users"></i> Kullanıcılar</h2>
             </div>
             <div class="items-list" id="usersList"></div>
+        </div>
+
+        <!-- Veri Yönetimi -->
+        <div id="dataManagementSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-database"></i> Veri Yönetimi</h2>
+            </div>
+            
+            <!-- Tüm Kullanıcıların Sandığını Sıfırla -->
+            <div style="background: rgba(239,68,68,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">📦</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #ef4444; margin: 0 0 5px 0;">Tüm Kullanıcıların Sandığını Sıfırla</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0;">Tüm kullanıcıların sandığındaki kelimeler KALICI olarak silinir.</p>
+                    </div>
+                    <button id="resetAllSandikBtn" class="btn btn-danger" style="padding: 8px 16px;">
+                        <i class="fas fa-trash-alt"></i> Sıfırla
+                    </button>
+                </div>
+                <div id="resetResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
+
+            <!-- Tüm Kullanıcıların Puanını Sıfırla -->
+            <div style="background: rgba(245,158,11,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">🏆</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #f59e0b; margin: 0 0 5px 0;">Tüm Kullanıcıların Puanını Sıfırla</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0;">Tüm kullanıcıların Karma Puanı ve Sınav Puanı sıfırlanır.</p>
+                    </div>
+                    <button id="resetAllScoresBtn" class="btn btn-warning" style="padding: 8px 16px;">
+                        <i class="fas fa-undo"></i> Sıfırla
+                    </button>
+                </div>
+                <div id="resetScoresResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
+
+            <!-- Tüm Verileri Sıfırla -->
+            <div style="background: rgba(239,68,68,0.2); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid #ef4444;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">🔥</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #ef4444; margin: 0 0 5px 0;">Tüm Kullanıcı Verilerini Sıfırla</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0;">Sandık, Karma Puan, Sınav Puanı - TAMAMI sıfırlanır. (Kullanıcı hesapları silinmez)</p>
+                    </div>
+                    <button id="resetAllDataBtn" class="btn btn-danger" style="background: #dc2626; padding: 8px 16px;">
+                        <i class="fas fa-radiation"></i> TAMAMEN SIFIRLA
+                    </button>
+                </div>
+                <div id="resetAllDataResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
+
+            <!-- Kullanıcı Silme -->
+            <div style="background: rgba(239,68,68,0.15); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px dashed #ef4444;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">👤</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #ef4444; margin: 0 0 5px 0;">Kullanıcı Sil</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 8px 0;">Bir kullanıcıyı ve tüm verilerini KALICI olarak siler.</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <select id="userDeleteSelect" style="max-width: 250px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: none; flex: 1;">
+                                <option value="">-- Kullanıcı Seçin --</option>
+                            </select>
+                            <button id="deleteUserBtn" class="btn btn-danger" style="padding: 8px 16px;">
+                                <i class="fas fa-user-slash"></i> Kullanıcıyı Sil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="deleteUserResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
+
+            <!-- Tek Kullanıcı Sandık Sıfırlama -->
+            <div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">📦</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #3b82f6; margin: 0 0 5px 0;">Tek Kullanıcının Sandığını Sıfırla</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 8px 0;">Seçilen kullanıcının sandığını sıfırlar.</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <select id="userSandikSelect" style="max-width: 250px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: none; flex: 1;">
+                                <option value="">-- Kullanıcı Seçin --</option>
+                            </select>
+                            <button id="resetUserSandikBtn" class="btn btn-info" style="padding: 8px 16px;">
+                                <i class="fas fa-trash-alt"></i> Sandığı Sıfırla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="resetUserSandikResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
+
+            <!-- Tek Kullanıcı Puan Sıfırlama -->
+            <div style="background: rgba(16,185,129,0.1); border-radius: 16px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">🏆</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #10b981; margin: 0 0 5px 0;">Tek Kullanıcının Puanını Sıfırla</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 8px 0;">Seçilen kullanıcının Karma Puanı ve Sınav Puanını sıfırlar.</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <select id="userScoreSelect" style="max-width: 250px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: none; flex: 1;">
+                                <option value="">-- Kullanıcı Seçin --</option>
+                            </select>
+                            <button id="resetUserScoreBtn" class="btn btn-success" style="padding: 8px 16px;">
+                                <i class="fas fa-undo"></i> Puanı Sıfırla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="resetUserScoreResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
+            </div>
         </div>
 
         <!-- Toplu Kelime Yükleme -->
@@ -835,62 +1003,53 @@
         </div>
 
         <!-- Toplu Soru Yükleme -->
-     <div id="bulkExamUploadSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
-    </div>
-    
-    <!-- KİTAP VE DERS SEÇİMİ (YENİ) -->
-    <div class="select-row" style="margin-bottom: 15px;">
-        <div class="select-wrapper">
-            <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="bulkExamBookSelect">
-                <option value="">-- Kitap Seçin --</option>
-            </select>
-        </div>
-        <div class="select-wrapper">
-            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled>
-                <option value="">-- Önce Kitap Seçin --</option>
-            </select>
-        </div>
-    </div>
-    
-    <!-- SINAV SEÇİMİ -->
-    <div class="select-row" style="margin-bottom: 15px;">
-        <div class="select-wrapper">
-            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
-            <select id="bulkExamSelect" disabled>
-                <option value="">-- Önce Ders Seçin --</option>
-            </select>
-        </div>
-        <div class="action-buttons">
-            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
-
-    <div style="margin: 20px 0;">
-        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
-        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+        <div id="bulkExamUploadSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+            </div>
+            <div class="select-row" style="margin-bottom: 15px;">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                    <select id="bulkExamBookSelect">
+                        <option value="">-- Kitap Seçin --</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                    <select id="bulkExamLessonSelect" disabled>
+                        <option value="">-- Önce Kitap Seçin --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="select-row" style="margin-bottom: 15px;">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+                    <select id="bulkExamSelect" disabled>
+                        <option value="">-- Önce Ders Seçin --</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div style="margin: 20px 0;">
+                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+                <textarea id="bulkExamJsonInput" rows="15" placeholder='[
   {
     "question": "Sorunun metni buraya yazılır?",
     "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
     "correct": 0
   }
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-    </div>
-
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-    </div>
-
-    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
-</div>
-
-        
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+                <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+            </div>
+            <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
+        </div>
     </div>
 </div>
 
@@ -932,8 +1091,6 @@
 <div id="examModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3 id="examModalTitle">Sınav Ekle</h3><button class="modal-close" onclick="closeModal('examModal')">&times;</button></div>
-        
-        <!-- Kitap ve Ders Seçimi -->
         <div class="select-row" style="margin-bottom: 15px;">
             <div class="select-wrapper">
                 <label><i class="fas fa-book"></i> Kitap Seçin</label>
@@ -948,7 +1105,6 @@
                 </select>
             </div>
         </div>
-        
         <input type="text" id="examTitle" placeholder="Sınav Adı (örn: Test 1)">
         <div id="questionsContainer"></div>
         <button id="addQuestionBtn" class="btn btn-success" style="margin: 10px 0;"><i class="fas fa-plus"></i> Soru Ekle</button>
@@ -969,7 +1125,7 @@
     
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDoc, getDocs,  updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -1227,6 +1383,7 @@
     document.getElementById('usersSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
     document.getElementById('bulkExamUploadSection').classList.add('hidden');
+     document.getElementById('dataManagementSection').classList.add('hidden'); // YENİ
     
     if (section === 'dashboard') {
         document.getElementById('dashboardSection').classList.remove('hidden');
@@ -1244,6 +1401,8 @@
         document.getElementById('bulkUploadSection').classList.remove('hidden');
     } else if (section === 'bulkExamUpload') {
         document.getElementById('bulkExamUploadSection').classList.remove('hidden');
+    } else if (section === 'dataManagement') {  // YENİ
+        document.getElementById('dataManagementSection').classList.remove('hidden');
     }
 }
 
@@ -1291,6 +1450,13 @@
         }
     };
 
+    document.getElementById('goDataManagement').onclick = () => {
+    showSection('dataManagement');
+    // Kullanıcı listesini yükle (select dropdown'lar için)
+    loadUserSelects();
+    closeMenu();
+};
+
 
 const addBookBtn = document.getElementById('addBookBtn');
 if (addBookBtn) {
@@ -1304,17 +1470,27 @@ if (addBookBtn) {
     };
 }
     
-    document.getElementById('saveBookBtn').onclick = async () => {
-        const id = document.getElementById('editBookId').value;
-        const data = { name: document.getElementById('bookName').value, description: document.getElementById('bookDesc').value, order: parseInt(document.getElementById('bookOrder').value) || 0 };
-        if (id) await updateDoc(doc(db, 'books', id), data);
-        else await (doc(collection(db, 'books')), data);
-        closeModal('bookModal');
-        loadBooks();
-        loadLessonBooks();
-        loadWordBooks();
-        updateStats();
+   document.getElementById('saveBookBtn').onclick = async () => {
+    const id = document.getElementById('editBookId').value;
+    const data = { 
+        name: document.getElementById('bookName').value, 
+        description: document.getElementById('bookDesc').value, 
+        order: parseInt(document.getElementById('bookOrder').value) || 0 
     };
+    
+    if (id) {
+        await updateDoc(doc(db, 'books', id), data);
+    } else {
+        // ✅ DOĞRU
+        await setDoc(doc(collection(db, 'books')), data);
+    }
+    
+    closeModal('bookModal');
+    loadBooks();
+    loadLessonBooks();
+    loadWordBooks();
+    updateStats();
+};
 
     async function loadLessonBooks() {
         const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
@@ -1400,15 +1576,26 @@ if (addBookBtn) {
         openModal('lessonModal');
     };
     
-    document.getElementById('saveLessonBtn').onclick = async () => {
-        const id = document.getElementById('editLessonId').value;
-        const data = { name: document.getElementById('lessonName').value, description: document.getElementById('lessonDesc').value, order: parseInt(document.getElementById('lessonOrder').value) || 0, bookId: document.getElementById('lessonBookSelectModal').value };
-        if (id) await updateDoc(doc(db, 'lessons', id), data);
-        else await (doc(collection(db, 'lessons')), data);
-        closeModal('lessonModal');
-        document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
-        updateStats();
+  document.getElementById('saveLessonBtn').onclick = async () => {
+    const id = document.getElementById('editLessonId').value;
+    const data = { 
+        name: document.getElementById('lessonName').value, 
+        description: document.getElementById('lessonDesc').value, 
+        order: parseInt(document.getElementById('lessonOrder').value) || 0, 
+        bookId: document.getElementById('lessonBookSelectModal').value 
     };
+    
+    if (id) {
+        await updateDoc(doc(db, 'lessons', id), data);
+    } else {
+        // ✅ DOĞRU KULLANIM
+        await setDoc(doc(collection(db, 'lessons')), data);
+    }
+    
+    closeModal('lessonModal');
+    document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
+    updateStats();
+};
 
     async function loadWordBooks() {
         const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
@@ -1535,11 +1722,22 @@ if (addBookBtn) {
         openModal('wordModal');
     };
     
-  document.getElementById('saveWordBtn').onclick = async () => {
+document.getElementById('saveWordBtn').onclick = async () => {
     const id = document.getElementById('editWordId').value;
-    const data = { arabic: document.getElementById('wordArabic').value, turkish: document.getElementById('wordTurkish').value, lessonId: document.getElementById('wordLessonSelectModal').value, createdAt: new Date().toISOString() };
-    if (id) await updateDoc(doc(db, 'words', id), data);
-    else await (doc(collection(db, 'words')), data);
+    const data = { 
+        arabic: document.getElementById('wordArabic').value, 
+        turkish: document.getElementById('wordTurkish').value, 
+        lessonId: document.getElementById('wordLessonSelectModal').value, 
+        createdAt: new Date().toISOString() 
+    };
+    
+    if (id) {
+        await updateDoc(doc(db, 'words', id), data);
+    } else {
+        // ✅ DOĞRU KULLANIM
+        await setDoc(doc(collection(db, 'words')), data);
+    }
+    
     closeModal('wordModal');
     document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
     updateStats();
@@ -1553,17 +1751,22 @@ if (addBookBtn) {
     
   
     
-   window.editExam = async (id) => {
+window.editExam = async (id) => {
     const snap = await getDoc(doc(db, 'exams', id));
     if (snap.exists()) {
         const data = snap.data();
         document.getElementById('examModalTitle').innerHTML = 'Sınav Düzenle';
         document.getElementById('editExamId').value = id;
         document.getElementById('examTitle').value = data.title;
-        document.getElementById('examBookSelect').value = data.bookId || '';
+        questions = data.questions || [];
         
-        // Dersleri yükle
+        // ===== KİTAPLARI YÜKLE =====
+        await loadExamBookSelect();
+        
+        // Seçili kitap ve dersi ayarla
         if (data.bookId) {
+            document.getElementById('examBookSelect').value = data.bookId;
+            // Dersleri yükle
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', data.bookId)));
             const lessonSelect = document.getElementById('examLessonSelect');
             lessonSelect.disabled = false;
@@ -1577,7 +1780,6 @@ if (addBookBtn) {
             });
         }
         
-        questions = data.questions || [];
         renderQuestions();
         openModal('examModal');
     }
@@ -1644,14 +1846,57 @@ if (addBookBtn) {
         renderQuestions();
     };
     
-    document.getElementById('addExamBtn').onclick = () => {
-        document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
-        document.getElementById('editExamId').value = '';
-        document.getElementById('examTitle').value = '';
-        questions = [];
-        renderQuestions();
-        openModal('examModal');
-    };
+   document.getElementById('addExamBtn').onclick = () => {
+    document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
+    document.getElementById('editExamId').value = '';
+    document.getElementById('examTitle').value = '';
+    questions = [];
+    renderQuestions();
+    
+    // ===== KİTAPLARI YÜKLE (YENİ) =====
+    loadExamBookSelect();
+    
+    openModal('examModal');
+};
+
+    // Sınav modalı - Kitap seçilince dersleri yükle
+document.getElementById('examBookSelect').onchange = async function() {
+    const bookId = this.value;
+    const lessonSelect = document.getElementById('examLessonSelect');
+    
+    if (!bookId) {
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        return;
+    }
+    
+    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+    lessonSelect.disabled = false;
+    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = data.name;
+        lessonSelect.appendChild(option);
+    });
+};
+
+    // Sınav modalı için kitapları yükle
+async function loadExamBookSelect() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const select = document.getElementById('examBookSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = data.name;
+        select.appendChild(option);
+    });
+}
     
    document.getElementById('saveExamBtn').onclick = async () => {
     const id = document.getElementById('editExamId').value;
@@ -1659,22 +1904,52 @@ if (addBookBtn) {
     const bookId = document.getElementById('examBookSelect').value;
     const lessonId = document.getElementById('examLessonSelect').value;
     
-    if (!title) { alert('Lütfen sınav adını girin!'); return; }
-    if (!bookId) { alert('Lütfen kitap seçin!'); return; }
-    if (!lessonId) { alert('Lütfen ders seçin!'); return; }
-    if (questions.length === 0) { alert('Lütfen en az bir soru ekleyin!'); return; }
+    if (!title) {
+        alert('Lütfen sınav adını girin!');
+        return;
+    }
+    
+    if (!bookId) {
+        alert('Lütfen bir kitap seçin!');
+        return;
+    }
+    
+    if (!lessonId) {
+        alert('Lütfen bir ders seçin!');
+        return;
+    }
+    
+    if (questions.length === 0) {
+        alert('Lütfen en az bir soru ekleyin!');
+        return;
+    }
     
     // Soruları kontrol et
     for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
-        if (!q.question) { alert(`${i + 1}. sorunun metnini girin!`); return; }
-        for (let j = 0; j < 4; j++) {
-            if (!q.options[j]) { alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`); return; }
+        if (!q.question) {
+            alert(`${i + 1}. sorunun metnini girin!`);
+            return;
         }
-        if (q.correct === null || q.correct === '') { alert(`${i + 1}. sorunun doğru şıkkını seçin!`); return; }
+        for (let j = 0; j < 4; j++) {
+            if (!q.options[j]) {
+                alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`);
+                return;
+            }
+        }
+        if (q.correct === null || q.correct === '') {
+            alert(`${i + 1}. sorunun doğru şıkkını seçin!`);
+            return;
+        }
     }
     
-    const data = { title, bookId, lessonId, questions, createdAt: new Date().toISOString() };
+    const data = { 
+        title, 
+        questions, 
+        bookId,      // YENİ
+        lessonId,    // YENİ
+        createdAt: new Date().toISOString() 
+    };
     
     if (id) {
         await updateDoc(doc(db, 'exams', id), data);
@@ -1686,7 +1961,6 @@ if (addBookBtn) {
     loadExams();
     updateStats();
 };
-
     // ========== KULLANICILAR ==========
     async function loadUsers() {
         const snapshot = await getDocs(collection(db, 'users'));
@@ -1798,27 +2072,27 @@ window.updateWordCountDisplay = function(count) {
 };
 
     // Giriş işlemi
-    document.getElementById('doLoginBtn').onclick = () => {
-        if (document.getElementById('adminPassword').value === 'admin123') {
-            isLoggedIn = true;
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminPanel').classList.remove('hidden');
-            document.getElementById('mainHeader').style.display = 'flex';
-            menuBtn.classList.remove('hidden');
-            document.getElementById('logoutIconBtn').classList.remove('hidden');
-            document.getElementById('themeIconBtn').classList.add('hidden');
-            loadBooks();
-            loadLessonBooks();
-            loadWordBooks();
-            loadExams();
-            loadUsers();
-            updateStats();
-            loadExamBooks();
-            showSection('dashboard');
-        } else { 
-            alert('Hatalı şifre!'); 
-        }
-    };
+  document.getElementById('doLoginBtn').onclick = () => {
+    if (document.getElementById('adminPassword').value === 'admin123') {
+        isLoggedIn = true;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        document.getElementById('mainHeader').style.display = 'flex';
+        menuBtn.classList.remove('hidden');
+        document.getElementById('logoutIconBtn').classList.remove('hidden');
+        document.getElementById('themeIconBtn').classList.add('hidden');
+        loadBooks();
+        loadLessonBooks();
+        loadWordBooks();
+        loadExams();
+        loadUsers();
+        loadUserSelects();  // <--- BURAYA EKLE
+        updateStats();
+        showSection('dashboard');
+    } else { 
+        alert('Hatalı şifre!'); 
+    }
+};
     
     document.getElementById('adminPassword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('doLoginBtn').click();
@@ -2512,6 +2786,723 @@ if (adminExamLessonSelect) {
 
 
 
+
+
+
+
+
+
+    // Tüm kullanıcıların sandığını sıfırla
+document.getElementById('resetAllSandikBtn')?.addEventListener('click', async () => {
+    const resultDiv = document.getElementById('resetResult');
+    
+    // Çift onay
+    const confirm1 = confirm('🚨 UYARI: Bu işlem TÜM kullanıcıların sandığındaki kelimeleri KALICI OLARAK silecektir! Devam etmek istediğinize emin misiniz?');
+    
+    if (!confirm1) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const confirm2 = confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Tüm kullanıcıların sandıkları silinecek. Emin misiniz?');
+    
+    if (!confirm2) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    // Butonu devre dışı bırak
+    const btn = document.getElementById('resetAllSandikBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = 'rgba(59,130,246,0.1)';
+    resultDiv.style.border = '1px solid #3b82f6';
+    resultDiv.style.borderRadius = '10px';
+    resultDiv.style.padding = '10px';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm kullanıcıların sandıkları sıfırlanıyor...</span>';
+    
+    try {
+        // Tüm kullanıcıları getir
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        let errorCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            try {
+                const userRef = doc(db, 'users', userDoc.id);
+                await updateDoc(userRef, { 
+                    quizSandik: [],
+                    quizScore: 0  // İstersen puanı da sıfırla
+                });
+                updatedCount++;
+                console.log(`✅ ${userDoc.id} sandığı sıfırlandı`);
+            } catch (error) {
+                errorCount++;
+                console.error(`❌ ${userDoc.id} sıfırlanamadı:`, error);
+            }
+        }
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `
+            <span style="color: #10b981;">
+                ✅ Sıfırlama tamamlandı!<br>
+                📦 ${updatedCount} kullanıcının sandığı sıfırlandı.<br>
+                ${errorCount > 0 ? `⚠️ ${errorCount} kullanıcıda hata oluştu.` : ''}
+            </span>
+        `;
+        
+    } catch (error) {
+        console.error('Sıfırlama hatası:', error);
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.innerHTML = `<span style="color: #ef4444;">❌ Hata: ${error.message}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Tüm Sandıkları Sıfırla';
+        
+        setTimeout(() => {
+            resultDiv.style.display = 'none';
+        }, 5000);
+    }
+});
+// ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
+let isOnline = navigator.onLine;
+const offlineBanner = document.getElementById('offlineBanner');
+const offlineMessage = document.getElementById('offlineMessage');
+
+// Bağlantı durumunu kontrol et
+function updateOnlineStatus() {
+    const isOnlineNow = navigator.onLine;
+    
+    if (!isOnlineNow) {
+        // İnternet yok
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.';
+        offlineBanner.style.background = '#ef4444';
+        
+        // Kullanıcıya toast mesajı da göster
+        showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
+        
+    } else {
+        // İnternet geldi
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '✅ İnternet bağlantınız yeniden sağlandı! Veriler senkronize ediliyor...';
+        offlineBanner.style.background = '#10b981';
+        
+        // Kullanıcıya toast mesajı
+        showTempMessage('✅ İnternet bağlantınız yeniden sağlandı!', '#10b981');
+        
+        // 3 saniye sonra banner'ı gizle
+        setTimeout(() => {
+            offlineBanner.style.display = 'none';
+        }, 3000);
+        
+        // Firestore'u yeniden bağlanmaya zorla (opsiyonel)
+        try {
+            // Verileri yenile
+            if (currentUser) {
+                loadUserStats();
+                loadUserExamHistory();
+                // Admin paneli için
+                if (document.getElementById('adminPanel') && !document.getElementById('adminPanel').classList.contains('hidden')) {
+                    updateStats();
+                }
+            }
+        } catch (e) {
+            console.log('Veri yenileme hatası:', e);
+        }
+    }
+}
+
+// İnternet bağlantısı değişikliklerini izle
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Sayfa yüklendiğinde kontrol et
+document.addEventListener('DOMContentLoaded', function() {
+    // Başlangıçta internet yoksa göster
+    if (!navigator.onLine) {
+        offlineBanner.style.display = 'block';
+        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin.';
+        offlineBanner.style.background = '#ef4444';
+    }
+    
+    // ... diğer DOMContentLoaded kodları ...
+});
+
+// Firestore hata yakalama (opsiyonel)
+// Firestore bağlantı hatası durumunda ek bilgi
+if (typeof db !== 'undefined') {
+    // Firestore'un offline moduna geçtiğini kullanıcıya bildir
+    console.log('Firestore offline modda çalışabilir. İnternet geldiğinde veriler senkronize olacaktır.');
+}
+    // İnternet yokken butonları devre dışı bırak (opsiyonel)
+function setOfflineMode() {
+    if (!navigator.onLine) {
+        document.querySelectorAll('.btn, button').forEach(btn => {
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+        });
+        // Ama bazı butonlar çalışmalı (kapatma butonu gibi)
+        const closeBtn = document.querySelector('#offlineBanner button');
+        if (closeBtn) {
+            closeBtn.style.opacity = '1';
+            closeBtn.style.cursor = 'pointer';
+        }
+    } else {
+        document.querySelectorAll('.btn, button').forEach(btn => {
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+        });
+    }
+}
+
+// Online/Offline olaylarına ekle
+window.addEventListener('online', () => {
+    setOfflineMode();
+    // Ana sayfa içeriğini yenile
+    if (currentUser) {
+        loadUserStats();
+        loadUserExamHistory();
+    }
+});
+
+window.addEventListener('offline', () => {
+    setOfflineMode();
+});
+    // Firestore işlemlerinde hata yakalama
+async function firestoreOperation(operation, fallbackData = null) {
+    try {
+        if (!navigator.onLine) {
+            console.warn('⚠️ İnternet yok, Firestore işlemi offline modda çalışıyor.');
+            // Offline modda çalışabilir, hata fırlatma
+        }
+        return await operation();
+    } catch (error) {
+        if (error.message && error.message.includes('offline')) {
+            console.warn('Firestore offline modda çalışıyor:', error);
+            // Kullanıcıya bilgi ver
+            showTempMessage('⚠️ Veriler offline modda kaydediliyor. İnternet geldiğinde senkronize olacaktır.', '#f59e0b');
+            return fallbackData;
+        }
+        throw error;
+    }
+}
+
+// Örnek kullanım
+// await firestoreOperation(() => updateDoc(userRef, data));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ========== SANDIK & KULLANICI YÖNETİMİ ==========
+
+// Kullanıcı listesini yükle (select dropdown'lar için)
+// ========== VERİ YÖNETİMİ - KULLANICI LİSTESİ (Admin) ==========
+async function loadUserSelects() {
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const selects = ['userDeleteSelect', 'userSandikSelect', 'userScoreSelect'];
+        
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Mevcut seçili değeri koru
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Kullanıcı Seçin --</option>';
+            
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const name = data.name || data.email?.split('@')[0] || 'İsimsiz';
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = `${name} (${data.email || 'email yok'})`;
+                if (option.value === currentValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        });
+    } catch (error) {
+        console.error('Kullanıcı listesi yüklenirken hata:', error);
+    }
+}
+
+// ===== 1. Tüm Kullanıcıların Sandığını Sıfırla =====
+document.getElementById('resetAllSandikBtn').onclick = async () => {
+    const resultDiv = document.getElementById('resetResult');
+    
+    if (!confirm('🚨 TÜM kullanıcıların sandığındaki kelimeler KALICI OLARAK silinecek! Devam?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    if (!confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetAllSandikBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm sandıklar sıfırlanıyor...</span>';
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            await updateDoc(doc(db, 'users', userDoc.id), { quizSandik: [] });
+            updatedCount++;
+        }
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının sandığı sıfırlandı!`;
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Sıfırla';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// ===== 2. Tüm Kullanıcıların Puanını Sıfırla =====
+// ===== 2. Tüm Kullanıcıların Puanını Sıfırla (Sıralama dahil) =====
+document.getElementById('resetAllScoresBtn').onclick = async () => {
+    const resultDiv = document.getElementById('resetScoresResult');
+    
+    if (!confirm('🚨 TÜM kullanıcıların puanları ve sıralama verileri sıfırlanacak! Devam?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetAllScoresBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm puanlar sıfırlanıyor...</span>';
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            await updateDoc(doc(db, 'users', userDoc.id), { 
+                quizScore: 0,
+                averageScore: 0,
+                examsCompleted: [],
+                // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+                karmaStats: { total: 0, correct: 0, wrong: 0 }
+            });
+            updatedCount++;
+        }
+        
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının puanları ve sıralama verileri sıfırlandı!`;
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo"></i> Sıfırla';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// ===== 3. Tüm Verileri Sıfırla (Sandık + Puan) =====
+// ===== 3. Tüm Verileri Sıfırla (Sandık + Puan + Sıralama) =====
+document.getElementById('resetAllDataBtn').onclick = async () => {
+    const resultDiv = document.getElementById('resetAllDataResult');
+    
+    if (!confirm('🔥 TÜM kullanıcı verileri (sandık, puan, sınav geçmişi, sıralama istatistikleri) KALICI OLARAK silinecek! Devam?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    if (!confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetAllDataBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm veriler sıfırlanıyor...</span>';
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            await updateDoc(doc(db, 'users', userDoc.id), { 
+                // Sandık
+                quizSandik: [],
+                // Karma Puan
+                quizScore: 0,
+                // Sınav Puanı
+                averageScore: 0,
+                // Sınav Geçmişi
+                examsCompleted: [],
+                // Kelime sayısı
+                totalWordsViewed: 0,
+                // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+                karmaStats: { total: 0, correct: 0, wrong: 0 },
+                // Son aktiflik
+                lastActive: null
+            });
+            updatedCount++;
+        }
+        
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının tüm verileri (sıralama dahil) sıfırlandı!`;
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-radiation"></i> TAMAMEN SIFIRLA';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// ===== 4. Kullanıcı Sil =====
+document.getElementById('deleteUserBtn').onclick = async () => {
+    const userId = document.getElementById('userDeleteSelect').value;
+    const resultDiv = document.getElementById('deleteUserResult');
+    
+    if (!userId) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.innerHTML = '⚠️ Lütfen bir kullanıcı seçin!';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const userSelect = document.getElementById('userDeleteSelect');
+    const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
+    
+    if (!confirm(`🚨 "${userName}" kullanıcısı ve TÜM verileri KALICI OLARAK silinecek! Devam?`)) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('deleteUserBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Siliniyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Kullanıcı siliniyor...</span>';
+    
+    try {
+        await deleteDoc(doc(db, 'users', userId));
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `✅ "${userName}" kullanıcısı başarıyla silindi!`;
+        await loadUserSelects();
+        await loadUsers();
+        await updateStats();
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-slash"></i> Kullanıcıyı Sil';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// ===== 5. Tek Kullanıcının Sandığını Sıfırla =====
+document.getElementById('resetUserSandikBtn').onclick = async () => {
+    const userId = document.getElementById('userSandikSelect').value;
+    const resultDiv = document.getElementById('resetUserSandikResult');
+    
+    if (!userId) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '⚠️ Lütfen bir kullanıcı seçin!';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const userSelect = document.getElementById('userSandikSelect');
+    const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
+    
+    if (!confirm(`📦 "${userName}" kullanıcısının sandığı sıfırlansın?`)) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetUserSandikBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { quizSandik: [] });
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `✅ "${userName}" sandığı sıfırlandı!`;
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Sandığı Sıfırla';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// ===== 6. Tek Kullanıcının Puanını Sıfırla =====
+// ===== 6. Tek Kullanıcının Puanını Sıfırla (Sıralama dahil) =====
+document.getElementById('resetUserScoreBtn').onclick = async () => {
+    const userId = document.getElementById('userScoreSelect').value;
+    const resultDiv = document.getElementById('resetUserScoreResult');
+    
+    if (!userId) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '⚠️ Lütfen bir kullanıcı seçin!';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const userSelect = document.getElementById('userScoreSelect');
+    const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
+    
+    if (!confirm(`🏆 "${userName}" kullanıcısının puanları ve sıralama verileri sıfırlansın?`)) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetUserScoreBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { 
+            quizScore: 0,
+            averageScore: 0,
+            examsCompleted: [],
+            // ===== SIRALAMA İSTATİSTİKLERİ (YENİ) =====
+            karmaStats: { total: 0, correct: 0, wrong: 0 }
+        });
+        
+        // Liderlik tablosunu yenile
+        await loadLeaderboard();
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.innerHTML = `✅ "${userName}" puanları ve sıralama verileri sıfırlandı!`;
+    } catch (error) {
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo"></i> Puanı Sıfırla';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
+
+// Kullanıcı listesini yükle (sayfa açıldığında)
+document.getElementById('goUsers').onclick = () => {
+    showSection('users');
+    loadUsers();
+    loadUserSelects(); // Select dropdown'ları da yükle
+    closeMenu();
+};
+
+// Giriş yapınca da yükle
+// loadUserSelects() fonksiyonunu giriş sonrası çağır
+
+
+
+
+
+
+
+
+    // ========== LİDERLİK TABLOSU ==========
+async function loadLeaderboard() {
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const users = [];
+    
+    usersSnapshot.forEach(doc => {
+        const data = doc.data();
+        const totalScore = (data.quizScore || 0) + (data.averageScore || 0);
+        users.push({
+            id: doc.id,
+            name: data.name || data.email.split('@')[0],
+            email: data.email,
+            score: totalScore,
+            quizScore: data.quizScore || 0,
+            examScore: data.averageScore || 0,
+            words: data.totalWordsViewed || 0,
+            exams: data.examsCompleted?.length || 0,
+            sandik: data.quizSandik?.length || 0
+        });
+    });
+    
+    users.sort((a, b) => b.score - a.score);
+    
+    // Liderlik tablosunu güncelle (eğer sayfada gösteriliyorsa)
+    const container = document.getElementById('rankingList');
+    if (container) {
+        container.innerHTML = '';
+        users.forEach((user, index) => {
+            let rankClass = '';
+            if (index === 0) rankClass = 'gold';
+            else if (index === 1) rankClass = 'silver';
+            else if (index === 2) rankClass = 'bronze';
+            
+            const div = document.createElement('div');
+            div.className = 'leaderboard-item';
+            div.innerHTML = `
+                <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
+                <div class="leaderboard-info">
+                    <div class="leaderboard-name">${user.name}</div>
+                    <div class="leaderboard-score">📖 ${user.words} kelime | 📝 ${user.exams} sınav | 📦 ${user.sandik} sandık</div>
+                </div>
+                <div class="leaderboard-points">${user.score} P</div>
+            `;
+            container.appendChild(div);
+        });
+        
+        document.getElementById('rankingCount').textContent = users.length;
+    }
+    
+    return users;
+}
+
+
+    // ===== 3. Tüm Verileri Sıfırla (Sandık + Puan + Sıralama) =====
+document.getElementById('resetAllDataBtn').onclick = async () => {
+    const resultDiv = document.getElementById('resetAllDataResult');
+    
+    if (!confirm('🔥 TÜM kullanıcı verileri (sandık, puan, sınav geçmişi, sıralama istatistikleri) KALICI OLARAK silinecek! Devam?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    if (!confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const btn = document.getElementById('resetAllDataBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm veriler sıfırlanıyor...</span>';
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let updatedCount = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            await updateDoc(doc(db, 'users', userDoc.id), { 
+                quizSandik: [],
+                quizScore: 0,
+                averageScore: 0,
+                examsCompleted: [],
+                totalWordsViewed: 0,
+                karmaStats: { total: 0, correct: 0, wrong: 0 },
+                lastActive: null
+            });
+            updatedCount++;
+        }
+        
+        // Liderlik tablosunu yenile (eğer varsa)
+        if (typeof loadLeaderboard === 'function') {
+            await loadLeaderboard();
+        }
+        
+        resultDiv.style.background = 'rgba(16,185,129,0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = `✅ ${updatedCount} kullanıcının tüm verileri (sıralama dahil) sıfırlandı!`;
+    } catch (error) {
+        console.error('Sıfırlama hatası:', error);
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-radiation"></i> TAMAMEN SIFIRLA';
+        setTimeout(() => resultDiv.style.display = 'none', 5000);
+    }
+};
 
 </script>
 </body>
