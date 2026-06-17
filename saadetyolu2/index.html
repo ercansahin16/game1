@@ -3151,8 +3151,6 @@ async function loadKarmaStats() {
     // Sıralama sayfasına git
 // Sıralama sayfasına git
 window.goRanking = () => {
-   
-    
     // Stat kartlarını gizle
     const mainContent = document.getElementById('mainContent');
     if (mainContent) mainContent.style.display = 'none';
@@ -3186,40 +3184,53 @@ window.goRanking = () => {
 
 
 async function loadRanking() {
-    
-    
     const snapshot = await getDocs(collection(db, 'users'));
     const users = [];
     
     snapshot.forEach(doc => {
         const data = doc.data();
-        const stats = data.karmaStats || { total: 0, correct: 0 };
-        const rate = stats.total > 0 ? (stats.correct / stats.total * 100) : 0;
+        // Karma istatistiklerini kontrol et
+        const stats = data.karmaStats || { total: 0, correct: 0, wrong: 0 };
+        const total = stats.total || 0;
+        const correct = stats.correct || 0;
+        const rate = total > 0 ? (correct / total * 100) : 0;
         
-        
+        // Sınav puanını da ekle (opsiyonel)
+        const quizScore = data.quizScore || 0;
+        const averageScore = data.averageScore || 0;
         
         users.push({
-            name: data.name || data.email?.split('@')[0],
+            id: doc.id,
+            name: data.name || data.email?.split('@')[0] || 'İsimsiz',
+            email: data.email,
             rate: rate,
-            correct: stats.correct,
-            total: stats.total
+            correct: correct,
+            total: total,
+            quizScore: quizScore,
+            averageScore: averageScore,
+            totalScore: quizScore + averageScore
         });
     });
     
-    // Başarı oranına göre sırala
-    users.sort((a, b) => b.rate - a.rate);
+    // Başarı oranına göre sırala (önce oran, sonra toplam puan)
+    users.sort((a, b) => {
+        if (b.rate !== a.rate) return b.rate - a.rate;
+        return b.totalScore - a.totalScore;
+    });
     
     document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
     
     let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
     users.forEach((user, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
+        const isCurrentUser = user.id === currentUser?.uid;
         html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};">
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <span style="font-weight: bold; width: 30px;">${medal}</span>
                     <span>${index + 1}.</span>
                     <span><i class="fas fa-user"></i> ${user.name}</span>
+                    ${isCurrentUser ? '<span style="font-size: 10px; color: #f59e0b; margin-left: 5px;">(Sen)</span>' : ''}
                 </div>
                 <div style="text-align: right;">
                     <span style="color: #f59e0b; font-weight: bold;">${Math.round(user.rate)}%</span>
@@ -3233,18 +3244,20 @@ async function loadRanking() {
     document.getElementById('rankingList').innerHTML = html;
     
     // Kullanıcının kendi sırasını bul
-    const currentUserName = currentUser?.email?.split('@')[0];
-    const userRank = users.findIndex(u => u.name === currentUserName) + 1;
-    const userData = users.find(u => u.name === currentUserName);
-    
-    if (userData) {
-        document.getElementById('userRank').innerHTML = `
-            <div style="text-align: center;">
-                <strong>📍 Senin Sıralaman</strong><br>
-                <span style="font-size: 24px; color: #f59e0b;">${userRank}. sırada</span><br>
-                <span>Başarı: ${Math.round(userData.rate)}% (${userData.correct}/${userData.total})</span>
-            </div>
-        `;
+    if (currentUser) {
+        const userIndex = users.findIndex(u => u.id === currentUser.uid);
+        const userData = users.find(u => u.id === currentUser.uid);
+        
+        if (userData) {
+            document.getElementById('userRank').innerHTML = `
+                <div style="text-align: center;">
+                    <strong>📍 Senin Sıralaman</strong><br>
+                    <span style="font-size: 24px; color: #f59e0b;">${userIndex + 1}. sırada</span><br>
+                    <span>Başarı: ${Math.round(userData.rate)}% (${userData.correct}/${userData.total})</span>
+                    <br><span style="font-size: 12px; opacity: 0.7;">🏆 Toplam Puan: ${userData.totalScore}</span>
+                </div>
+            `;
+        }
     }
 }
 
