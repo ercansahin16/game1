@@ -1736,29 +1736,33 @@ async function loadUserStats() {
         }
     };
 
-    async function loadExams() {
-        const snapshot = await getDocs(collection(db, 'exams'));
-        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('examsList');
-        document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
-        
-        if (exams.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:40px;">Henüz sınav eklenmemiş.</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        exams.forEach(exam => {
-            const examCard = document.createElement('div');
-            examCard.className = 'exam-card';
-            examCard.onclick = () => startExam(exam);
-            examCard.innerHTML = `
-                <div class="exam-title">📚 ${exam.title}</div>
-                <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
-            `;
-            container.appendChild(examCard);
-        });
+async function loadExams() {
+    const snapshot = await getDocs(collection(db, 'exams'));
+    let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Sınavları isme göre sırala
+    exams.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    
+    const container = document.getElementById('examsList');
+    document.getElementById('examCountInfo').textContent = `${exams.length} sınav`;
+    
+    if (exams.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px;">Henüz sınav eklenmemiş.</div>';
+        return;
     }
+    
+    container.innerHTML = '';
+    exams.forEach(exam => {
+        const examCard = document.createElement('div');
+        examCard.className = 'exam-card';
+        examCard.onclick = () => startExam(exam);
+        examCard.innerHTML = `
+            <div class="exam-title">📚 ${exam.title}</div>
+            <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
+        `;
+        container.appendChild(examCard);
+    });
+}
     
    function startExam(exam) {
     // Sınav başlatma onayı
@@ -2491,9 +2495,12 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
-    // Sınavları alfabetik sırala
-    const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId), orderBy('title', 'asc')));
+    // Sınavları getir
+    const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Sınavları isme göre sırala (JavaScript ile)
+    exams.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     
     // Kullanıcının puanlarını ekle
     if (currentUser && userExamHistory) {
