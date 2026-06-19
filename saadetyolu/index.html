@@ -3288,6 +3288,12 @@ window.startQuizWords = async () => {
     const karmaScreen = document.getElementById('karmaScreen');
     if (karmaScreen) karmaScreen.style.display = 'block';
     
+    // ===== BİLEMEDİM VE GEÇ BUTONLARINI GÖSTER =====
+    const bilmedimBtn = document.getElementById('bilmedimBtn');
+    const gecBtn = document.getElementById('gecBtn');
+    if (bilmedimBtn) bilmedimBtn.style.display = 'flex';
+    if (gecBtn) gecBtn.style.display = 'flex';
+    
     closeMenu();
     
     // Tüm kelimeleri yükle
@@ -3370,7 +3376,6 @@ window.startQuizWords = async () => {
         }
     }
 };
-
 // Sonraki kelimeyi yükle
 // Sandıktan kaç kere kelime alındığını tut
 async function loadNextQuizWord() {
@@ -3662,13 +3667,18 @@ async function finishQuizWords() {
     const normalBitti = baslangicIndex > bitisIndex;
     const container = document.getElementById('karmaOptions');
     
+    // Butonları gizle
+    const bilmedimBtn = document.getElementById('bilmedimBtn');
+    const gecBtn = document.getElementById('gecBtn');
+    if (bilmedimBtn) bilmedimBtn.style.display = 'none';
+    if (gecBtn) gecBtn.style.display = 'none';
+    
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
     // Seviye tamamlandı (normal kelimeler bitti)
     if (normalBitti && mevcutSeviye < toplamSeviye) {
-        // Sandığı KORU (sıfırlama)
         if (currentUser) {
             const userRef = doc(db, 'users', currentUser.uid);
             await updateDoc(userRef, { 
