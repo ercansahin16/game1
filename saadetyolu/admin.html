@@ -890,6 +890,9 @@
                     <button id="resetAllScoresBtn" class="btn btn-warning" style="padding: 8px 16px;">
                         <i class="fas fa-undo"></i> Sıfırla
                     </button>
+                    <button onclick="resetSeviye()" class="btn btn-danger" style="margin-top: 10px; width: 100%;">
+    <i class="fas fa-undo"></i> Seviyeyi Sıfırla
+</button>
                 </div>
                 <div id="resetScoresResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
             </div>
@@ -3520,6 +3523,26 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
     }
 };
 
+
+    // Seviyeyi sıfırla
+window.resetSeviye = async function() {
+    if (!currentUser) {
+        alert('❌ Giriş yapmış kullanıcı yok!');
+        return;
+    }
+    if (!confirm('Seviyeniz başlangıç seviyesine (1) sıfırlanacak. Emin misiniz?')) {
+        return;
+    }
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { mevcutSeviye: 1 });
+        mevcutSeviye = 1;
+        alert('✅ Seviye başarıyla sıfırlandı!');
+        loadUserStats();
+    } catch (error) {
+        alert('❌ Bir hata oluştu!');
+    }
+};
 </script>
 </body>
 </html>
