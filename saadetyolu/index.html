@@ -3938,9 +3938,7 @@ async function loadLeaderboard() {
     usersSnapshot.forEach(doc => {
         const data = doc.data();
         const totalScore = (data.quizScore || 0) + (data.averageScore || 0);
-        
-        // Seviye bilgisini al (Firestore'da mevcutSeviye yoksa 1)
-        const seviye = data.mevcutSeviye || 1;
+        const seviye = data.mevcutSeviye || 1; // Seviye yoksa 1
         
         users.push({
             id: doc.id,
@@ -3952,15 +3950,11 @@ async function loadLeaderboard() {
             words: data.totalWordsViewed || 0,
             exams: data.examsCompleted?.length || 0,
             sandik: data.quizSandik?.length || 0,
-            seviye: seviye  // YENİ: Seviye bilgisi
+            seviye: seviye
         });
     });
     
-    // Önce puana göre sırala, eşitse kelime sayısına göre
-    users.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return b.words - a.words;
-    });
+    users.sort((a, b) => b.score - a.score);
     
     const container = document.getElementById('rankingList');
     container.innerHTML = '';
@@ -3979,7 +3973,7 @@ async function loadLeaderboard() {
             <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
             <div class="leaderboard-info">
                 <div class="leaderboard-name">${user.name} ${isCurrentUser ? '👤' : ''}</div>
-                <div class="leaderboard-score">📖 ${user.words} kelime | 📝 ${user.exams} sınav | 📦 ${user.sandik} sandık | 🏆 Seviye ${user.seviye}</div>
+                <div class="leaderboard-score">📖 ${user.words} kelime | 📦 ${user.sandik} sandık | 🏆 Seviye ${user.seviye}</div>
             </div>
             <div class="leaderboard-points">${user.score} P</div>
         `;
