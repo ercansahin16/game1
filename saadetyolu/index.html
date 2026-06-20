@@ -3938,6 +3938,10 @@ async function loadLeaderboard() {
     usersSnapshot.forEach(doc => {
         const data = doc.data();
         const totalScore = (data.quizScore || 0) + (data.averageScore || 0);
+        
+        // Seviye bilgisini al (Firestore'da mevcutSeviye yoksa 1)
+        const seviye = data.mevcutSeviye || 1;
+        
         users.push({
             id: doc.id,
             name: data.name || data.email.split('@')[0],
@@ -3947,11 +3951,16 @@ async function loadLeaderboard() {
             examScore: data.averageScore || 0,
             words: data.totalWordsViewed || 0,
             exams: data.examsCompleted?.length || 0,
-            sandik: data.quizSandik?.length || 0
+            sandik: data.quizSandik?.length || 0,
+            seviye: seviye  // YENİ: Seviye bilgisi
         });
     });
     
-    users.sort((a, b) => b.score - a.score);
+    // Önce puana göre sırala, eşitse kelime sayısına göre
+    users.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.words - a.words;
+    });
     
     const container = document.getElementById('rankingList');
     container.innerHTML = '';
@@ -3962,13 +3971,15 @@ async function loadLeaderboard() {
         else if (index === 1) rankClass = 'silver';
         else if (index === 2) rankClass = 'bronze';
         
+        const isCurrentUser = user.id === currentUser?.uid;
+        
         const div = document.createElement('div');
         div.className = 'leaderboard-item';
         div.innerHTML = `
             <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
             <div class="leaderboard-info">
-                <div class="leaderboard-name">${user.name}</div>
-                <div class="leaderboard-score">📖 ${user.words} kelime | 📝 ${user.exams} sınav | 📦 ${user.sandik} sandık</div>
+                <div class="leaderboard-name">${user.name} ${isCurrentUser ? '👤' : ''}</div>
+                <div class="leaderboard-score">📖 ${user.words} kelime | 📝 ${user.exams} sınav | 📦 ${user.sandik} sandık | 🏆 Seviye ${user.seviye}</div>
             </div>
             <div class="leaderboard-points">${user.score} P</div>
         `;
@@ -3977,16 +3988,16 @@ async function loadLeaderboard() {
     
     document.getElementById('rankingCount').textContent = users.length;
     
-    // Kullanıcının kendi sıralamasını göster
     if (currentUser) {
         const userIndex = users.findIndex(u => u.id === currentUser.uid);
         if (userIndex !== -1) {
             const user = users[userIndex];
             document.getElementById('userRank').innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div><i class="fas fa-user"></i> <strong>${user.name}</strong></div>
                     <div>🏆 Sıralaman: <strong style="color: #f59e0b;">${userIndex + 1}. sırada</strong></div>
                     <div>📊 ${user.score} Puan</div>
+                    <div>🎯 Seviye: <strong style="color: #f59e0b;">${user.seviye}</strong></div>
                 </div>
             `;
         }
