@@ -1912,7 +1912,7 @@ async function loadExamBookSelect() {
     });
 }
     
-   document.getElementById('saveExamBtn').onclick = async () => {
+  document.getElementById('saveExamBtn').onclick = async () => {
     const id = document.getElementById('editExamId').value;
     const title = document.getElementById('examTitle').value;
     const bookId = document.getElementById('examBookSelect').value;
@@ -1933,35 +1933,13 @@ async function loadExamBookSelect() {
         return;
     }
     
-    if (questions.length === 0) {
-        alert('Lütfen en az bir soru ekleyin!');
-        return;
-    }
-    
-    // Soruları kontrol et
-    for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        if (!q.question) {
-            alert(`${i + 1}. sorunun metnini girin!`);
-            return;
-        }
-        for (let j = 0; j < 4; j++) {
-            if (!q.options[j]) {
-                alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`);
-                return;
-            }
-        }
-        if (q.correct === null || q.correct === '') {
-            alert(`${i + 1}. sorunun doğru şıkkını seçin!`);
-            return;
-        }
-    }
+    // Soru kontrolü kaldırıldı - artık boş sınav oluşturulabilir
     
     const data = { 
         title, 
-        questions, 
-        bookId,      // YENİ
-        lessonId,    // YENİ
+        questions: questions || [], // questions boşsa boş array
+        bookId,
+        lessonId,
         createdAt: new Date().toISOString() 
     };
     
