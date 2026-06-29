@@ -3537,34 +3537,19 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     const allOptions = document.querySelectorAll('.option-quiz');
     
     if (isCorrect) {
-        quizScore += 0.01;
+        // ===== PUAN EKLE VE YUVARLA =====
+        quizScore = Math.round((quizScore + 0.01) * 100) / 100;
         quizCorrectCount++;
         selectedDiv.classList.add('correct-highlight');
-        showTempMessage('✅ Doğru! +10 puan', '#10b981');
+        showTempMessage('✅ Doğru! +0.01 puan', '#10b981');
         
-        // ===== SANDIKTAN KESİN DÜŞÜR =====
-        const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
-        
-        if (sandikKontrol) {
-            console.log('📦 SANDIKTAN DÜŞÜRME DENENİYOR:', word.arabic);
-            console.log('📦 Düşürme öncesi sandık:', quizSandik.map(w => w.arabic));
-            
-            const oncekiSayi = quizSandik.length;
+        if (word.isFromSandik) {
             quizSandik = quizSandik.filter(w => w.id !== word.id);
-            const sonrakiSayi = quizSandik.length;
-            
-            if (oncekiSayi > sonrakiSayi) {
-                console.log('✅ Sandıktan çıkarıldı (DOĞRU):', word.arabic);
-                await saveSandikToFirestore();
-                updateSandikDisplay();
-                console.log('📦 Düşürme sonrası sandık:', quizSandik.map(w => w.arabic));
-            } else {
-                console.log('⚠️ Kelime sandıktan çıkarılamadı! ID:', word.id);
-                console.log('⚠️ Sandıktaki ID\'ler:', quizSandik.map(w => w.id));
-            }
+            await saveSandikToFirestore();
+            updateSandikDisplay();
         }
     } else {
-        quizScore = Math.max(0, quizScore - 5);
+        quizScore = Math.round((Math.max(0, quizScore - 5)) * 100) / 100;
         selectedDiv.classList.add('wrong-highlight');
         
         allOptions.forEach(opt => {
@@ -3574,25 +3559,21 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
-        const sandikKontrol = word.isFromSandik || currentQuizWord?.isFromSandik;
-        if (!sandikKontrol) {
+        if (!word.isFromSandik) {
             const alreadyInSandik = quizSandik.some(w => w.id === word.id);
             if (!alreadyInSandik) {
                 quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
                 await saveSandikToFirestore();
                 updateSandikDisplay();
-                console.log('📦 Sandığa eklendi:', word.arabic);
             }
         }
     }
     
-    // ===== PUAN VE BAŞARI YÜZDESİ =====
-    document.getElementById('karmaScore').textContent = quizScore;
+    // ===== PUANI GÖSTER (2 HANELİ) =====
+    document.getElementById('karmaScore').textContent = quizScore.toFixed(2);
     
-    // DOĞRU YÜZDE HESAPLAMA - Toplam soru üzerinden
-    const toplamSoru = quizWordsAll.length + quizSandik.length;
-    const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
-    document.getElementById('karmaPercent').textContent = percent > 100 ? 100 : percent;
+    const percent = Math.round((quizCorrectCount / quizTotalQuestions) * 100);
+    document.getElementById('karmaPercent').textContent = percent;
     
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
@@ -3689,11 +3670,7 @@ async function finishQuizWords() {
     const normalBitti = baslangicIndex > bitisIndex;
     const container = document.getElementById('karmaOptions');
     
-    // ÖNCE: Bu fonksiyonun çalıştığını kontrol et
-    console.log('🔥 finishQuizWords ÇALIŞTI!');
-    console.log('normalBitti:', normalBitti);
-    console.log('mevcutSeviye:', mevcutSeviye);
-    console.log('toplamSeviye:', toplamSeviye);
+   
     
     // Butonları gizle
     const bilmedimBtn = document.getElementById('bilmedimBtn');
@@ -3711,7 +3688,7 @@ async function finishQuizWords() {
     
     // Eğer normalBitti true ise seviye bitti demektir
     if (normalBitti) {
-        console.log('✅ Seviye bitti, sonuç ekranı gösteriliyor...');
+     
         
         // Seviye tamamlandı ve sonraki seviye var
         if (mevcutSeviye < toplamSeviye) {
@@ -3730,26 +3707,26 @@ async function finishQuizWords() {
                 : '🎉 Tüm kelimeler öğrenildi!';
             
             container.innerHTML = `
-                <div class="result-card">
-                    <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
-                    <div class="score">${quizScore} Puan</div>
-                    <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
-                            <div>Doğru</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
-                            <div>Başarı</div>
-                        </div>
-                    </div>
-                    <p style="color: #f59e0b; font-size: 14px;">${sandikMesaji}</p>
-                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
-                        <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
-                        <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
-                    </div>
-                </div>
-            `;
+    <div class="result-card">
+        <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
+        <div class="score">${quizScore.toFixed(2)} Puan</div>
+        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
+                <div>Doğru</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
+                <div>Başarı</div>
+            </div>
+        </div>
+        <p style="color: #f59e0b; font-size: 14px;">${sandikMesaji}</p>
+        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
+            <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
+        </div>
+    </div>
+`;
             return;
         }
         
