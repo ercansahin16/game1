@@ -3941,67 +3941,94 @@ async function loadLeaderboard() {
     
     usersSnapshot.forEach(doc => {
         const data = doc.data();
-        const totalScore = (data.quizScore || 0) + (data.averageScore || 0);
-        const seviye = data.mevcutSeviye || 1;
+        
+        // ===== PUAN HESAPLAMA =====
+        // Yeni sistem: doğru cevap başına 0.01 puan
+        const quizScore = data.quizScore || 0; // Yarışma puanı (zaten 0.01 bazında)
+        const averageScore = data.averageScore || 0; // Sınav puanı (zaten 0.01 bazında)
+        const totalScore = quizScore + averageScore;
+        
+        // Seviye bilgisi
+        const mevcutSeviye = data.mevcutSeviye || 1;
+        const toplamSeviye = Math.ceil(111 / seviyedekiKelimeSayisi);
         
         users.push({
             id: doc.id,
-            name: data.name || data.email.split('@')[0],
+            name: data.name || data.email?.split('@')[0] || 'İsimsiz',
             email: data.email,
-            score: totalScore,
-            quizScore: data.quizScore || 0,
-            examScore: data.averageScore || 0,
+            totalScore: totalScore,
+            quizScore: quizScore,
+            averageScore: averageScore,
             words: data.totalWordsViewed || 0,
             exams: data.examsCompleted?.length || 0,
             sandik: data.quizSandik?.length || 0,
-            seviye: seviye
+            seviye: `${mevcutSeviye}/${toplamSeviye}`,
+            mevcutSeviye: mevcutSeviye
         });
     });
     
-    users.sort((a, b) => b.score - a.score);
+    // Toplam puana göre sırala (büyükten küçüğe)
+    users.sort((a, b) => b.totalScore - a.totalScore);
     
     const container = document.getElementById('rankingList');
+    if (!container) return;
+    
     container.innerHTML = '';
+    document.getElementById('rankingCount').textContent = users.length;
     
     users.forEach((user, index) => {
-        let rankClass = '';
-        if (index === 0) rankClass = 'gold';
-        else if (index === 1) rankClass = 'silver';
-        else if (index === 2) rankClass = 'bronze';
-        
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
         const isCurrentUser = user.id === currentUser?.uid;
         
         const div = document.createElement('div');
         div.className = 'leaderboard-item';
+        div.style.cssText = `
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px; 
+            background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; 
+            border-radius: 10px; 
+            border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};
+            margin-bottom: 8px;
+        `;
         div.innerHTML = `
-            <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
-            <div class="leaderboard-info">
-                <div class="leaderboard-name">${user.name} ${isCurrentUser ? '👤' : ''}</div>
-                <div class="leaderboard-score">📖 ${user.words} kelime | 📦 ${user.sandik} sandık | 🏆 Seviye ${user.seviye}</div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <span style="font-weight: bold; width: 30px;">${medal}</span>
+                <span>${index + 1}.</span>
+                <span><i class="fas fa-user"></i> ${user.name}</span>
+                ${isCurrentUser ? '<span style="font-size: 10px; color: #f59e0b; margin-left: 5px;">👤</span>' : ''}
             </div>
-            <div class="leaderboard-points">${user.score} P</div>
+            <div style="text-align: right;">
+                <span style="color: #f59e0b; font-weight: bold;">${user.totalScore.toFixed(2)} P</span>
+                <div style="font-size: 11px; opacity: 0.7;">
+                    📖 ${user.words} kelime | 📦 ${user.sandik} sandık | 🏆 Seviye ${user.seviye}
+                </div>
+            </div>
         `;
         container.appendChild(div);
     });
     
-    document.getElementById('rankingCount').textContent = users.length;
-    
+    // Kullanıcının kendi sıralamasını göster
     if (currentUser) {
         const userIndex = users.findIndex(u => u.id === currentUser.uid);
-        if (userIndex !== -1) {
-            const user = users[userIndex];
-            document.getElementById('userRank').innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div><i class="fas fa-user"></i> <strong>${user.name}</strong></div>
-                    <div>🏆 Sıralaman: <strong style="color: #f59e0b;">${userIndex + 1}. sırada</strong></div>
-                    <div>📊 ${user.score} Puan</div>
-                    <div>🎯 Seviye: <strong style="color: #f59e0b;">${user.seviye}</strong></div>
-                </div>
-            `;
+        const userData = users.find(u => u.id === currentUser.uid);
+        
+        if (userData) {
+            const userRankDiv = document.getElementById('userRank');
+            if (userRankDiv) {
+                userRankDiv.innerHTML = `
+                    <div style="text-align: center; padding: 15px; background: rgba(245,158,11,0.1); border-radius: 12px;">
+                        <strong>${userData.name}</strong>
+                        <div style="font-size: 24px; color: #f59e0b;">🏆 Sıralaman: ${userIndex + 1}. sırada</div>
+                        <div>📊 ${userData.totalScore.toFixed(2)} Puan</div>
+                        <div style="font-size: 13px; opacity: 0.7;">🎯 Seviye: ${userData.seviye}</div>
+                    </div>
+                `;
+            }
         }
     }
-}  
-
+}
 
 
 
