@@ -3277,8 +3277,7 @@ async function loadRanking() {
 
 // Rastgele şık seçenekleri oluştur
 window.startQuizWords = async () => {
-    console.log('🏁 Yarışma başlatılıyor... Seviye:', mevcutSeviye);
-    
+   
     // Ana sayfayı gizle
     const mainContent = document.getElementById('mainContent');
     if (mainContent) mainContent.style.display = 'none';
@@ -3316,7 +3315,7 @@ window.startQuizWords = async () => {
     // Tüm kelimeleri yükle
     const wordsSnapshot = await getDocs(collection(db, 'words'));
     tumKelimeler = wordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('✅ Toplam kelime:', tumKelimeler.length);
+   
     
     // ===== SEVİYEYİ YÜKLE (KALDIĞI YERDEN) =====
     if (currentUser) {
@@ -3324,7 +3323,7 @@ window.startQuizWords = async () => {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists() && userDoc.data().mevcutSeviye) {
             mevcutSeviye = userDoc.data().mevcutSeviye;
-            console.log('📌 Kaldığın seviye:', mevcutSeviye);
+           
         } else {
             mevcutSeviye = 1;
         }
@@ -3336,7 +3335,7 @@ window.startQuizWords = async () => {
     const bitis = Math.min(baslangic + seviyedekiKelimeSayisi, tumKelimeler.length);
     seviyeKelimeListesi = tumKelimeler.slice(baslangic, bitis);
     
-    console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - ${seviyeKelimeListesi.length} kelime`);
+   
     
     // Sandığı yükle
     if (currentUser) {
@@ -3344,10 +3343,10 @@ window.startQuizWords = async () => {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists() && userDoc.data().quizSandik) {
             quizSandik = userDoc.data().quizSandik;
-            console.log('📦 Sandık yüklendi (korundu):', quizSandik.length, 'kelime');
+           
         } else {
             quizSandik = [];
-            console.log('📦 Sandık boş');
+           
         }
     }
     
@@ -3394,7 +3393,7 @@ window.startQuizWords = async () => {
         header.after(seviyeElement);
     }
     
-    console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
+   
     
     if (seviyeKelimeListesi.length > 0) {
         loadNextQuizWord();
@@ -3408,7 +3407,7 @@ window.startQuizWords = async () => {
 // Sonraki kelimeyi yükle
 // Sandıktan kaç kere kelime alındığını tut
 async function loadNextQuizWord() {
-    console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
+   
     
     quizAnswered = false;
     
@@ -3416,8 +3415,7 @@ async function loadNextQuizWord() {
     let isFromSandik = false;
     
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    console.log('📊 Normal gösterilen:', normalGosterilen);
-    console.log('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
+   
     
     // ===== NORMAL KELİMELER BİTTİ Mİ KONTROL ET =====
     if (baslangicIndex > bitisIndex) {
@@ -3426,10 +3424,10 @@ async function loadNextQuizWord() {
             const randomIndex = Math.floor(Math.random() * quizSandik.length);
             word = quizSandik[randomIndex];
             isFromSandik = true;
-            console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
+           
         } else {
             // Normal ve sandık bitti -> SEVİYE TAMAMLANDI
-            console.log('🎉 Seviye tamamlandı!');
+          
             finishQuizWords();  // finishQuizWords çağır
             return;
         }
@@ -3441,18 +3439,18 @@ async function loadNextQuizWord() {
         isFromSandik = true;
         sandikAktif = true;
         sandikAlmaSayaci++;
-        console.log('📦 9 kelimede bir sandıktan alındı:', word.arabic);
+       
     }
     // Normal kelime al
     else {
         if (siraSoldan) {
             word = quizWordsAll[baslangicIndex];
             baslangicIndex++;
-            console.log('📖 Eski kelime:', word.arabic);
+           
         } else {
             word = quizWordsAll[bitisIndex];
             bitisIndex--;
-            console.log('📖 Yeni kelime:', word.arabic);
+           
         }
         siraSoldan = !siraSoldan;
         sandikAktif = false;
@@ -4009,163 +4007,11 @@ async function loadLeaderboard() {
 
 
 
-    // YARIŞMA TEST KODU
-(async function testYarisma() {
-    console.log('🔍 YARIŞMA TEST BAŞLIYOR...');
-    
-    // 1. Kelimeleri kontrol et
-    const wordsSnap = await getDocs(collection(db, 'words'));
-    const words = wordsSnap.docs.map(doc => doc.data());
-    console.log(`📝 Toplam kelime: ${words.length}`);
-    
-    if (words.length === 0) {
-        console.log('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
-        return;
-    }
-    
-    // 2. Örnek kelime göster
-    console.log('📖 Örnek kelime:', words[0]);
-    
-    // 3. startQuizWords fonksiyonunu manuel çalıştır
-    if (typeof startQuizWords === 'function') {
-        console.log('✅ startQuizWords fonksiyonu bulundu, çalıştırılıyor...');
-        await startQuizWords();
-    } else {
-        console.log('❌ startQuizWords fonksiyonu bulunamadı!');
-        
-        // Manuel olarak yarışma ekranını aç
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('karmaScreen').style.display = 'block';
-        
-        // İlk kelimeyi göster
-        const firstWord = words[0];
-        document.getElementById('karmaArabicWord').textContent = firstWord.arabic;
-        document.getElementById('karmaTotal').textContent = words.length;
-        console.log('📖 İlk kelime manuel yüklendi:', firstWord.arabic);
-    }
-    
-    console.log('✅ TEST TAMAMLANDI');
-})();
 
 
 
 
-// YARIŞMA DETAYLI TEST KODU (GÜNCELLENMİŞ)
-(function yarismaDetayliTest() {
-    console.log('========== YARIŞMA DETAYLI TEST BAŞLADI ==========');
-    console.log('🕐 Test zamanı:', new Date().toLocaleTimeString());
-    
-    // 1. MEVCUT DURUM BİLGİLERİ
-    console.log('\n📊 MEVCUT DURUM:');
-    console.log('├─ Toplam normal kelime:', quizWordsAll?.length || 0);
-    console.log('├─ Toplam sandık kelimesi:', quizSandik?.length || 0);
-    console.log('├─ Sandık içeriği:', quizSandik?.map(w => w.arabic).join(', ') || 'Boş');
-    console.log('├─ Mevcut puan:', quizScore);
-    console.log('├─ Doğru sayısı:', quizCorrectCount);
-    console.log('├─ Toplam soru hedefi:', quizTotalQuestions);
-    console.log('├─ Başlangıç index (eski):', baslangicIndex);
-    console.log('├─ Bitiş index (yeni):', bitisIndex);
-    console.log('├─ Sıra (true=eski/false=yeni):', siraSoldan);
-    
-    // 2. MEVCUT KELİME BİLGİSİ
-    console.log('\n📖 MEVCUT KELİME:');
-    if (currentQuizWord) {
-        console.log('├─ Arapça:', currentQuizWord.arabic);
-        console.log('├─ Türkçe:', currentQuizWord.turkish);
-        console.log('├─ Sandıktan mı?:', currentQuizWord.isFromSandik ? 'Evet' : 'Hayır');
-    } else {
-        console.log('├─ Mevcut kelime yok!');
-    }
-    
-    // 3. EKRANDA GÖRÜNEN BİLGİLER
-    console.log('\n🖥️ EKRAN BİLGİLERİ:');
-    console.log('├─ Gösterilen soru no:', document.getElementById('karmaCurrent')?.textContent);
-    console.log('├─ Toplam soru:', document.getElementById('karmaTotal')?.textContent);
-    console.log('├─ Puan:', document.getElementById('karmaScore')?.textContent);
-    console.log('├─ Başarı %:', document.getElementById('karmaPercent')?.textContent);
-    console.log('├─ Sandık sayısı:', document.getElementById('sandikCount')?.textContent);
-    console.log('├─ Arapça kelime:', document.getElementById('karmaArabicWord')?.textContent);
-    
-    // 4. ŞIK BİLGİLERİ
-    console.log('\n🔘 ŞIKLAR:');
-    const options = document.querySelectorAll('.option-quiz');
-    if (options.length === 0) {
-        console.log('├─ Şık bulunamadı!');
-    } else {
-        options.forEach((opt, i) => {
-            const letter = opt.querySelector('.option-letter')?.textContent;
-            const text = opt.querySelector('.option-text')?.textContent;
-            const isCorrect = opt.dataset.isCorrect === 'true';
-            console.log(`├─ ${letter} ${text} ${isCorrect ? '✅ DOĞRU' : ''}`);
-        });
-    }
-    
-    // 5. FONKSİYON KONTROLLERİ
-    console.log('\n⚙️ FONKSİYON KONTROLLERİ:');
-    console.log('├─ startQuizWords:', typeof startQuizWords);
-    console.log('├─ loadNextQuizWord:', typeof loadNextQuizWord);
-    console.log('├─ displayQuizWord:', typeof displayQuizWord);
-    console.log('├─ selectQuizOption:', typeof selectQuizOption);
-    console.log('├─ saveSandikToFirestore:', typeof saveSandikToFirestore);
-    console.log('├─ generateQuizOptions:', typeof generateQuizOptions);
-    
-    // 6. MANTIK KONTROLÜ (YENİ - quizNormalIndex OLMADAN)
-    console.log('\n🧠 MANTIK KONTROLÜ:');
-    const ekrandakiSoru = parseInt(document.getElementById('karmaCurrent')?.textContent);
-    const gidilenSoru = (baslangicIndex || 0) + ((quizWordsAll?.length || 0) - 1 - (bitisIndex || 0));
-    const hesaplananSoru = gidilenSoru + 1;
-    console.log('├─ Ekrandaki soru:', ekrandakiSoru);
-    console.log('├─ Hesaplanan soru (baslangic + bitis):', hesaplananSoru);
-    
-    if (ekrandakiSoru !== hesaplananSoru && !isNaN(ekrandakiSoru)) {
-        console.log('⚠️ UYARI: Soru numarası uyuşmuyor!');
-    }
-    
-    const toplamGosterilen = parseInt(document.getElementById('karmaTotal')?.textContent);
-    const beklenenToplam = (quizWordsAll?.length || 0) + (quizSandik?.length || 0);
-    console.log('├─ Gösterilen toplam:', toplamGosterilen);
-    console.log('├─ Beklenen toplam:', beklenenToplam);
-    
-    if (toplamGosterilen !== beklenenToplam && !isNaN(toplamGosterilen)) {
-        console.log('⚠️ UYARI: Toplam soru sayısı uyuşmuyor!');
-    }
-    
-    // 7. SANDIK KONTROLÜ
-    console.log('\n📦 SANDIK KONTROLÜ:');
-    if (quizSandik && quizSandik.length > 0) {
-        const unique = new Set(quizSandik.map(w => w.arabic));
-        if (unique.size !== quizSandik.length) {
-            console.log('⚠️ UYARI: Sandıkta tekrar eden kelimeler var!');
-        } else {
-            console.log('✅ Sandıkta tekrar eden kelime yok');
-        }
-    } else {
-        console.log('✅ Sandık boş');
-    }
-    
-    // 8. İLERLEME DURUMU
-    console.log('\n📈 İLERLEME DURUMU:');
-    const toplamKelime = quizWordsAll?.length || 0;
-    const kalanNormal = Math.max(0, bitisIndex - baslangicIndex + 1);
-    console.log('├─ Toplam kelime:', toplamKelime);
-    console.log('├─ Kalan normal kelime:', kalanNormal);
-    console.log('├─ Sandıktaki kelime:', quizSandik?.length || 0);
-    console.log('├─ Toplam kalan:', kalanNormal + (quizSandik?.length || 0));
-    
-    // 9. TAVSİYELER
-    console.log('\n💡 TAVSİYELER:');
-    if (quizSandik && quizSandik.length > 0) {
-        console.log('├─ Sandıkta ' + quizSandik.length + ' kelime var. Bunları doğru cevaplamaya çalış!');
-    }
-    if (kalanNormal === 0 && (quizSandik?.length || 0) === 0) {
-        console.log('├─ 🎉 TEBRİKLER! Tüm kelimeleri tamamladınız!');
-    } else if (kalanNormal === 0) {
-        console.log('├─ Normal kelimeler bitti, sadece sandıktaki kelimeler kaldı!');
-    }
-    
-    console.log('\n========== TEST TAMAMLANDI ==========');
-    console.log('📌 Şimdi soruyu cevapla ve tekrar bu kodu çalıştır!');
-})();
+
 
 
 
@@ -4351,47 +4197,7 @@ async function safeOperation(operation) {
 
 
 
-// Sınav sıralama testi
-(async function testSiralama() {
-    console.log('===== SINAV SIRALAMA TESTİ =====');
-    
-    // 1. Mevcut sınavları getir
-    const snapshot = await getDocs(collection(db, 'exams'));
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    console.log('📝 Toplam sınav:', exams.length);
-    console.log('\n📋 MEVCUT SIRALAMA:');
-    exams.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
-    
-    // 2. Alfabetik sırala
-    const sorted = [...exams].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    console.log('\n📋 ALFABETİK SIRALAMA:');
-    sorted.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
-    
-    // 3. Fark var mı?
-    const isSorted = exams.every((e, i) => e.title === sorted[i].title);
-    console.log('\n✅ Zaten sıralı mı?', isSorted ? 'EVET' : 'HAYIR');
-    
-    // 4. Eğer sıralı değilse manuel sırala (geçici)
-    if (!isSorted) {
-        console.log('\n🔄 Sınavlar alfabetik sıralanıyor...');
-        const container = document.getElementById('examsList');
-        if (container) {
-            container.innerHTML = '';
-            sorted.forEach(exam => {
-                const examCard = document.createElement('div');
-                examCard.className = 'exam-card';
-                examCard.onclick = () => startExam(exam);
-                examCard.innerHTML = `
-                    <div class="exam-title">📚 ${exam.title}</div>
-                    <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
-                `;
-                container.appendChild(examCard);
-            });
-            console.log('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
-        }
-    }
-})();
+
 
 </script>
 </body>
