@@ -3409,8 +3409,9 @@ window.startQuizWords = async () => {
 };
 // Sonraki kelimeyi yükle
 // Sandıktan kaç kere kelime alındığını tut
+
 async function loadNextQuizWord() {
-   
+    console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
     
     quizAnswered = false;
     
@@ -3418,45 +3419,60 @@ async function loadNextQuizWord() {
     let isFromSandik = false;
     
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-   
+    console.log('📊 Normal gösterilen:', normalGosterilen);
+    console.log('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
     
-    // ===== NORMAL KELİMELER BİTTİ Mİ KONTROL ET =====
+    // Normal kelimeler bitti mi?
     if (baslangicIndex > bitisIndex) {
-        // Normal kelimeler bitti, sandığa bak
+        // Sandıkta kelime var mı?
         if (quizSandik.length > 0) {
             const randomIndex = Math.floor(Math.random() * quizSandik.length);
             word = quizSandik[randomIndex];
             isFromSandik = true;
-           
+            console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
         } else {
-            // Normal ve sandık bitti -> SEVİYE TAMAMLANDI
-          
-            finishQuizWords();  // finishQuizWords çağır
+            // Sandık da boşsa seviye tamamlandı
+            console.log('🎉 Normal ve sandık bitti, seviye tamamlandı!');
+            finishQuizWords();
             return;
         }
     }
-    // Her 9 kelimede bir sandıktan al
+    // Her 10 kelimede bir sandıktan al
     else if (quizSandik.length > 0 && normalGosterilen > 0 && normalGosterilen % 9 === 0 && !sandikAktif) {
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         word = quizSandik[randomIndex];
         isFromSandik = true;
         sandikAktif = true;
         sandikAlmaSayaci++;
-       
+        console.log('📦 9 kelimede bir sandıktan alındı:', word.arabic);
     }
+    
     // Normal kelime al
-    else {
-        if (siraSoldan) {
-            word = quizWordsAll[baslangicIndex];
-            baslangicIndex++;
-           
+    if (!word) {
+        if (baslangicIndex <= bitisIndex) {
+            if (siraSoldan) {
+                word = quizWordsAll[baslangicIndex];
+                baslangicIndex++;
+                console.log('📖 Eski kelime:', word.arabic);
+            } else {
+                word = quizWordsAll[bitisIndex];
+                bitisIndex--;
+                console.log('📖 Yeni kelime:', word.arabic);
+            }
+            siraSoldan = !siraSoldan;
+            sandikAktif = false;
         } else {
-            word = quizWordsAll[bitisIndex];
-            bitisIndex--;
-           
+            // Normal kelimeler bitti, sandık kontrolü yap
+            if (quizSandik.length > 0) {
+                const randomIndex = Math.floor(Math.random() * quizSandik.length);
+                word = quizSandik[randomIndex];
+                isFromSandik = true;
+                console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
+            } else {
+                finishQuizWords();
+                return;
+            }
         }
-        siraSoldan = !siraSoldan;
-        sandikAktif = false;
     }
     
     if (!word) {
@@ -3464,9 +3480,13 @@ async function loadNextQuizWord() {
         return;
     }
     
-    currentQuizWord = { ...word, isFromSandik };
+    currentQuizWord = { ...word, isFromSandik: isFromSandik };
     displayQuizWord(word);
 }
+
+
+
+    
 
 // Kelimeyi ekranda göster
 function displayQuizWord(word) {
@@ -3670,8 +3690,6 @@ async function finishQuizWords() {
     const normalBitti = baslangicIndex > bitisIndex;
     const container = document.getElementById('karmaOptions');
     
-   
-    
     // Butonları gizle
     const bilmedimBtn = document.getElementById('bilmedimBtn');
     const gecBtn = document.getElementById('gecBtn');
@@ -3682,17 +3700,21 @@ async function finishQuizWords() {
     const arabicWordEl = document.getElementById('karmaArabicWord');
     if (arabicWordEl) arabicWordEl.style.display = 'none';
     
+    // Şıkları gizle
+    const optionsContainer = document.getElementById('karmaOptions');
+    if (optionsContainer) optionsContainer.style.display = 'none';
+    
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
-    // Eğer normalBitti true ise seviye bitti demektir
+    // Seviye tamamlandı (normal kelimeler bitti)
     if (normalBitti) {
-     
-        
-        // Seviye tamamlandı ve sonraki seviye var
+        // Sonraki seviye var mı?
         if (mevcutSeviye < toplamSeviye) {
             const nextSeviye = mevcutSeviye + 1;
+            
+            // Kullanıcı verilerini güncelle (sandık KORUNUR)
             if (currentUser) {
                 const userRef = doc(db, 'users', currentUser.uid);
                 await updateDoc(userRef, { 
@@ -3707,26 +3729,27 @@ async function finishQuizWords() {
                 : '🎉 Tüm kelimeler öğrenildi!';
             
             container.innerHTML = `
-    <div class="result-card">
-        <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
-        <div class="score">${quizScore.toFixed(2)} Puan</div>
-        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-            <div style="text-align: center;">
-                <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
-                <div>Doğru</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
-                <div>Başarı</div>
-            </div>
-        </div>
-        <p style="color: #f59e0b; font-size: 14px;">${sandikMesaji}</p>
-        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
-            <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
-            <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
-        </div>
-    </div>
-`;
+                <div class="result-card">
+                    <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
+                    <div class="score">${quizScore.toFixed(2)} Puan</div>
+                    <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
+                            <div>Doğru</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
+                            <div>Başarı</div>
+                        </div>
+                    </div>
+                    <p style="color: #f59e0b; font-size: 14px;">${sandikMesaji}</p>
+                    ${quizSandik.length > 0 ? `<p style="font-size: 12px; opacity: 0.7;">📦 ${quizSandik.map(w => w.arabic).join(', ')}</p>` : ''}
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
+                        <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
+                    </div>
+                </div>
+            `;
             return;
         }
         
@@ -3749,7 +3772,7 @@ async function finishQuizWords() {
                 <div class="result-card">
                     <h2>🏆 TEBRİKLER!</h2>
                     <div style="font-size: 48px; margin: 5px 0;">🎊</div>
-                    <div class="score">${quizScore} Puan</div>
+                    <div class="score">${quizScore.toFixed(2)} Puan</div>
                     <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                         <div style="text-align: center;">
                             <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
@@ -3761,6 +3784,7 @@ async function finishQuizWords() {
                         </div>
                     </div>
                     <p style="color: #10b981; font-size: 16px;">${sandikMesaji}</p>
+                    ${quizSandik.length > 0 ? `<p style="font-size: 12px; opacity: 0.7;">📦 ${quizSandik.map(w => w.arabic).join(', ')}</p>` : ''}
                     <button class="btn btn-primary" onclick="goHome()" style="margin-top: 20px;">Ana Sayfaya Dön</button>
                 </div>
             `;
@@ -3773,7 +3797,7 @@ async function finishQuizWords() {
         container.innerHTML = `
             <div class="result-card">
                 <h2>📦 Sandıkta ${quizSandik.length} kelime kaldı!</h2>
-                <div class="score">${quizScore} Puan</div>
+                <div class="score">${quizScore.toFixed(2)} Puan</div>
                 <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                     <div style="text-align: center;">
                         <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
@@ -3798,7 +3822,7 @@ async function finishQuizWords() {
     container.innerHTML = `
         <div class="result-card">
             <h2>✅ Yarışma Tamamlandı!</h2>
-            <div class="score">${quizScore} Puan</div>
+            <div class="score">${quizScore.toFixed(2)} Puan</div>
             <button class="btn btn-primary" onclick="goHome()">Ana Sayfaya Dön</button>
         </div>
     `;
@@ -3818,20 +3842,21 @@ window.sonrakiSeviye = function() {
 };
 
 // Sandıktan devam et
-window.devamEt = function() {
+
+    window.devamEt = function() {
     console.log('📦 Sandıktan devam ediliyor...');
-    // Sandıktaki kelimelerle devam et
     if (quizSandik.length > 0) {
-        // Sandıktan rastgele bir kelime al
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         const word = quizSandik[randomIndex];
         currentQuizWord = { ...word, isFromSandik: true };
         displayQuizWord(word);
     } else {
-        // Sandık boşsa ana sayfaya dön
-        goHome();
+        // Sandık boşsa seviye tamamlandı
+        finishQuizWords();
     }
 };
+
+    
 
 // Geçici mesaj göster
 function showTempMessage(message, color) {
