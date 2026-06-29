@@ -1304,28 +1304,37 @@ async function showClearDataModal() {
         }
     };
     
-    // ===== SEVİYE SIFIRLA =====
-    document.getElementById('clearSeviyeOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨 TÜM kullanıcıların seviyesi 1'e düşürülecek! Devam?')) {
-            if (!confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?')) return;
-            try {
-                const usersSnapshot = await getDocs(collection(db, 'users'));
-                let count = 0;
-                for (const userDoc of usersSnapshot.docs) {
-                    await updateDoc(doc(db, 'users', userDoc.id), {
-                        mevcutSeviye: 1
-                    });
-                    count++;
-                }
-                alert(`✅ ${count} kullanıcının seviyesi 1'e sıfırlandı!`);
-                closeModal();
-                refreshAllData();
-            } catch (error) {
-                alert('❌ Hata: ' + error.message);
-            }
-        }
-    };
+ 
+  // ===== SEVİYE SIFIRLA =====
+document.getElementById('clearSeviyeOption').onclick = async (e) => {
+    e.stopPropagation();
+    
+    const userConfirm = confirm('🚨 TÜM kullanıcıların seviyesi 1\'e düşürülecek! Devam?');
+    if (!userConfirm) return;
+    
+    const lastConfirm = confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?');
+    if (!lastConfirm) return;
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let count = 0;
+        
+        const batch = writeBatch(db);
+        usersSnapshot.docs.forEach(userDoc => {
+            const userRef = doc(db, 'users', userDoc.id);
+            batch.update(userRef, { mevcutSeviye: 1 });
+            count++;
+        });
+        await batch.commit();
+        
+        alert(`✅ ${count} kullanıcının seviyesi 1'e sıfırlandı!`);
+        closeModal();
+        refreshAllData();
+        
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
     
     // ===== ÖĞRENİLEN KELİME SAYISINI SIFIRLA =====
     document.getElementById('clearWordsLearnedOption').onclick = async (e) => {
