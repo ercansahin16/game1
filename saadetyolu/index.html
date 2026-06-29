@@ -1860,7 +1860,7 @@ function getBookNameById(bookId) {
     return book ? book.name : 'Kitap bulunamadı';
 }
     
- function completeExam() {
+function completeExam() {
     if (examCompleted) return;
     examCompleted = true;
     stopTimer();
@@ -1880,8 +1880,10 @@ function getBookNameById(bookId) {
     });
     
     const totalQuestions = currentExam.questions.length;
-    const score = (correct / totalQuestions) * 100;
-    const roundedScore = Math.round(score);
+    
+    // YENİ: Doğru cevap başına 0,01 puan
+    const score = correct * 0.01;
+    const roundedScore = Math.round(score * 100) / 100; // 2 haneli ondalık
     
     const letters = ['A', 'B', 'C', 'D'];
     
@@ -1964,12 +1966,12 @@ function getBookNameById(bookId) {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // Sınav sonucunu kaydet
+    // Sınav sonucunu kaydet (score değeri de güncellendi)
     (async () => {
         try {
             await saveExamResult(currentExam.title, score, correct, totalQuestions);
         } catch (error) {
-            console.error('Kayıt hatası:', error);
+            // Hata sessizce geçildi
         }
     })();
 }
