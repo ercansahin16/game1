@@ -1621,12 +1621,15 @@ async function loadUserStats() {
         const data = userDoc.data();
         document.getElementById('totalWordsLearned').textContent = data.totalWordsViewed || 0;
         document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
-        document.getElementById('averageScore').textContent = Math.round(data.averageScore || 0);
+        
+        // ===== AVERAGE SCORE - 2 HANELİ ONDALIK =====
+        const avgScore = data.averageScore || 0;
+        document.getElementById('averageScore').textContent = avgScore.toFixed(2);
         
         // ===== SEVİYE BİLGİSİNİ PROFİLE EKLE =====
         const seviyeElement = document.getElementById('profileSeviye');
         if (seviyeElement) {
-            const toplamSeviye = Math.ceil(111 / seviyedekiKelimeSayisi); // Toplam kelime sayısına göre hesapla
+            const toplamSeviye = Math.ceil(111 / seviyedekiKelimeSayisi);
             seviyeElement.textContent = `${data.mevcutSeviye || 1}/${toplamSeviye}`;
         }
         
@@ -1641,7 +1644,7 @@ async function loadUserStats() {
     } else {
         document.getElementById('totalWordsLearned').textContent = '0';
         document.getElementById('totalExamsCompleted').textContent = '0';
-        document.getElementById('averageScore').textContent = '0';
+        document.getElementById('averageScore').textContent = '0.00';
         
         const sandikElement = document.getElementById('sandikCountProfile');
         if (sandikElement) sandikElement.textContent = '0';
