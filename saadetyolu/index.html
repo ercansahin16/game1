@@ -3413,6 +3413,23 @@ window.startQuizWords = async () => {
 async function loadNextQuizWord() {
     console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
     
+    // ===== SANDIKTAKİ TEKRAR EDEN KELİMELERİ TEMİZLE =====
+    const uniqueSandik = [];
+    const seenIds = new Set();
+    for (const w of quizSandik) {
+        if (!seenIds.has(w.id)) {
+            seenIds.add(w.id);
+            uniqueSandik.push(w);
+        }
+    }
+    if (uniqueSandik.length !== quizSandik.length) {
+        quizSandik = uniqueSandik;
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+        console.log('📦 Sandık tekrarları temizlendi, yeni boyut:', quizSandik.length);
+    }
+    // ===== BURASI BİTTİ =====
+    
     quizAnswered = false;
     
     let word;
@@ -3437,8 +3454,9 @@ async function loadNextQuizWord() {
             return;
         }
     }
-    // Her 10 kelimede bir sandıktan al
+    // Her 9 kelimede bir sandıktan al (sadece sandık doluysa)
     else if (quizSandik.length > 0 && normalGosterilen > 0 && normalGosterilen % 9 === 0 && !sandikAktif) {
+        // Sandıktan rastgele bir kelime al
         const randomIndex = Math.floor(Math.random() * quizSandik.length);
         word = quizSandik[randomIndex];
         isFromSandik = true;
@@ -3447,7 +3465,7 @@ async function loadNextQuizWord() {
         console.log('📦 9 kelimede bir sandıktan alındı:', word.arabic);
     }
     
-    // Normal kelime al
+    // Normal kelime al (eğer sandıktan alınmadıysa)
     if (!word) {
         if (baslangicIndex <= bitisIndex) {
             if (siraSoldan) {
@@ -3511,14 +3529,13 @@ function displayQuizWord(word) {
     
     // ===== DOĞRU SORU NUMARASI =====
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    // Sandık gösterilen sayısı: sandikAlmaSayaci (her sandıktan alındığında artar)
     const sandikGosterilen = sandikAlmaSayaci;
     const soruNo = normalGosterilen + sandikGosterilen;
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     
     console.log('📊 Soru No:', soruNo, '| Normal:', normalGosterilen, '| Sandık Gösterilen:', sandikGosterilen, '| Toplam:', toplamSoru);
     
-    document.getElementById('karmaCurrent').textContent = soruNo > 0 ? soruNo : 1;
+    document.getElementById('karmaCurrent').textContent = Math.min(soruNo, toplamSoru);
     document.getElementById('karmaTotal').textContent = toplamSoru;
     
     const progress = (soruNo / toplamSoru) * 100;
@@ -3579,14 +3596,16 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -5 puan', '#ef4444');
         
-        if (!word.isFromSandik) {
-            const alreadyInSandik = quizSandik.some(w => w.id === word.id);
-            if (!alreadyInSandik) {
-                quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
-                await saveSandikToFirestore();
-                updateSandikDisplay();
-            }
-        }
+       // selectQuizOption içinde (yanlış cevap kısmında)
+if (!word.isFromSandik) {
+    // Zaten sandıkta var mı kontrol et
+    const alreadyInSandik = quizSandik.some(w => w.id === word.id);
+    if (!alreadyInSandik) {
+        quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+    }
+}
     }
     
     // ===== PUANI GÖSTER (2 HANELİ) =====
@@ -3885,10 +3904,26 @@ function generateQuizOptions(currentWord, allWords) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    const wrongAnswers = shuffled.slice(0, 3).map(w => w.turkish);
     
-    // Şıkları birleştir ve karıştır
+    // Benzersiz yanlış şıklar (doğru cevap ile aynı olmayan)
+    const wrongAnswers = [];
+    const uniqueSet = new Set();
+    uniqueSet.add(correctAnswer);
+    
+    for (const word of shuffled) {
+        if (!uniqueSet.has(word.turkish) && wrongAnswers.length < 3) {
+            uniqueSet.add(word.turkish);
+            wrongAnswers.push(word.turkish);
+        }
+    }
+    
+    // Yeterli yanlış şık yoksa doldur
+    while (wrongAnswers.length < 3) {
+        wrongAnswers.push('???');
+    }
+    
     let options = [correctAnswer, ...wrongAnswers];
+    // Karıştır
     for (let i = options.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [options[i], options[j]] = [options[j], options[i]];
