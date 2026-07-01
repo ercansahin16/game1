@@ -1669,7 +1669,7 @@ async function loadUserStats() {
             // Toplam seviyeyi hesapla
             const wordsSnapshot = await getDocs(collection(db, 'words'));
             const totalWords = wordsSnapshot.docs.length;
-            const toplamSeviye = Math.ceil(totalWords / 15); // 25 kelime = 1 seviye
+            const toplamSeviye = Math.ceil(totalWords / 15); // 15 kelime = 1 seviye
             seviyeElement.textContent = `${seviye}/${toplamSeviye}`;
         }
         
@@ -4376,6 +4376,121 @@ async function safeOperation(operation) {
     }
 })();
 
+
+
+
+
+
+
+    // ===== SEVİYE KONTROL FONKSİYONU =====
+window.seviyeKontrol = async function() {
+    console.log('========== SEVİYE KONTROL BAŞLADI ==========');
+    
+    // 1. MEVCUT DURUM
+    console.log('\n📌 1. MEVCUT DURUM:');
+    console.log('   ├─ mevcutSeviye değişkeni:', mevcutSeviye);
+    console.log('   ├─ toplamSeviye değişkeni:', toplamSeviye);
+    console.log('   ├─ seviyedekiKelimeSayisi:', seviyedekiKelimeSayisi);
+    console.log('   ├─ quizWordsAll uzunluğu:', quizWordsAll?.length || 0);
+    console.log('   ├─ quizSandik uzunluğu:', quizSandik?.length || 0);
+    
+    // 2. FIRESTORE'DAN OKU
+    if (currentUser) {
+        console.log('\n📌 2. FIRESTORE OKUMA:');
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            console.log('   ├─ Firestore mevcutSeviye:', data.mevcutSeviye);
+            console.log('   ├─ Firestore quizScore:', data.quizScore);
+            console.log('   ├─ Firestore quizSandik:', data.quizSandik?.length || 0);
+            console.log('   ├─ Firestore tüm veri:', data);
+        } else {
+            console.log('   ❌ Kullanıcı belgesi bulunamadı!');
+        }
+    } else {
+        console.log('   ❌ Kullanıcı giriş yapmamış!');
+    }
+    
+    // 3. TOPLAM KELİME SAYISI
+    console.log('\n📌 3. TOPLAM KELİME:');
+    const wordsSnapshot = await getDocs(collection(db, 'words'));
+    const totalWords = wordsSnapshot.docs.length;
+    const hesaplananSeviye = Math.ceil(totalWords / 15);
+    console.log('   ├─ Toplam kelime sayısı:', totalWords);
+    console.log('   ├─ Hesaplanan toplam seviye (15 kelime):', hesaplananSeviye);
+    console.log('   ├─ Mevcut toplamSeviye değişkeni:', toplamSeviye);
+    
+    if (hesaplananSeviye !== toplamSeviye) {
+        console.log('   ⚠️ UYARI: Hesaplanan seviye ile mevcut seviye uyuşmuyor!');
+        console.log('   ├─ Hesaplanan:', hesaplananSeviye);
+        console.log('   ├─ Mevcut:', toplamSeviye);
+    }
+    
+    // 4. SEVİYE KELİMELERİ
+    console.log('\n📌 4. SEVİYE KELİMELERİ:');
+    const KELIME_SAYISI = 15;
+    const baslangic = (mevcutSeviye - 1) * KELIME_SAYISI;
+    const bitis = Math.min(baslangic + KELIME_SAYISI, totalWords);
+    console.log('   ├─ Başlangıç index:', baslangic);
+    console.log('   ├─ Bitiş index:', bitis);
+    console.log('   ├─ Seviyedeki kelime sayısı:', bitis - baslangic);
+    
+    // 5. HTML ELEMENTLERİ
+    console.log('\n📌 5. HTML ELEMENTLERİ:');
+    const karmaSeviye = document.getElementById('karmaSeviye');
+    const karmaToplam = document.getElementById('karmaToplamSeviye');
+    const seviyeNo = document.getElementById('seviyeNo');
+    const toplamSeviyeNo = document.getElementById('toplamSeviyeNo');
+    const seviyeBilgi = document.getElementById('seviyeBilgi');
+    
+    console.log('   ├─ karmaSeviye:', karmaSeviye?.textContent);
+    console.log('   ├─ karmaToplamSeviye:', karmaToplam?.textContent);
+    console.log('   ├─ seviyeNo:', seviyeNo?.textContent);
+    console.log('   ├─ toplamSeviyeNo:', toplamSeviyeNo?.textContent);
+    console.log('   ├─ seviyeBilgi:', seviyeBilgi?.innerHTML);
+    
+    // 6. TAVSİYE
+    console.log('\n📌 6. TAVSİYE:');
+    if (mevcutSeviye !== parseInt(karmaSeviye?.textContent || '1')) {
+        console.log('   ⚠️ EKRANDAKİ SEVİYE İLE DEĞİŞKEN UYUŞMUYOR!');
+        console.log('   ├─ Değişken:', mevcutSeviye);
+        console.log('   ├─ Ekran:', karmaSeviye?.textContent);
+        console.log('   💡 Çözüm: startQuizWords() çağrıldığında ekran güncellenmiyor.');
+    }
+    
+    if (currentUser && userDoc?.exists()) {
+        const firestoreSeviye = userDoc.data().mevcutSeviye;
+        if (firestoreSeviye && firestoreSeviye !== mevcutSeviye) {
+            console.log('   ⚠️ FIRESTORE İLE DEĞİŞKEN UYUŞMUYOR!');
+            console.log('   ├─ Değişken:', mevcutSeviye);
+            console.log('   ├─ Firestore:', firestoreSeviye);
+            console.log('   💡 Çözüm: mevcutSeviye = firestoreSeviye yapmalısın.');
+        }
+    }
+    
+    console.log('\n========== SEVİYE KONTROL BİTTİ ==========');
+    
+    // Sonuç özeti
+    return {
+        mevcutSeviye: mevcutSeviye,
+        toplamSeviye: toplamSeviye,
+        firestoreSeviye: currentUser ? await (async () => {
+            const doc = await getDoc(doc(db, 'users', currentUser.uid));
+            return doc.exists() ? doc.data().mevcutSeviye : null;
+        })() : null,
+        ekranSeviye: parseInt(document.getElementById('karmaSeviye')?.textContent || '1'),
+        seviyeFarki: mevcutSeviye !== parseInt(document.getElementById('karmaSeviye')?.textContent || '1'),
+        firestoreFarki: currentUser ? mevcutSeviye !== (await (async () => {
+            const doc = await getDoc(doc(db, 'users', currentUser.uid));
+            return doc.exists() ? doc.data().mevcutSeviye : null;
+        })()) : false
+    };
+};
+
+
+    
 </script>
 </body>
 </html>
