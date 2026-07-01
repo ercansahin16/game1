@@ -1227,7 +1227,7 @@
     </div>
     <div class="profile-stat-card">
         <div id="karmaScoreProfile">0</div>
-        <div><i class="fas fa-dice"></i> Karma Puan</div>
+        <div><i class="fas fa-dice"></i> Yarışma Puan</div>
     </div>
 </div>
 
@@ -3307,27 +3307,58 @@ window.startQuizWords = async () => {
     
     // Seviye hesapla
     toplamSeviye = Math.ceil(tumKelimeler.length / seviyedekiKelimeSayisi);
+    
+    // ===== KULLANICININ KAYITLI SEVİYESİNİ YÜKLE =====
+    if (currentUser) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            // Kayıtlı seviye varsa onu kullan, yoksa 1'den başla
+            if (data.mevcutSeviye) {
+                mevcutSeviye = data.mevcutSeviye;
+                console.log('📌 Kayıtlı seviye yüklendi:', mevcutSeviye);
+            } else {
+                mevcutSeviye = 1;
+                console.log('📌 Yeni kullanıcı, seviye 1\'den başlıyor');
+            }
+            
+            // Sandığı yükle (KORU)
+            if (data.quizSandik) {
+                quizSandik = data.quizSandik;
+                console.log('📦 Sandık yüklendi:', quizSandik.length, 'kelime');
+            } else {
+                quizSandik = [];
+            }
+            
+            // Puanı yükle
+            if (data.quizScore !== undefined) {
+                quizScore = data.quizScore;
+                console.log('💰 Puan yüklendi:', quizScore);
+            } else {
+                quizScore = 0;
+            }
+        } else {
+            mevcutSeviye = 1;
+            quizSandik = [];
+            quizScore = 0;
+        }
+    }
+    
+    // Seviye kontrolü (toplam seviyeyi aşma)
+    if (mevcutSeviye > toplamSeviye) {
+        mevcutSeviye = toplamSeviye;
+        console.log('⚠️ Seviye sınırı aşıldı, son seviyeye ayarlandı:', mevcutSeviye);
+    }
+    
+    // Seviye kelimelerini hesapla
     const baslangic = (mevcutSeviye - 1) * seviyedekiKelimeSayisi;
     const bitis = Math.min(baslangic + seviyedekiKelimeSayisi, tumKelimeler.length);
     seviyeKelimeListesi = tumKelimeler.slice(baslangic, bitis);
     
     console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - ${seviyeKelimeListesi.length} kelime`);
     
-    // Sandığı yükle (KORU - SIFIRLAMA)
-    if (currentUser) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists() && userDoc.data().quizSandik) {
-            quizSandik = userDoc.data().quizSandik;
-            console.log('📦 Sandık yüklendi (korundu):', quizSandik.length, 'kelime');
-        } else {
-            quizSandik = [];
-            console.log('📦 Sandık boş');
-        }
-    }
-    
     // Tüm değişkenleri sıfırla (SADECE NORMAL KELİMELER İÇİN)
-    quizScore = 0;
     quizCorrectCount = 0;
     quizAnswered = false;
     sandikAlmaSayaci = 0;
@@ -3343,30 +3374,15 @@ window.startQuizWords = async () => {
     const totalQuestions = seviyeKelimeListesi.length + quizSandik.length;
     document.getElementById('karmaTotal').textContent = totalQuestions;
     document.getElementById('sandikCount').textContent = quizSandik.length;
-    document.getElementById('karmaScore').textContent = '0';
+    document.getElementById('karmaScore').textContent = quizScore.toFixed(2);
     document.getElementById('karmaPercent').textContent = '0';
     document.getElementById('karmaCurrent').textContent = '0';
     document.getElementById('karmaProgressFill').style.width = '0%';
     
-    // Seviye bilgisini göster
-    const seviyeElement = document.createElement('div');
-    seviyeElement.id = 'seviyeBilgi';
-    seviyeElement.style.cssText = `
-        text-align: center; 
-        font-size: 16px; 
-        color: #f59e0b; 
-        margin-bottom: 15px;
-        background: rgba(245,158,11,0.1);
-        padding: 8px;
-        border-radius: 10px;
-    `;
-    seviyeElement.innerHTML = `🏆 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
-    
-    const header = document.querySelector('.quiz-words-header');
-    if (header) {
-        const existing = document.getElementById('seviyeBilgi');
-        if (existing) existing.remove();
-        header.after(seviyeElement);
+    // Seviye bilgisini güncelle
+    const seviyeEl = document.getElementById('seviyeBilgi');
+    if (seviyeEl) {
+        seviyeEl.innerHTML = `🏆 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
     }
     
     console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
@@ -3668,6 +3684,8 @@ async function saveSandikToFirestore() {
 
 // Testi bitir
 async function finishQuizWords() {
+    console.log('🎯 finishQuizWords çağrıldı!');
+    
     const container = document.getElementById('karmaOptions');
     
     // Butonları gizle
@@ -3685,18 +3703,19 @@ async function finishQuizWords() {
     await saveSandikToFirestore();
     updateSandikDisplay();
     
+    const toplamSoru = quizWordsAll.length;
+    const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
+    const finalPercent = percent > 100 ? 100 : percent;
+    
+    // Kullanıcı verilerini güncelle (seviyeyi kaydet)
     if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { 
             quizSandik: quizSandik, 
             quizScore: quizScore,
-            mevcutSeviye: mevcutSeviye
+            mevcutSeviye: mevcutSeviye  // Mevcut seviyeyi kaydet
         });
     }
-    
-    const toplamSoru = quizWordsAll.length;
-    const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
-    const finalPercent = percent > 100 ? 100 : percent;
     
     // Seviye kontrolü
     if (mevcutSeviye < toplamSeviye) {
@@ -3714,7 +3733,7 @@ async function finishQuizWords() {
                         <div>Başarı</div>
                     </div>
                 </div>
-                <p style="color: #10b981; font-size: 14px;">📦 Ahsente, Bütün Kelimeleri Öğrendiniz 🎀❤️ </p>
+                <p style="color: #10b981; font-size: 14px;">📦 Sandık temizlendi! Seviye kaydedildi.</p>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
                     <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
                     <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
@@ -3750,8 +3769,16 @@ window.sonrakiSeviye = function() {
     if (mevcutSeviye < toplamSeviye) {
         mevcutSeviye++;
         console.log(`🎉 Seviye ${mevcutSeviye} başlıyor!`);
-        console.log(`📦 Sandık ${quizSandik.length} kelime ile devam ediliyor...`);
-        showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor! ${quizSandik.length > 0 ? `📦 ${quizSandik.length} kelime sandıkta` : ''}`, '#10b981');
+        
+        // Seviyeyi Firestore'a kaydet
+        if (currentUser) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            updateDoc(userRef, { 
+                mevcutSeviye: mevcutSeviye
+            }).catch(err => console.error('Seviye kaydetme hatası:', err));
+        }
+        
+        showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor!`, '#10b981');
         setTimeout(() => {
             startQuizWords();
         }, 1000);
