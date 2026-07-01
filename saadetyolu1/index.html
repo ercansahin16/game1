@@ -1139,35 +1139,58 @@
         </div>
     </div>
 
-    <!-- Karma Kelime Ekranı (4 ŞIKLI SİSTEM) -->
-    <div id="karmaScreen" style="display: none !important;">
-        <div class="words-area">
-            <div class="quiz-words-header">
-                <div class="quiz-words-info">
-                    <div><i class="fas fa-brain"></i> Puan: <span id="karmaScore">0</span></div>
-                    <div><i class="fas fa-percent"></i> Başarı: <span id="karmaPercent">0</span>%</div>
-                    <div><i class="fas fa-box"></i> Sandık: <span id="sandikCount">0</span></div>
-                </div>
-                <button class="btn-help" id="showKarmaHelp"><i class="fas fa-question-circle"></i></button>
+<!-- Karma Kelime Ekranı (4 ŞIKLI SİSTEM) -->
+<div id="karmaScreen" style="display: none !important;">
+    <div class="words-area">
+        <!-- YENİ: Başlık ve Seviye -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="color: #f59e0b; margin: 0; font-size: 18px;">
+                <i class="fas fa-dice"></i> KELİME YARIŞMASI
+            </h3>
+            <div style="background: rgba(245,158,11,0.15); padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #f59e0b;">
+                🏆 Seviye <span id="karmaSeviye">1</span>/<span id="karmaToplamSeviye">7</span>
             </div>
-            <div class="quiz-word-card">
-                <div class="arabic-quiz-word" id="karmaArabicWord">---</div>
-                <div class="options-quiz" id="karmaOptions"></div>
-                <div class="quiz-actions">
-                    <button id="bilmedimBtn" class="btn btn-warning"><i class="fas fa-lightbulb"></i> Bilemedim</button>
-                    <button id="gecBtn" class="btn btn-secondary"><i class="fas fa-forward"></i> Geç</button>
-                </div>
+        </div>
+        
+        <!-- MEVCUT: quiz-words-header (genişletilmiş) -->
+        <div class="quiz-words-header">
+            <div class="quiz-words-info">
+                <div><i class="fas fa-brain"></i> Puan: <span id="karmaScore">0.00</span></div>
+                <div><i class="fas fa-percent"></i> Başarı: <span id="karmaPercent">0</span>%</div>
+                <div><i class="fas fa-box"></i> Sandık: <span id="sandikCount">0</span></div>
+                <!-- YENİ: Doğru/Yanlış -->
+                <div><i class="fas fa-check-circle" style="color: #10b981;"></i> <span id="karmaDogru">0</span></div>
+                <div><i class="fas fa-times-circle" style="color: #ef4444;"></i> <span id="karmaYanlis">0</span></div>
             </div>
-            <div class="quiz-progress">
-                <div class="progress-info">
-                    <span id="karmaCurrent">0</span> / <span id="karmaTotal">0</span>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="karmaProgressFill"></div>
-                    </div>
+            <button class="btn-help" id="showKarmaHelp"><i class="fas fa-question-circle"></i></button>
+        </div>
+        
+        <!-- MEVCUT: quiz-word-card -->
+        <div class="quiz-word-card">
+            <div class="arabic-quiz-word" id="karmaArabicWord">---</div>
+            <div class="options-quiz" id="karmaOptions"></div>
+            <div class="quiz-actions">
+                <button id="bilmedimBtn" class="btn btn-warning"><i class="fas fa-lightbulb"></i> Bilemedim</button>
+                <button id="gecBtn" class="btn btn-secondary"><i class="fas fa-forward"></i> Geç</button>
+            </div>
+        </div>
+        
+        <!-- MEVCUT: quiz-progress -->
+        <div class="quiz-progress">
+            <div class="progress-info">
+                <span id="karmaCurrent">0</span> / <span id="karmaTotal">0</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="karmaProgressFill"></div>
                 </div>
             </div>
         </div>
+        
+        <!-- YENİ: Seviye detay bilgisi -->
+        <div id="seviyeBilgi" style="text-align: center; font-size: 13px; color: #f59e0b; background: rgba(245,158,11,0.08); padding: 6px; border-radius: 8px; margin-top: 10px;">
+            📚 Seviye <span id="seviyeNo">1</span>/<span id="toplamSeviyeNo">7</span> | 📝 <span id="seviyeKelimeSayisi">0</span> kelime | 📦 <span id="seviyeSandikSayisi">0</span> sandık
+        </div>
     </div>
+</div>
 
     <!-- Sıralama Ekranı -->
     <div id="rankingScreen" style="display: none !important;">
@@ -3409,11 +3432,20 @@ window.startQuizWords = async () => {
     document.getElementById('karmaPercent').textContent = '0';
     document.getElementById('karmaCurrent').textContent = '0';
     document.getElementById('karmaProgressFill').style.width = '0%';
+    document.getElementById('karmaDogru').textContent = '0';
+    document.getElementById('karmaYanlis').textContent = '0';
     
-    // Seviye bilgisini güncelle
+    // ===== SEVİYE BİLGİLERİNİ GÖSTER (BAŞLIK) =====
+    const karmaSeviye = document.getElementById('karmaSeviye');
+    if (karmaSeviye) karmaSeviye.textContent = mevcutSeviye;
+    
+    const karmaToplamSeviye = document.getElementById('karmaToplamSeviye');
+    if (karmaToplamSeviye) karmaToplamSeviye.textContent = toplamSeviye;
+    
+    // ===== SEVİYE BİLGİSİ (ALT SATIR) =====
     const seviyeEl = document.getElementById('seviyeBilgi');
     if (seviyeEl) {
-        seviyeEl.innerHTML = `🏆 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
+        seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${seviyeKelimeListesi.length}</span> kelime | 📦 <span id="seviyeSandikSayisi">${quizSandik.length}</span> sandık`;
     }
     
     console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
@@ -3532,10 +3564,22 @@ function displayQuizWord(word) {
     const progress = (soruNo / toplamSoru) * 100;
     document.getElementById('karmaProgressFill').style.width = `${progress}%`;
     
-    // Seviye bilgisini güncelle
+    // ===== SEVİYE BİLGİLERİNİ GÜNCELLE =====
+    // Başlıktaki seviye
+    const karmaSeviye = document.getElementById('karmaSeviye');
+    if (karmaSeviye) karmaSeviye.textContent = mevcutSeviye;
+    
+    const karmaToplamSeviye = document.getElementById('karmaToplamSeviye');
+    if (karmaToplamSeviye) karmaToplamSeviye.textContent = toplamSeviye;
+    
+    // Sandık sayısı
+    const sandikCount = document.getElementById('sandikCount');
+    if (sandikCount) sandikCount.textContent = quizSandik.length;
+    
+    // Alt seviye bilgisi
     const seviyeEl = document.getElementById('seviyeBilgi');
     if (seviyeEl) {
-        seviyeEl.innerHTML = `🏆 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${quizWordsAll.length} kelime | 📦 ${quizSandik.length} sandık`;
+        seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${quizWordsAll.length}</span> kelime | 📦 <span id="seviyeSandikSayisi">${quizSandik.length}</span> sandık`;
     }
     
     // Şıkları oluştur
@@ -3622,6 +3666,19 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     document.getElementById('karmaPercent').textContent = percent > 100 ? 100 : percent;
+    
+    // ===== DOĞRU/YANLIŞ SAYILARINI GÜNCELLE =====
+    document.getElementById('karmaDogru').textContent = quizCorrectCount;
+    document.getElementById('karmaYanlis').textContent = quizSandik.length;
+    
+    // ===== SANDIK SAYISINI GÜNCELLE =====
+    document.getElementById('sandikCount').textContent = quizSandik.length;
+    
+    // ===== SEVİYE BİLGİLERİNİ GÜNCELLE =====
+    const seviyeEl = document.getElementById('seviyeBilgi');
+    if (seviyeEl) {
+        seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${quizWordsAll.length}</span> kelime | 📦 <span id="seviyeSandikSayisi">${quizSandik.length}</span> sandık`;
+    }
     
     allOptions.forEach(opt => opt.classList.add('disabled'));
     
