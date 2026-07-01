@@ -3318,7 +3318,7 @@ window.loadRanking = async function() {
 
 // Rastgele şık seçenekleri oluştur
 window.startQuizWords = async () => {
-    console.log('🏁 Yarışma başlatılıyor... Seviye:', mevcutSeviye);
+    console.log('🏁 Yarışma başlatılıyor...');
     
     // Ana sayfayı gizle
     const mainContent = document.getElementById('mainContent');
@@ -3359,8 +3359,10 @@ window.startQuizWords = async () => {
     tumKelimeler = wordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     console.log('✅ Toplam kelime:', tumKelimeler.length);
     
-    // Seviye hesapla
-    toplamSeviye = Math.ceil(tumKelimeler.length / seviyedekiKelimeSayisi);
+    // Seviye hesapla (25 kelime = 1 seviye)
+    const KELIME_SAYISI = 25;
+    toplamSeviye = Math.ceil(tumKelimeler.length / KELIME_SAYISI);
+    console.log('📊 Toplam seviye:', toplamSeviye);
     
     // ===== KULLANICININ KAYITLI SEVİYESİNİ YÜKLE =====
     if (currentUser) {
@@ -3368,8 +3370,10 @@ window.startQuizWords = async () => {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
             const data = userDoc.data();
+            console.log('📦 Firestore verileri:', data);
+            
             // Kayıtlı seviye varsa onu kullan, yoksa 1'den başla
-            if (data.mevcutSeviye) {
+            if (data.mevcutSeviye && data.mevcutSeviye > 0) {
                 mevcutSeviye = data.mevcutSeviye;
                 console.log('📌 Kayıtlı seviye yüklendi:', mevcutSeviye);
             } else {
@@ -3406,8 +3410,8 @@ window.startQuizWords = async () => {
     }
     
     // Seviye kelimelerini hesapla
-    const baslangic = (mevcutSeviye - 1) * seviyedekiKelimeSayisi;
-    const bitis = Math.min(baslangic + seviyedekiKelimeSayisi, tumKelimeler.length);
+    const baslangic = (mevcutSeviye - 1) * KELIME_SAYISI;
+    const bitis = Math.min(baslangic + KELIME_SAYISI, tumKelimeler.length);
     seviyeKelimeListesi = tumKelimeler.slice(baslangic, bitis);
     
     console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - ${seviyeKelimeListesi.length} kelime`);
@@ -3445,10 +3449,11 @@ window.startQuizWords = async () => {
     // ===== SEVİYE BİLGİSİ (ALT SATIR) =====
     const seviyeEl = document.getElementById('seviyeBilgi');
     if (seviyeEl) {
-        seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${seviyeKelimeListesi.length}</span> kelime | 📦 <span id="seviyeSandikSayisi">${quizSandik.length}</span> sandık`;
+        seviyeEl.innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
     }
     
     console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
+    console.log('🎯 MEVCUT SEVİYE:', mevcutSeviye, '/', toplamSeviye);
     
     if (seviyeKelimeListesi.length > 0) {
         loadNextQuizWord();
@@ -3773,6 +3778,7 @@ async function saveSandikToFirestore() {
 // Testi bitir
 async function finishQuizWords() {
     console.log('🎯 finishQuizWords çağrıldı!');
+    console.log('📌 Mevcut seviye:', mevcutSeviye, '/', toplamSeviye);
     
     const container = document.getElementById('karmaOptions');
     
@@ -3803,6 +3809,7 @@ async function finishQuizWords() {
             quizScore: quizScore,
             mevcutSeviye: mevcutSeviye  // Mevcut seviyeyi kaydet
         });
+        console.log('✅ Seviye kaydedildi:', mevcutSeviye);
     }
     
     // Seviye kontrolü
@@ -3857,19 +3864,25 @@ window.sonrakiSeviye = function() {
     if (mevcutSeviye < toplamSeviye) {
         mevcutSeviye++;
         console.log(`🎉 Seviye ${mevcutSeviye} başlıyor!`);
+        console.log(`📌 Yeni seviye: ${mevcutSeviye}/${toplamSeviye}`);
         
         // Seviyeyi Firestore'a kaydet
         if (currentUser) {
             const userRef = doc(db, 'users', currentUser.uid);
             updateDoc(userRef, { 
                 mevcutSeviye: mevcutSeviye
-            }).catch(err => console.error('Seviye kaydetme hatası:', err));
+            }).then(() => {
+                console.log('✅ Seviye Firestore\'a kaydedildi:', mevcutSeviye);
+            }).catch(err => console.error('❌ Seviye kaydetme hatası:', err));
         }
         
         showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor!`, '#10b981');
         setTimeout(() => {
             startQuizWords();
         }, 1000);
+    } else {
+        console.log('⚠️ Son seviyedeyiz, daha ileri seviye yok!');
+        showTempMessage('🏆 Tüm seviyeler tamamlandı!', '#f59e0b');
     }
 };
 
