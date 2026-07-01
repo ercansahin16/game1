@@ -1187,26 +1187,34 @@
         <div style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 25px;">
             <h3 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-user-circle"></i> Profil Bilgilerim</h3>
             
-            <div style="margin-bottom: 25px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px;">
-                <div class="info-row">
-                    <div class="info-label">Kullanıcı Adı</div>
-                    <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
-                        <span id="profileName" style="font-size: 16px; font-weight: bold;"></span>
-                        <button class="btn btn-nav" onclick="editUsername()" style="padding: 5px 10px; font-size: 11px;">
-                            <i class="fas fa-edit"></i> Düzenle
-                        </button>
-                    </div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">E-posta</div>
-                    <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
-                        <span id="profileEmail" style="font-size: 14px;"></span>
-                        <button class="btn btn-nav" onclick="editEmail()" style="padding: 5px 10px; font-size: 11px;">
-                            <i class="fas fa-edit"></i> Değiştir
-                        </button>
-                    </div>
-                </div>
-            </div>
+           <!-- Profil ekranındaki bilgi satırlarına seviye ekle -->
+<div style="margin-bottom: 25px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px;">
+    <div class="info-row">
+        <div class="info-label">Kullanıcı Adı</div>
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
+            <span id="profileName" style="font-size: 16px; font-weight: bold;"></span>
+            <button class="btn btn-nav" onclick="editUsername()" style="padding: 5px 10px; font-size: 11px;">
+                <i class="fas fa-edit"></i> Düzenle
+            </button>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">E-posta</div>
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
+            <span id="profileEmail" style="font-size: 14px;"></span>
+            <button class="btn btn-nav" onclick="editEmail()" style="padding: 5px 10px; font-size: 11px;">
+                <i class="fas fa-edit"></i> Değiştir
+            </button>
+        </div>
+    </div>
+    <!-- YENİ: Seviye bilgisi -->
+    <div class="info-row">
+        <div class="info-label"><i class="fas fa-layer-group"></i> Seviye</div>
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
+            <span id="profileSeviye" style="font-size: 16px; font-weight: bold; color: #f59e0b;">1/7</span>
+        </div>
+    </div>
+</div>
 
            <div class="profile-stats-grid">
     <div class="profile-stat-card">
@@ -1228,6 +1236,10 @@
     <div class="profile-stat-card">
         <div id="karmaScoreProfile">0</div>
         <div><i class="fas fa-dice"></i> Yarışma Puan</div>
+    </div>
+               <div class="profile-stat-card">
+        <div id="seviyeProfile">1</div>
+        <div><i class="fas fa-layer-group"></i> Seviye</div>
     </div>
 </div>
 
@@ -1618,14 +1630,25 @@ async function loadUserStats() {
         document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
         document.getElementById('averageScore').textContent = Math.round(data.averageScore || 0);
         
-        // SANDIK SAYISI EKLENDİ
+        // SANDIK SAYISI
         const sandikCount = data.quizSandik?.length || 0;
         const sandikElement = document.getElementById('sandikCountProfile');
         if (sandikElement) sandikElement.textContent = sandikCount;
         
-        // KARMA PUANI EKLENDİ (isteğe bağlı)
+        // KARMA PUANI
         const karmaScoreElement = document.getElementById('karmaScoreProfile');
-        if (karmaScoreElement) karmaScoreElement.textContent = data.quizScore || 0;
+        if (karmaScoreElement) karmaScoreElement.textContent = (data.quizScore || 0).toFixed(2);
+        
+        // ===== YENİ: SEVİYE BİLGİSİ =====
+        const seviyeElement = document.getElementById('seviyeProfile');
+        if (seviyeElement) {
+            const seviye = data.mevcutSeviye || 1;
+            // Toplam seviyeyi hesapla
+            const wordsSnapshot = await getDocs(collection(db, 'words'));
+            const totalWords = wordsSnapshot.docs.length;
+            const toplamSeviye = Math.ceil(totalWords / 25); // 25 kelime = 1 seviye
+            seviyeElement.textContent = `${seviye}/${toplamSeviye}`;
+        }
         
         displayExamHistory(data.examsCompleted || []);
     } else {
@@ -1635,6 +1658,9 @@ async function loadUserStats() {
         
         const sandikElement = document.getElementById('sandikCountProfile');
         if (sandikElement) sandikElement.textContent = '0';
+        
+        const seviyeElement = document.getElementById('seviyeProfile');
+        if (seviyeElement) seviyeElement.textContent = '1/?';
     }
 }
 
@@ -3171,19 +3197,20 @@ window.loadRanking = async function() {
     const snapshot = await getDocs(collection(db, 'users'));
     const users = [];
     
+    // Toplam kelime sayısını al (seviye hesaplamak için)
+    const wordsSnapshot = await getDocs(collection(db, 'words'));
+    const totalWords = wordsSnapshot.docs.length;
+    const toplamSeviye = Math.ceil(totalWords / 25);
+    
     snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Toplam puan = quizScore (yarışma) + averageScore (sınav) - YUVARLA
         const quizScore = data.quizScore || 0;
         const averageScore = data.averageScore || 0;
-        const totalScore = Math.round(quizScore + averageScore); // YUVARLA
-        
-        // Sandık sayısı
+        const totalScore = Math.round(quizScore + averageScore);
         const sandikCount = data.quizSandik?.length || 0;
-        
-        // Kelime sayısı
         const totalWords = data.totalWordsViewed || 0;
+        const mevcutSeviye = data.mevcutSeviye || 1;
         
         users.push({
             id: doc.id,
@@ -3194,11 +3221,12 @@ window.loadRanking = async function() {
             averageScore: Math.round(averageScore),
             sandikCount: sandikCount,
             totalWords: totalWords,
+            mevcutSeviye: mevcutSeviye,
+            toplamSeviye: toplamSeviye,
             karmaStats: data.karmaStats || { total: 0, correct: 0, wrong: 0 }
         });
     });
     
-    // Toplam puana göre sırala (büyükten küçüğe)
     users.sort((a, b) => b.totalScore - a.totalScore);
     
     document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
@@ -3218,7 +3246,9 @@ window.loadRanking = async function() {
                 </div>
                 <div style="text-align: right;">
                     <span style="color: #f59e0b; font-weight: bold;">${user.totalScore} P</span>
-                    <span style="font-size: 11px; opacity: 0.7;"> (📖 ${user.totalWords} kelime | 📦 ${user.sandikCount} sandık)</span>
+                    <span style="font-size: 11px; opacity: 0.7;"> 
+                        (📖 ${user.totalWords} kelime | 📦 ${user.sandikCount} sandık | 🏆 ${user.mevcutSeviye}/${user.toplamSeviye}. Seviye)
+                    </span>
                 </div>
             </div>
         `;
@@ -3227,7 +3257,6 @@ window.loadRanking = async function() {
     
     document.getElementById('rankingList').innerHTML = html;
     
-    // Kullanıcının kendi sıralamasını göster
     if (currentUser) {
         const userIndex = users.findIndex(u => u.id === currentUser.uid);
         const userData = users.find(u => u.id === currentUser.uid);
@@ -3238,12 +3267,14 @@ window.loadRanking = async function() {
                     <strong>📍 Senin Sıralaman</strong><br>
                     <span style="font-size: 24px; color: #f59e0b;">${userIndex + 1}. sırada</span><br>
                     <span>🏆 Toplam Puan: ${userData.totalScore}</span>
-                    <br><span style="font-size: 12px; opacity: 0.7;">📖 ${userData.totalWords} kelime | 📦 ${userData.sandikCount} sandık</span>
+                    <br><span style="font-size: 12px; opacity: 0.7;">
+                        📖 ${userData.totalWords} kelime | 📦 ${userData.sandikCount} sandık | 🏆 ${userData.mevcutSeviye}/${userData.toplamSeviye}. Seviye
+                    </span>
                 </div>
             `;
         }
     }
-}
+};
 
     document.getElementById('goRanking').onclick = () => {
     goRanking();
