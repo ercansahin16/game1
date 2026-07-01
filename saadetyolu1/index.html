@@ -3381,7 +3381,6 @@ window.startQuizWords = async () => {
     }
 };
 // Sonraki kelimeyi yükle
-// Sandıktan kaç kere kelime alındığını tut
 async function loadNextQuizWord() {
     console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
     
@@ -3441,13 +3440,17 @@ async function loadNextQuizWord() {
         return;
     }
     
-    currentQuizWord = { ...word, isFromSandik: isFromSandik };
+    // ===== BURASI ÖNEMLİ: isFromSandik değerini KORU =====
+    currentQuizWord = { 
+        ...word, 
+        isFromSandik: isFromSandik 
+    };
     
     // ===== TOPLAM SORUYU GÜNCELLE =====
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     document.getElementById('karmaTotal').textContent = toplamSoru;
     
-    displayQuizWord(word);
+    displayQuizWord(currentQuizWord);
 }
 
 // Kelimeyi ekranda göster
@@ -3473,14 +3476,13 @@ function displayQuizWord(word) {
     
     // ===== DOĞRU SORU NUMARASI =====
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    // Sandık gösterilen sayısı: sandikAlmaSayaci (her sandıktan alındığında artar)
     const sandikGosterilen = sandikAlmaSayaci;
     const soruNo = normalGosterilen + sandikGosterilen;
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     
     console.log('📊 Soru No:', soruNo, '| Normal:', normalGosterilen, '| Sandık Gösterilen:', sandikGosterilen, '| Toplam:', toplamSoru);
     
-    document.getElementById('karmaCurrent').textContent = soruNo > 0 ? soruNo : 1;
+    document.getElementById('karmaCurrent').textContent = Math.min(soruNo, toplamSoru);
     document.getElementById('karmaTotal').textContent = toplamSoru;
     
     const progress = (soruNo / toplamSoru) * 100;
@@ -3501,13 +3503,21 @@ function displayQuizWord(word) {
         </div>
     `).join('');
     
-    // Tıklama olaylarını ekle
+    // Tıklama olaylarını ekle - word objesini doğrudan aktar
     document.querySelectorAll('.option-quiz').forEach(opt => {
         opt.onclick = () => selectQuizOption(opt, word, correctIndex);
     });
     
     quizAnswered = false;
     document.querySelectorAll('.option-quiz').forEach(opt => opt.classList.remove('disabled'));
+    
+    // ===== PUAN SİSTEMİ (0.01 hassasiyetinde) =====
+    // Puanı 0.01 hassasiyetinde göster
+    const puanElement = document.getElementById('karmaScore');
+    if (puanElement) {
+        // Mevcut puanı göster (2 ondalık)
+        puanElement.textContent = quizScore.toFixed(2);
+    }
 }
 
 
