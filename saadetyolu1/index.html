@@ -3685,8 +3685,23 @@ async function finishQuizWords() {
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
+    // ===== SANDIĞI SIFIRLA (TÜM KELİMELER BİTTİĞİNDE) =====
+    // Eğer tüm kelimeler bittiyse (normal + sandık)
+    if (normalBitti && quizSandik.length === 0) {
+        // Zaten sandık boş, devam et
+    } else if (normalBitti && quizSandik.length > 0) {
+        // Normal kelimeler bitti ama sandıkta kelime var
+        // Bu durumda sandığı temizleme, kullanıcı sandıktan devam etsin
+        // veya seviye geçişinde temizlenecek
+    }
+    
     // Seviye tamamlandı (normal kelimeler bitti)
     if (normalBitti && mevcutSeviye < toplamSeviye) {
+        // ===== SANDIĞI SIFIRLA (SEVİYE GEÇİŞİNDE) =====
+        quizSandik = []; // Sandığı temizle
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+        
         if (currentUser) {
             const userRef = doc(db, 'users', currentUser.uid);
             await updateDoc(userRef, { 
@@ -3696,14 +3711,12 @@ async function finishQuizWords() {
             });
         }
         
-        const sandikMesaji = quizSandik.length > 0 
-            ? `📦 ${quizSandik.length} kelime sonraki seviyeye taşındı!` 
-            : '🎉 Tüm kelimeler öğrenildi!';
+        const sandikMesaji = '📦 Sandık temizlendi!';
         
         container.innerHTML = `
             <div class="result-card">
                 <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
-                <div class="score">${quizScore} Puan</div>
+                <div class="score">${quizScore.toFixed(2)} Puan</div>
                 <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                     <div style="text-align: center;">
                         <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
@@ -3714,7 +3727,7 @@ async function finishQuizWords() {
                         <div>Başarı</div>
                     </div>
                 </div>
-                <p style="color: #f59e0b; font-size: 14px;">${sandikMesaji}</p>
+                <p style="color: #10b981; font-size: 14px;">${sandikMesaji}</p>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
                     <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye</button>
                     <button class="btn btn-nav" onclick="goHome()">Ana Sayfaya Dön</button>
@@ -3726,15 +3739,18 @@ async function finishQuizWords() {
     
     // Tüm seviyeler bitti
     if (normalBitti && mevcutSeviye >= toplamSeviye) {
-        const sandikMesaji = quizSandik.length > 0 
-            ? `📦 ${quizSandik.length} kelime sandıkta kaldı!` 
-            : '🌟 Tüm kelimeler öğrenildi!';
+        // ===== SANDIĞI SIFIRLA (TÜM SEVİYELER BİTTİ) =====
+        quizSandik = []; // Sandığı temizle
+        await saveSandikToFirestore();
+        updateSandikDisplay();
+        
+        const sandikMesaji = '🌟 Tüm kelimeler öğrenildi!';
         
         container.innerHTML = `
             <div class="result-card">
                 <h2>🏆 TEBRİKLER!</h2>
                 <div style="font-size: 48px; margin: 5px 0;">🎊</div>
-                <div class="score">${quizScore} Puan</div>
+                <div class="score">${quizScore.toFixed(2)} Puan</div>
                 <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                     <div style="text-align: center;">
                         <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
@@ -3765,7 +3781,7 @@ async function finishQuizWords() {
     container.innerHTML = `
         <div class="result-card">
             <h2>📦 Sandıkta ${quizSandik.length} kelime kaldı!</h2>
-            <div class="score">${quizScore} Puan</div>
+            <div class="score">${quizScore.toFixed(2)} Puan</div>
             <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                 <div style="text-align: center;">
                     <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
