@@ -2339,9 +2339,24 @@ function getBookNameById(bookId) {
     };
     
     function logout() {
-        signOut(auth);
+    console.log('🚪 Çıkış yapılıyor...');
+    
+    if (!currentUser) {
+        console.log('⚠️ Zaten çıkış yapılmış.');
         closeMenu();
+        return;
     }
+    
+    signOut(auth)
+        .then(() => {
+            console.log('✅ Çıkış başarılı!');
+            closeMenu();
+        })
+        .catch((error) => {
+            console.error('❌ Çıkış hatası:', error);
+            alert('❌ Çıkış yapılırken bir hata oluştu: ' + error.message);
+        });
+}
     
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); };
     document.getElementById('logoutIconBtn').onclick = () => { logout(); };
@@ -2405,7 +2420,78 @@ onAuthStateChanged(auth, async (user) => {
         if (zoomBtn) zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
         
     } else {
-        // ... (çıkış kodu aynı)
+        // ===== KULLANICI ÇIKIŞ YAPTIĞINDA =====
+        console.log('👤 Kullanıcı çıkış yaptı, giriş ekranına yönlendiriliyor...');
+        
+        currentUser = null;
+        
+        // Menü butonunu gizle
+        const menuBtn = document.getElementById('menuBtn');
+        if (menuBtn) menuBtn.classList.add('hidden');
+        
+        // Header'ı gizle
+        const mainHeader = document.getElementById('mainHeader');
+        if (mainHeader) mainHeader.style.display = 'none';
+        
+        // Kullanıcı badge'ini gizle
+        const userBadge = document.getElementById('userBadge');
+        if (userBadge) userBadge.style.display = 'none';
+        
+        // Çıkış butonunu gizle
+        const logoutIcon = document.getElementById('logoutIconBtn');
+        if (logoutIcon) logoutIcon.classList.add('hidden');
+        
+        // Sidebar kullanıcı adını güncelle
+        const sidebarUserName = document.getElementById('sidebarUserName');
+        if (sidebarUserName) sidebarUserName.innerHTML = 'Misafir';
+        
+        // Tema butonunu göster
+        const themeIconBtn = document.getElementById('themeIconBtn');
+        if (themeIconBtn) themeIconBtn.classList.remove('hidden');
+        
+        // Giriş ekranını göster
+        const loginScreen = document.getElementById('loginScreen');
+        if (loginScreen) loginScreen.style.display = 'block';
+        
+        // Tüm ekranları gizle
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) mainContent.style.display = 'none';
+        
+        const wordsLearningScreen = document.getElementById('wordsLearningScreen');
+        if (wordsLearningScreen) wordsLearningScreen.style.display = 'none';
+        
+        const examsScreen = document.getElementById('examsScreen');
+        if (examsScreen) examsScreen.classList.add('hidden');
+        
+        const quizScreen = document.getElementById('quizScreen');
+        if (quizScreen) quizScreen.style.display = 'none';
+        
+        const profileScreen = document.getElementById('profileScreen');
+        if (profileScreen) profileScreen.style.display = 'none';
+        
+        const karmaScreen = document.getElementById('karmaScreen');
+        if (karmaScreen) karmaScreen.style.display = 'none';
+        
+        const rankingScreen = document.getElementById('rankingScreen');
+        if (rankingScreen) rankingScreen.style.display = 'none';
+        
+        // Kitap ve ders seçeneklerini sıfırla
+        const bookSelect = document.getElementById('bookSelect');
+        if (bookSelect) {
+            bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        }
+        
+        const lessonSelect = document.getElementById('lessonSelect');
+        if (lessonSelect) {
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            lessonSelect.disabled = true;
+        }
+        
+        // Kelimeleri sıfırla
+        words = [];
+        updateWordDisplay();
+        
+        console.log('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
     }
 });
     
