@@ -1012,20 +1012,20 @@
             <div class="link" id="showForgotBtn">Şifremi unuttum?</div>
         </div>
         <div id="registerForm" style="display: none;">
-            <div class="input-wrapper">
-                <input type="text" id="regName" placeholder="Adınız Soyadınız">
-            </div>
-            <div class="input-wrapper">
-                <input type="email" id="regEmail" placeholder="E-posta">
-            </div>
-            <div class="input-wrapper">
-                <input type="password" id="regPassword" placeholder="Şifre (6+ karakter)">
-                <button type="button" class="toggle-password" onclick="togglePassword('regPassword')">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </div>
-            <button id="doRegisterBtn" class="btn btn-primary">Kayıt Ol</button>
-        </div>
+    <div class="input-wrapper">
+        <input type="text" id="regName" placeholder="Adınız Soyadınız" autocomplete="name">
+    </div>
+    <div class="input-wrapper">
+        <input type="email" id="regEmail" placeholder="E-posta" autocomplete="email">
+    </div>
+    <div class="input-wrapper">
+        <input type="password" id="regPassword" placeholder="Şifre (6+ karakter)" autocomplete="new-password">
+        <button type="button" class="toggle-password" onclick="togglePassword('regPassword')">
+            <i class="fas fa-eye"></i>
+        </button>
+    </div>
+    <button id="doRegisterBtn" class="btn btn-primary">Kayıt Ol</button>
+</div>
         <div id="forgotForm" style="display: none;">
             <div class="input-wrapper">
                 <input type="email" id="forgotEmail" placeholder="E-posta adresiniz">
@@ -2165,61 +2165,107 @@ function getBookNameById(bookId) {
 
 
     document.getElementById('doRegisterBtn').onclick = async () => {
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    const name = document.getElementById('regName').value;
+    // ===== DEĞERLERİ TEMİZLE =====
+    const nameInput = document.getElementById('regName');
+    const emailInput = document.getElementById('regEmail');
+    const passwordInput = document.getElementById('regPassword');
     
-    // Boş alan kontrolü
-    if (!name.trim()) {
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase(); // Küçük harfe çevir
+    const password = passwordInput.value;
+    
+    console.log('📝 Kayıt olunuyor...');
+    console.log('  Name:', name);
+    console.log('  Email:', email);
+    console.log('  Password length:', password.length);
+    
+    // ===== BOŞ ALAN KONTROLÜ =====
+    if (!name) {
         alert('❌ Lütfen adınızı soyadınızı girin!');
         return;
     }
     
-    if (!email.trim()) {
+    if (!email) {
         alert('❌ Lütfen e-posta adresinizi girin!');
         return;
     }
     
+    // ===== E-POSTA FORMAT KONTROLÜ =====
+    if (!email.includes('@') || !email.includes('.')) {
+        alert('❌ Lütfen geçerli bir e-posta adresi girin! (örn: email@example.com)');
+        return;
+    }
+    
+    // ===== E-POSTA UZUNLUK KONTROLÜ =====
+    if (email.length < 5) {
+        alert('❌ E-posta adresi çok kısa!');
+        return;
+    }
+    
+    // ===== ŞİFRE KONTROLÜ =====
     if (password.length < 6) {
         alert('❌ Şifre en az 6 karakter olmalı!');
         return;
     }
     
+    // ===== KAYIT İŞLEMİ =====
     try {
+        console.log('🔥 Firebase kayıt başlatılıyor...');
         const cred = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('✅ Firebase kayıt başarılı! UID:', cred.user.uid);
         
-        // Kullanıcı verilerini Firestore'a kaydet
+        // ===== KULLANICI VERİLERİNİ FIRESTORE'A KAYDET =====
         await setDoc(doc(db, 'users', cred.user.uid), { 
-            name: name.trim(), 
+            name: name, 
             email: email, 
             totalWordsViewed: 0, 
             examsCompleted: [], 
             averageScore: 0,
             quizSandik: [],
             quizScore: 0,
+            mevcutSeviye: 1,
             createdAt: new Date().toISOString() 
         });
+        console.log('✅ Firestore\'a kullanıcı verileri kaydedildi!');
         
-        alert('✅ Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
-        document.getElementById('showLoginBtn').click(); // Giriş formuna geç
+        alert('✅ Kayıt başarılı! Hoş geldin ' + name + '!');
         
-        // Formları temizle
-        document.getElementById('regName').value = '';
-        document.getElementById('regEmail').value = '';
-        document.getElementById('regPassword').value = '';
+        // ===== FORMLARI TEMİZLE =====
+        nameInput.value = '';
+        emailInput.value = '';
+        passwordInput.value = '';
+        
+        // ===== GİRİŞ FORMUNU GÖSTER =====
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+        
+        // ===== GİRİŞ ALANLARINI DOLDUR =====
+        document.getElementById('loginEmail').value = email;
+        document.getElementById('loginPassword').value = password;
+        
+        // ===== OTOMATİK GİRİŞ YAP =====
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            console.log('✅ Otomatik giriş başarılı!');
+        } catch (loginError) {
+            console.log('⚠️ Otomatik giriş başarısız, manuel giriş yapın.');
+            alert('✅ Kayıt başarılı! Lütfen giriş yapın.');
+        }
         
     } catch(error) {
-        console.error('Kayıt hatası:', error);
+        console.error('❌ Kayıt hatası:', error);
+        console.error('  Hata kodu:', error.code);
+        console.error('  Hata mesajı:', error.message);
         
-        // Kullanıcı dostu hata mesajları
+        // ===== KULLANICI DOSTU HATA MESAJLARI =====
         let errorMessage = '❌ Kayıt başarısız! ';
         
         switch(error.code) {
-            case 'auth/email-already-in-use':
-                errorMessage += 'Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi kullanın veya giriş yapın.';
-                break;
             case 'auth/invalid-email':
                 errorMessage += 'Geçersiz e-posta adresi. Lütfen doğru bir e-posta adresi girin.';
+                break;
+            case 'auth/email-already-in-use':
+                errorMessage += 'Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi kullanın veya giriş yapın.';
                 break;
             case 'auth/weak-password':
                 errorMessage += 'Şifre çok zayıf. Lütfen en az 6 karakterli bir şifre girin.';
@@ -2227,8 +2273,11 @@ function getBookNameById(bookId) {
             case 'auth/operation-not-allowed':
                 errorMessage += 'E-posta/Şifre kaydı aktif değil. Lütfen site yöneticisine başvurun.';
                 break;
+            case 'auth/too-many-requests':
+                errorMessage += 'Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
+                break;
             default:
-                errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+                errorMessage += error.message;
         }
         
         alert(errorMessage);
