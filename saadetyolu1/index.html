@@ -3492,8 +3492,7 @@ window.startQuizWords = async () => {
     console.log('📊 Toplam seviye:', toplamSeviye);
     
     // ===== 5. FIRESTORE'DAN KULLANICI VERİLERİNİ OKU =====
-    let yuklenenSeviye = 1;
-    
+    // **ÖNEMLİ: mevcutSeviye değişkenini doğrudan güncelle!**
     if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
@@ -3501,11 +3500,12 @@ window.startQuizWords = async () => {
             const data = userDoc.data();
             console.log('📦 Firestore verileri:', data);
             
-            // === SEVİYEYİ OKU ===
+            // === SEVİYEYİ OKU VE mevcutSeviye'ye ATA ===
             if (data.mevcutSeviye && data.mevcutSeviye > 0) {
-                yuklenenSeviye = data.mevcutSeviye;
-                console.log('📌 Firestore\'dan seviye OKUNDU:', yuklenenSeviye);
+                mevcutSeviye = data.mevcutSeviye;  // BURASI ÖNEMLİ!
+                console.log('📌 Firestore\'dan seviye OKUNDU ve mevcutSeviye\'ye ATANDI:', mevcutSeviye);
             } else {
+                mevcutSeviye = 1;
                 console.log('📌 Firestore\'da seviye yok, 1 kullanılıyor');
             }
             
@@ -3526,27 +3526,29 @@ window.startQuizWords = async () => {
             }
         } else {
             console.log('📌 Kullanıcı belgesi yok, 1\'den başlanıyor');
+            mevcutSeviye = 1;
         }
+    } else {
+        console.log('📌 Kullanıcı giriş yapmamış, 1\'den başlanıyor');
+        mevcutSeviye = 1;
     }
     
-    // ===== 6. MEVCUT SEVİYEYİ ATA =====
-    mevcutSeviye = yuklenenSeviye;
-    console.log('🎯 MEVCUT SEVİYE (ATA):', mevcutSeviye);
+    console.log('🎯 MEVCUT SEVİYE (Firestore\'dan sonra):', mevcutSeviye);
     
-    // ===== 7. SEVİYE KONTROLÜ =====
+    // ===== 6. SEVİYE KONTROLÜ =====
     if (mevcutSeviye > toplamSeviye) {
         mevcutSeviye = toplamSeviye;
         console.log('⚠️ Seviye sınırı aşıldı, son seviyeye ayarlandı:', mevcutSeviye);
     }
     
-    // ===== 8. SEVİYE KELİMELERİNİ HESAPLA =====
+    // ===== 7. SEVİYE KELİMELERİNİ HESAPLA =====
     const baslangic = (mevcutSeviye - 1) * KELIME_SAYISI;
     const bitis = Math.min(baslangic + KELIME_SAYISI, tumKelimeler.length);
     seviyeKelimeListesi = tumKelimeler.slice(baslangic, bitis);
     
     console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - ${seviyeKelimeListesi.length} kelime`);
     
-    // ===== 9. DEĞİŞKENLERİ SIFIRLA =====
+    // ===== 8. DEĞİŞKENLERİ SIFIRLA =====
     quizCorrectCount = 0;
     quizAnswered = false;
     sandikAlmaSayaci = 0;
@@ -3558,7 +3560,7 @@ window.startQuizWords = async () => {
     quizWordsAll = seviyeKelimeListesi;
     seviyeTamamlandi = false;
     
-    // ===== 10. TOPLAM SORU SAYISINI GÖSTER =====
+    // ===== 9. TOPLAM SORU SAYISINI GÖSTER =====
     const totalQuestions = seviyeKelimeListesi.length + quizSandik.length;
     document.getElementById('karmaTotal').textContent = totalQuestions;
     document.getElementById('sandikCount').textContent = quizSandik.length;
@@ -3569,72 +3571,23 @@ window.startQuizWords = async () => {
     document.getElementById('karmaDogru').textContent = '0';
     document.getElementById('karmaYanlis').textContent = '0';
     
-    // ===== 11. SEVİYE BİLGİLERİNİ EKRANA YAZ (GÜÇLENDİRİLMİŞ) =====
+    // ===== 10. SEVİYE BİLGİLERİNİ EKRANA YAZ =====
     console.log('📝 SEVİYE BİLGİLERİ EKRANA YAZILIYOR...');
     console.log('  mevcutSeviye:', mevcutSeviye);
     console.log('  toplamSeviye:', toplamSeviye);
     
-    // 11a. Başlıktaki seviye
-    const karmaSeviye = document.getElementById('karmaSeviye');
-    if (karmaSeviye) {
-        karmaSeviye.textContent = mevcutSeviye;
-        console.log('  ✅ karmaSeviye:', karmaSeviye.textContent);
-    } else {
-        console.log('  ❌ karmaSeviye elementi BULUNAMADI!');
-    }
-    
-    // 11b. Başlıktaki toplam seviye
-    const karmaToplamSeviye = document.getElementById('karmaToplamSeviye');
-    if (karmaToplamSeviye) {
-        karmaToplamSeviye.textContent = toplamSeviye;
-        console.log('  ✅ karmaToplamSeviye:', karmaToplamSeviye.textContent);
-    } else {
-        console.log('  ❌ karmaToplamSeviye elementi BULUNAMADI!');
-    }
-    
-    // 11c. Alt satırdaki seviye no
-    const seviyeNo = document.getElementById('seviyeNo');
-    if (seviyeNo) {
-        seviyeNo.textContent = mevcutSeviye;
-        console.log('  ✅ seviyeNo:', seviyeNo.textContent);
-    } else {
-        console.log('  ❌ seviyeNo elementi BULUNAMADI!');
-    }
-    
-    // 11d. Alt satırdaki toplam seviye
-    const toplamSeviyeNo = document.getElementById('toplamSeviyeNo');
-    if (toplamSeviyeNo) {
-        toplamSeviyeNo.textContent = toplamSeviye;
-        console.log('  ✅ toplamSeviyeNo:', toplamSeviyeNo.textContent);
-    } else {
-        console.log('  ❌ toplamSeviyeNo elementi BULUNAMADI!');
-    }
-    
-    // 11e. Seviye detay bilgisi
-    const seviyeEl = document.getElementById('seviyeBilgi');
-    if (seviyeEl) {
-        seviyeEl.innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
-        console.log('  ✅ seviyeBilgi:', seviyeEl.innerHTML);
-    } else {
-        console.log('  ❌ seviyeBilgi elementi BULUNAMADI!');
-    }
-    
-    // 11f. Seviye kelime sayısı
-    const seviyeKelimeSayisi = document.getElementById('seviyeKelimeSayisi');
-    if (seviyeKelimeSayisi) {
-        seviyeKelimeSayisi.textContent = seviyeKelimeListesi.length;
-    }
-    
-    // 11g. Seviye sandık sayısı
-    const seviyeSandikSayisi = document.getElementById('seviyeSandikSayisi');
-    if (seviyeSandikSayisi) {
-        seviyeSandikSayisi.textContent = quizSandik.length;
-    }
+    document.getElementById('karmaSeviye').textContent = mevcutSeviye;
+    document.getElementById('karmaToplamSeviye').textContent = toplamSeviye;
+    document.getElementById('seviyeNo').textContent = mevcutSeviye;
+    document.getElementById('toplamSeviyeNo').textContent = toplamSeviye;
+    document.getElementById('seviyeKelimeSayisi').textContent = seviyeKelimeListesi.length;
+    document.getElementById('seviyeSandikSayisi').textContent = quizSandik.length;
+    document.getElementById('seviyeBilgi').innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
     
     console.log('🎯 SON DURUM - MEVCUT SEVİYE:', mevcutSeviye, '/', toplamSeviye);
     console.log('✅ SEVİYE EKRANA YAZILDI!');
     
-    // ===== 12. İLK KELİMEYİ YÜKLE =====
+    // ===== 11. İLK KELİMEYİ YÜKLE =====
     if (seviyeKelimeListesi.length > 0) {
         loadNextQuizWord();
     } else {
