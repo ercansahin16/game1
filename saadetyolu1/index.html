@@ -3954,6 +3954,176 @@ function nextLevel() {
         alert('🎉 Tüm seviyeleri tamamladınız!');
     }
 }
+
+// Yardımcı fonksiyon: Seçenekleri oluştur
+function generateOptions(currentWord) {
+    try {
+        const karmaOptions = document.getElementById('karmaOptions');
+        if (!karmaOptions) {
+            console.error('❌ karmaOptions elementi bulunamadı');
+            return;
+        }
+        
+        // Doğru cevap
+        const correctAnswer = currentWord.turkish || '';
+        
+        // Yanlış şıklar (kelime listesinden rastgele)
+        let wrongOptions = [];
+        if (window.quizWordsAll && window.quizWordsAll.length > 0) {
+            const otherWords = window.quizWordsAll.filter((w, index) => {
+                return index !== window.baslangicIndex && w.turkish && w.turkish !== correctAnswer;
+            });
+            
+            // Karıştır ve 3 tane seç
+            const shuffled = shuffleArray(otherWords);
+            wrongOptions = shuffled.slice(0, 3).map(w => w.turkish);
+        }
+        
+        // Eğer yeterli yanlış şık yoksa, varsayılan ekle
+        while (wrongOptions.length < 3) {
+            const defaults = ['Başka', 'Diğer', 'Farklı'];
+            wrongOptions.push(defaults[wrongOptions.length] || 'Seçenek');
+        }
+        
+        // Tüm seçenekleri birleştir ve karıştır
+        let allOptions = [correctAnswer, ...wrongOptions];
+        allOptions = shuffleArray(allOptions);
+        
+        // Seçenek butonlarını oluştur
+        karmaOptions.innerHTML = '';
+        allOptions.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'karma-option-btn';
+            button.textContent = option;
+            button.dataset.index = index;
+            button.dataset.correct = (option === correctAnswer) ? 'true' : 'false';
+            
+            button.addEventListener('click', function() {
+                if (window.quizAnswered) return;
+                handleOptionClick(this, correctAnswer);
+            });
+            
+            karmaOptions.appendChild(button);
+        });
+        
+    } catch (error) {
+        console.error('❌ Seçenek oluşturma hatası:', error);
+    }
+}
+
+// Yardımcı fonksiyon: Dizi karıştırma
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+// Yardımcı fonksiyon: Seçenek tıklama
+function handleOptionClick(button, correctAnswer) {
+    if (window.quizAnswered) return;
+    window.quizAnswered = true;
+    
+    const isCorrect = button.dataset.correct === 'true';
+    const allButtons = document.querySelectorAll('.karma-option-btn');
+    
+    // Tüm butonları devre dışı bırak
+    allButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        
+        // Doğru cevabı göster
+        if (btn.dataset.correct === 'true') {
+            btn.style.background = '#4CAF50';
+            btn.style.color = 'white';
+        }
+    });
+    
+    // Seçilen butonu renklendir
+    if (isCorrect) {
+        button.style.background = '#4CAF50';
+        button.style.color = 'white';
+        window.quizCorrectCount++;
+        updateScore('correct');
+    } else {
+        button.style.background = '#f44336';
+        button.style.color = 'white';
+        updateScore('wrong');
+    }
+    
+    // Sonraki kelimeye geç
+    setTimeout(() => {
+        window.baslangicIndex++;
+        loadNextQuizWord();
+    }, 1500);
+}
+
+// Yardımcı fonksiyon: Puan güncelle
+function updateScore(type) {
+    const dogruEl = document.getElementById('karmaDogru');
+    const yanlisEl = document.getElementById('karmaYanlis');
+    
+    if (type === 'correct') {
+        if (dogruEl) dogruEl.textContent = parseInt(dogruEl.textContent || '0') + 1;
+    } else {
+        if (yanlisEl) yanlisEl.textContent = parseInt(yanlisEl.textContent || '0') + 1;
+    }
+}
+
+// Yardımcı fonksiyon: Seviye bilgisi güncelle
+function updateSeviyeInfo() {
+    const seviyeBilgi = document.getElementById('seviyeBilgi');
+    if (seviyeBilgi) {
+        const toplam = window.quizWordsAll ? window.quizWordsAll.length : 0;
+        const sandik = window.quizSandik ? window.quizSandik.length : 0;
+        seviyeBilgi.innerHTML = `📚 Seviye ${window.mevcutSeviye || 1}/${window.toplamSeviye || 1} | 📝 ${toplam} kelime | 📦 ${sandik} sandık`;
+    }
+}
+
+// Yardımcı fonksiyon: Sandık kontrolü
+function checkSandik() {
+    if (window.quizSandik && window.quizSandik.length > 0) {
+        console.log('📦 Sandık kelimeleri yükleniyor...');
+        window.quizWordsAll = window.quizSandik;
+        window.quizSandik = [];
+        window.baslangicIndex = 0;
+        window.bitisIndex = window.quizWordsAll.length - 1;
+        loadNextQuizWord();
+    } else {
+        console.log('🎉 Quiz tamamlandı!');
+        showQuizComplete();
+    }
+}
+
+// Yardımcı fonksiyon: Quiz tamamlama
+function showQuizComplete() {
+    const karmaOptions = document.getElementById('karmaOptions');
+    if (karmaOptions) {
+        karmaOptions.innerHTML = `
+            <div style="text-align:center; padding:30px;">
+                <h3>🎉 Tebrikler!</h3>
+                <p>Seviye tamamlandı!</p>
+                <p>Doğru: ${document.getElementById('karmaDogru')?.textContent || '0'}</p>
+                <p>Yanlış: ${document.getElementById('karmaYanlis')?.textContent || '0'}</p>
+                <button onclick="nextLevel()" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    Sonraki Seviye ▶
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Sonraki seviye fonksiyonu
+function nextLevel() {
+    if (window.mevcutSeviye < window.toplamSeviye) {
+        window.mevcutSeviye++;
+        window.startQuizWords();
+    } else {
+        alert('🎉 Tüm seviyeleri tamamladınız!');
+    }
+}
 // Sonraki kelimeyi yükle bitiş 
 // Kelimeyi ekranda göster
 function displayQuizWord(word) {
