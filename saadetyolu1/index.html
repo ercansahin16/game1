@@ -3523,8 +3523,10 @@ window.startQuizWords = async () => {
     toplamSeviye = Math.ceil(tumKelimeler.length / KELIME_SAYISI);
     console.log('📊 Toplam seviye:', toplamSeviye);
     
-    // ===== 5. FIRESTORE'DAN KULLANICI VERİLERİNİ OKU =====
-    // **ÖNEMLİ: mevcutSeviye değişkenini doğrudan güncelle!**
+    // ===== 5. MEVCUT SEVİYEYİ FIRESTORE'DAN AL (KESİN) =====
+    // Global mevcutSeviye değişkenini KULLANMA, doğrudan Firestore'dan al!
+    let kullanilacakSeviye = 1; // Varsayılan
+    
     if (currentUser) {
         try {
             const userRef = doc(db, 'users', currentUser.uid);
@@ -3533,44 +3535,33 @@ window.startQuizWords = async () => {
                 const data = userDoc.data();
                 console.log('📦 Firestore verileri:', data);
                 
-                // === SEVİYEYİ OKU VE mevcutSeviye'ye ATA ===
                 if (data.mevcutSeviye && data.mevcutSeviye > 0) {
-                    mevcutSeviye = data.mevcutSeviye;
-                    console.log('📌 Firestore\'dan seviye OKUNDU ve ATANDI:', mevcutSeviye);
-                } else {
-                    mevcutSeviye = 1;
-                    console.log('📌 Firestore\'da seviye yok, 1 kullanılıyor');
+                    kullanilacakSeviye = data.mevcutSeviye;
+                    console.log('📌 Firestore\'dan seviye OKUNDU:', kullanilacakSeviye);
                 }
                 
-                // === SANDIĞI YÜKLE ===
+                // Sandığı yükle
                 if (data.quizSandik) {
                     quizSandik = data.quizSandik;
-                    console.log('📦 Sandık yüklendi:', quizSandik.length, 'kelime');
                 } else {
                     quizSandik = [];
                 }
                 
-                // === PUANI YÜKLE ===
+                // Puanı yükle
                 if (data.quizScore !== undefined) {
                     quizScore = data.quizScore;
-                    console.log('💰 Puan yüklendi:', quizScore);
                 } else {
                     quizScore = 0;
                 }
-            } else {
-                console.log('📌 Kullanıcı belgesi yok, 1\'den başlanıyor');
-                mevcutSeviye = 1;
             }
         } catch (error) {
             console.log('⚠️ Firestore okuma hatası:', error);
-            mevcutSeviye = 1;
         }
-    } else {
-        console.log('📌 Kullanıcı giriş yapmamış, 1\'den başlanıyor');
-        mevcutSeviye = 1;
     }
     
-    console.log('🎯 MEVCUT SEVİYE (Firestore\'dan sonra):', mevcutSeviye);
+    // ===== mevcutSeviye'yi güncelle =====
+    mevcutSeviye = kullanilacakSeviye;
+    console.log('🎯 KULLANILACAK SEVİYE:', mevcutSeviye);
     
     // ===== 6. SEVİYE KONTROLÜ =====
     if (mevcutSeviye > toplamSeviye) {
@@ -3608,51 +3599,19 @@ window.startQuizWords = async () => {
     document.getElementById('karmaDogru').textContent = '0';
     document.getElementById('karmaYanlis').textContent = '0';
     
-    // ===== 10. SEVİYE BİLGİLERİNİ EKRANA YAZ =====
+    // ===== 10. SEVİYE BİLGİLERİNİ EKRANA YAZ (KESİN) =====
     console.log('📝 SEVİYE BİLGİLERİ EKRANA YAZILIYOR...');
     console.log('  mevcutSeviye:', mevcutSeviye);
     console.log('  toplamSeviye:', toplamSeviye);
     
-    // Tüm seviye elementlerini güncelle
-    const karmaSeviyeEl = document.getElementById('karmaSeviye');
-    if (karmaSeviyeEl) {
-        karmaSeviyeEl.textContent = mevcutSeviye;
-        console.log('  ✅ karmaSeviye:', karmaSeviyeEl.textContent);
-    }
-    
-    const karmaToplamSeviyeEl = document.getElementById('karmaToplamSeviye');
-    if (karmaToplamSeviyeEl) {
-        karmaToplamSeviyeEl.textContent = toplamSeviye;
-        console.log('  ✅ karmaToplamSeviye:', karmaToplamSeviyeEl.textContent);
-    }
-    
-    const seviyeNoEl = document.getElementById('seviyeNo');
-    if (seviyeNoEl) {
-        seviyeNoEl.textContent = mevcutSeviye;
-        console.log('  ✅ seviyeNo:', seviyeNoEl.textContent);
-    }
-    
-    const toplamSeviyeNoEl = document.getElementById('toplamSeviyeNo');
-    if (toplamSeviyeNoEl) {
-        toplamSeviyeNoEl.textContent = toplamSeviye;
-        console.log('  ✅ toplamSeviyeNo:', toplamSeviyeNoEl.textContent);
-    }
-    
-    const seviyeKelimeSayisiEl = document.getElementById('seviyeKelimeSayisi');
-    if (seviyeKelimeSayisiEl) {
-        seviyeKelimeSayisiEl.textContent = seviyeKelimeListesi.length;
-    }
-    
-    const seviyeSandikSayisiEl = document.getElementById('seviyeSandikSayisi');
-    if (seviyeSandikSayisiEl) {
-        seviyeSandikSayisiEl.textContent = quizSandik.length;
-    }
-    
-    const seviyeEl = document.getElementById('seviyeBilgi');
-    if (seviyeEl) {
-        seviyeEl.innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
-        console.log('  ✅ seviyeBilgi:', seviyeEl.innerHTML);
-    }
+    // Tüm elementleri güncelle
+    document.getElementById('karmaSeviye').textContent = mevcutSeviye;
+    document.getElementById('karmaToplamSeviye').textContent = toplamSeviye;
+    document.getElementById('seviyeNo').textContent = mevcutSeviye;
+    document.getElementById('toplamSeviyeNo').textContent = toplamSeviye;
+    document.getElementById('seviyeKelimeSayisi').textContent = seviyeKelimeListesi.length;
+    document.getElementById('seviyeSandikSayisi').textContent = quizSandik.length;
+    document.getElementById('seviyeBilgi').innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
     
     console.log('🎯 SON DURUM - MEVCUT SEVİYE:', mevcutSeviye, '/', toplamSeviye);
     console.log('✅ SEVİYE EKRANA YAZILDI!');
