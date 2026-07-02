@@ -3975,13 +3975,44 @@ function generateQuizOptions(currentWord, allWords) {
     const correctAnswer = currentWord.turkish;
     const otherWords = allWords.filter(w => w.id !== currentWord.id);
     
-    // Rastgele 3 yanlış şık seç
+    // Rastgele 3 yanlış şık seç (benzersiz olmalı)
     const shuffled = [...otherWords];
     for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    const wrongAnswers = shuffled.slice(0, 3).map(w => w.turkish);
+    
+    // Benzersiz Türkçe karşılıkları al (aynı kelime tekrar etmesin)
+    const uniqueWrongAnswers = [];
+    const usedAnswers = new Set();
+    usedAnswers.add(correctAnswer); // Doğru cevabı ekle
+    
+    for (const word of shuffled) {
+        if (!usedAnswers.has(word.turkish) && uniqueWrongAnswers.length < 3) {
+            uniqueWrongAnswers.push(word.turkish);
+            usedAnswers.add(word.turkish);
+        }
+    }
+    
+    // Eğer yeterince benzersiz yanlış şık yoksa, kelime havuzundan farklı kelimeler al
+    let wrongAnswers = uniqueWrongAnswers;
+    if (wrongAnswers.length < 3) {
+        // Tüm kelimelerden farklı Türkçe karşılıkları al
+        const allTurkish = allWords.map(w => w.turkish);
+        const uniqueAll = [...new Set(allTurkish)].filter(t => t !== correctAnswer);
+        const shuffledAll = [...uniqueAll].sort(() => Math.random() - 0.5);
+        for (const t of shuffledAll) {
+            if (!usedAnswers.has(t) && wrongAnswers.length < 3) {
+                wrongAnswers.push(t);
+                usedAnswers.add(t);
+            }
+        }
+    }
+    
+    // Hala 3 şık yoksa, placeholder ekle
+    while (wrongAnswers.length < 3) {
+        wrongAnswers.push('???');
+    }
     
     // Şıkları birleştir ve karıştır
     let options = [correctAnswer, ...wrongAnswers];
