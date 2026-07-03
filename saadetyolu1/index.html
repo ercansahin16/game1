@@ -3601,54 +3601,8 @@ window.loadNextQuizWord = function() {
     }
 };
 
-// ===== SEÇENEKLERİ OLUŞTUR =====
-function generateQuizOptions(currentWord) {
-    try {
-        const karmaOptions = document.getElementById('karmaOptions');
-        if (!karmaOptions) {
-            console.error('❌ karmaOptions elementi bulunamadı');
-            return;
-        }
-        
-        const correctAnswer = currentWord.turkish || '';
-        
-        let wrongOptions = [];
-        if (window.quizWordsAll && window.quizWordsAll.length > 0) {
-            const otherWords = window.quizWordsAll.filter((w, index) => {
-                return index !== window.baslangicIndex && w.turkish && w.turkish !== correctAnswer;
-            });
-            
-            const shuffled = shuffleArrayFunction(otherWords);
-            wrongOptions = shuffled.slice(0, 3).map(w => w.turkish);
-        }
-        
-        while (wrongOptions.length < 3) {
-            const defaults = ['Başka', 'Diğer', 'Farklı'];
-            wrongOptions.push(defaults[wrongOptions.length] || 'Seçenek');
-        }
-        
-        let allOptions = [correctAnswer, ...wrongOptions];
-        allOptions = shuffleArrayFunction(allOptions);
-        
-        karmaOptions.innerHTML = '';
-        allOptions.forEach((option) => {
-            const button = document.createElement('button');
-            button.className = 'karma-option-btn';
-            button.textContent = option;
-            button.dataset.correct = (option === correctAnswer) ? 'true' : 'false';
-            
-            button.addEventListener('click', function() {
-                if (window.quizAnswered) return;
-                handleQuizOptionClick(this, correctAnswer);
-            });
-            
-            karmaOptions.appendChild(button);
-        });
-        
-    } catch (error) {
-        console.error('❌ Seçenek oluşturma hatası:', error);
-    }
-}
+
+       
 
 // ===== SEÇENEK TIKLAMA =====
 function handleQuizOptionClick(button, correctAnswer) {
