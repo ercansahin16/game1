@@ -4422,58 +4422,53 @@ function showTempMessage(message, color) {
 }
 
     // Rastgele şık seçenekleri oluştur
-function generateQuizOptions(currentWord, allWords) {
-    const correctAnswer = currentWord.turkish;
-    const otherWords = allWords.filter(w => w.id !== currentWord.id);
-    
-    // Rastgele 3 yanlış şık seç (benzersiz olmalı)
-    const shuffled = [...otherWords];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    // Benzersiz Türkçe karşılıkları al (aynı kelime tekrar etmesin)
-    const uniqueWrongAnswers = [];
-    const usedAnswers = new Set();
-    usedAnswers.add(correctAnswer); // Doğru cevabı ekle
-    
-    for (const word of shuffled) {
-        if (!usedAnswers.has(word.turkish) && uniqueWrongAnswers.length < 3) {
-            uniqueWrongAnswers.push(word.turkish);
-            usedAnswers.add(word.turkish);
+// ===== SEÇENEKLERİ OLUŞTUR =====
+function generateQuizOptions(currentWord) {
+    try {
+        const karmaOptions = document.getElementById('karmaOptions');
+        if (!karmaOptions) {
+            console.error('❌ karmaOptions elementi bulunamadı');
+            return;
         }
-    }
-    
-    // Eğer yeterince benzersiz yanlış şık yoksa, kelime havuzundan farklı kelimeler al
-    let wrongAnswers = uniqueWrongAnswers;
-    if (wrongAnswers.length < 3) {
-        // Tüm kelimelerden farklı Türkçe karşılıkları al
-        const allTurkish = allWords.map(w => w.turkish);
-        const uniqueAll = [...new Set(allTurkish)].filter(t => t !== correctAnswer);
-        const shuffledAll = [...uniqueAll].sort(() => Math.random() - 0.5);
-        for (const t of shuffledAll) {
-            if (!usedAnswers.has(t) && wrongAnswers.length < 3) {
-                wrongAnswers.push(t);
-                usedAnswers.add(t);
-            }
+        
+        const correctAnswer = currentWord.turkish || '';
+        
+        let wrongOptions = [];
+        if (window.quizWordsAll && window.quizWordsAll.length > 0) {
+            const otherWords = window.quizWordsAll.filter((w, index) => {
+                return index !== window.baslangicIndex && w.turkish && w.turkish !== correctAnswer;
+            });
+            
+            const shuffled = shuffleArrayFunction(otherWords);
+            wrongOptions = shuffled.slice(0, 3).map(w => w.turkish);
         }
+        
+        while (wrongOptions.length < 3) {
+            const defaults = ['Başka', 'Diğer', 'Farklı'];
+            wrongOptions.push(defaults[wrongOptions.length] || 'Seçenek');
+        }
+        
+        let allOptions = [correctAnswer, ...wrongOptions];
+        allOptions = shuffleArrayFunction(allOptions);
+        
+        karmaOptions.innerHTML = '';
+        allOptions.forEach((option) => {
+            const button = document.createElement('button');
+            button.className = 'karma-option-btn';
+            button.textContent = option;
+            button.dataset.correct = (option === correctAnswer) ? 'true' : 'false';
+            
+            button.addEventListener('click', function() {
+                if (window.quizAnswered) return;
+                handleQuizOptionClick(this, correctAnswer);
+            });
+            
+            karmaOptions.appendChild(button);
+        });
+        
+    } catch (error) {
+        console.error('❌ Seçenek oluşturma hatası:', error);
     }
-    
-    // Hala 3 şık yoksa, placeholder ekle
-    while (wrongAnswers.length < 3) {
-        wrongAnswers.push('???');
-    }
-    
-    // Şıkları birleştir ve karıştır
-    let options = [correctAnswer, ...wrongAnswers];
-    for (let i = options.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [options[i], options[j]] = [options[j], options[i]];
-    }
-    
-    const correctIndex = options.findIndex(opt => opt === correctAnswer);
-    return { options, correctIndex };
 }
 
 // Yardım modalı
