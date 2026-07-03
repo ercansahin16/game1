@@ -4972,6 +4972,290 @@ window.seviyeKontrol = async function() {
 };
 
 
+
+   // ============================================================
+// YARIŞMA BAŞLAT (DÜZELTİLMİŞ VERSİYON)
+// ============================================================
+
+window.startQuizWords = async function() {
+    console.log('🏁 Yarışma başlatılıyor...');
+    
+    try {
+        // ===== 1. EKRANLARI GİZLE =====
+        const screens = {
+            mainContent: document.getElementById('mainContent'),
+            wordsLearningScreen: document.getElementById('wordsLearningScreen'),
+            quizScreen: document.getElementById('quizScreen'),
+            profileScreen: document.getElementById('profileScreen'),
+            rankingScreen: document.getElementById('rankingScreen'),
+            examsScreen: document.getElementById('examsScreen')
+        };
+        
+        Object.keys(screens).forEach(key => {
+            if (screens[key]) {
+                if (key === 'examsScreen') {
+                    screens[key].classList.add('hidden');
+                    screens[key].style.display = 'none';
+                } else {
+                    screens[key].style.display = 'none';
+                }
+            }
+        });
+        
+        // ===== 2. KARMA EKRANINI GÖSTER =====
+        const karmaScreen = document.getElementById('karmaScreen');
+        if (karmaScreen) {
+            karmaScreen.style.display = 'block';
+            karmaScreen.style.visibility = 'visible';
+            karmaScreen.style.opacity = '1';
+        }
+        
+        // ===== 3. BUTONLARI GÖSTER =====
+        const bilmedimBtn = document.getElementById('bilmedimBtn');
+        const gecBtn = document.getElementById('gecBtn');
+        const arabicWordEl = document.getElementById('karmaArabicWord');
+        
+        if (bilmedimBtn) bilmedimBtn.style.display = 'flex';
+        if (gecBtn) gecBtn.style.display = 'flex';
+        if (arabicWordEl) {
+            arabicWordEl.style.display = 'block';
+            arabicWordEl.textContent = '⏳ Kelimeler yükleniyor...';
+        }
+        
+        closeMenu();
+        
+        // ===== 4. TÜM KELİMELERİ YÜKLE =====
+        console.log('📥 Kelimeler yükleniyor...');
+        const wordsSnapshot = await getDocs(collection(db, 'words'));
+        
+        if (wordsSnapshot.empty) {
+            console.error('❌ Hiç kelime bulunamadı!');
+            const arabicEl = document.getElementById('karmaArabicWord');
+            if (arabicEl) {
+                arabicEl.textContent = '⚠️ Hiç kelime bulunamadı! Lütfen önce kelime ekleyin.';
+            }
+            const optionsEl = document.getElementById('karmaOptions');
+            if (optionsEl) {
+                optionsEl.innerHTML = `
+                    <div style="text-align:center; padding:40px; color: #f59e0b;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                        <p style="margin-top: 15px;">Veritabanında kelime yok!</p>
+                        <p style="font-size: 13px; opacity: 0.7;">Lütfen admin panelinden kelime ekleyin.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        tumKelimeler = wordsSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+        }));
+        console.log('✅ Toplam kelime yüklendi:', tumKelimeler.length);
+        
+        // ===== 5. TOPLAM SEVİYEYİ HESAPLA =====
+        const KELIME_SAYISI = 15;
+        toplamSeviye = Math.ceil(tumKelimeler.length / KELIME_SAYISI);
+        console.log('📊 Toplam seviye:', toplamSeviye);
+        
+        if (toplamSeviye === 0) {
+            console.error('❌ Toplam seviye 0!');
+            return;
+        }
+        
+        // ===== 6. MEVCUT SEVİYEYİ FIRESTORE'DAN AL =====
+        let kullanilacakSeviye = 1;
+        let quizSandik = [];
+        let quizScore = 0;
+        
+        if (currentUser) {
+            try {
+                const userRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userRef);
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    console.log('📦 Firestore verileri:', data);
+                    
+                    if (data.mevcutSeviye && data.mevcutSeviye > 0) {
+                        kullanilacakSeviye = Math.min(data.mevcutSeviye, toplamSeviye);
+                        console.log('📌 Firestore\'dan seviye OKUNDU:', kullanilacakSeviye);
+                    } else {
+                        console.log('📌 Firestore\'da seviye yok, varsayılan 1 kullanılıyor');
+                        kullanilacakSeviye = 1;
+                    }
+                    
+                    quizSandik = Array.isArray(data.quizSandik) ? data.quizSandik : [];
+                    quizScore = typeof data.quizScore === 'number' ? data.quizScore : 0;
+                } else {
+                    console.log('📌 Kullanıcı belgesi yok, varsayılan değerler kullanılıyor');
+                }
+            } catch (error) {
+                console.log('⚠️ Firestore okuma hatası:', error);
+            }
+        } else {
+            console.log('⚠️ Kullanıcı giriş yapmamış!');
+        }
+        
+        // ===== 7. GLOBAL DEĞİŞKENLERİ GÜNCELLE =====
+        window.mevcutSeviye = kullanilacakSeviye;
+        window.quizSandik = quizSandik;
+        window.quizScore = quizScore;
+        console.log('🎯 KULLANILACAK SEVİYE:', window.mevcutSeviye);
+        console.log('📦 Sandık sayısı:', window.quizSandik.length);
+        console.log('💰 Puan:', window.quizScore);
+        
+        // ===== 8. SEVİYE KELİMELERİNİ HESAPLA =====
+        const baslangic = (window.mevcutSeviye - 1) * KELIME_SAYISI;
+        const bitis = Math.min(baslangic + KELIME_SAYISI, tumKelimeler.length);
+        window.seviyeKelimeListesi = tumKelimeler.slice(baslangic, bitis);
+        
+        console.log(`📚 Seviye ${window.mevcutSeviye}/${toplamSeviye} - ${window.seviyeKelimeListesi.length} kelime`);
+        
+        if (window.seviyeKelimeListesi.length === 0) {
+            console.error('❌ Seviye kelimeleri boş!');
+            const arabicEl = document.getElementById('karmaArabicWord');
+            if (arabicEl) {
+                arabicEl.textContent = '⚠️ Bu seviyede kelime yok!';
+            }
+            return;
+        }
+        
+        // ===== 9. DEĞİŞKENLERİ SIFIRLA =====
+        window.quizCorrectCount = 0;
+        window.quizAnswered = false;
+        window.sandikAlmaSayaci = 0;
+        window.sandikAktif = false;
+        window.baslangicIndex = 0;
+        window.bitisIndex = window.seviyeKelimeListesi.length - 1;
+        window.siraSoldan = true;
+        window.quizTotalQuestions = window.seviyeKelimeListesi.length;
+        window.quizWordsAll = window.seviyeKelimeListesi;
+        window.seviyeTamamlandi = false;
+        
+        console.log('📌 quizWordsAll uzunluğu:', window.quizWordsAll.length);
+        console.log('📌 baslangicIndex:', window.baslangicIndex);
+        console.log('📌 bitisIndex:', window.bitisIndex);
+        
+        // ===== 10. EKRAN BİLGİLERİNİ GÜNCELLE =====
+        const totalQuestions = window.seviyeKelimeListesi.length + window.quizSandik.length;
+        
+        // Temel bilgiler
+        const karmaTotal = document.getElementById('karmaTotal');
+        if (karmaTotal) karmaTotal.textContent = totalQuestions;
+        
+        const sandikCount = document.getElementById('sandikCount');
+        if (sandikCount) sandikCount.textContent = window.quizSandik.length;
+        
+        const karmaScore = document.getElementById('karmaScore');
+        if (karmaScore) karmaScore.textContent = window.quizScore.toFixed(2);
+        
+        const karmaPercent = document.getElementById('karmaPercent');
+        if (karmaPercent) karmaPercent.textContent = '0';
+        
+        const karmaCurrent = document.getElementById('karmaCurrent');
+        if (karmaCurrent) karmaCurrent.textContent = '0';
+        
+        const karmaDogru = document.getElementById('karmaDogru');
+        if (karmaDogru) karmaDogru.textContent = '0';
+        
+        const karmaYanlis = document.getElementById('karmaYanlis');
+        if (karmaYanlis) karmaYanlis.textContent = '0';
+        
+        // Progress bar
+        const progressFill = document.getElementById('karmaProgressFill');
+        if (progressFill) progressFill.style.width = '0%';
+        
+        // Seviye bilgileri
+        const karmaSeviye = document.getElementById('karmaSeviye');
+        if (karmaSeviye) karmaSeviye.textContent = window.mevcutSeviye;
+        
+        const karmaToplamSeviye = document.getElementById('karmaToplamSeviye');
+        if (karmaToplamSeviye) karmaToplamSeviye.textContent = toplamSeviye;
+        
+        const seviyeNo = document.getElementById('seviyeNo');
+        if (seviyeNo) seviyeNo.textContent = window.mevcutSeviye;
+        
+        const toplamSeviyeNo = document.getElementById('toplamSeviyeNo');
+        if (toplamSeviyeNo) toplamSeviyeNo.textContent = toplamSeviye;
+        
+        const seviyeKelimeSayisi = document.getElementById('seviyeKelimeSayisi');
+        if (seviyeKelimeSayisi) seviyeKelimeSayisi.textContent = window.seviyeKelimeListesi.length;
+        
+        const seviyeSandikSayisi = document.getElementById('seviyeSandikSayisi');
+        if (seviyeSandikSayisi) seviyeSandikSayisi.textContent = window.quizSandik.length;
+        
+        // Seviye bilgi
+        const seviyeBilgi = document.getElementById('seviyeBilgi');
+        if (seviyeBilgi) {
+            seviyeBilgi.innerHTML = `📚 Seviye ${window.mevcutSeviye}/${toplamSeviye} | 📝 ${window.seviyeKelimeListesi.length} kelime | 📦 ${window.quizSandik.length} sandık`;
+        }
+        
+        console.log('✅ EKRAN GÜNCELLENDİ!');
+        console.log('📌 Seviye:', window.mevcutSeviye, '/', toplamSeviye);
+        console.log('📌 Kelime sayısı:', window.seviyeKelimeListesi.length);
+        console.log('📌 Toplam soru:', totalQuestions);
+        
+        // ===== 11. İLK KELİMEYİ YÜKLE =====
+        if (window.seviyeKelimeListesi.length > 0) {
+            console.log('📖 İlk kelime yükleniyor...');
+            // Direkt olarak loadNextQuizWord'ü çağır
+            if (typeof window.loadNextQuizWord === 'function') {
+                window.loadNextQuizWord();
+            } else {
+                console.error('❌ loadNextQuizWord fonksiyonu tanımlı değil!');
+                // Alternatif: kelimeyi manuel göster
+                const firstWord = window.seviyeKelimeListesi[0];
+                const arabicEl = document.getElementById('karmaArabicWord');
+                if (arabicEl && firstWord) {
+                    arabicEl.textContent = firstWord.arabic || '⚠️ Kelime verisi yok';
+                }
+                const optionsEl = document.getElementById('karmaOptions');
+                if (optionsEl) {
+                    optionsEl.innerHTML = `
+                        <div style="text-align:center; padding:20px; color: #ef4444;">
+                            ⚠️ Kelime yükleme fonksiyonu bulunamadı!
+                        </div>
+                    `;
+                }
+            }
+        } else {
+            console.error('❌ Seviye kelime listesi boş!');
+            const arabicEl = document.getElementById('karmaArabicWord');
+            if (arabicEl) {
+                arabicEl.textContent = '⚠️ Bu seviyede kelime yok!';
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Yarışma başlatma hatası:', error);
+        console.error('Hata detayı:', error.message);
+        console.error('Stack trace:', error.stack);
+        
+        // Kullanıcıya hata göster
+        const arabicEl = document.getElementById('karmaArabicWord');
+        if (arabicEl) {
+            arabicEl.textContent = '⚠️ Bir hata oluştu: ' + error.message;
+        }
+        
+        const optionsEl = document.getElementById('karmaOptions');
+        if (optionsEl) {
+            optionsEl.innerHTML = `
+                <div style="text-align:center; padding:20px; color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 32px;"></i>
+                    <p style="margin-top: 10px;">Hata: ${error.message}</p>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 20px; background: #f59e0b; color: #121212; border: none; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-redo"></i> Yeniden Dene
+                    </button>
+                </div>
+            `;
+        }
+        
+        if (typeof showError === 'function') {
+            showError('Yarışma başlatılamadı: ' + error.message);
+        }
+    }
+};
+
     
 </script>
 </body>
