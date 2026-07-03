@@ -3785,61 +3785,7 @@ function loadNextQuizWord() {
     }
 }
 
-// Yardımcı fonksiyon: Seçenekleri oluştur
-function generateOptions(currentWord) {
-    try {
-        const karmaOptions = document.getElementById('karmaOptions');
-        if (!karmaOptions) {
-            console.error('❌ karmaOptions elementi bulunamadı');
-            return;
-        }
-        
-        // Doğru cevap
-        const correctAnswer = currentWord.turkish || '';
-        
-        // Yanlış şıklar (kelime listesinden rastgele)
-        let wrongOptions = [];
-        if (window.quizWordsAll && window.quizWordsAll.length > 0) {
-            const otherWords = window.quizWordsAll.filter((w, index) => {
-                return index !== window.baslangicIndex && w.turkish && w.turkish !== correctAnswer;
-            });
-            
-            // Karıştır ve 3 tane seç
-            const shuffled = shuffleArray(otherWords);
-            wrongOptions = shuffled.slice(0, 3).map(w => w.turkish);
-        }
-        
-        // Eğer yeterli yanlış şık yoksa, varsayılan ekle
-        while (wrongOptions.length < 3) {
-            const defaults = ['Başka', 'Diğer', 'Farklı'];
-            wrongOptions.push(defaults[wrongOptions.length] || 'Seçenek');
-        }
-        
-        // Tüm seçenekleri birleştir ve karıştır
-        let allOptions = [correctAnswer, ...wrongOptions];
-        allOptions = shuffleArray(allOptions);
-        
-        // Seçenek butonlarını oluştur
-        karmaOptions.innerHTML = '';
-        allOptions.forEach((option, index) => {
-            const button = document.createElement('button');
-            button.className = 'karma-option-btn';
-            button.textContent = option;
-            button.dataset.index = index;
-            button.dataset.correct = (option === correctAnswer) ? 'true' : 'false';
-            
-            button.addEventListener('click', function() {
-                if (window.quizAnswered) return;
-                handleOptionClick(this, correctAnswer);
-            });
-            
-            karmaOptions.appendChild(button);
-        });
-        
-    } catch (error) {
-        console.error('❌ Seçenek oluşturma hatası:', error);
-    }
-}
+
 
 // Yardımcı fonksiyon: Dizi karıştırma
 function shuffleArray(array) {
