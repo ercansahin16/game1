@@ -5284,8 +5284,10 @@ window.seviyeKontrol = async function() {
 // PROFİL İSTATİSTİK BİLGİ MODALI
 // ============================================================
 
-function showStatInfo(type) {
-    // Mevcut değerleri al
+// ============================================================
+// PROFİL İSTATİSTİK BİLGİ MODALI
+// ============================================================
+window.showStatInfo = function(type) {
     const words = document.getElementById('totalWordsLearned')?.textContent || '0';
     const exams = document.getElementById('totalExamsCompleted')?.textContent || '0';
     const average = document.getElementById('averageScore')?.textContent || '0';
@@ -5293,114 +5295,60 @@ function showStatInfo(type) {
     const karma = document.getElementById('karmaScoreProfile')?.textContent || '0';
     const level = document.getElementById('seviyeProfile')?.textContent || '1/7';
     
-    // Her istatistik için bilgiler
     const statInfo = {
         'words': {
-            icon: '📚',
-            iconClass: 'blue',
+            icon: '📚', iconClass: 'blue',
             title: 'Öğrenilen Kelime',
             subtitle: 'Toplam öğrendiğin kelime sayısı',
-            description: `
-                <p>Bu sayı, <span class="highlight">Kelime Öğren</span> bölümünde 
-                <span class="highlight">"Göster"</span> butonuna tıkladığın her kelime için artar.</p>
-                <p>📖 Şu ana kadar <span class="highlight">${words}</span> kelime öğrendin!</p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: Her gün 5 yeni kelime öğrenmeyi hedefle!
-                </p>
-            `,
+            description: `<p>📖 Şu ana kadar <span class="highlight">${words}</span> kelime öğrendin!</p><p style="margin-top:8px;font-size:12px;opacity:0.6;"><i class="fas fa-lightbulb"></i> İpucu: Her gün 5 yeni kelime öğren!</p>`,
             tip: '💡 Her yeni kelime seni Arapça\'ya bir adım daha yaklaştırır!'
         },
         'exams': {
-            icon: '📝',
-            iconClass: 'purple',
+            icon: '📝', iconClass: 'purple',
             title: 'Tamamlanan Sınav',
             subtitle: 'Toplam çözdüğün sınav sayısı',
-            description: `
-                <p>Bu sayı, <span class="highlight">Sınavlar</span> bölümünden 
-                başlatıp tamamladığın her sınav için artar.</p>
-                <p>📝 Şu ana kadar <span class="highlight">${exams}</span> sınav tamamladın!</p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: Her gün 1 sınav çözerek bilgini tazele!
-                </p>
-            `,
+            description: `<p>📝 Şu ana kadar <span class="highlight">${exams}</span> sınav tamamladın!</p><p style="margin-top:8px;font-size:12px;opacity:0.6;"><i class="fas fa-lightbulb"></i> İpucu: Her gün 1 sınav çöz!</p>`,
             tip: '🎯 Sınavlar, öğrendiklerini pekiştirmenin en iyi yoludur!'
         },
         'average': {
-            icon: '⭐',
-            iconClass: 'gold',
+            icon: '⭐', iconClass: 'gold',
             title: 'Ortalama Puan',
             subtitle: 'Tüm sınavlarının ortalaması',
-            description: `
-                <p>Tüm sınavlarının puan ortalamasıdır. 
-                <span class="highlight">${average}</span> puan ortalaman var.</p>
-                <p>📊 ${average >= 70 ? '🌟 Harika! Çok başarılısın!' : 
-                        average >= 50 ? '👍 İyi gidiyorsun, daha da yükselebilirsin!' : 
-                        '💪 Pratik yapmaya devam et, başaracaksın!'}</p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: 70+ puan hedefle ve uzmanlaş!
-                </p>
-            `,
-            tip: '🏆 En yüksek puanın neydi? Kendine meydan oku!'
+            description: `<p>📊 Ortalaman: <span class="highlight">${average}</span></p><p>${average >= 70 ? '🌟 Harika!' : average >= 50 ? '👍 İyi gidiyorsun!' : '💪 Pratik yapmaya devam et!'}</p>`,
+            tip: '🏆 Kendine meydan oku!'
         },
         'sandik': {
-            icon: '📦',
-            iconClass: 'orange',
+            icon: '📦', iconClass: 'orange',
             title: 'Sandıktaki Kelime',
             subtitle: 'Tekrar etmen gereken kelimeler',
-            description: `
-                <p>Yanlış cevapladığın, <span class="highlight">"Bilemedim"</span> veya 
-                <span class="highlight">"Geç"</span> yaptığın kelimeler sandığa gider.</p>
-                <p>📦 Sandıkta <span class="highlight">${sandik}</span> kelime var.</p>
-                <p style="color: #f59e0b; font-weight: 500;">Bu kelimeleri doğru cevaplayana kadar sandıkta kalırlar!</p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: Sandıktaki kelimeleri kurtar, puanını katla!
-                </p>
-            `,
-            tip: '🔁 Sandıktaki kelimeleri tekrar et ve onları kurtar!'
+            description: `<p>📦 Sandıkta <span class="highlight">${sandik}</span> kelime var.</p><p style="color:#f59e0b;font-weight:500;">Doğru cevaplayana kadar sandıkta kalırlar!</p>`,
+            tip: '🔁 Sandıktaki kelimeleri kurtar!'
         },
         'karma': {
-            icon: '🎲',
-            iconClass: 'pink',
+            icon: '🎲', iconClass: 'pink',
             title: 'Yarışma Puanı',
             subtitle: 'Karma oyununda kazandığın puan',
-            description: `
-                <p><span class="highlight">Yarışma</span> bölümünde doğru cevaplarla kazandığın puandır.</p>
-                <p>✅ Doğru cevap: <span class="highlight-green">+0.01 puan</span></p>
-                <p>❌ Yanlış cevap: <span class="highlight-red">-5 puan</span></p>
-                <p>🏆 Toplam puanın: <span class="highlight">${karma}</span></p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: Sıralamada yükselmek için doğru cevap sayını artır!
-                </p>
-            `,
-            tip: '🚀 Ne kadar çok doğru cevap, o kadar çok puan!'
+            description: `<p>✅ Doğru: <span class="highlight-green">+0.01</span> | ❌ Yanlış: <span class="highlight-red">-5</span></p><p>🏆 Toplam: <span class="highlight">${karma}</span></p>`,
+            tip: '🚀 Ne kadar çok doğru, o kadar çok puan!'
         },
         'level': {
-            icon: '🏔️',
-            iconClass: 'gold',
+            icon: '🏔️', iconClass: 'gold',
             title: 'Seviye',
             subtitle: 'Mevcut seviyen ve toplam seviye',
-            description: `
-                <p>Her <span class="highlight">15 kelime</span> 1 seviyeye denk gelir.</p>
-                <p>📍 Mevcut seviyen: <span class="highlight">${level}</span></p>
-                <p>📈 Seviye atladıkça yeni kelimelerle karşılaşırsın!</p>
-                <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-lightbulb"></i> İpucu: Tüm seviyeleri tamamla ve <span class="highlight">Kelime Ustası</span> ol!
-                </p>
-            `,
-            tip: '🏔️ Her yeni seviye seni zirveye bir adım daha yaklaştırır!'
+            description: `<p>📍 Mevcut seviyen: <span class="highlight">${level}</span></p><p>📈 15 kelime = 1 seviye</p>`,
+            tip: '🏔️ Her yeni seviye seni zirveye yaklaştırır!'
         }
     };
     
     const info = statInfo[type];
     if (!info) return;
     
-    // Modal oluştur
     const modal = document.createElement('div');
     modal.className = 'info-modal';
     modal.innerHTML = `
         <div class="info-modal-content">
             <div class="info-modal-header">
-                <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="display:flex;align-items:center;gap:14px;">
                     <div class="icon-box ${info.iconClass}">${info.icon}</div>
                     <div>
                         <div class="info-modal-title">${info.title}</div>
@@ -5409,15 +5357,10 @@ function showStatInfo(type) {
                 </div>
                 <button class="info-modal-close">&times;</button>
             </div>
-            <div class="info-modal-body">
-                ${info.description}
-            </div>
-            <div class="info-modal-tip">
-                <i class="fas fa-lightbulb"></i>
-                <span>${info.tip}</span>
-            </div>
+            <div class="info-modal-body">${info.description}</div>
+            <div class="info-modal-tip"><i class="fas fa-lightbulb"></i><span>${info.tip}</span></div>
             <div class="info-modal-footer">
-                <button class="btn btn-primary" onclick="this.closest('.info-modal').remove()" style="width:100%; padding: 10px;">
+                <button class="btn btn-primary" onclick="this.closest('.info-modal').remove()" style="width:100%;padding:10px;">
                     <i class="fas fa-check"></i> Anladım!
                 </button>
             </div>
@@ -5425,22 +5368,14 @@ function showStatInfo(type) {
     `;
     
     document.body.appendChild(modal);
-    
-    // Kapatma işlemleri
     modal.querySelector('.info-modal-close').onclick = () => modal.remove();
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    
-    // ESC tuşu ile kapat
     document.addEventListener('keydown', function closeOnEsc(e) {
-        if (e.key === 'Escape') {
-            modal.remove();
-            document.removeEventListener('keydown', closeOnEsc);
-        }
+        if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', closeOnEsc); }
     });
-}
+};
 
-console.log('✅ showStatInfo fonksiyonu yüklendi!');
-console.log('📊 Profil istatistiklerine tıklayarak bilgi alabilirsiniz.');
+console.log('✅ Profil bilgi modalı yüklendi!');
 
     
 </script>
