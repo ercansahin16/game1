@@ -1221,6 +1221,12 @@
         .offline-mode .btn:hover {
             transform: none !important;
         }
+
+    @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+    
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -3369,39 +3375,105 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ========== YARDIM MODALI ==========
     const showKarmaHelp = document.getElementById('showKarmaHelp');
-    if (showKarmaHelp) {
-        showKarmaHelp.onclick = () => {
-            const existingModal = document.querySelector('.help-modal');
-            if (existingModal) existingModal.remove();
-            
-            const modal = document.createElement('div');
-            modal.className = 'help-modal';
-            modal.innerHTML = `
-                <div class="help-modal-content">
-                    <div class="help-modal-header">
-                        <h3><i class="fas fa-question-circle"></i> Karma Kelime Sistemi</h3>
-                        <button class="help-modal-close">&times;</button>
-                    </div>
-                    <div class="help-modal-body">
-                        <p><strong>📖 Nasıl çalışır?</strong></p>
-                        <ul>
-                            <li><strong class="correct">✅ Doğru cevap:</strong> +10 puan, yeşil tik</li>
-                            <li><strong class="wrong">❌ Yanlış cevap:</strong> -5 puan, kırmızı çarpı, kelime sandığa gider</li>
-                            <li><strong class="neutral">💡 Bilemedim:</strong> Puan değişmez, doğru cevap gösterilir, kelime sandığa gider</li>
-                            <li><strong class="neutral">⏩ Geç:</strong> Puan değişmez, kelime sandığa gider</li>
-                        </ul>
-                        <p><strong>📦 Sandık Sistemi:</strong> Her 10 kelimede bir sandıktan 1 kelime gelir. Doğru cevaplanana kadar orada kalır.</p>
-                        <p><strong>🏆 Puanlama:</strong> Doğru +10, Yanlış -5, Bilemedim/Geç 0</p>
-                    </div>
-                    <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="this.closest('.help-modal').remove()">Anladım</button>
+ if (showKarmaHelp) {
+    showKarmaHelp.onclick = () => {
+        const existingModal = document.querySelector('.help-modal');
+        if (existingModal) existingModal.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'help-modal';
+        modal.innerHTML = `
+            <div class="help-modal-content" style="max-width: 480px;">
+                <div class="help-modal-header">
+                    <h3><i class="fas fa-dice" style="color: #f59e0b;"></i> 🎯 Karma Kelime Sistemi</h3>
+                    <button class="help-modal-close">&times;</button>
                 </div>
-            `;
-            document.body.appendChild(modal);
-            
-            modal.querySelector('.help-modal-close').onclick = () => modal.remove();
-            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-        };
-    }
+                <div class="help-modal-body">
+                    <!-- Hoş Geldin Mesajı -->
+                    <div style="background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(245,158,11,0.15);">
+                        <span style="font-size: 20px;">👋</span>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #f59e0b; font-weight: 500;">
+                            Merhaba Kelime Avcısı! 🦸‍♂️
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.7;">
+                            Her doğru cevap seni zirveye bir adım daha yaklaştırır!
+                        </p>
+                    </div>
+
+                    <!-- Puan Sistemi -->
+                    <p style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #f59e0b;">
+                        <i class="fas fa-star"></i> Puan Sistemi
+                    </p>
+                    <ul style="margin: 0 0 12px 20px; padding: 0; list-style: none;">
+                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                            <span style="background: #10b981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✓</span>
+                            <div>
+                                <strong class="correct" style="color: #10b981;">Doğru cevap:</strong>
+                                <span style="font-weight: 600; color: #10b981;">+0.01 puan</span>
+                                <span style="font-size: 11px; opacity: 0.6; display: block;">🎉 Harika! Kelime sandıktan çıkar ve puanın artar!</span>
+                            </div>
+                        </li>
+                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                            <span style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✗</span>
+                            <div>
+                                <strong class="wrong" style="color: #ef4444;">Yanlış cevap:</strong>
+                                <span style="font-weight: 600; color: #ef4444;">-5 puan</span>
+                                <span style="font-size: 11px; opacity: 0.6; display: block;">😅 Oops! Kelime sandığa gider ama pes etme!</span>
+                            </div>
+                        </li>
+                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                            <span style="background: #f59e0b; color: #121212; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">💡</span>
+                            <div>
+                                <strong class="neutral" style="color: #f59e0b;">Bilemedim:</strong>
+                                <span style="font-weight: 600; color: #6b7280;">0 puan</span>
+                                <span style="font-size: 11px; opacity: 0.6; display: block;">🧠 Öğrenme fırsatı! Doğru cevabı gör, kelime sandığa gider</span>
+                            </div>
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                            <span style="background: #6b7280; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">⏩</span>
+                            <div>
+                                <strong style="color: #6b7280;">Geç:</strong>
+                                <span style="font-weight: 600; color: #6b7280;">0 puan</span>
+                                <span style="font-size: 11px; opacity: 0.6; display: block;">🤔 Biraz düşünme zamanı! Kelime sandığa gider</span>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <!-- Sandık Sistemi -->
+                    <div style="background: rgba(245,158,11,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #f59e0b;">
+                        <p style="margin: 0; font-size: 13px;">
+                            <strong style="color: #f59e0b;">📦 Sandık Sistemi</strong>
+                        </p>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                            Her 10 kelimede bir sandıktan 1 kelime gelir. 
+                            <span style="color: #10b981; font-weight: 500;">Doğru cevaplanana kadar orada kalır!</span> 
+                            Sandıktaki kelimeleri kurtarmak sana bağlı! 🏆
+                        </p>
+                    </div>
+
+                    <!-- Eğlenceli Motivasyon -->
+                    <div style="text-align: center; padding: 8px; background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(16,185,129,0.05)); border-radius: 10px; margin-top: 8px;">
+                        <p style="margin: 0; font-size: 12px; opacity: 0.7;">
+                            🌟 <strong>İpucu:</strong> Sandıktaki kelimeleri kurtar, puanını katla! 
+                            <span style="display: inline-block; animation: bounce 1s infinite;">⚡</span>
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.5;">
+                            Her doğru cevap seni <strong>Kelime Ustası</strong> yapmaya bir adım daha yaklaştırır! 🎯
+                        </p>
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%; margin-top: 15px; padding: 10px; font-size: 14px; border-radius: 12px;" onclick="this.closest('.help-modal').remove()">
+                        <i class="fas fa-rocket"></i> Anladım, Başlıyorum! 🚀
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.querySelector('.help-modal-close').onclick = () => modal.remove();
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    };
+}
 });
 
 // ========== İNTERNET BAĞLANTISI DEĞİŞİKLİKLERİNİ İZLE ==========
