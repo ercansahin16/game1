@@ -1420,7 +1420,7 @@ window.goHome = () => {
         if (el) {
             if (screen === 'examsScreen') {
                 el.classList.add('hidden');
-                el.style.display = 'none';  // EKSTRA GÜVENLİK
+                el.style.display = 'none';
             } else {
                 el.style.display = 'none';
             }
@@ -1441,12 +1441,15 @@ window.goHome = () => {
     closeMenu();
 };
 
-   window.goWordsLearning = () => {
+ window.goWordsLearning = () => {
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'block';
     document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('examsScreen').classList.add('hidden');
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'none';
+    document.getElementById('rankingScreen').style.display = 'none';
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
@@ -1479,7 +1482,7 @@ if (zoomBtn) {
 
 
 
-    window.goExams = async () => {
+ window.goExams = async () => {
     // Timer'ı durdur
     stopTimer();
     examCompleted = false;
@@ -1487,7 +1490,7 @@ if (zoomBtn) {
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
     document.getElementById('examsScreen').style.display = 'block';
-    document.getElementById('examsScreen').classList.remove('hidden');  // EKLE
+    document.getElementById('examsScreen').classList.remove('hidden');
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'none';
     document.getElementById('karmaScreen').style.display = 'none';
@@ -1513,10 +1516,11 @@ window.showProfile = function() {
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
     document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('examsScreen').classList.add('hidden');
     document.getElementById('quizScreen').style.display = 'none';
     document.getElementById('profileScreen').style.display = 'block';
     
-    // YARIŞMA VE SIRALAMA EKRANLARINI DA GİZLE (YENİ)
+    // YARIŞMA VE SIRALAMA EKRANLARINI DA GİZLE
     const karmaScreen = document.getElementById('karmaScreen');
     if (karmaScreen) karmaScreen.style.display = 'none';
     
@@ -3219,9 +3223,7 @@ window.addEventListener('offline', function() {
 
 // Karma Kelime sayfasına git
 window.goKarmaGame = () => {
-  
-    
-    // ANA SAYFA STAT KARTLARINI GİZLE (kesin çözüm)
+    // ANA SAYFA STAT KARTLARINI GİZLE
     const mainContent = document.getElementById('mainContent');
     if (mainContent) {
         mainContent.style.display = 'none';
@@ -3233,7 +3235,10 @@ window.goKarmaGame = () => {
     if (wordsScreen) wordsScreen.style.display = 'none';
     
     const examsScreen = document.getElementById('examsScreen');
-    if (examsScreen) examsScreen.style.display = 'none';
+    if (examsScreen) {
+        examsScreen.style.display = 'none';
+        examsScreen.classList.add('hidden');
+    }
     
     const quizScreen = document.getElementById('quizScreen');
     if (quizScreen) quizScreen.style.display = 'none';
@@ -3241,18 +3246,22 @@ window.goKarmaGame = () => {
     const profileScreen = document.getElementById('profileScreen');
     if (profileScreen) profileScreen.style.display = 'none';
     
+    const rankingScreen = document.getElementById('rankingScreen');
+    if (rankingScreen) rankingScreen.style.display = 'none';
+    
     // Karma ekranını göster
     const karmaScreen = document.getElementById('karmaScreen');
     if (karmaScreen) karmaScreen.style.display = 'block';
     
-    // Rastgele kelime göster
-    if (typeof nextKarmaWord === 'function') {
-        nextKarmaWord();
-    }
+    // Logo yazısını değiştir
+    const homeLogo = document.getElementById('homeLogo');
+    if (homeLogo) homeLogo.textContent = "ANASAYFAYA DÖN";
+    
+    // Yarışmayı başlat
+    startQuizWords();
     
     closeMenu();
 };
-
 // Kart tıklama olayı
 document.getElementById('goKarma').onclick = () => {
    
@@ -3332,8 +3341,6 @@ async function loadKarmaStats() {
 
 
 
-    // Sıralama sayfasına git
-// Sıralama sayfasına git
 window.goRanking = () => {
     // Stat kartlarını gizle
     const mainContent = document.getElementById('mainContent');
@@ -3347,7 +3354,10 @@ window.goRanking = () => {
     if (wordsScreen) wordsScreen.style.display = 'none';
     
     const examsScreen = document.getElementById('examsScreen');
-    if (examsScreen) examsScreen.style.display = 'none';
+    if (examsScreen) {
+        examsScreen.style.display = 'none';
+        examsScreen.classList.add('hidden');
+    }
     
     const quizScreen = document.getElementById('quizScreen');
     if (quizScreen) quizScreen.style.display = 'none';
@@ -3358,6 +3368,10 @@ window.goRanking = () => {
     // Sıralama ekranını göster
     const rankingScreen = document.getElementById('rankingScreen');
     if (rankingScreen) rankingScreen.style.display = 'block';
+    
+    // Logo yazısını değiştir
+    const homeLogo = document.getElementById('homeLogo');
+    if (homeLogo) homeLogo.textContent = "ANASAYFAYA DÖN";
     
     // Sıralamayı yükle
     loadRanking();
