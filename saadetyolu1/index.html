@@ -1964,49 +1964,84 @@ showBtn.onclick = () => {
 async function loadUserStats() {
     if (!currentUser) return;
     
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userDoc = await getDoc(userRef);
-    
-    document.getElementById('profileName').textContent = currentUser.email.split('@')[0];
-    document.getElementById('profileEmail').textContent = currentUser.email;
-    
-    if (userDoc.exists()) {
-        const data = userDoc.data();
-        document.getElementById('totalWordsLearned').textContent = data.totalWordsViewed || 0;
-        document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
-        document.getElementById('averageScore').textContent = Math.round(data.averageScore || 0);
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
         
-        // SANDIK SAYISI
-        const sandikCount = data.quizSandik?.length || 0;
-        const sandikElement = document.getElementById('sandikCountProfile');
-        if (sandikElement) sandikElement.textContent = sandikCount;
+        document.getElementById('profileName').textContent = currentUser.email.split('@')[0];
+        document.getElementById('profileEmail').textContent = currentUser.email;
         
-        // KARMA PUANI
-        const karmaScoreElement = document.getElementById('karmaScoreProfile');
-        if (karmaScoreElement) karmaScoreElement.textContent = (data.quizScore || 0).toFixed(2);
+        // Toplam seviyeyi hesapla (15 kelime = 1 seviye)
+        const wordsSnapshot = await getDocs(collection(db, 'words'));
+        const totalWords = wordsSnapshot.docs.length;
+        const toplamSeviye = Math.ceil(totalWords / 15);
+        console.log('📊 Toplam seviye:', toplamSeviye);
         
-        // ===== YENİ: SEVİYE BİLGİSİ =====
-        const seviyeElement = document.getElementById('seviyeProfile');
-        if (seviyeElement) {
-            const seviye = data.mevcutSeviye || 1;
-            // Toplam seviyeyi hesapla
-            const wordsSnapshot = await getDocs(collection(db, 'words'));
-            const totalWords = wordsSnapshot.docs.length;
-            const toplamSeviye = Math.ceil(totalWords / 15); // 15 kelime = 1 seviye
-            seviyeElement.textContent = `${seviye}/${toplamSeviye}`;
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            console.log('📦 Kullanıcı verileri:', data);
+            console.log('📌 Firestore mevcutSeviye:', data.mevcutSeviye); // Burada 2 yazmalı
+            
+            document.getElementById('totalWordsLearned').textContent = data.totalWordsViewed || 0;
+            document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
+            document.getElementById('averageScore').textContent = Math.round(data.averageScore || 0);
+            
+            // SANDIK SAYISI
+            const sandikCount = data.quizSandik?.length || 0;
+            const sandikElement = document.getElementById('sandikCountProfile');
+            if (sandikElement) sandikElement.textContent = sandikCount;
+            
+            // KARMA PUANI
+            const karmaScoreElement = document.getElementById('karmaScoreProfile');
+            if (karmaScoreElement) karmaScoreElement.textContent = (data.quizScore || 0).toFixed(2);
+            
+            // ===== SEVİYE BİLGİSİ - KESİN ÇÖZÜM =====
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            console.log('✅ Kullanılacak seviye:', mevcutSeviye, '/', toplamSeviye);
+            
+            // 1. Profil istatistik kartındaki seviye (stat kartları arasında)
+            const seviyeProfile = document.getElementById('seviyeProfile');
+            if (seviyeProfile) {
+                seviyeProfile.textContent = `${mevcutSeviye}/${toplamSeviye}`;
+                console.log('✅ seviyeProfile güncellendi:', `${mevcutSeviye}/${toplamSeviye}`);
+            } else {
+                console.log('⚠️ seviyeProfile elementi BULUNAMADI!');
+            }
+            
+            // 2. Profil bilgi satırındaki seviye (Kullanıcı Adı, E-posta, Seviye)
+            const profileSeviye = document.getElementById('profileSeviye');
+            if (profileSeviye) {
+                profileSeviye.textContent = `${mevcutSeviye}/${toplamSeviye}`;
+                console.log('✅ profileSeviye güncellendi:', `${mevcutSeviye}/${toplamSeviye}`);
+            } else {
+                console.log('⚠️ profileSeviye elementi BULUNAMADI!');
+            }
+            
+            // 3. Global seviyeyi güncelle
+            window.mevcutSeviye = mevcutSeviye;
+            window.toplamSeviye = toplamSeviye;
+            
+            displayExamHistory(data.examsCompleted || []);
+            
+        } else {
+            // Kullanıcı belgesi yoksa varsayılan değerler
+            document.getElementById('totalWordsLearned').textContent = '0';
+            document.getElementById('totalExamsCompleted').textContent = '0';
+            document.getElementById('averageScore').textContent = '0';
+            
+            const sandikElement = document.getElementById('sandikCountProfile');
+            if (sandikElement) sandikElement.textContent = '0';
+            
+            // Varsayılan seviye 1
+            const seviyeProfile = document.getElementById('seviyeProfile');
+            if (seviyeProfile) seviyeProfile.textContent = `1/${toplamSeviye}`;
+            
+            const profileSeviye = document.getElementById('profileSeviye');
+            if (profileSeviye) profileSeviye.textContent = `1/${toplamSeviye}`;
         }
         
-        displayExamHistory(data.examsCompleted || []);
-    } else {
-        document.getElementById('totalWordsLearned').textContent = '0';
-        document.getElementById('totalExamsCompleted').textContent = '0';
-        document.getElementById('averageScore').textContent = '0';
-        
-        const sandikElement = document.getElementById('sandikCountProfile');
-        if (sandikElement) sandikElement.textContent = '0';
-        
-        const seviyeElement = document.getElementById('seviyeProfile');
-        if (seviyeElement) seviyeElement.textContent = '1/?';
+    } catch (error) {
+        console.error('❌ loadUserStats hatası:', error);
     }
 }
 
