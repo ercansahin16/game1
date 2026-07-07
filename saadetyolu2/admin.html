@@ -1125,8 +1125,7 @@
     
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
+   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -1409,18 +1408,22 @@
     window.closeModal = function(id) { document.getElementById(id).classList.remove('visible'); };
     function openModal(id) { document.getElementById(id).classList.add('visible'); }
 
-    async function loadBooks() {
-        const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
-        books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('booksList');
-        container.innerHTML = '';
-        books.forEach(book => {
-            const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
-            container.appendChild(div);
-        });
-        document.getElementById('statBooks').innerHTML = books.length;
-    }
+   async function loadBooks() {
+    const snapshot = await getDocs(collection(db, 'books'));
+    books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // JavaScript ile isme göre sırala
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
+    const container = document.getElementById('booksList');
+    container.innerHTML = '';
+    books.forEach(book => {
+        const div = document.createElement('div'); div.className = 'item';
+        div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
+        container.appendChild(div);
+    });
+    document.getElementById('statBooks').innerHTML = books.length;
+}
 
     window.editBook = (id) => {
         const book = books.find(b => b.id === id);
@@ -1492,26 +1495,31 @@ if (addBookBtn) {
     updateStats();
 };
 
-    async function loadLessonBooks() {
-        const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
-        books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const select = document.getElementById('lessonBookSelect');
-        select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.textContent = book.name;
-            select.appendChild(option);
-        });
-        const modalSelect = document.getElementById('lessonBookSelectModal');
-        modalSelect.innerHTML = '';
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.textContent = book.name;
-            modalSelect.appendChild(option);
-        });
-    }
+   async function loadLessonBooks() {
+    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Kitapları isme göre sırala
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
+    const select = document.getElementById('lessonBookSelect');
+    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        select.appendChild(option);
+    });
+    
+    const modalSelect = document.getElementById('lessonBookSelectModal');
+    modalSelect.innerHTML = '';
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        modalSelect.appendChild(option);
+    });
+}
 
     document.getElementById('lessonBookSelect').onchange = async () => {
         currentLessonBookId = document.getElementById('lessonBookSelect').value;
@@ -2664,12 +2672,20 @@ async function loadExams() {
 
 // Admin paneli - Kitapları yükle
 async function loadAdminExamBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // JavaScript ile isme göre sırala
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('adminExamBookSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Tüm Kitaplar --</option>';
-    snapshot.docs.forEach(doc => {
-        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        select.appendChild(option);
     });
 }
 
