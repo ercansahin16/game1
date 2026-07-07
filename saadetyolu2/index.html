@@ -1869,6 +1869,71 @@ body.light-theme #karmaScreen .option-quiz {
     box-shadow: 0 0 18px rgba(255,193,7,.25);
 }
 
+
+
+    /* ============================================================
+   RUHU DİNLET BUTONU
+   ============================================================ */
+
+.ruhu-dinlet-btn {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.ruhu-dinlet-btn:hover {
+    background: rgba(245, 158, 11, 0.25) !important;
+    transform: scale(1.05);
+}
+
+.ruhu-dinlet-btn:active {
+    transform: scale(0.9);
+}
+
+#ruhuDinletBadge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #121212;
+    display: none;
+}
+
+/* Animasyon */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+/* Mobil */
+@media (max-width: 768px) {
+    .ruhu-dinlet-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 13px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .ruhu-dinlet-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 11px !important;
+    }
+}
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1913,18 +1978,24 @@ body.light-theme #karmaScreen .option-quiz {
 
     <div class="container">
         <!-- Header -->
-        <div class="header" id="mainHeader" style="display: none;">
-            <div class="logo" id="homeLogo" onclick="goHome()" style="cursor: pointer;">Saadetyolu</div>
-            <div class="header-right">
-                <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
-                <div class="user-info" id="userBadge" style="display: none;" onclick="showProfile()">
-                    <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
-                </div>
-                <div class="logout-icon hidden" id="logoutIconBtn">
-                    <i class="fas fa-sign-out-alt"></i> Çıkış
-                </div>
-            </div>
+  <div class="header" id="mainHeader" style="display: none;">
+    <div class="logo" id="homeLogo" onclick="goHome()" style="cursor: pointer;">Saadetyolu</div>
+    <div class="header-right">
+        <!-- ===== RUHU DİNLET BUTONU ===== -->
+        <button id="ruhuDinletBtn" class="ruhu-dinlet-btn" title="Ruhu Dinlet - Arka plan müziğini aç/kapat">
+            <i class="fas fa-music"></i>
+            <span id="ruhuDinletBadge"></span>
+        </button>
+        
+        <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
+        <div class="user-info" id="userBadge" style="display: none;" onclick="showProfile()">
+            <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
         </div>
+        <div class="logout-icon hidden" id="logoutIconBtn">
+            <i class="fas fa-sign-out-alt"></i> Çıkış
+        </div>
+    </div>
+</div>
 
         <!-- Giriş Ekranı -->
         <div id="loginScreen" class="login-card">
@@ -6068,165 +6139,108 @@ console.log('📊 İstatistik kartlarına tıklayarak detaylı bilgi alabilirsin
 
 
 
-
-    // ============================================================
-// KARMA PUANINI KONTROL ET VE DÜZELT (ADMIN/TEST FONKSİYONU)
 // ============================================================
-window.karmaPuanKontrol = async function(kullaniciAdi = null) {
-    console.log('🔍 KARMA PUAN KONTROL BAŞLADI...');
-    
-    if (!currentUser) {
-        console.log('❌ Giriş yapmış kullanıcı yok!');
-        return;
+// RUHU DİNLET - ARKA PLAN MÜZİĞİ
+// ============================================================
+
+let ruhuDinletAudio = null;
+let ruhuDinletAktif = false;
+
+// Müzik dosyasının yolu (sıkıştırdığın dosya)
+const RUHU_DINLET_URL = 'tools/fon.mp3';
+
+function ruhuDinletToggle() {
+    // Audio nesnesi yoksa oluştur
+    if (!ruhuDinletAudio) {
+        ruhuDinletAudio = new Audio(RUHU_DINLET_URL);
+        ruhuDinletAudio.loop = true; // Sürekli çalsın
+        ruhuDinletAudio.volume = 0.5; // %50 ses
+        
+        // Hata durumunda
+        ruhuDinletAudio.onerror = function() {
+            console.error('❌ Müzik dosyası yüklenemedi!');
+            showTempMessage('⚠️ Müzik dosyası bulunamadı!', '#ef4444');
+            ruhuDinletBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+            ruhuDinletBtn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        };
+        
+        // Müzik yüklendiğinde
+        ruhuDinletAudio.oncanplaythrough = function() {
+            console.log('✅ Ruhu Dinlet - Müzik hazır!');
+        };
     }
     
-    try {
-        // Tüm kullanıcıları getir
-        const usersSnap = await getDocs(collection(db, 'users'));
-        let bulunan = 0;
-        
-        usersSnap.docs.forEach(async (doc) => {
-            const data = doc.data();
-            const isim = data.name || data.email?.split('@')[0] || 'İsimsiz';
-            
-            // Eğer kullanıcı adı belirtilmişse sadece onu kontrol et
-            if (kullaniciAdi && isim !== kullaniciAdi) return;
-            
-            bulunan++;
-            console.log(`\n📌 ${isim} (${doc.id}):`);
-            console.log(`   ├─ Karma Puanı (quizScore): ${data.quizScore || 0}`);
-            console.log(`   ├─ Sınav Puanı (averageScore): ${data.averageScore || 0}`);
-            console.log(`   ├─ Seviye: ${data.mevcutSeviye || 1}`);
-            console.log(`   ├─ Sandık: ${data.quizSandik?.length || 0}`);
-            console.log(`   ├─ Öğrenilen Kelime: ${data.totalWordsViewed || 0}`);
-            
-            // Toplam puanı hesapla
-            const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
-            const seviyePuani = ((data.mevcutSeviye || 1) - 1) * 10;
-            const kelimePuani = (data.totalWordsViewed || 0) * 1;
-            const sandikCezasi = (data.quizSandik?.length || 0) * 2;
-            const toplam = Math.round(quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi);
-            
-            console.log(`   └─ Toplam Puan: ${toplam}`);
+    // Müzik açık/kapalı durumuna göre işlem yap
+    if (ruhuDinletAktif) {
+        // DURDUR
+        ruhuDinletAudio.pause();
+        ruhuDinletAktif = false;
+        updateRuhuDinletUI(false);
+        showTempMessage('🔇 Müzik durduruldu', '#6b7280');
+    } else {
+        // BAŞLAT
+        ruhuDinletAudio.play().catch(err => {
+            console.error('❌ Oynatma hatası:', err);
+            showTempMessage('⚠️ Müzik çalınamıyor!', '#ef4444');
+            return;
         });
-        
-        if (bulunan === 0) {
-            console.log(`❌ "${kullaniciAdi}" adlı kullanıcı bulunamadı!`);
-        } else {
-            console.log(`\n✅ ${bulunan} kullanıcı kontrol edildi.`);
-        }
-        
-    } catch (error) {
-        console.error('❌ Hata:', error);
+        ruhuDinletAktif = true;
+        updateRuhuDinletUI(true);
+        showTempMessage('🎵 Ruhu Dinlet başladı! 🌙', '#10b981');
     }
-};
+}
 
-// ============================================================
-// KARMA PUANINI MANUEL GÜNCELLE (ADMIN/TEST FONKSİYONU)
-// ============================================================
-window.karmaPuanGuncelle = async function(kullaniciAdi, yeniPuan) {
-    console.log(`🔧 ${kullaniciAdi} kullanıcısının puanı güncelleniyor...`);
+// Buton görünümünü güncelle
+function updateRuhuDinletUI(aktif) {
+    const btn = document.getElementById('ruhuDinletBtn');
+    const badge = document.getElementById('ruhuDinletBadge');
     
-    if (!currentUser) {
-        console.log('❌ Giriş yapmış kullanıcı yok!');
-        return;
-    }
+    if (!btn) return;
     
-    if (!kullaniciAdi || yeniPuan === undefined) {
-        console.log('❌ Kullanıcı adı ve yeni puan girmelisin!');
-        console.log('📌 Örnek: karmaPuanGuncelle("bekbas", 38)');
-        return;
+    if (aktif) {
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+        btn.innerHTML = '<i class="fas fa-music" style="animation: pulse 1.5s infinite;"></i>';
+        if (badge) badge.style.display = 'block';
+    } else {
+        btn.style.background = 'rgba(245, 158, 11, 0.15)';
+        btn.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        btn.innerHTML = '<i class="fas fa-music"></i>';
+        if (badge) badge.style.display = 'none';
     }
-    
-    try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        let guncellendi = false;
-        
-        for (const doc of usersSnap.docs) {
-            const data = doc.data();
-            const isim = data.name || data.email?.split('@')[0] || 'İsimsiz';
-            
-            if (isim === kullaniciAdi) {
-                const userRef = doc(db, 'users', doc.id);
-                await updateDoc(userRef, { 
-                    quizScore: yeniPuan 
-                });
-                console.log(`✅ ${kullaniciAdi} kullanıcısının Karma Puanı ${yeniPuan} olarak güncellendi!`);
-                guncellendi = true;
-                break;
-            }
-        }
-        
-        if (!guncellendi) {
-            console.log(`❌ "${kullaniciAdi}" adlı kullanıcı bulunamadı!`);
-        }
-        
-    } catch (error) {
-        console.error('❌ Hata:', error);
-    }
-};
+}
 
-// ============================================================
-// TÜM KULLANICILARIN PUANLARINI YENİDEN HESAPLA
-// ============================================================
-window.tumPuanlariYenile = async function() {
-    console.log('🔄 Tüm kullanıcıların puanları yeniden hesaplanıyor...');
-    
-    if (!currentUser) {
-        console.log('❌ Giriş yapmış kullanıcı yok!');
-        return;
+// Butona tıklama olayını bağla
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('ruhuDinletBtn');
+    if (btn) {
+        btn.addEventListener('click', ruhuDinletToggle);
     }
-    
-    if (!confirm('Tüm kullanıcıların puanları yeniden hesaplanacak. Devam?')) {
-        console.log('❌ İşlem iptal edildi.');
-        return;
-    }
-    
-    try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        let guncellenen = 0;
-        
-        for (const doc of usersSnap.docs) {
-            const data = doc.data();
-            const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
-            const seviye = data.mevcutSeviye || 1;
-            const kelime = data.totalWordsViewed || 0;
-            const sandik = data.quizSandik?.length || 0;
-            
-            // Toplam puanı hesapla
-            const seviyePuani = (seviye - 1) * 10;
-            const kelimePuani = kelime * 1;
-            const sandikCezasi = sandik * 2;
-            const toplamPuan = Math.round(quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi);
-            
-            // Sadece toplam puanı kaydet (hesaplama kolaylığı için)
-            const userRef = doc(db, 'users', doc.id);
-            await updateDoc(userRef, { 
-                totalScore: Math.max(0, toplamPuan)
-            });
-            guncellenen++;
-        }
-        
-        console.log(`✅ ${guncellenen} kullanıcının puanları güncellendi!`);
-        
-        // Sıralamayı yenile
-        if (typeof loadRanking === 'function') {
-            await loadRanking();
-            console.log('✅ Sıralama yenilendi!');
-        }
-        
-    } catch (error) {
-        console.error('❌ Hata:', error);
-    }
-};
+});
 
-console.log('✅ Karma puan fonksiyonları hazır!');
-console.log('📌 Kullanım:');
-console.log('  karmaPuanKontrol("bekbas")    - Kullanıcı puanlarını göster');
-console.log('  karmaPuanGuncelle("bekbas", 38) - Kullanıcı puanını güncelle');
-console.log('  tumPuanlariYenile()           - Tüm puanları yeniden hesapla');
+// Sayfa kapatılırken müziği durdur
+window.addEventListener('beforeunload', function() {
+    if (ruhuDinletAudio) {
+        ruhuDinletAudio.pause();
+        ruhuDinletAudio = null;
+    }
+});
+
+// Sekme gizlenince müziği durdur, geri gelince devam ettir
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden && ruhuDinletAktif) {
+        if (ruhuDinletAudio) {
+            ruhuDinletAudio.pause();
+        }
+    } else if (!document.hidden && ruhuDinletAktif) {
+        if (ruhuDinletAudio) {
+            ruhuDinletAudio.play().catch(() => {});
+        }
+    }
+});
+
+console.log('🎵 Ruhu Dinlet - Hazır!');
+console.log('📌 Butona tıklayarak arka plan müziğini açıp kapatabilirsiniz.');
 </script>
 </body>
 </html>
