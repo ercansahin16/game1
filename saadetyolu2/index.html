@@ -4376,7 +4376,9 @@ if (examBookSelect) {
     
     // ========== YARDIM MODALI ==========
     const showKarmaHelp = document.getElementById('showKarmaHelp');
- if (showKarmaHelp) {
+
+    
+if (showKarmaHelp) {
     showKarmaHelp.onclick = () => {
         const existingModal = document.querySelector('.help-modal');
         if (existingModal) existingModal.remove();
@@ -4418,7 +4420,7 @@ if (examBookSelect) {
                             <span style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✗</span>
                             <div>
                                 <strong class="wrong" style="color: #ef4444;">Yanlış cevap:</strong>
-                                <span style="font-weight: 600; color: #ef4444;">-5 puan</span>
+                                <span style="font-weight: 600; color: #ef4444;">-1 puan</span>
                                 <span style="font-size: 11px; opacity: 0.6; display: block;">😅 Oops! Kelime sandığa gider ama pes etme!</span>
                             </div>
                         </li>
@@ -4448,7 +4450,19 @@ if (examBookSelect) {
                         <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
                             Her 10 kelimede bir sandıktan 1 kelime gelir. 
                             <span style="color: #10b981; font-weight: 500;">Doğru cevaplanana kadar orada kalır!</span> 
+                            Sandıktaki her kelime <strong style="color: #ef4444;">-1 puan</strong> ceza getirir. 
                             Sandıktaki kelimeleri kurtarmak sana bağlı! 🏆
+                        </p>
+                    </div>
+
+                    <!-- Seviye Sistemi -->
+                    <div style="background: rgba(16,185,129,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #10b981;">
+                        <p style="margin: 0; font-size: 13px;">
+                            <strong style="color: #10b981;">🏆 Seviye Sistemi</strong>
+                        </p>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                            Her seviye atladığında <strong style="color: #f59e0b;">+2 puan</strong> kazanırsın!
+                            Ne kadar çok seviye, o kadar çok puan! 🚀
                         </p>
                     </div>
 
@@ -4814,11 +4828,11 @@ window.loadRanking = async function() {
             const quizScore = data.quizScore || 0;
             const averageScore = data.averageScore || 0;
             const mevcutSeviye = data.mevcutSeviye || 1;
-            const seviyePuani = (mevcutSeviye - 1) * 10;
+            const seviyePuani = (mevcutSeviye - 1) * 2;  // +2 puan
             const totalWordsViewed = data.totalWordsViewed || 0;
             const kelimePuani = totalWordsViewed * 1;
             const sandikCount = data.quizSandik?.length || 0;
-            const sandikCezasi = sandikCount * 2;
+            const sandikCezasi = sandikCount * 1;        // -1 ceza
             
             const totalScore = Math.round(
                 quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi
@@ -5326,7 +5340,9 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     
     if (isCorrect) {
         // ===== PUAN EKLE (0.01) VE YUVARLA =====
-        quizScore = Math.round((quizScore + 0.01) * 100) / 100;
+        
+        
+        quizScore = Math.round((quizScore + 2) * 100) / 100;
         quizCorrectCount++;
         selectedDiv.classList.add('correct-highlight');
         showTempMessage('✅ Doğru! +0.01 puan', '#10b981');
@@ -5351,7 +5367,7 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         }
     } else {
         // ===== PUAN DÜŞ (5 puan) VE YUVARLA =====
-        quizScore = Math.round((Math.max(0, quizScore - 5)) * 100) / 100;
+       quizScore = Math.round((Math.max(0, quizScore - 1)) * 100) / 100;
         selectedDiv.classList.add('wrong-highlight');
         
         allOptions.forEach(opt => {
@@ -5542,7 +5558,7 @@ async function finishQuizWords() {
                     </div>
                 </div>
                 <p style="color: #10b981; font-size: 14px;">📦 Ahsente,Sandıktaki bütün kelimeleri öğrendin...</p>
-                <p style="color: #f59e0b; font-size: 13px;">➜ Bir sonraki seviyeye geçmek için butona tıkla</p>
+                <p style="color: #f59e0b; font-size: 13px;">➜ Sonraki seviyeye geçmek için butona tıkla! <strong>+2 puan</strong></p>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
                     <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye (${mevcutSeviye + 1}/${toplamSeviye})</button>
                     <button class="btn btn-nav" onclick="goHome()">Bahçeye çık</button>
