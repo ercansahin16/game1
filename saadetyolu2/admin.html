@@ -1584,19 +1584,22 @@ if (addBookBtn) {
         openModal('lessonModal');
     };
     
-  document.getElementById('saveLessonBtn').onclick = async () => {
+document.getElementById('saveLessonBtn').onclick = async () => {
     const id = document.getElementById('editLessonId').value;
     const data = { 
         name: document.getElementById('lessonName').value, 
         description: document.getElementById('lessonDesc').value, 
         order: parseInt(document.getElementById('lessonOrder').value) || 0, 
-        bookId: document.getElementById('lessonBookSelectModal').value 
+        bookId: document.getElementById('lessonBookSelectModal').value,
+        createdAt: new Date().toISOString()  // <--- BURASI EKLENDİ
     };
     
     if (id) {
-        await updateDoc(doc(db, 'lessons', id), data);
+        // Düzenleme yaparken tarihi GÜNCELLEME (eski tarih kalsın)
+        const { createdAt, ...updateData } = data; // createdAt'i çıkar
+        await updateDoc(doc(db, 'lessons', id), updateData);
     } else {
-        // ✅ DOĞRU KULLANIM
+        // Yeni ders eklerken createdAt EKLE
         await setDoc(doc(collection(db, 'lessons')), data);
     }
     
