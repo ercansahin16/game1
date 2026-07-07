@@ -2975,19 +2975,17 @@ showBtn.onclick = () => {
 
 
 
-    async function loadUserStats() {
+  async function loadUserStats() {
     if (!currentUser) return;
     
     try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
-        // Kullanıcı adını göster
         const userName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
         document.getElementById('profileName').textContent = userName;
         document.getElementById('profileEmail').textContent = currentUser.email;
         
-        // Toplam seviyeyi hesapla (15 kelime = 1 seviye)
         const wordsSnapshot = await getDocs(collection(db, 'words'));
         const totalWords = wordsSnapshot.docs.length;
         const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
@@ -2995,17 +2993,15 @@ showBtn.onclick = () => {
         if (userDoc.exists()) {
             const data = userDoc.data();
             
-            // ===== TÜM DEĞERLERİ AL (GÜVENLİ) =====
-            const quizScore = typeof data.quizScore === 'number' ? data.quizScore : 0;
-            const averageScore = typeof data.averageScore === 'number' ? data.averageScore : 0;
-            const mevcutSeviye = typeof data.mevcutSeviye === 'number' && data.mevcutSeviye > 0 ? data.mevcutSeviye : 1;
-            const totalWordsViewed = typeof data.totalWordsViewed === 'number' ? data.totalWordsViewed : 0;
-            const sandikCount = Array.isArray(data.quizSandik) ? data.quizSandik.length : 0;
-            const examsCompleted = Array.isArray(data.examsCompleted) ? data.examsCompleted : [];
+            const quizScore = data.quizScore || 0;
+            const averageScore = data.averageScore || 0;
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            const totalWordsViewed = data.totalWordsViewed || 0;
+            const sandikCount = data.quizSandik?.length || 0;
             
             // ===== SIRALAMADAKİ İLE AYNI FORMÜL =====
             const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = totalWordsViewed * 0.01;
+            const kelimePuani = totalWordsViewed * 1;  // 1 ile çarp
             const sandikCezasi = sandikCount * 1;
             
             const toplamPuan = Math.round(
@@ -3018,30 +3014,23 @@ showBtn.onclick = () => {
             
             // ===== EKRANA YAZ =====
             document.getElementById('totalWordsLearned').textContent = totalWordsViewed;
-            document.getElementById('totalExamsCompleted').textContent = examsCompleted.length;
+            document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
             document.getElementById('averageScore').textContent = Math.round(averageScore);
             document.getElementById('karmaScoreProfile').textContent = quizScore.toFixed(2);
             document.getElementById('sandikCountProfile').textContent = sandikCount;
             document.getElementById('profileToplamPuan').textContent = toplamPuan;
             
-            // ===== SEVİYE BİLGİSİ =====
             const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
+            document.getElementById('seviyeProfile').textContent = seviyeText;
+            document.getElementById('profileSeviye').textContent = `Seviye: ${seviyeText}`;
             
-            const seviyeProfile = document.getElementById('seviyeProfile');
-            if (seviyeProfile) seviyeProfile.textContent = seviyeText;
-            
-            const profileSeviye = document.getElementById('profileSeviye');
-            if (profileSeviye) profileSeviye.textContent = `Seviye: ${seviyeText}`;
-            
-            // ===== GLOBAL DEĞİŞKENLER =====
             window.mevcutSeviye = mevcutSeviye;
             window.toplamSeviye = toplamSeviye;
             
-            // ===== SINAV GEÇMİŞİ =====
-            displayExamHistory(examsCompleted);
+            displayExamHistory(data.examsCompleted || []);
             
         } else {
-            // Kullanıcı belgesi yoksa varsayılan
+            // Varsayılan değerler
             document.getElementById('totalWordsLearned').textContent = '0';
             document.getElementById('totalExamsCompleted').textContent = '0';
             document.getElementById('averageScore').textContent = '0';
@@ -3063,12 +3052,8 @@ showBtn.onclick = () => {
         
     } catch (error) {
         console.error('❌ loadUserStats hatası:', error);
-        // Hata durumunda kullanıcıya bilgi ver
-        const profileToplamPuan = document.getElementById('profileToplamPuan');
-        if (profileToplamPuan) profileToplamPuan.textContent = '?';
     }
 }
-
 
     
     function displayExamHistory(exams) {
