@@ -70,7 +70,7 @@
             color: #0a2463 !important;
         }
         
-        /* Koyu tema için kelime ve soru metTTinleri - Açık renk */
+        /* Koyu tema için kelime ve soru metinleri - Açık renk */
         body:not(.light-theme) .arabic-word,
         body:not(.light-theme) .turkish-word,
         body:not(.light-theme) .question-text,
@@ -81,45 +81,43 @@
         /* Arapça kelime fontu - Eğitim için optimize edilmiş */
         /* Arapça kelime fontu - Şedde ve çekme için optimize edilmiş */
 .arabic-word {
-   
-    font-family: 'Amiri', 'Scheherazade New', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Traditional Arabic', 'Arial Unicode MS', serif !important;
+    font-family: 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Traditional Arabic', serif !important;
     font-size: 32px !important;
     font-weight: normal !important;
     margin-bottom: 10px !important;
     color: #1e3a5f !important;
-    line-height: 1.8 !important; /* ← line-height artırıldı */
-    letter-spacing: 0.5px !important; /* ← eklendi */
+    line-height: 1.6 !important;
+    letter-spacing: normal !important;
 }
         
         /* Soru metni fontu */
       /* Soru metni - Arapça için optimize edilmiş */
 .question-text {
-    font-family: 'Amiri', 'Scheherazade New', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Traditional Arabic', 'Arial Unicode MS', serif !important;
-    
+    font-family: 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif !important;
     font-size: 22px !important;
     font-weight: 500 !important;
-    line-height: 1.8 !important; /* ← line-height artırıldı */
+    line-height: 1.6 !important;
     margin-bottom: 20px !important;
     white-space: pre-wrap !important;
     text-align: left !important;
 }
         
-/* Şık metni fontu */
-.option-text {
-    font-family: 'Amiri', 'Noto Sans Arabic', 'Cairo', 'Tajawal', sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    line-height: 1.6 !important;
-    color: #1e3a5f !important;
-}
-
-/* Şık harfleri (A, B, C, D) - Bunlar Türkçe/İngilizce harfler olduğu için Arapça font gerekmez */
-.option-letter {
-    font-family: 'Segoe UI', 'Arial', sans-serif !important;
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    color: #f59e0b !important;
-}
+        /* Şık metni fontu */
+        .option-text {
+            font-family: 'Noto Sans Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            line-height: 1.5 !important;
+            color: #1e3a5f !important;
+        }
+        
+        /* Şık harfleri (A, B, C, D) */
+        .option-letter {
+            font-family: 'Noto Sans Arabic', 'Cairo', sans-serif !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            color: #f59e0b !important;
+        }
         
         /* Koyu tema için renk düzeltmeleri */
         body:not(.light-theme) .arabic-word {
@@ -688,9 +686,8 @@
     
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -893,9 +890,6 @@
                     <button id="resetAllScoresBtn" class="btn btn-warning" style="padding: 8px 16px;">
                         <i class="fas fa-undo"></i> Sıfırla
                     </button>
-                    <button onclick="resetSeviye()" class="btn btn-danger" style="margin-top: 10px; width: 100%;">
-    <i class="fas fa-undo"></i> Seviyeyi Sıfırla
-</button>
                 </div>
                 <div id="resetScoresResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
             </div>
@@ -1195,223 +1189,161 @@
         return snapshot.size;
     }
 
-async function showClearDataModal() {
-    const bookCount = await getCollectionCount('books');
-    const lessonCount = await getCollectionCount('lessons');
-    const wordCount = await getCollectionCount('words');
-    const examCount = await getCollectionCount('exams');
-    const userCount = await getCollectionCount('users');
-    
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9); z-index: 1001;
-        display: flex; align-items: center; justify-content: center;
-    `;
-    modal.innerHTML = `
-        <div class="clear-data-modal" style="background: #1a1a1a; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="color: #f59e0b;"><i class="fas fa-database"></i> Veri Yönetimi</h3>
-                <button id="closeClearModalBtn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
-            </div>
-            <p style="margin-bottom: 20px; color: #ccc;">⚠️ UYARI: Bu işlemler GERİ ALINAMAZ!</p>
-            
-            <!-- TÜM KULLANICILARIN PUANINI SIFIRLA -->
-            <div id="clearScoresOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(245,158,11,0.15); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(245,158,11,0.3);">
-                <div>
-                    <div class="clear-option-title" style="color: #f59e0b;"><i class="fas fa-undo"></i> Tüm Kullanıcıların Puanını Sıfırla</div>
-                    <div class="clear-option-count">Sınav ve Karma puanları sıfırlanır</div>
+    async function showClearDataModal() {
+        // Koleksiyonlardaki mevcut veri sayılarını al
+        const bookCount = await getCollectionCount('books');
+        const lessonCount = await getCollectionCount('lessons');
+        const wordCount = await getCollectionCount('words');
+        const examCount = await getCollectionCount('exams');
+        const userCount = await getCollectionCount('users');
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); z-index: 1001;
+            display: flex; align-items: center; justify-content: center;
+        `;
+        modal.innerHTML = `
+            <div class="clear-data-modal" style="background: #1a1a1a; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizleme</h3>
+                    <button id="closeClearModalBtn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
                 </div>
-                <button class="btn btn-warning btn-sm" style="padding: 5px 15px;">Sıfırla</button>
-            </div>
-            
-            <!-- TÜM KULLANICILARIN SEVİYESİNİ SIFIRLA -->
-            <div id="clearSeviyeOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(59,130,246,0.15); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(59,130,246,0.3);">
-                <div>
-                    <div class="clear-option-title" style="color: #3b82f6;"><i class="fas fa-arrow-up"></i> Tüm Kullanıcıların Seviyesini Sıfırla</div>
-                    <div class="clear-option-count">Seviye 1'e düşürülür</div>
+                <p style="margin-bottom: 20px; color: #ccc;">⚠️ UYARI: Bu işlemler GERİ ALINAMAZ! Seçtiğiniz veriler kalıcı olarak silinecektir.</p>
+                
+                <div id="clearBooksOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-book"></i> Kitaplar</div>
+                        <div class="clear-option-count">${bookCount} kitap</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-info btn-sm" style="padding: 5px 15px;">Sıfırla</button>
-            </div>
-            
-            <!-- TÜM KULLANICILARIN ÖĞRENİLEN KELİME SAYISINI SIFIRLA (YENİ) -->
-            <div id="clearWordsLearnedOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(16,185,129,0.15); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(16,185,129,0.3);">
-                <div>
-                    <div class="clear-option-title" style="color: #10b981;"><i class="fas fa-book"></i> Tüm Kullanıcıların Öğrenilen Kelime Sayısını Sıfırla</div>
-                    <div class="clear-option-count">📖 Öğrenilen kelime sayısı sıfırlanır</div>
+                
+                <div id="clearLessonsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-graduation-cap"></i> Dersler</div>
+                        <div class="clear-option-count">${lessonCount} ders</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-success btn-sm" style="padding: 5px 15px;">Sıfırla</button>
-            </div>
-            
-            <!-- TÜM KULLANICILARIN SANDIĞINI SIFIRLA -->
-            <div id="clearSandikOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.15); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
-                <div>
-                    <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-box"></i> Tüm Kullanıcıların Sandığını Sıfırla</div>
-                    <div class="clear-option-count">📦 Sandık temizlenir</div>
+                
+                <div id="clearWordsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-language"></i> Kelimeler</div>
+                        <div class="clear-option-count">${wordCount} kelime</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Sıfırla</button>
-            </div>
-            
-            <!-- KULLANICILAR VE TÜM VERİLERİ -->
-            <div id="clearUsersOption" class="clear-option warning" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-users"></i> Kullanıcılar ve Tüm Verileri</div>
-                    <div class="clear-option-count">${userCount} kullanıcı silinecek</div>
+                
+                <div id="clearExamsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-pen"></i> Sınavlar</div>
+                        <div class="clear-option-count">${examCount} sınav</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
-            </div>
-            
-            <!-- TÜMÜNÜ TEMİZLE -->
-            <div id="clearAllOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.2); border-radius: 12px; margin-top: 15px; cursor: pointer; border: 1px solid #ef4444;">
-                <div>
-                    <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> TÜMÜNÜ TEMİZLE</div>
-                    <div class="clear-option-count">Tüm veriler silinecek</div>
+                
+                <div id="clearUsersOption" class="clear-option warning" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-users"></i> Kullanıcılar ve Tüm Verileri</div>
+                        <div class="clear-option-count">${userCount} kullanıcı</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger" style="padding: 5px 20px;">Temizle</button>
+                
+                <div id="clearAllOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.2); border-radius: 12px; margin-top: 15px; cursor: pointer; border: 1px solid #ef4444;">
+                    <div>
+                        <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> TÜMÜNÜ TEMİZLE</div>
+                        <div class="clear-option-count">Tüm veriler silinecek</div>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 5px 20px;">Temizle</button>
+                </div>
             </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const closeModal = () => modal.remove();
-    document.getElementById('closeClearModalBtn').onclick = closeModal;
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-    
-    // ===== PUAN SIFIRLA =====
-    document.getElementById('clearScoresOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨 TÜM kullanıcıların puanları sıfırlanacak! Devam?')) {
-            if (!confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?')) return;
-            try {
-                const usersSnapshot = await getDocs(collection(db, 'users'));
-                let count = 0;
-                for (const userDoc of usersSnapshot.docs) {
-                    await updateDoc(doc(db, 'users', userDoc.id), {
-                        quizScore: 0,
-                        averageScore: 0,
-                        examsCompleted: [],
-                        karmaStats: { total: 0, correct: 0, wrong: 0 }
-                    });
-                    count++;
-                }
-                alert(`✅ ${count} kullanıcının puanları sıfırlandı!`);
+        `;
+        
+        document.body.appendChild(modal);
+        
+        const closeModal = () => modal.remove();
+        document.getElementById('closeClearModalBtn').onclick = closeModal;
+        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        
+        // Kitapları temizle
+        document.getElementById('clearBooksOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Kitaplar ve bu kitaplara ait tüm dersler ve kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('books');
+                await clearCollection('lessons');
+                await clearCollection('words');
+                alert(`✅ ${count} kitap ve ilişkili tüm veriler silindi!`);
                 closeModal();
                 refreshAllData();
-            } catch (error) {
-                alert('❌ Hata: ' + error.message);
             }
-        }
-    };
-    
- 
-  // ===== SEVİYE SIFIRLA =====
-document.getElementById('clearSeviyeOption').onclick = async (e) => {
-    e.stopPropagation();
-    
-    const userConfirm = confirm('🚨 TÜM kullanıcıların seviyesi 1\'e düşürülecek! Devam?');
-    if (!userConfirm) return;
-    
-    const lastConfirm = confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?');
-    if (!lastConfirm) return;
-    
-    try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        let count = 0;
+        };
         
-        const batch = writeBatch(db);
-        usersSnapshot.docs.forEach(userDoc => {
-            const userRef = doc(db, 'users', userDoc.id);
-            batch.update(userRef, { mevcutSeviye: 1 });
-            count++;
-        });
-        await batch.commit();
+        // Dersleri temizle
+        document.getElementById('clearLessonsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm dersler ve bu derslere ait kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('lessons');
+                await clearCollection('words');
+                alert(`✅ ${count} ders ve ilişkili kelimeler silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
         
-        alert(`✅ ${count} kullanıcının seviyesi 1'e sıfırlandı!`);
-        closeModal();
-        refreshAllData();
+        // Kelimeleri temizle
+        document.getElementById('clearWordsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('words');
+                alert(`✅ ${count} kelime silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
         
-    } catch (error) {
-        alert('❌ Hata: ' + error.message);
+        // Sınavları temizle
+        document.getElementById('clearExamsOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Tüm sınavlar silinecek. Emin misiniz?')) {
+                const count = await clearCollection('exams');
+                alert(`✅ ${count} sınav silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Kullanıcıları temizle
+        document.getElementById('clearUsersOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('🚨 TÜM KULLANICILAR ve tüm verileri (kelime sayıları, sınav geçmişleri) KALICI OLARAK SİLİNECEK! Bu işlem geri alınamaz. Emin misiniz?')) {
+                const count = await clearCollection('users');
+                alert(`✅ ${count} kullanıcı ve tüm verileri silindi!`);
+                closeModal();
+                refreshAllData();
+            }
+        };
+        
+        // Tümünü temizle
+        document.getElementById('clearAllOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('🚨🚨🚨 TÜM VERİTABANI (kitaplar, dersler, kelimeler, sınavlar, kullanıcılar) KALICI OLARAK SİLİNECEK! Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
+                const confirm2 = confirm('SON UYARI: Tüm veriler silinecek. Devam etmek istediğinize kesinlikle emin misiniz?');
+                if (confirm2) {
+                    const collections = ['books', 'lessons', 'words', 'exams', 'users'];
+                    let total = 0;
+                    for (const col of collections) {
+                        const count = await clearCollection(col);
+                        total += count;
+                    }
+                    alert(`✅ Toplam ${total} veri silindi! Sayfa yenilenecek.`);
+                    closeModal();
+                    location.reload();
+                }
+            }
+        };
     }
-};
-    
-    // ===== ÖĞRENİLEN KELİME SAYISINI SIFIRLA =====
-    document.getElementById('clearWordsLearnedOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨 TÜM kullanıcıların öğrenilen kelime sayısı sıfırlanacak! Devam?')) {
-            if (!confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?')) return;
-            try {
-                const usersSnapshot = await getDocs(collection(db, 'users'));
-                let count = 0;
-                for (const userDoc of usersSnapshot.docs) {
-                    await updateDoc(doc(db, 'users', userDoc.id), {
-                        totalWordsViewed: 0
-                    });
-                    count++;
-                }
-                alert(`✅ ${count} kullanıcının öğrenilen kelime sayısı sıfırlandı!`);
-                closeModal();
-                refreshAllData();
-            } catch (error) {
-                alert('❌ Hata: ' + error.message);
-            }
-        }
-    };
-    
-    // ===== SANDIK SIFIRLA =====
-    document.getElementById('clearSandikOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨 TÜM kullanıcıların sandığı temizlenecek! Devam?')) {
-            if (!confirm('⚠️ SON UYARI: Geri alınamaz! Emin misiniz?')) return;
-            try {
-                const usersSnapshot = await getDocs(collection(db, 'users'));
-                let count = 0;
-                for (const userDoc of usersSnapshot.docs) {
-                    await updateDoc(doc(db, 'users', userDoc.id), {
-                        quizSandik: []
-                    });
-                    count++;
-                }
-                alert(`✅ ${count} kullanıcının sandığı temizlendi!`);
-                closeModal();
-                refreshAllData();
-            } catch (error) {
-                alert('❌ Hata: ' + error.message);
-            }
-        }
-    };
-    
-    // Kullanıcıları temizle
-    document.getElementById('clearUsersOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨 TÜM KULLANICILAR ve tüm verileri KALICI OLARAK SİLİNECEK! Emin misiniz?')) {
-            const count = await clearCollection('users');
-            alert(`✅ ${count} kullanıcı ve tüm verileri silindi!`);
-            closeModal();
-            refreshAllData();
-        }
-    };
-    
-    // Tümünü temizle
-    document.getElementById('clearAllOption').onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('🚨🚨🚨 TÜM VERİTABANI silinecek! Emin misiniz?')) {
-            const confirm2 = confirm('SON UYARI: Tüm veriler silinecek. Devam?');
-            if (confirm2) {
-                const collections = ['books', 'lessons', 'words', 'exams', 'users'];
-                let total = 0;
-                for (const col of collections) {
-                    const count = await clearCollection(col);
-                    total += count;
-                }
-                alert(`✅ Toplam ${total} veri silindi! Sayfa yenilenecek.`);
-                closeModal();
-                location.reload();
-            }
-        }
-    };
-}
     
     async function refreshAllData() {
         await loadBooks();
@@ -1652,19 +1584,24 @@ if (addBookBtn) {
         openModal('lessonModal');
     };
     
-  document.getElementById('saveLessonBtn').onclick = async () => {
+
+
+
+    document.getElementById('saveLessonBtn').onclick = async () => {
     const id = document.getElementById('editLessonId').value;
     const data = { 
         name: document.getElementById('lessonName').value, 
         description: document.getElementById('lessonDesc').value, 
         order: parseInt(document.getElementById('lessonOrder').value) || 0, 
-        bookId: document.getElementById('lessonBookSelectModal').value 
+        bookId: document.getElementById('lessonBookSelectModal').value
     };
     
     if (id) {
+        // Düzenleme: createdAt GÜNCELLENMEZ (eski tarih korunur)
         await updateDoc(doc(db, 'lessons', id), data);
     } else {
-        // ✅ DOĞRU KULLANIM
+        // Yeni ders: createdAt EKLENİR
+        data.createdAt = new Date().toISOString();
         await setDoc(doc(collection(db, 'lessons')), data);
     }
     
@@ -1672,6 +1609,8 @@ if (addBookBtn) {
     document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
     updateStats();
 };
+
+    
 
     async function loadWordBooks() {
         const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
@@ -1974,7 +1913,7 @@ async function loadExamBookSelect() {
     });
 }
     
-  document.getElementById('saveExamBtn').onclick = async () => {
+   document.getElementById('saveExamBtn').onclick = async () => {
     const id = document.getElementById('editExamId').value;
     const title = document.getElementById('examTitle').value;
     const bookId = document.getElementById('examBookSelect').value;
@@ -1995,13 +1934,35 @@ async function loadExamBookSelect() {
         return;
     }
     
-    // Soru kontrolü kaldırıldı - artık boş sınav oluşturulabilir
+    if (questions.length === 0) {
+        alert('Lütfen en az bir soru ekleyin!');
+        return;
+    }
+    
+    // Soruları kontrol et
+    for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.question) {
+            alert(`${i + 1}. sorunun metnini girin!`);
+            return;
+        }
+        for (let j = 0; j < 4; j++) {
+            if (!q.options[j]) {
+                alert(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkını girin!`);
+                return;
+            }
+        }
+        if (q.correct === null || q.correct === '') {
+            alert(`${i + 1}. sorunun doğru şıkkını seçin!`);
+            return;
+        }
+    }
     
     const data = { 
         title, 
-        questions: questions || [], // questions boşsa boş array
-        bookId,
-        lessonId,
+        questions, 
+        bookId,      // YENİ
+        lessonId,    // YENİ
         createdAt: new Date().toISOString() 
     };
     
@@ -3566,26 +3527,6 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
     }
 };
 
-
-    // Seviyeyi sıfırla
-window.resetSeviye = async function() {
-    if (!currentUser) {
-        alert('❌ Giriş yapmış kullanıcı yok!');
-        return;
-    }
-    if (!confirm('Seviyeniz başlangıç seviyesine (1) sıfırlanacak. Emin misiniz?')) {
-        return;
-    }
-    try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, { mevcutSeviye: 1 });
-        mevcutSeviye = 1;
-        alert('✅ Seviye başarıyla sıfırlandı!');
-        loadUserStats();
-    } catch (error) {
-        alert('❌ Bir hata oluştu!');
-    }
-};
 </script>
 </body>
 </html>
