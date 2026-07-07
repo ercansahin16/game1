@@ -3642,7 +3642,6 @@ window.checkAndCompleteExam = () => {
             document.getElementById('confirmPassword').value = '';
         } catch(e) { showWarning('Hata: ' + e.message); }
     };
-    
     function logout() {
     console.log('🚪 Çıkış yapılıyor...');
     
@@ -3652,15 +3651,24 @@ window.checkAndCompleteExam = () => {
         return;
     }
     
-    signOut(auth)
-        .then(() => {
-            console.log('✅ Çıkış başarılı!');
-            closeMenu();
-        })
-        .catch((error) => {
-            console.error('❌ Çıkış hatası:', error);
-            showWarning('❌ Çıkış yapılırken bir hata oluştu: ' + error.message);
-        });
+    showConfirm(
+        'Hesabınızdan çıkış yapmak istediğinize emin misiniz?',
+        '🚪 Çıkış Yap',
+        'Evet, çıkış yap'
+    ).then((result) => {
+        if (result.isConfirmed) {
+            signOut(auth)
+                .then(() => {
+                    console.log('✅ Çıkış başarılı!');
+                    showSuccess('Başarıyla çıkış yaptınız. Görüşmek üzere! 👋', '👋 Güle güle');
+                    closeMenu();
+                })
+                .catch((error) => {
+                    console.error('❌ Çıkış hatası:', error);
+                    showError('Çıkış yapılırken bir hata oluştu: ' + error.message, '❌ Hata');
+                });
+        }
+    });
 }
     
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); };
