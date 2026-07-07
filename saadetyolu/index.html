@@ -2980,28 +2980,28 @@ async function loadUserStats() {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
-        document.getElementById('profileName').textContent = currentUser.email.split('@')[0];
+        // Kullanıcı adını göster
+        const userName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
+        document.getElementById('profileName').textContent = userName;
         document.getElementById('profileEmail').textContent = currentUser.email;
         
         // Toplam seviyeyi hesapla (15 kelime = 1 seviye)
         const wordsSnapshot = await getDocs(collection(db, 'words'));
         const totalWords = wordsSnapshot.docs.length;
-        const toplamSeviye = Math.ceil(totalWords / 15);
-        console.log('📊 Toplam seviye:', toplamSeviye);
+        const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
         
         if (userDoc.exists()) {
             const data = userDoc.data();
-            console.log('📦 Kullanıcı verileri:', data);
-            console.log('📌 Firestore mevcutSeviye:', data.mevcutSeviye);
             
-            // ===== TÜM DEĞERLERİ AL =====
-            const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
-            const mevcutSeviye = data.mevcutSeviye || 1;
-            const totalWordsViewed = data.totalWordsViewed || 0;
-            const sandikCount = data.quizSandik?.length || 0;
+            // ===== TÜM DEĞERLERİ AL (GÜVENLİ) =====
+            const quizScore = typeof data.quizScore === 'number' ? data.quizScore : 0;
+            const averageScore = typeof data.averageScore === 'number' ? data.averageScore : 0;
+            const mevcutSeviye = typeof data.mevcutSeviye === 'number' && data.mevcutSeviye > 0 ? data.mevcutSeviye : 1;
+            const totalWordsViewed = typeof data.totalWordsViewed === 'number' ? data.totalWordsViewed : 0;
+            const sandikCount = Array.isArray(data.quizSandik) ? data.quizSandik.length : 0;
+            const examsCompleted = Array.isArray(data.examsCompleted) ? data.examsCompleted : [];
             
-            // ===== TOPLAM PUAN HESAPLA (SIRALAMADAKİ İLE AYNI) =====
+            // ===== SIRALAMADAKİ İLE AYNI FORMÜL =====
             const seviyePuani = (mevcutSeviye - 1) * 2;
             const kelimePuani = totalWordsViewed * 0.01;
             const sandikCezasi = sandikCount * 1;
@@ -3016,57 +3016,54 @@ async function loadUserStats() {
             
             // ===== EKRANA YAZ =====
             document.getElementById('totalWordsLearned').textContent = totalWordsViewed;
-            document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
-           // document.getElementById('averageScore').textContent = Math.round(averageScore);
-            document.getElementById('averageScore').textContent = data.averageScore || 0;
+            document.getElementById('totalExamsCompleted').textContent = examsCompleted.length;
+            document.getElementById('averageScore').textContent = Math.round(averageScore);
             document.getElementById('karmaScoreProfile').textContent = quizScore.toFixed(2);
             document.getElementById('sandikCountProfile').textContent = sandikCount;
-            
-            // ===== TOPLAM PUAN =====
             document.getElementById('profileToplamPuan').textContent = toplamPuan;
             
             // ===== SEVİYE BİLGİSİ =====
-            console.log('✅ Kullanılacak seviye:', mevcutSeviye, '/', toplamSeviye);
+            const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
             
-            // 1. Profil istatistik kartındaki seviye
             const seviyeProfile = document.getElementById('seviyeProfile');
-            if (seviyeProfile) {
-                seviyeProfile.textContent = `${mevcutSeviye}/${toplamSeviye}`;
-                console.log('✅ seviyeProfile güncellendi:', `${mevcutSeviye}/${toplamSeviye}`);
-            }
+            if (seviyeProfile) seviyeProfile.textContent = seviyeText;
             
-            // 2. Profil bilgi satırındaki seviye
             const profileSeviye = document.getElementById('profileSeviye');
-            if (profileSeviye) {
-                profileSeviye.textContent = `${mevcutSeviye}/${toplamSeviye}`;
-                console.log('✅ profileSeviye güncellendi:', `${mevcutSeviye}/${toplamSeviye}`);
-            }
+            if (profileSeviye) profileSeviye.textContent = `Seviye: ${seviyeText}`;
             
-            // 3. Global seviyeyi güncelle
+            // ===== GLOBAL DEĞİŞKENLER =====
             window.mevcutSeviye = mevcutSeviye;
             window.toplamSeviye = toplamSeviye;
             
-            displayExamHistory(data.examsCompleted || []);
+            // ===== SINAV GEÇMİŞİ =====
+            displayExamHistory(examsCompleted);
             
         } else {
-            // Kullanıcı belgesi yoksa varsayılan değerler
+            // Kullanıcı belgesi yoksa varsayılan
             document.getElementById('totalWordsLearned').textContent = '0';
             document.getElementById('totalExamsCompleted').textContent = '0';
             document.getElementById('averageScore').textContent = '0';
+            document.getElementById('karmaScoreProfile').textContent = '0.00';
+            document.getElementById('sandikCountProfile').textContent = '0';
             document.getElementById('profileToplamPuan').textContent = '0';
-            
-            const sandikElement = document.getElementById('sandikCountProfile');
-            if (sandikElement) sandikElement.textContent = '0';
             
             const seviyeProfile = document.getElementById('seviyeProfile');
             if (seviyeProfile) seviyeProfile.textContent = `1/${toplamSeviye}`;
             
             const profileSeviye = document.getElementById('profileSeviye');
-            if (profileSeviye) profileSeviye.textContent = `1/${toplamSeviye}`;
+            if (profileSeviye) profileSeviye.textContent = `Seviye: 1/${toplamSeviye}`;
+            
+            window.mevcutSeviye = 1;
+            window.toplamSeviye = toplamSeviye;
+            
+            document.getElementById('examHistoryList').innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
         }
         
     } catch (error) {
         console.error('❌ loadUserStats hatası:', error);
+        // Hata durumunda kullanıcıya bilgi ver
+        const profileToplamPuan = document.getElementById('profileToplamPuan');
+        if (profileToplamPuan) profileToplamPuan.textContent = '?';
     }
 }
 
