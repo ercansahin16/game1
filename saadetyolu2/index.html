@@ -4032,31 +4032,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const examBookSelect = document.getElementById('examBookSelect');
     const examLessonSelect = document.getElementById('examLessonSelect');
     
-    if (examBookSelect) {
-        examBookSelect.onchange = async () => {
-            const bookId = examBookSelect.value;
-            const lessonSelect = document.getElementById('examLessonSelect');
-            
-            if (!bookId) {
-                if (lessonSelect) {
-                    lessonSelect.disabled = true;
-                    lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-                }
-                const examsList = document.getElementById('examsList');
-                if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
-                return;
-            }
-            
-            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+if (examBookSelect) {
+    examBookSelect.onchange = async () => {
+        const bookId = examBookSelect.value;
+        const lessonSelect = document.getElementById('examLessonSelect');
+        
+        if (!bookId) {
             if (lessonSelect) {
-                lessonSelect.disabled = false;
-                lessonSelect.innerHTML = '<option value="" selected>-- Tüm Dersler --</option>';
-                lessonsSnapshot.docs.forEach(doc => {
-                    lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-                });
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
             }
-        };
-    }
+            const examsList = document.getElementById('examsList');
+            if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+            return;
+        }
+        
+        // Dersleri getir
+        const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        let dersler = lessonsSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+        }));
+        
+        // ===== ALFABETİK SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        dersler.sort((a, b) => {
+            return a.name.localeCompare(b.name, 'tr', { numeric: true });
+        });
+        
+        if (lessonSelect) {
+            lessonSelect.disabled = false;
+            lessonSelect.innerHTML = '<option value="" selected>-- Tüm Dersler --</option>';
+            dersler.forEach(ders => {
+                lessonSelect.innerHTML += `<option value="${ders.id}">${ders.name}</option>`;
+            });
+        }
+    };
+}
     
     if (examLessonSelect) {
         examLessonSelect.onchange = async () => {
