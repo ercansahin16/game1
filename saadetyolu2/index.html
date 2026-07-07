@@ -4425,85 +4425,121 @@ window.goRanking = () => {
 
 
 window.loadRanking = async function() {
-    const snapshot = await getDocs(collection(db, 'users'));
-    const users = [];
-    
-    // Toplam kelime sayısını al (seviye hesaplamak için)
-    const wordsSnapshot = await getDocs(collection(db, 'words'));
-    const totalWords = wordsSnapshot.docs.length;
-    const toplamSeviye = Math.ceil(totalWords / 15);
-    
-    snapshot.forEach(doc => {
-        const data = doc.data();
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const users = [];
         
-        const quizScore = data.quizScore || 0;
-        const averageScore = data.averageScore || 0;
-        const totalScore = Math.round(quizScore + averageScore);
-        const sandikCount = data.quizSandik?.length || 0;
-        const totalWords = data.totalWordsViewed || 0;
-        const mevcutSeviye = data.mevcutSeviye || 1;
+        // Toplam kelime sayısını al (seviye hesaplamak için)
+        const wordsSnapshot = await getDocs(collection(db, 'words'));
+        const totalWords = wordsSnapshot.docs.length;
+        const toplamSeviye = Math.ceil(totalWords / 15);
         
-        users.push({
-            id: doc.id,
-            name: data.name || data.email?.split('@')[0] || 'İsimsiz',
-            email: data.email,
-            totalScore: totalScore,
-            quizScore: Math.round(quizScore),
-            averageScore: Math.round(averageScore),
-            sandikCount: sandikCount,
-            totalWords: totalWords,
-            mevcutSeviye: mevcutSeviye,
-            toplamSeviye: toplamSeviye,
-            karmaStats: data.karmaStats || { total: 0, correct: 0, wrong: 0 }
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // ===== PUAN HESAPLAMA =====
+            const quizScore = data.quizScore || 0;
+            const averageScore = data.averageScore || 0;
+            
+            // ===== SEVİYE PUANI (Her seviye = 10 puan) =====
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            const seviyePuani = (mevcutSeviye - 1) * 10; // Seviye 1 → 0, Seviye 2 → 10, Seviye 5 → 40
+            
+            // ===== KELİME PUANI (Her kelime = 1 puan) =====
+            const totalWordsViewed = data.totalWordsViewed || 0;
+            const kelimePuani = totalWordsViewed * 1;
+            
+            // ===== SANDIK CEZASI (Her sandık = -2 puan) =====
+            const sandikCount = data.quizSandik?.length || 0;
+            const sandikCezasi = sandikCount * 2;
+            
+            // ===== TOPLAM PUAN =====
+            const totalScore = Math.round(
+                quizScore +           // Karma puanı
+                averageScore +        // Sınav puanı
+                seviyePuani +         // Seviye puanı (YENİ)
+                kelimePuani -         // Kelime puanı (YENİ)
+                sandikCezasi          // Sandık cezası (YENİ)
+            );
+            
+            users.push({
+                id: doc.id,
+                name: data.name || data.email?.split('@')[0] || 'İsimsiz',
+                email: data.email,
+                totalScore: Math.max(0, totalScore), // Negatif olmasın
+                quizScore: Math.round(quizScore),
+                averageScore: Math.round(averageScore),
+                seviyePuani: seviyePuani,
+                kelimePuani: kelimePuani,
+                sandikCezasi: sandikCezasi,
+                sandikCount: sandikCount,
+                totalWords: totalWordsViewed,
+                mevcutSeviye: mevcutSeviye,
+                toplamSeviye: toplamSeviye,
+                karmaStats: data.karmaStats || { total: 0, correct: 0, wrong: 0 }
+            });
         });
-    });
-    
-    users.sort((a, b) => b.totalScore - a.totalScore);
-    
-    document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
-    
-    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-    users.forEach((user, index) => {
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
-        const isCurrentUser = user.id === currentUser?.uid;
         
-        html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-weight: bold; width: 30px;">${medal}</span>
-                    <span>${index + 1}.</span>
-                    <span><i class="fas fa-user"></i> ${user.name}</span>
-                    ${isCurrentUser ? '<span style="font-size: 10px; color: #f59e0b; margin-left: 5px;">(Sen)</span>' : ''}
-                </div>
-                <div style="text-align: right;">
-                    <span style="color: #f59e0b; font-weight: bold;">${user.totalScore} P</span>
-                    <span style="font-size: 11px; opacity: 0.7;"> 
-                        (📖 ${user.totalWords} kelime | 📦 ${user.sandikCount} sandık | 🏆 ${user.mevcutSeviye}/${user.toplamSeviye}. Seviye)
-                    </span>
-                </div>
-            </div>
-        `;
-    });
-    html += '</div>';
-    
-    document.getElementById('rankingList').innerHTML = html;
-    
-    if (currentUser) {
-        const userIndex = users.findIndex(u => u.id === currentUser.uid);
-        const userData = users.find(u => u.id === currentUser.uid);
+        users.sort((a, b) => b.totalScore - a.totalScore);
         
-        if (userData) {
-            document.getElementById('userRank').innerHTML = `
-                <div style="text-align: center;">
-                    <strong>📍 Senin Sıralaman</strong><br>
-                    <span style="font-size: 24px; color: #f59e0b;">${userIndex + 1}. sırada</span><br>
-                    <span>🏆 Toplam Puan: ${userData.totalScore}</span>
-                    <br><span style="font-size: 12px; opacity: 0.7;">
-                        📖 ${userData.totalWords} kelime | 📦 ${userData.sandikCount} sandık | 🏆 ${userData.mevcutSeviye}/${userData.toplamSeviye}. Seviye
-                    </span>
+        document.getElementById('rankingCount').textContent = `${users.length} oyuncu`;
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+        users.forEach((user, index) => {
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
+            const isCurrentUser = user.id === currentUser?.uid;
+            
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: ${isCurrentUser ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; border: ${isCurrentUser ? '1px solid #f59e0b' : 'none'};">
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0;">
+                        <span style="font-weight: bold; width: 28px; text-align: center;">${medal}</span>
+                        <span style="font-weight: 600; font-size: 14px;">${index + 1}.</span>
+                        <span style="font-size: 13px;"><i class="fas fa-user"></i> ${user.name}</span>
+                        ${isCurrentUser ? '<span style="font-size: 9px; color: #f59e0b; font-weight: 600; background: rgba(245,158,11,0.15); padding: 1px 8px; border-radius: 10px;">Sen</span>' : ''}
+                    </div>
+                    <div style="text-align: right; font-size: 12px;">
+                        <span style="color: #f59e0b; font-weight: 700; font-size: 15px;">${user.totalScore} P</span>
+                        <div style="font-size: 9px; opacity: 0.6; margin-top: 1px;">
+                            🏆 ${user.mevcutSeviye}/${user.toplamSeviye} 
+                            📖 ${user.totalWords} 
+                            📦 ${user.sandikCount}
+                        </div>
+                    </div>
                 </div>
             `;
+        });
+        html += '</div>';
+        
+        document.getElementById('rankingList').innerHTML = html;
+        
+        // Kullanıcının kendi sıralaması
+        if (currentUser) {
+            const userIndex = users.findIndex(u => u.id === currentUser.uid);
+            const userData = users.find(u => u.id === currentUser.uid);
+            
+            if (userData) {
+                document.getElementById('userRank').innerHTML = `
+                    <div style="text-align: center; padding: 8px;">
+                        <strong style="font-size: 13px;">📍 Senin Sıralaman</strong><br>
+                        <span style="font-size: 22px; color: #f59e0b; font-weight: 700;">${userIndex + 1}. sırada</span><br>
+                        <span style="font-size: 13px;">🏆 Toplam Puan: ${userData.totalScore}</span>
+                        <div style="font-size: 11px; opacity: 0.6; margin-top: 4px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <span>📖 ${userData.totalWords} kelime</span>
+                            <span>📦 ${userData.sandikCount} sandık</span>
+                            <span>🏆 ${userData.mevcutSeviye}/${userData.toplamSeviye}. Seviye</span>
+                        </div>
+                        <div style="font-size: 10px; opacity: 0.4; margin-top: 4px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <span>🎲 Karma: ${userData.quizScore}</span>
+                            <span>📝 Sınav: ${userData.averageScore}</span>
+                            <span>🏔️ Seviye: ${userData.seviyePuani}</span>
+                        </div>
+                    </div>
+                `;
+            }
         }
+    } catch (error) {
+        console.error('Sıralama yükleme hatası:', error);
+        showError('Sıralama yüklenemedi: ' + error.message);
     }
 };
 
