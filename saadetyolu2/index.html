@@ -4848,8 +4848,20 @@ window.loadRanking = async function() {
         const toplamOyuncu = users.length;
         document.getElementById('rankingCount').textContent = `${toplamOyuncu} oyuncu`;
         
-        // ===== İLKLER GRUBU (Toplamın %10'u, en az 1) =====
-        const ilklerSayisi = Math.max(1, Math.ceil(toplamOyuncu * 0.10));
+        // ===== YENİ: İLKLER GRUBU BELİRLEME =====
+        let ilklerSayisi;
+        let yuzdeBilgisi;
+        
+        if (toplamOyuncu <= 50) {
+            // 50 ve altı → HEPsi
+            ilklerSayisi = toplamOyuncu;
+            yuzdeBilgisi = 'Tüm Oyuncular';
+        } else {
+            // 50 üstü → %35
+            ilklerSayisi = Math.max(1, Math.ceil(toplamOyuncu * 0.35));
+            yuzdeBilgisi = `%35 (${ilklerSayisi} oyuncu)`;
+        }
+        
         const ilkler = users.slice(0, ilklerSayisi);
         
         // ===== LİSTEYİ OLUŞTUR (Sadece İlkler) =====
@@ -4860,7 +4872,7 @@ window.loadRanking = async function() {
             html += `
                 <div style="text-align: center; padding: 6px; background: rgba(245,158,11,0.08); border-radius: 8px; margin-bottom: 4px;">
                     <span style="color: #f59e0b; font-weight: 600; font-size: 13px;">
-                        ⭐ İLK ${ilklerSayisi} (%10) 
+                        ⭐ İLK ${ilklerSayisi} ${yuzdeBilgisi !== 'Tüm Oyuncular' ? `(${yuzdeBilgisi})` : ''}
                     </span>
                     <span style="font-size: 11px; opacity: 0.6;">- En başarılı oyuncular</span>
                 </div>
@@ -4908,11 +4920,11 @@ window.loadRanking = async function() {
                         <div style="margin-bottom: 6px;">
                             ${ilklerdeMi ? `
                                 <span style="font-size: 28px;">🎉</span>
-                                <div style="color: #10b981; font-weight: 700; font-size: 18px;">Tebrikler! İLK${ilklerSayisi}'DESİN!</div>
+                                <div style="color: #10b981; font-weight: 700; font-size: 18px;">Tebrikler! İLK ${ilklerSayisi}'DESİN!</div>
                                 <div style="font-size: 12px; opacity: 0.7;">En başarılı oyuncular arasındasın! 🌟</div>
                             ` : `
                                 <span style="font-size: 28px;">📈</span>
-                                <div style="color: #f59e0b; font-weight: 600; font-size: 16px;">İlk${ilklerSayisi}'de Değilsin</div>
+                                <div style="color: #f59e0b; font-weight: 600; font-size: 16px;">İlk ${ilklerSayisi}'de Değilsin</div>
                                 <div style="font-size: 12px; opacity: 0.7;">Daha çok çalış, ilklerde yerini al! 💪</div>
                             `}
                         </div>
