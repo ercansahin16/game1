@@ -1937,6 +1937,73 @@ body.light-theme #karmaScreen .option-quiz {
         font-size: 11px !important;
     }
 }
+
+    /* ============================================================
+   SWEETALERT COMPACT STİLLER
+   ============================================================ */
+
+.compact-swal {
+    border-radius: 12px !important;
+}
+
+.compact-swal .swal2-title {
+    font-size: 18px !important;
+    padding: 0 !important;
+    margin-bottom: 8px !important;
+}
+
+.compact-swal .swal2-html-container {
+    font-size: 13px !important;
+    margin: 4px 0 !important;
+    padding: 0 !important;
+}
+
+.compact-swal .swal2-actions {
+    margin-top: 12px !important;
+    gap: 8px !important;
+}
+
+.compact-swal .swal2-confirm {
+    font-size: 13px !important;
+    padding: 8px 20px !important;
+}
+
+.compact-swal .swal2-cancel {
+    font-size: 13px !important;
+    padding: 8px 20px !important;
+}
+
+.compact-swal .swal2-icon {
+    margin: 12px auto 4px auto !important;
+    width: 56px !important;
+    height: 56px !important;
+}
+
+.compact-swal .swal2-icon .swal2-icon-content {
+    font-size: 32px !important;
+}
+
+/* Küçük ekran için */
+@media (max-width: 480px) {
+    .compact-swal {
+        width: 90% !important;
+        padding: 1rem !important;
+    }
+    
+    .compact-swal .swal2-title {
+        font-size: 16px !important;
+    }
+    
+    .compact-swal .swal2-html-container {
+        font-size: 12px !important;
+    }
+    
+    .compact-swal .swal2-confirm,
+    .compact-swal .swal2-cancel {
+        font-size: 12px !important;
+        padding: 6px 14px !important;
+    }
+}
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2350,91 +2417,154 @@ body.light-theme #karmaScreen .option-quiz {
 
 
 
-    // ============================================================
-// SWEETALERT YARDIMCI FONKSİYONLAR
+// ============================================================
+// SWEETALERT YARDIMCI FONKSİYONLAR (KÜÇÜK BOYUT)
 // ============================================================
 
 // Başarılı mesaj
-function showSuccess(message, title = '✅ Başarılı!') {
-    return Swal.fire({
-        icon: 'success',
-        title: title,
-        text: message,
-        confirmButtonColor: '#10b981',
-        confirmButtonText: 'Tamam',
-        timer: 3000,
-        timerProgressBar: true
-    });
+if (typeof showSuccess === 'undefined') {
+    window.showSuccess = function(message, title = '✅ Başarılı!') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'success',
+                title: title,
+                text: message,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'Tamam',
+                timer: 3000,
+                timerProgressBar: true,
+                width: '380px',
+                padding: '1.5rem'
+            });
+        } else {
+            showWarning('✅ ' + message);
+        }
+    };
 }
 
 // Hata mesajı
-function showError(message, title = '❌ Hata!') {
-    return Swal.fire({
-        icon: 'error',
-        title: title,
-        text: message,
-        confirmButtonColor: '#ef4444',
-        confirmButtonText: 'Tamam'
-    });
+if (typeof showError === 'undefined') {
+    window.showError = function(message, title = '❌ Hata!') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'error',
+                title: title,
+                text: message,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem'
+            });
+        } else {
+            showWarning('❌ ' + message);
+        }
+    };
 }
 
 // Bilgi mesajı
-function showInfo(message, title = 'ℹ️ Bilgi') {
-    return Swal.fire({
-        icon: 'info',
-        title: title,
-        text: message,
-        confirmButtonColor: '#3b82f6',
-        confirmButtonText: 'Tamam'
-    });
+if (typeof showInfo === 'undefined') {
+    window.showInfo = function(message, title = 'ℹ️ Bilgi') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'info',
+                title: title,
+                text: message,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem'
+            });
+        } else {
+            showWarning('ℹ️ ' + message);
+        }
+    };
 }
 
 // Uyarı mesajı
-function showWarning(message, title = '⚠️ Uyarı') {
-    return Swal.fire({
-        icon: 'warning',
-        title: title,
-        text: message,
-        confirmButtonColor: '#f59e0b',
-        confirmButtonText: 'Tamam'
-    });
+if (typeof showWarning === 'undefined') {
+    window.showWarning = function(message, title = '⚠️ Uyarı') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'warning',
+                title: title,
+                text: message,
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem'
+            });
+        } else {
+            showWarning('⚠️ ' + message);
+        }
+    };
 }
 
 // Onay mesajı (Evet/Hayır)
-function showConfirm(message, title = '⚠️ Emin misiniz?', confirmText = 'Evet, eminim') {
-    return Swal.fire({
-        title: title,
-        text: message,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: confirmText,
-        cancelButtonText: 'İptal'
-    });
+if (typeof showConfirm === 'undefined') {
+    window.showConfirm = function(message, title = '⚠️ Emin misiniz?', confirmText = 'Evet, eminim') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                title: title,
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'İptal',
+                width: '380px',
+                padding: '1.5rem'
+            });
+        } else {
+            return {
+                then: function(callback) {
+                    const result = confirm('⚠️ ' + message);
+                    callback({ isConfirmed: result });
+                }
+            };
+        }
+    };
 }
 
-// Sınav başlatma onayı (Özel)
-function showExamConfirm(examTitle, questionCount) {
-    return Swal.fire({
-        title: `📝 ${examTitle}`,
-        html: `
-            <div style="text-align: left; padding: 10px 0;">
-                <p style="margin: 8px 0;">📊 <strong>${questionCount}</strong> soru</p>
-                <p style="margin: 8px 0;">⏱️ Her soru için <strong>30 saniye</strong></p>
-                <p style="margin: 8px 0; color: #f59e0b;">💡 Süre dolduğunda otomatik geçer</p>
-                <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
-                <p style="margin: 8px 0; text-align: center; color: #10b981;">🎯 Başarılar dileriz!</p>
-            </div>
-        `,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#f59e0b',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: '🚀 Başla',
-        cancelButtonText: 'Vazgeç',
-        backdrop: 'rgba(0,0,0,0.6)'
-    });
+// Sınav başlatma onayı (Özel - KÜÇÜK BOYUT)
+if (typeof showExamConfirm === 'undefined') {
+    window.showExamConfirm = function(examTitle, questionCount) {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                title: `📝 ${examTitle}`,
+                html: `
+                    <div style="text-align: left; padding: 6px 0; font-size: 14px;">
+                        <p style="margin: 4px 0;">📊 <strong>${questionCount}</strong> soru</p>
+                        <p style="margin: 4px 0;">⏱️ Her soru için <strong>30 saniye</strong></p>
+                        <p style="margin: 4px 0; color: #f59e0b; font-size: 13px;">💡 Süre dolduğunda otomatik geçer</p>
+                        <hr style="border-color: rgba(255,255,255,0.08); margin: 8px 0;">
+                        <p style="margin: 4px 0; text-align: center; color: #10b981; font-size: 14px;">🎯 Başarılar dileriz!</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '🚀 Başla',
+                cancelButtonText: 'Vazgeç',
+                backdrop: 'rgba(0,0,0,0.5)',
+                width: '400px',
+                padding: '1.2rem',
+                customClass: {
+                    popup: 'compact-swal',
+                    title: 'compact-title',
+                    htmlContainer: 'compact-html'
+                }
+            });
+        } else {
+            return {
+                then: function(callback) {
+                    const result = confirm(`"${examTitle}" sınavına başlamak istediğinize emin misiniz?\n\n${questionCount} soru\nHer soru için 30 saniye`);
+                    callback({ isConfirmed: result });
+                }
+            };
+        }
+    };
 }
 
     
@@ -2920,7 +3050,7 @@ async function loadUserStats() {
                 averageScore: 0
             });
             loadUserStats();
-            alert('Sınav geçmişiniz temizlendi!');
+            showWarning('Sınav geçmişiniz temizlendi!');
         }
     };
 
@@ -2933,7 +3063,7 @@ async function loadUserStats() {
             document.getElementById('profileName').textContent = newName.trim();
             document.getElementById('userNameDisplay').textContent = newName.trim();
             document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${newName.trim()}`;
-            alert('Kullanıcı adı güncellendi!');
+            showWarning('Kullanıcı adı güncellendi!');
         }
     };
 
@@ -2946,10 +3076,10 @@ async function loadUserStats() {
                 const userRef = doc(db, 'users', currentUser.uid);
                 await updateDoc(userRef, { email: newEmail });
                 document.getElementById('profileEmail').textContent = newEmail;
-                alert('E-posta adresi güncellendi! Lütfen tekrar giriş yapın.');
+                showWarning('E-posta adresi güncellendi! Lütfen tekrar giriş yapın.');
                 await signOut(auth);
             } catch(e) {
-                alert('Hata: ' + e.message);
+                showWarning('Hata: ' + e.message);
             }
         }
     };
@@ -3296,7 +3426,7 @@ window.checkAndCompleteExam = () => {
     }
     
     if (!password.trim()) {
-        alert('❌ Lütfen şifrenizi girin!');
+     
         showWarning('❌ Lütfen şifrenizi girin!');
         return;
     }
@@ -4835,7 +4965,7 @@ window.startQuizWords = async () => {
         // ===== 5. SEVİYEYE AİT DERSİ BUL =====
         const ders = dersler[mevcutSeviye - 1];
         if (!ders) {
-            alert('⚠️ Bu seviyeye ait ders bulunamadı!');
+            showWarning('⚠️ Bu seviyeye ait ders bulunamadı!');
             return;
         }
         
@@ -4848,7 +4978,7 @@ window.startQuizWords = async () => {
         ));
         
         if (wordsSnapshot.empty) {
-            alert(`⚠️ "${ders.name}" dersine ait henüz kelime eklenmemiş!`);
+            showWarning(`⚠️ "${ders.name}" dersine ait henüz kelime eklenmemiş!`);
             return;
         }
         
@@ -4908,7 +5038,7 @@ window.startQuizWords = async () => {
         
     } catch (error) {
         console.error('❌ Yarışma başlatma hatası:', error);
-        alert('Yarışma başlatılamadı: ' + error.message);
+        showWarning('Yarışma başlatılamadı: ' + error.message);
     }
 };
 
@@ -5688,7 +5818,7 @@ window.getKarmaStatus = function() {
 
 window.sandikTemizle = async function() {
     if (!currentUser) {
-        alert('❌ Giriş yapmış kullanıcı yok!');
+        showWarning('❌ Giriş yapmış kullanıcı yok!');
         return;
     }
     if (!confirm('📦 Sandığı tamamen sıfırlamak istediğinize emin misiniz?')) {
@@ -5699,7 +5829,7 @@ window.sandikTemizle = async function() {
         await saveSandikToFirestore();
         updateSandikDisplay();
         console.log('✅ Sandık sıfırlandı!');
-        alert('✅ Sandık başarıyla sıfırlandı!');
+        showWarning('✅ Sandık başarıyla sıfırlandı!');
         // Seviye bilgisini güncelle
         const seviyeEl = document.getElementById('seviyeBilgi');
         if (seviyeEl) {
@@ -5707,7 +5837,7 @@ window.sandikTemizle = async function() {
         }
     } catch (error) {
         console.error('❌ Sandık sıfırlama hatası:', error);
-        alert('❌ Bir hata oluştu!');
+        showWarning('❌ Bir hata oluştu!');
     }
 };
     
@@ -5809,7 +5939,7 @@ async function safeOperation(operation) {
         if (typeof showTempMessage === 'function') {
             showTempMessage(userMessage, '#ef4444');
         } else {
-            alert(userMessage);
+            showWarning(userMessage);
         }
         return null;
     }
