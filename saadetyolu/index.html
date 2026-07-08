@@ -4020,18 +4020,27 @@ window.checkAndCompleteExam = () => {
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); };
     document.getElementById('logoutIconBtn').onclick = () => { logout(); };
 
-onAuthStateChanged(auth, async (user) => {
+
+
+
+    onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         menuBtn.classList.remove('hidden');
         document.getElementById('mainHeader').style.display = 'flex';
-        document.getElementById('userBadge').style.display = 'flex';
         document.getElementById('logoutIconBtn').classList.remove('hidden');
-        document.getElementById('userNameDisplay').textContent = user.email.split('@')[0];
-        document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0]}`;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'flex';
         themeIconBtn.classList.add('hidden');
+        
+        // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
+        // loadUserStats bunları dolduracak (Firestore'dan)
+        document.getElementById('userNameDisplay').textContent = '';
+        document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> Yükleniyor...';
+        
+        // userBadge'i gizle (loadUserStats sonunda gösterilecek)
+        const userBadge = document.getElementById('userBadge');
+        if (userBadge) userBadge.style.display = 'none';
         
         // Giriş yapınca yarışma ekranlarını gizle (ana sayfada olsun)
         const karmaScreen = document.getElementById('karmaScreen');
@@ -4041,7 +4050,7 @@ onAuthStateChanged(auth, async (user) => {
         if (rankingScreen) rankingScreen.style.display = 'none';
         
         await loadBooks();
-        await loadUserStats();
+        await loadUserStats();  // Burada header ve sidebar doldurulacak
         await loadLessonsList();
         await loadUserExamHistory();
         
@@ -4153,7 +4162,7 @@ onAuthStateChanged(auth, async (user) => {
         console.log('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
     }
 });
-    
+        
 
     // Yardım / İletişim
 document.getElementById('goHelp').onclick = () => {
