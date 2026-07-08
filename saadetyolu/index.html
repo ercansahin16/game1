@@ -3060,11 +3060,15 @@ async function loadUserStats() {
     if (!currentUser) return;
     
     try {
-        // ===== 1. ÖNCE FIRESTORE'DAN VERİYİ AL =====
+        // ===== 0. OTURUMU YENİLE (güncel bilgileri al) =====
+        await currentUser.reload();
+        console.log('🔄 Oturum yenilendi');
+        
+        // ===== 1. FIRESTORE'DAN VERİYİ AL =====
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
 
-          // ===== KONSOLA YAZDIR =====
+        // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
         console.log('📧 Email:', currentUser.email);
         console.log('👤 Auth displayName:', currentUser.displayName);
@@ -3077,11 +3081,10 @@ async function loadUserStats() {
         }
         console.log('🔍 ===== BİTTİ =====');
         
-        
         // ===== 2. KULLANICI ADINI FIRESTORE'DAN AL =====
         let userName = currentUser.email?.split('@')[0] || 'Kullanıcı';
         if (userDoc.exists() && userDoc.data().name) {
-            userName = userDoc.data().name;  // Firestore'dan al
+            userName = userDoc.data().name;
         } else if (currentUser.displayName) {
             userName = currentUser.displayName;
         }
