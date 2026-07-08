@@ -3056,24 +3056,24 @@ showBtn.onclick = () => {
 
 
 
-
-    async function loadUserStats() {
+async function loadUserStats() {
     if (!currentUser) return;
     
     try {
+        // ===== 1. ÖNCE FIRESTORE'DAN VERİYİ AL =====
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
-        // ===== KULLANICI ADINI ÖNCE FIRESTORE'DAN AL =====
+        // ===== 2. KULLANICI ADINI FIRESTORE'DAN AL =====
         let userName = currentUser.email?.split('@')[0] || 'Kullanıcı';
         if (userDoc.exists() && userDoc.data().name) {
-            userName = userDoc.data().name;
+            userName = userDoc.data().name;  // Firestore'dan al
         } else if (currentUser.displayName) {
             userName = currentUser.displayName;
         }
         
-        // ===== TÜM EKRANLARI GÜNCELLE =====
-        // Profil
+        // ===== 3. TÜM EKRANLARI TEK SEFERDE GÜNCELLE =====
+        // Profil - Kullanıcı Adı
         const profileName = document.getElementById('profileName');
         if (profileName) profileName.textContent = userName;
         
@@ -3089,6 +3089,7 @@ showBtn.onclick = () => {
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) profileEmail.textContent = currentUser.email;
         
+        // ===== 4. DİĞER VERİLERİ AL =====
         const wordsSnapshot = await getDocs(collection(db, 'words'));
         const totalWords = wordsSnapshot.docs.length;
         const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
@@ -3114,7 +3115,7 @@ showBtn.onclick = () => {
                 sandikCezasi
             );
             
-            // ===== EKRANA YAZ (GÜVENLİ) =====
+            // ===== İSTATİSTİK KARTLARI =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
             if (totalWordsLearned) totalWordsLearned.textContent = totalWordsViewed;
             
@@ -3160,6 +3161,7 @@ showBtn.onclick = () => {
                 }, 100);
             }
             
+            // ===== SEVİYE =====
             const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
             
             const seviyeProfile = document.getElementById('seviyeProfile');
@@ -3217,6 +3219,10 @@ showBtn.onclick = () => {
                 examHistoryList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
             }
         }
+        
+        // ===== 5. TÜM İŞLEMLER BİTTİKTEN SONRA HEADER'I GÖSTER =====
+        const userBadge = document.getElementById('userBadge');
+        if (userBadge) userBadge.style.display = 'flex';
         
     } catch (error) {
         console.error('❌ loadUserStats hatası:', error);
