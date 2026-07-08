@@ -3380,7 +3380,7 @@ async function loadUserStats() {
 
 
 
-  window.editEmail = async () => {
+ window.editEmail = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
@@ -3395,7 +3395,7 @@ async function loadUserStats() {
     }
     
     try {
-        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE (SADECE KONTROL AMAÇLI) =====
+        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE =====
         const { value: password } = await Swal.fire({
             title: '🔒 Güvenlik Doğrulaması',
             html: `
@@ -3404,15 +3404,13 @@ async function loadUserStats() {
                     <div style="position: relative;">
                         <input type="password" id="swalPasswordInput" placeholder="Mevcut şifreniz" 
                                style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #374151; 
-                                      background: #1f2937; color: #ffffff; font-size: 14px; outline: none;
-                                      transition: border-color 0.3s;">
+                                      background: #1f2937; color: #ffffff; font-size: 14px; outline: none;">
                         <button type="button" id="swalTogglePassword" 
                                 style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
                                        background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 16px;">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <div id="swalPasswordError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;">❌ Lütfen şifrenizi girin!</div>
                 </div>
             `,
             showCancelButton: true,
@@ -3427,7 +3425,6 @@ async function loadUserStats() {
             didOpen: () => {
                 const input = document.getElementById('swalPasswordInput');
                 const toggleBtn = document.getElementById('swalTogglePassword');
-                const errorDiv = document.getElementById('swalPasswordError');
                 
                 if (input) {
                     setTimeout(() => input.focus(), 100);
@@ -3435,13 +3432,8 @@ async function loadUserStats() {
                         if (e.key === 'Enter') {
                             if (input.value.trim()) {
                                 Swal.clickConfirm();
-                            } else {
-                                errorDiv.style.display = 'block';
                             }
                         }
-                    });
-                    input.addEventListener('input', () => {
-                        if (errorDiv) errorDiv.style.display = 'none';
                     });
                 }
                 
@@ -3459,10 +3451,7 @@ async function loadUserStats() {
             },
             preConfirm: () => {
                 const input = document.getElementById('swalPasswordInput');
-                const errorDiv = document.getElementById('swalPasswordError');
-                
                 if (!input || !input.value.trim()) {
-                    if (errorDiv) errorDiv.style.display = 'block';
                     Swal.showValidationMessage('❌ Lütfen şifrenizi girin!');
                     return false;
                 }
@@ -3475,42 +3464,58 @@ async function loadUserStats() {
             return;
         }
         
-        // ===== 2. ŞİFREYİ DOĞRULA (SADECE KONTROL) =====
+        // ===== 2. ÖNCE AUTH'U GÜNCELLE (BAŞARISIZ OLURSA FIRESTORE'U GÜNCELLEME) =====
         try {
+            // Kullanıcıyı yeniden doğrula
             const credential = EmailAuthProvider.credential(currentUser.email, password);
             await reauthenticateWithCredential(currentUser, credential);
-            console.log('✅ Şifre doğrulandı');
+            console.log('✅ Kullanıcı yeniden doğrulandı');
+            
+            // Auth email'ini güncelle
+            await updateEmail(currentUser, newEmail);
+            console.log('✅ Auth email güncellendi');
+            
         } catch (authError) {
+            console.error('❌ Auth güncelleme hatası:', authError);
+            
+            let errorMessage = '❌ E-posta değiştirilemedi: ';
             if (authError.code === 'auth/wrong-password') {
-                showWarning('❌ Hatalı şifre! Lütfen tekrar deneyin.');
-                return;
+                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
+            } else if (authError.code === 'auth/requires-recent-login') {
+                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
+            } else if (authError.code === 'auth/email-already-in-use') {
+                errorMessage += '❌ Bu e-posta zaten kullanılıyor.';
             } else {
-                // Eğer yeniden doğrulama başarısız olursa, yine de Firestore'u güncelleme
-                console.warn('⚠️ Şifre doğrulama başarısız, ama Firestore güncellenebilir:', authError.message);
+                errorMessage += authError.message;
             }
+            
+            showWarning(errorMessage);
+            return; // İşlemi durdur, Firestore'u güncelleme
         }
         
-        // ===== 3. SADECE FIRESTORE'U GÜNCELLE (Auth'u KARMA!) =====
+        // ===== 3. AUTH BAŞARILI OLDUYSA FIRESTORE'U GÜNCELLE =====
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { 
             email: newEmail,
             updatedAt: new Date().toISOString()
         });
-        console.log('✅ Firestore email güncellendi:', newEmail);
+        console.log('✅ Firestore email güncellendi');
         
         // ===== 4. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
         
+        // ===== 5. OTURUMU YENİLE =====
+        await currentUser.reload();
+        
         showWarning('✅ E-posta adresi başarıyla güncellendi!');
-        showWarning('📧 Lütfen yeni e-posta adresinizi doğrulayın.');
+        showWarning('📧 Doğrulama e-postası gönderildi. Yeni adresinizi doğrulayın.');
         
     } catch(error) {
         console.error('❌ E-posta güncelleme hatası:', error);
         showWarning('❌ Güncellenemedi: ' + error.message);
     }
 };
-
 
 
     
