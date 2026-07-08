@@ -3395,7 +3395,7 @@ window.editEmail = async () => {
     }
     
     try {
-        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE (SADECE KONTROL) =====
+        // ===== 1. ŞİFRE SOR =====
         const { value: password } = await Swal.fire({
             title: '🔒 Güvenlik Doğrulaması',
             html: `
@@ -3425,18 +3425,14 @@ window.editEmail = async () => {
             didOpen: () => {
                 const input = document.getElementById('swalPasswordInput');
                 const toggleBtn = document.getElementById('swalTogglePassword');
-                
                 if (input) {
                     setTimeout(() => input.focus(), 100);
                     input.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') {
-                            if (input.value.trim()) {
-                                Swal.clickConfirm();
-                            }
+                        if (e.key === 'Enter' && input.value.trim()) {
+                            Swal.clickConfirm();
                         }
                     });
                 }
-                
                 if (toggleBtn && input) {
                     toggleBtn.addEventListener('click', () => {
                         if (input.type === 'password') {
@@ -3464,39 +3460,40 @@ window.editEmail = async () => {
             return;
         }
         
-        // ===== 2. ŞİFREYİ DOĞRULA (SADECE KONTROL) =====
-        try {
-            const credential = EmailAuthProvider.credential(currentUser.email, password);
-            await reauthenticateWithCredential(currentUser, credential);
-            console.log('✅ Şifre doğrulandı');
-        } catch (authError) {
-            if (authError.code === 'auth/wrong-password') {
-                showWarning('❌ Hatalı şifre! Lütfen tekrar deneyin.');
-                return;
-            } else {
-                // Şifre doğrulama başarısız olsa bile Firestore'u güncellemeye devam et
-                console.warn('⚠️ Şifre doğrulama başarısız, ama Firestore güncellenebilir:', authError.message);
-            }
-        }
+        // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
+        const credential = EmailAuthProvider.credential(currentUser.email, password);
+        await reauthenticateWithCredential(currentUser, credential);
+        console.log('✅ Kullanıcı yeniden doğrulandı');
         
-        // ===== 3. SADECE FIRESTORE'U GÜNCELLE (AUTH'U KARMA!) =====
+        // ===== 3. AUTH EMAIL'İNİ GÜNCELLE =====
+        await updateEmail(currentUser, newEmail);
+        console.log('✅ Auth email güncellendi:', newEmail);
+        
+        // ===== 4. FIRESTORE'U GÜNCELLE =====
         const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, { 
-            email: newEmail,
-            updatedAt: new Date().toISOString()
-        });
-        console.log('✅ Firestore email güncellendi:', newEmail);
+        await updateDoc(userRef, { email: newEmail });
+        console.log('✅ Firestore email güncellendi');
         
-        // ===== 4. PROFİL EMAİL'İNİ GÜNCELLE =====
+        // ===== 5. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
         
+        // ===== 6. DOĞRULAMA E-POSTASI GÖNDER =====
+        await currentUser.sendEmailVerification();
+        console.log('✅ Doğrulama e-postası gönderildi');
+        
         showWarning('✅ E-posta adresi başarıyla güncellendi!');
-        showWarning('📧 Lütfen yeni e-posta adresinizi doğrulayın. (Auth değişmedi, sadece veritabanı güncellendi)');
+        showWarning('📧 Doğrulama e-postası gönderildi. Lütfen yeni adresinizi doğrulayın.');
+        showWarning('🔑 Yeni email ile giriş yapabilmek için lütfen doğrulama linkine tıklayın.');
         
     } catch(error) {
         console.error('❌ E-posta güncelleme hatası:', error);
-        showWarning('❌ Güncellenemedi: ' + error.message);
+        
+        if (error.code === 'auth/operation-not-allowed') {
+            showWarning('❌ E-posta değiştirilemedi. Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.');
+        } else {
+            showWarning('❌ Güncellenemedi: ' + error.message);
+        }
     }
 };
 
