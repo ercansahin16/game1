@@ -2552,9 +2552,12 @@ body.light-theme #karmaScreen .option-quiz {
     <!-- ========== CONTAINER SONU ========== -->
 
 <script type="module">
+    
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    
+    
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -3376,6 +3379,8 @@ async function loadUserStats() {
 
 
 
+
+
     window.editEmail = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
@@ -3434,7 +3439,8 @@ async function loadUserStats() {
         }
         
         // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
-        const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+        // EmailAuthProvider'ı import ettiğin için doğrudan kullan
+        const credential = EmailAuthProvider.credential(currentUser.email, password);
         await currentUser.reauthenticateWithCredential(credential);
         console.log('✅ Kullanıcı yeniden doğrulandı');
         
@@ -3449,6 +3455,9 @@ async function loadUserStats() {
         // ===== 5. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
+        
+        // ===== 6. OTURUMU YENİLE =====
+        await currentUser.reload();
         
         showWarning('✅ E-posta adresi başarıyla güncellendi!');
         showWarning('📧 Doğrulama e-postası gönderildi. Yeni adresinizi doğrulayın.');
