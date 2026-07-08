@@ -3301,7 +3301,7 @@ async function loadUserStats() {
         }
     };
 
-   window.editUsername = async () => {
+ window.editUsername = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
@@ -3314,12 +3314,15 @@ async function loadUserStats() {
     }
     
     try {
-        // 1. Firestore'a kaydet
+        // ===== 1. FIRESTORE'U GÜNCELLE =====
         const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, { name: newName.trim() });
+        await updateDoc(userRef, { 
+            name: newName.trim(),
+            updatedAt: new Date().toISOString()  // Ne zaman güncellendiğini de kaydet
+        });
         console.log('✅ Firestore güncellendi:', newName.trim());
         
-        // 2. Firebase Auth displayName'i de güncelle
+        // ===== 2. AUTH DISPLAYNAME'I GÜNCELLE =====
         try {
             await updateProfile(currentUser, {
                 displayName: newName.trim()
@@ -3329,29 +3332,22 @@ async function loadUserStats() {
             console.warn('⚠️ Auth displayName güncellenemedi:', authError.message);
         }
         
-        // 3. TÜM EKRANLARI GÜNCELLE
-        // Profil sayfası
+        // ===== 3. TÜM EKRANLARI GÜNCELLE =====
+        // Profil
         const profileNameEl = document.getElementById('profileName');
         if (profileNameEl) profileNameEl.textContent = newName.trim();
         
-        // Header (sağ üstteki kullanıcı adı)
+        // Header
         const userNameDisplay = document.getElementById('userNameDisplay');
         if (userNameDisplay) userNameDisplay.textContent = newName.trim();
         
-        // Sidebar (sol menüdeki kullanıcı adı)
+        // Sidebar
         const sidebarUserName = document.getElementById('sidebarUserName');
         if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${newName.trim()}`;
         
-        // Ana sayfa header'daki logo yanındaki isim (varsa)
-        const homeLogo = document.getElementById('homeLogo');
-        if (homeLogo) {
-            // Eğer logo içinde isim gösteriliyorsa güncelle
-            // Bu kısım opsiyonel
-        }
-        
         showWarning('✅ Kullanıcı adı başarıyla güncellendi!');
         
-        // 4. loadUserStats'i yeniden çağır (güvenlik için)
+        // ===== 4. FIRESTORE'DAN TEKRAR OKU (GÜVENLİK) =====
         await loadUserStats();
         
     } catch (error) {
