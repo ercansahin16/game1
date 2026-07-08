@@ -3054,7 +3054,10 @@ showBtn.onclick = () => {
 
 
 
-async function loadUserStats() {
+
+
+
+    async function loadUserStats() {
     if (!currentUser) return;
     
     try {
@@ -3064,15 +3067,25 @@ async function loadUserStats() {
         // ===== KULLANICI ADINI ÖNCE FIRESTORE'DAN AL =====
         let userName = currentUser.email?.split('@')[0] || 'Kullanıcı';
         if (userDoc.exists() && userDoc.data().name) {
-            userName = userDoc.data().name;  // Firestore'daki name'i kullan
+            userName = userDoc.data().name;
         } else if (currentUser.displayName) {
             userName = currentUser.displayName;
         }
         
-        // ===== GÜVENLİ ELEMENT GÜNCELLEMELERİ =====
+        // ===== TÜM EKRANLARI GÜNCELLE =====
+        // Profil
         const profileName = document.getElementById('profileName');
         if (profileName) profileName.textContent = userName;
         
+        // Header (sağ üst)
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        if (userNameDisplay) userNameDisplay.textContent = userName;
+        
+        // Sidebar (sol menü)
+        const sidebarUserName = document.getElementById('sidebarUserName');
+        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${userName}`;
+        
+        // Email
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) profileEmail.textContent = currentUser.email;
         
@@ -3209,6 +3222,9 @@ async function loadUserStats() {
         console.error('❌ loadUserStats hatası:', error);
     }
 }
+
+
+    
 
     
     function displayExamHistory(exams) {
