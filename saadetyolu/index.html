@@ -3062,9 +3062,20 @@ async function loadUserStats() {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
-        const userName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
-        document.getElementById('profileName').textContent = userName;
-        document.getElementById('profileEmail').textContent = currentUser.email;
+        // ===== KULLANICI ADINI ÖNCE FIRESTORE'DAN AL =====
+        let userName = currentUser.email?.split('@')[0] || 'Kullanıcı';
+        if (userDoc.exists() && userDoc.data().name) {
+            userName = userDoc.data().name;  // Firestore'daki name'i kullan
+        } else if (currentUser.displayName) {
+            userName = currentUser.displayName;
+        }
+        
+        // ===== GÜVENLİ ELEMENT GÜNCELLEMELERİ =====
+        const profileName = document.getElementById('profileName');
+        if (profileName) profileName.textContent = userName;
+        
+        const profileEmail = document.getElementById('profileEmail');
+        if (profileEmail) profileEmail.textContent = currentUser.email;
         
         const wordsSnapshot = await getDocs(collection(db, 'words'));
         const totalWords = wordsSnapshot.docs.length;
@@ -3091,47 +3102,56 @@ async function loadUserStats() {
                 sandikCezasi
             );
             
-            // ===== EKRANA YAZ =====
-            document.getElementById('totalWordsLearned').textContent = totalWordsViewed;
-            document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
-            document.getElementById('averageScore').textContent = Math.round(averageScore);
-            document.getElementById('karmaScoreProfile').textContent = quizScore.toFixed(2);
-            document.getElementById('sandikCountProfile').textContent = sandikCount;
+            // ===== EKRANA YAZ (GÜVENLİ) =====
+            const totalWordsLearned = document.getElementById('totalWordsLearned');
+            if (totalWordsLearned) totalWordsLearned.textContent = totalWordsViewed;
+            
+            const totalExamsCompleted = document.getElementById('totalExamsCompleted');
+            if (totalExamsCompleted) totalExamsCompleted.textContent = data.examsCompleted?.length || 0;
+            
+            const averageScoreEl = document.getElementById('averageScore');
+            if (averageScoreEl) averageScoreEl.textContent = Math.round(averageScore);
+            
+            const karmaScoreProfile = document.getElementById('karmaScoreProfile');
+            if (karmaScoreProfile) karmaScoreProfile.textContent = quizScore.toFixed(2);
+            
+            const sandikCountProfile = document.getElementById('sandikCountProfile');
+            if (sandikCountProfile) sandikCountProfile.textContent = sandikCount;
             
             // ===== TOPLAM PUAN =====
-            document.getElementById('profileToplamPuan').innerHTML = `
-                <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan}</span>
-                <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                    <i class="fas fa-question-circle"></i>
-                </button>
-            `;
-            
-            setTimeout(() => {
-                const detayBtn = document.getElementById('puanDetayBtn');
-                if (detayBtn) {
-                    detayBtn.addEventListener('click', function() {
-                        showPuanDetay(
-                            quizScore,
-                            Math.round(averageScore),
-                            mevcutSeviye,
-                            seviyePuani,
-                            totalWordsViewed,
-                            kelimePuani,
-                            sandikCount,
-                            sandikCezasi,
-                            toplamPuan
-                        );
-                    });
-                }
-            }, 100);
+            const profileToplamPuan = document.getElementById('profileToplamPuan');
+            if (profileToplamPuan) {
+                profileToplamPuan.innerHTML = `
+                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan}</span>
+                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                `;
+                
+                setTimeout(() => {
+                    const detayBtn = document.getElementById('puanDetayBtn');
+                    if (detayBtn) {
+                        detayBtn.addEventListener('click', function() {
+                            showPuanDetay(
+                                quizScore,
+                                Math.round(averageScore),
+                                mevcutSeviye,
+                                seviyePuani,
+                                totalWordsViewed,
+                                kelimePuani,
+                                sandikCount,
+                                sandikCezasi,
+                                toplamPuan
+                            );
+                        });
+                    }
+                }, 100);
+            }
             
             const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
             
-            // ===== SADECE seviyeProfile GÜNCELLENİYOR =====
-            document.getElementById('seviyeProfile').textContent = seviyeText;
-            
-            // ===== profileSeviye SATIRI SİLİNDİ! =====
-            // document.getElementById('profileSeviye').textContent = `Seviye: ${seviyeText}`;  // ❌ SİL
+            const seviyeProfile = document.getElementById('seviyeProfile');
+            if (seviyeProfile) seviyeProfile.textContent = seviyeText;
             
             window.mevcutSeviye = mevcutSeviye;
             window.toplamSeviye = toplamSeviye;
@@ -3140,40 +3160,50 @@ async function loadUserStats() {
             
         } else {
             // ===== VARSAYILAN DEĞERLER =====
-            document.getElementById('totalWordsLearned').textContent = '0';
-            document.getElementById('totalExamsCompleted').textContent = '0';
-            document.getElementById('averageScore').textContent = '0';
-            document.getElementById('karmaScoreProfile').textContent = '0.00';
-            document.getElementById('sandikCountProfile').textContent = '0';
+            const totalWordsLearned = document.getElementById('totalWordsLearned');
+            if (totalWordsLearned) totalWordsLearned.textContent = '0';
             
-            document.getElementById('profileToplamPuan').innerHTML = `
-                <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">0</span>
-                <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                    <i class="fas fa-question-circle"></i>
-                </button>
-            `;
+            const totalExamsCompleted = document.getElementById('totalExamsCompleted');
+            if (totalExamsCompleted) totalExamsCompleted.textContent = '0';
             
-            setTimeout(() => {
-                const detayBtn = document.getElementById('puanDetayBtn');
-                if (detayBtn) {
-                    detayBtn.addEventListener('click', function() {
-                        showPuanDetay(0, 0, 1, 0, 0, 0, 0, 0, 0);
-                    });
-                }
-            }, 100);
+            const averageScoreEl = document.getElementById('averageScore');
+            if (averageScoreEl) averageScoreEl.textContent = '0';
             
-            // ===== SADECE seviyeProfile GÜNCELLENİYOR =====
+            const karmaScoreProfile = document.getElementById('karmaScoreProfile');
+            if (karmaScoreProfile) karmaScoreProfile.textContent = '0.00';
+            
+            const sandikCountProfile = document.getElementById('sandikCountProfile');
+            if (sandikCountProfile) sandikCountProfile.textContent = '0';
+            
+            const profileToplamPuan = document.getElementById('profileToplamPuan');
+            if (profileToplamPuan) {
+                profileToplamPuan.innerHTML = `
+                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">0</span>
+                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                `;
+                
+                setTimeout(() => {
+                    const detayBtn = document.getElementById('puanDetayBtn');
+                    if (detayBtn) {
+                        detayBtn.addEventListener('click', function() {
+                            showPuanDetay(0, 0, 1, 0, 0, 0, 0, 0, 0);
+                        });
+                    }
+                }, 100);
+            }
+            
             const seviyeProfile = document.getElementById('seviyeProfile');
             if (seviyeProfile) seviyeProfile.textContent = `1/${toplamSeviye}`;
-            
-            // ===== profileSeviye SATIRLARI SİLİNDİ! =====
-            // const profileSeviye = document.getElementById('profileSeviye');
-            // if (profileSeviye) profileSeviye.textContent = `Seviye: 1/${toplamSeviye}`;  // ❌ SİL
             
             window.mevcutSeviye = 1;
             window.toplamSeviye = toplamSeviye;
             
-            document.getElementById('examHistoryList').innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
+            const examHistoryList = document.getElementById('examHistoryList');
+            if (examHistoryList) {
+                examHistoryList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
+            }
         }
         
     } catch (error) {
