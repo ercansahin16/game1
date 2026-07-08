@@ -6970,129 +6970,89 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
 
 
 
-    async function loadUserStats() {
-    if (!currentUser) return;
+  // ===== PUAN SİSTEMİ DETAY MODALI =====
+function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, totalWordsViewed, kelimePuani, sandikCount, sandikCezasi, toplamPuan) {
     
-    try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        
-        const userName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
-        document.getElementById('profileName').textContent = userName;
-        document.getElementById('profileEmail').textContent = currentUser.email;
-        
-        const wordsSnapshot = await getDocs(collection(db, 'words'));
-        const totalWords = wordsSnapshot.docs.length;
-        const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
-        
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            
-            const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
-            const mevcutSeviye = data.mevcutSeviye || 1;
-            const totalWordsViewed = data.totalWordsViewed || 0;
-            const sandikCount = data.quizSandik?.length || 0;
-            
-            // ===== SIRALAMADAKİ İLE AYNI FORMÜL =====
-            const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = totalWordsViewed * 1;
-            const sandikCezasi = sandikCount * 1;
-            
-            const toplamPuan = Math.round(
-                quizScore + 
-                averageScore + 
-                seviyePuani + 
-                kelimePuani - 
-                sandikCezasi
-            );
-            
-            // ===== EKRANA YAZ (NORMAL DEĞERLER) =====
-            document.getElementById('totalWordsLearned').textContent = totalWordsViewed;
-            document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
-            document.getElementById('averageScore').textContent = Math.round(averageScore);
-            document.getElementById('karmaScoreProfile').textContent = quizScore.toFixed(2);
-            document.getElementById('sandikCountProfile').textContent = sandikCount;
-            
-            // ===== TOPLAM PUAN (SADECE SAYI + SORU İŞARETİ) =====
-            // HTML olarak göster - sayı ve soru işareti butonu
-            document.getElementById('profileToplamPuan').innerHTML = `
-                <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan}</span>
-                <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                    <i class="fas fa-question-circle"></i>
-                </button>
-            `;
-            
-            // Butona tıklama olayını bağla
-            setTimeout(() => {
-                const detayBtn = document.getElementById('puanDetayBtn');
-                if (detayBtn) {
-                    detayBtn.addEventListener('click', function() {
-                        showPuanDetay(
-                            quizScore,
-                            Math.round(averageScore),
-                            mevcutSeviye,
-                            seviyePuani,
-                            totalWordsViewed,
-                            kelimePuani,
-                            sandikCount,
-                            sandikCezasi,
-                            toplamPuan
-                        );
-                    });
-                }
-            }, 100);
-            
-            const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
-            document.getElementById('seviyeProfile').textContent = seviyeText;
-            document.getElementById('profileSeviye').textContent = `Seviye: ${seviyeText}`;
-            
-            window.mevcutSeviye = mevcutSeviye;
-            window.toplamSeviye = toplamSeviye;
-            
-            displayExamHistory(data.examsCompleted || []);
-            
-        } else {
-            // ===== VARSAYILAN DEĞERLER =====
-            document.getElementById('totalWordsLearned').textContent = '0';
-            document.getElementById('totalExamsCompleted').textContent = '0';
-            document.getElementById('averageScore').textContent = '0';
-            document.getElementById('karmaScoreProfile').textContent = '0.00';
-            document.getElementById('sandikCountProfile').textContent = '0';
-            
-            // Varsayılan toplam puan (0 + soru işareti)
-            document.getElementById('profileToplamPuan').innerHTML = `
-                <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">0</span>
-                <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                    <i class="fas fa-question-circle"></i>
-                </button>
-            `;
-            
-            // Butona tıklama olayını bağla
-            setTimeout(() => {
-                const detayBtn = document.getElementById('puanDetayBtn');
-                if (detayBtn) {
-                    detayBtn.addEventListener('click', function() {
-                        showPuanDetay(0, 0, 1, 0, 0, 0, 0, 0, 0);
-                    });
-                }
-            }, 100);
-            
-            const seviyeProfile = document.getElementById('seviyeProfile');
-            if (seviyeProfile) seviyeProfile.textContent = `1/${toplamSeviye}`;
-            
-            const profileSeviye = document.getElementById('profileSeviye');
-            if (profileSeviye) profileSeviye.textContent = `Seviye: 1/${toplamSeviye}`;
-            
-            window.mevcutSeviye = 1;
-            window.toplamSeviye = toplamSeviye;
-            
-            document.getElementById('examHistoryList').innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
+    const hesaplama = `${quizScore.toFixed(2)} + ${averageScore} + ${seviyePuani} + ${kelimePuani} - ${sandikCezasi} = ${toplamPuan}`;
+    
+    Swal.fire({
+        title: '🏆 Puan Sistemi',
+        html: `
+            <div style="text-align: left; font-size: 14px; line-height: 1.8;">
+                <p style="margin: 0 0 12px 0; font-weight: 600; color: #f59e0b; font-size: 16px;">
+                    📊 Mevcut Puan Durumun
+                </p>
+                
+                <div style="background: rgba(245,158,11,0.06); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span>🎲 Yarışma Puanı</span>
+                        <span style="color: #f59e0b; font-weight: 600;">${quizScore.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span>📝 Sınav Ortalaması</span>
+                        <span style="color: #f59e0b; font-weight: 600;">${averageScore}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span>🏔️ Seviye Bonusu (${mevcutSeviye}. seviye)</span>
+                        <span style="color: #f59e0b; font-weight: 600;">+${seviyePuani}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span>📚 Kelime Puanı (${totalWordsViewed} kelime)</span>
+                        <span style="color: #f59e0b; font-weight: 600;">+${kelimePuani}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                        <span>📦 Sandık Cezası (${sandikCount} kelime)</span>
+                        <span style="color: #ef4444; font-weight: 600;">-${sandikCezasi}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0 0 0; margin-top: 6px; border-top: 2px solid rgba(245,158,11,0.2); font-weight: 700; font-size: 16px;">
+                        <span>🏆 <strong>Toplam Puan</strong></span>
+                        <span style="color: #f59e0b;">${toplamPuan}</span>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(16,185,129,0.06); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; border-left: 3px solid #10b981;">
+                    <p style="margin: 0; font-weight: 600; color: #10b981; font-size: 13px;">🧮 Nasıl Hesaplanıyor?</p>
+                    <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8; font-family: monospace;">
+                        ${hesaplama}
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+                    <div style="background: rgba(16,185,129,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.6;">✅ Doğru Cevap</div>
+                        <div style="color: #10b981; font-weight: 700; font-size: 14px;">+0.01 puan</div>
+                    </div>
+                    <div style="background: rgba(239,68,68,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.6;">❌ Yanlış Cevap</div>
+                        <div style="color: #ef4444; font-weight: 700; font-size: 14px;">-1 puan</div>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.6;">🏔️ Seviye Atlama</div>
+                        <div style="color: #f59e0b; font-weight: 700; font-size: 14px;">+2 puan</div>
+                    </div>
+                    <div style="background: rgba(139,92,246,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.6;">📚 Kelime Öğrenme</div>
+                        <div style="color: #8b5cf6; font-weight: 700; font-size: 14px;">+1 puan</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(251,146,60,0.05); border-radius: 8px; padding: 8px 12px; margin-top: 10px; border-left: 3px solid #fb923c;">
+                    <p style="margin: 0; font-size: 12px; opacity: 0.7;">
+                        💡 <strong>İpucu:</strong> Sandıktaki kelimeleri doğru cevaplayarak kurtar ve puanını artır!
+                        Her sandık <span style="color: #ef4444;">-1 puan</span> ceza getirir.
+                    </p>
+                </div>
+            </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'Anladım ✅',
+        confirmButtonColor: '#f59e0b',
+        width: '480px',
+        padding: '1.5rem',
+        customClass: {
+            popup: 'compact-swal'
         }
-        
-    } catch (error) {
-        console.error('❌ loadUserStats hatası:', error);
-    }
+    });
 }
     
 </script>
