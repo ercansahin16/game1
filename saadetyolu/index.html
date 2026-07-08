@@ -3262,22 +3262,62 @@ async function loadUserStats() {
         }
     };
 
-    window.editEmail = async () => {
-        if (!currentUser) return;
-        const newEmail = prompt('Yeni e-posta adresinizi girin:', currentUser.email);
-        if (newEmail && newEmail !== currentUser.email) {
-            try {
-                await updateEmail(auth.currentUser, newEmail);
-                const userRef = doc(db, 'users', currentUser.uid);
-                await updateDoc(userRef, { email: newEmail });
-                document.getElementById('profileEmail').textContent = newEmail;
-                showWarning('E-posta adresi güncellendi! Lütfen tekrar giriş yapın.');
-                await signOut(auth);
-            } catch(e) {
-                showWarning('Hata: ' + e.message);
-            }
+   window.editEmail = async () => {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    const newEmail = prompt('Yeni e-posta adresinizi girin:', currentUser.email);
+    if (!newEmail || newEmail === currentUser.email) return;
+    
+    // Basit e-posta kontrolü
+    if (!newEmail.includes('@') || !newEmail.includes('.')) {
+        showWarning('❌ Lütfen geçerli bir e-posta adresi girin!');
+        return;
+    }
+    
+    try {
+        // Kullanıcıyı yeniden doğrula
+        await currentUser.reload();
+        
+        // E-postayı güncelle
+        await updateEmail(currentUser, newEmail);
+        
+        // Firestore'u güncelle
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { email: newEmail });
+        
+        // Profil email'ini güncelle
+        const profileEmailEl = document.getElementById('profileEmail');
+        if (profileEmailEl) profileEmailEl.textContent = newEmail;
+        
+        showWarning('✅ E-posta adresi başarıyla güncellendi!');
+        showWarning('📧 Doğrulama e-postası gönderildi. Yeni adresinizi doğrulayın.');
+        
+    } catch(error) {
+        console.error('E-posta değiştirme hatası:', error);
+        
+        let errorMessage = '❌ E-posta değiştirilemedi: ';
+        switch(error.code) {
+            case 'auth/requires-recent-login':
+                errorMessage += 'Lütfen önce çıkış yapıp tekrar giriş yapın.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Geçersiz e-posta adresi.';
+                break;
+            case 'auth/email-already-in-use':
+                errorMessage += 'Bu e-posta zaten kullanılıyor.';
+                break;
+            case 'auth/operation-not-allowed':
+                errorMessage += 'Bu işlem için lütfen önce çıkış yapıp tekrar giriş yapın.';
+                break;
+            default:
+                errorMessage += error.message;
         }
-    };
+        showWarning(errorMessage);
+    }
+};
 
 
     
