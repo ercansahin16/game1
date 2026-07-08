@@ -2553,10 +2553,9 @@ body.light-theme #karmaScreen .option-quiz {
 
 <script type="module">
     
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -3381,7 +3380,7 @@ async function loadUserStats() {
 
 
 
-    window.editEmail = async () => {
+   window.editEmail = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
@@ -3400,9 +3399,20 @@ async function loadUserStats() {
         const { value: password } = await Swal.fire({
             title: '🔒 Güvenlik Doğrulaması',
             html: `
-                <div style="text-align: left;">
-                    <p style="margin-bottom: 8px; font-size: 14px;">E-posta adresinizi değiştirmek için mevcut şifrenizi girin:</p>
-                    <input type="password" id="swalPasswordInput" placeholder="Mevcut şifreniz" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 14px;">
+                <div style="text-align: left; padding: 5px 0;">
+                    <p style="margin-bottom: 12px; font-size: 14px; color: #e5e7eb;">E-posta adresinizi değiştirmek için mevcut şifrenizi girin:</p>
+                    <div style="position: relative;">
+                        <input type="password" id="swalPasswordInput" placeholder="Mevcut şifreniz" 
+                               style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #374151; 
+                                      background: #1f2937; color: #ffffff; font-size: 14px; outline: none;
+                                      transition: border-color 0.3s;">
+                        <button type="button" id="swalTogglePassword" 
+                                style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+                                       background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 16px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div id="swalPasswordError" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: none;">❌ Lütfen şifrenizi girin!</div>
                 </div>
             `,
             showCancelButton: true,
@@ -3410,26 +3420,59 @@ async function loadUserStats() {
             cancelButtonText: 'İptal',
             confirmButtonColor: '#10b981',
             cancelButtonColor: '#6b7280',
-            width: '400px',
+            width: '420px',
             padding: '1.5rem',
+            background: '#1a1a1a',
+            backdrop: 'rgba(0,0,0,0.8)',
             didOpen: () => {
                 const input = document.getElementById('swalPasswordInput');
+                const toggleBtn = document.getElementById('swalTogglePassword');
+                const errorDiv = document.getElementById('swalPasswordError');
+                
                 if (input) {
-                    input.focus();
+                    // Input'a odaklan
+                    setTimeout(() => input.focus(), 100);
+                    
+                    // Enter tuşu ile onayla
                     input.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
-                            Swal.clickConfirm();
+                            if (input.value.trim()) {
+                                Swal.clickConfirm();
+                            } else {
+                                errorDiv.style.display = 'block';
+                            }
+                        }
+                    });
+                    
+                    // Input değiştiğinde hata mesajını gizle
+                    input.addEventListener('input', () => {
+                        if (errorDiv) errorDiv.style.display = 'none';
+                    });
+                }
+                
+                // Şifre gösterme/gizleme butonu
+                if (toggleBtn && input) {
+                    toggleBtn.addEventListener('click', () => {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                        } else {
+                            input.type = 'password';
+                            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
                         }
                     });
                 }
             },
             preConfirm: () => {
                 const input = document.getElementById('swalPasswordInput');
-                if (!input || !input.value) {
+                const errorDiv = document.getElementById('swalPasswordError');
+                
+                if (!input || !input.value.trim()) {
+                    if (errorDiv) errorDiv.style.display = 'block';
                     Swal.showValidationMessage('❌ Lütfen şifrenizi girin!');
                     return false;
                 }
-                return input.value;
+                return input.value.trim();
             }
         });
         
@@ -3439,9 +3482,8 @@ async function loadUserStats() {
         }
         
         // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
-        // EmailAuthProvider'ı import ettiğin için doğrudan kullan
         const credential = EmailAuthProvider.credential(currentUser.email, password);
-        await currentUser.reauthenticateWithCredential(credential);
+        await reauthenticateWithCredential(currentUser, credential);
         console.log('✅ Kullanıcı yeniden doğrulandı');
         
         // ===== 3. E-POSTAYI GÜNCELLE =====
