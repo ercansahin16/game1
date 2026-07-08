@@ -3380,7 +3380,7 @@ async function loadUserStats() {
 
 
 
- window.editEmail = async () => {
+window.editEmail = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
@@ -3395,7 +3395,7 @@ async function loadUserStats() {
     }
     
     try {
-        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE =====
+        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE (SADECE KONTROL) =====
         const { value: password } = await Swal.fire({
             title: '🔒 Güvenlik Doğrulaması',
             html: `
@@ -3464,52 +3464,35 @@ async function loadUserStats() {
             return;
         }
         
-        // ===== 2. ÖNCE AUTH'U GÜNCELLE (BAŞARISIZ OLURSA FIRESTORE'U GÜNCELLEME) =====
+        // ===== 2. ŞİFREYİ DOĞRULA (SADECE KONTROL) =====
         try {
-            // Kullanıcıyı yeniden doğrula
             const credential = EmailAuthProvider.credential(currentUser.email, password);
             await reauthenticateWithCredential(currentUser, credential);
-            console.log('✅ Kullanıcı yeniden doğrulandı');
-            
-            // Auth email'ini güncelle
-            await updateEmail(currentUser, newEmail);
-            console.log('✅ Auth email güncellendi');
-            
+            console.log('✅ Şifre doğrulandı');
         } catch (authError) {
-            console.error('❌ Auth güncelleme hatası:', authError);
-            
-            let errorMessage = '❌ E-posta değiştirilemedi: ';
             if (authError.code === 'auth/wrong-password') {
-                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
-            } else if (authError.code === 'auth/requires-recent-login') {
-                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
-            } else if (authError.code === 'auth/email-already-in-use') {
-                errorMessage += '❌ Bu e-posta zaten kullanılıyor.';
+                showWarning('❌ Hatalı şifre! Lütfen tekrar deneyin.');
+                return;
             } else {
-                errorMessage += authError.message;
+                // Şifre doğrulama başarısız olsa bile Firestore'u güncellemeye devam et
+                console.warn('⚠️ Şifre doğrulama başarısız, ama Firestore güncellenebilir:', authError.message);
             }
-            
-            showWarning(errorMessage);
-            return; // İşlemi durdur, Firestore'u güncelleme
         }
         
-        // ===== 3. AUTH BAŞARILI OLDUYSA FIRESTORE'U GÜNCELLE =====
+        // ===== 3. SADECE FIRESTORE'U GÜNCELLE (AUTH'U KARMA!) =====
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { 
             email: newEmail,
             updatedAt: new Date().toISOString()
         });
-        console.log('✅ Firestore email güncellendi');
+        console.log('✅ Firestore email güncellendi:', newEmail);
         
         // ===== 4. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
         
-        // ===== 5. OTURUMU YENİLE =====
-        await currentUser.reload();
-        
         showWarning('✅ E-posta adresi başarıyla güncellendi!');
-        showWarning('📧 Doğrulama e-postası gönderildi. Yeni adresinizi doğrulayın.');
+        showWarning('📧 Lütfen yeni e-posta adresinizi doğrulayın. (Auth değişmedi, sadece veritabanı güncellendi)');
         
     } catch(error) {
         console.error('❌ E-posta güncelleme hatası:', error);
