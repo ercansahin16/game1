@@ -3373,7 +3373,10 @@ async function loadUserStats() {
     }
 };
 
-   window.editEmail = async () => {
+
+
+
+    window.editEmail = async () => {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
@@ -3382,24 +3385,68 @@ async function loadUserStats() {
     const newEmail = prompt('Yeni e-posta adresinizi girin:', currentUser.email);
     if (!newEmail || newEmail === currentUser.email) return;
     
-    // Basit e-posta kontrolü
     if (!newEmail.includes('@') || !newEmail.includes('.')) {
         showWarning('❌ Lütfen geçerli bir e-posta adresi girin!');
         return;
     }
     
     try {
-        // Kullanıcıyı yeniden doğrula
-        await currentUser.reload();
+        // ===== 1. KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE =====
+        const { value: password } = await Swal.fire({
+            title: '🔒 Güvenlik Doğrulaması',
+            html: `
+                <div style="text-align: left;">
+                    <p style="margin-bottom: 8px; font-size: 14px;">E-posta adresinizi değiştirmek için mevcut şifrenizi girin:</p>
+                    <input type="password" id="swalPasswordInput" placeholder="Mevcut şifreniz" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Doğrula ✅',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            width: '400px',
+            padding: '1.5rem',
+            didOpen: () => {
+                const input = document.getElementById('swalPasswordInput');
+                if (input) {
+                    input.focus();
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            Swal.clickConfirm();
+                        }
+                    });
+                }
+            },
+            preConfirm: () => {
+                const input = document.getElementById('swalPasswordInput');
+                if (!input || !input.value) {
+                    Swal.showValidationMessage('❌ Lütfen şifrenizi girin!');
+                    return false;
+                }
+                return input.value;
+            }
+        });
         
-        // E-postayı güncelle
+        if (!password) {
+            showWarning('❌ Şifre girilmedi, işlem iptal edildi.');
+            return;
+        }
+        
+        // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
+        const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+        await currentUser.reauthenticateWithCredential(credential);
+        console.log('✅ Kullanıcı yeniden doğrulandı');
+        
+        // ===== 3. E-POSTAYI GÜNCELLE =====
         await updateEmail(currentUser, newEmail);
+        console.log('✅ E-posta güncellendi');
         
-        // Firestore'u güncelle
+        // ===== 4. FIRESTORE'U GÜNCELLE =====
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { email: newEmail });
         
-        // Profil email'ini güncelle
+        // ===== 5. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
         
@@ -3411,17 +3458,20 @@ async function loadUserStats() {
         
         let errorMessage = '❌ E-posta değiştirilemedi: ';
         switch(error.code) {
+            case 'auth/wrong-password':
+                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
+                break;
             case 'auth/requires-recent-login':
-                errorMessage += 'Lütfen önce çıkış yapıp tekrar giriş yapın.';
+                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
                 break;
             case 'auth/invalid-email':
-                errorMessage += 'Geçersiz e-posta adresi.';
+                errorMessage += '❌ Geçersiz e-posta adresi.';
                 break;
             case 'auth/email-already-in-use':
-                errorMessage += 'Bu e-posta zaten kullanılıyor.';
+                errorMessage += '❌ Bu e-posta zaten kullanılıyor.';
                 break;
             case 'auth/operation-not-allowed':
-                errorMessage += 'Bu işlem için lütfen önce çıkış yapıp tekrar giriş yapın.';
+                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
                 break;
             default:
                 errorMessage += error.message;
@@ -3429,6 +3479,10 @@ async function loadUserStats() {
         showWarning(errorMessage);
     }
 };
+
+
+
+    
 
 
     
