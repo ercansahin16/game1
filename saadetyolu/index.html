@@ -3280,18 +3280,64 @@ async function loadUserStats() {
         }
     };
 
-    window.editUsername = async () => {
-        if (!currentUser) return;
-        const newName = prompt('Yeni kullanıcı adınızı girin:', document.getElementById('profileName').textContent);
-        if (newName && newName.trim()) {
-            const userRef = doc(db, 'users', currentUser.uid);
-            await updateDoc(userRef, { name: newName.trim() });
-            document.getElementById('profileName').textContent = newName.trim();
-            document.getElementById('userNameDisplay').textContent = newName.trim();
-            document.getElementById('sidebarUserName').innerHTML = `<i class="fas fa-user"></i> ${newName.trim()}`;
-            showWarning('Kullanıcı adı güncellendi!');
+   window.editUsername = async () => {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    const newName = prompt('Yeni kullanıcı adınızı girin:', document.getElementById('profileName').textContent);
+    if (!newName || !newName.trim()) {
+        showWarning('❌ Kullanıcı adı boş olamaz!');
+        return;
+    }
+    
+    try {
+        // 1. Firestore'a kaydet
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { name: newName.trim() });
+        console.log('✅ Firestore güncellendi:', newName.trim());
+        
+        // 2. Firebase Auth displayName'i de güncelle
+        try {
+            await updateProfile(currentUser, {
+                displayName: newName.trim()
+            });
+            console.log('✅ Auth displayName güncellendi');
+        } catch (authError) {
+            console.warn('⚠️ Auth displayName güncellenemedi:', authError.message);
         }
-    };
+        
+        // 3. TÜM EKRANLARI GÜNCELLE
+        // Profil sayfası
+        const profileNameEl = document.getElementById('profileName');
+        if (profileNameEl) profileNameEl.textContent = newName.trim();
+        
+        // Header (sağ üstteki kullanıcı adı)
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        if (userNameDisplay) userNameDisplay.textContent = newName.trim();
+        
+        // Sidebar (sol menüdeki kullanıcı adı)
+        const sidebarUserName = document.getElementById('sidebarUserName');
+        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${newName.trim()}`;
+        
+        // Ana sayfa header'daki logo yanındaki isim (varsa)
+        const homeLogo = document.getElementById('homeLogo');
+        if (homeLogo) {
+            // Eğer logo içinde isim gösteriliyorsa güncelle
+            // Bu kısım opsiyonel
+        }
+        
+        showWarning('✅ Kullanıcı adı başarıyla güncellendi!');
+        
+        // 4. loadUserStats'i yeniden çağır (güvenlik için)
+        await loadUserStats();
+        
+    } catch (error) {
+        console.error('❌ Kullanıcı adı güncelleme hatası:', error);
+        showWarning('❌ Kullanıcı adı güncellenemedi: ' + error.message);
+    }
+};
 
    window.editEmail = async () => {
     if (!currentUser) {
