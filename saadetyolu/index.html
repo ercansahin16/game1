@@ -3395,7 +3395,11 @@ window.editEmail = async () => {
     }
     
     try {
-        // ===== 1. ŞİFRE SOR =====
+        // ===== 1. ÖNCE OTURUMU YENİLE =====
+        await currentUser.reload();
+        console.log('🔄 Oturum yenilendi');
+        
+        // ===== 2. KULLANICIDAN ŞİFRESİNİ İSTE =====
         const { value: password } = await Swal.fire({
             title: '🔒 Güvenlik Doğrulaması',
             html: `
@@ -3460,42 +3464,84 @@ window.editEmail = async () => {
             return;
         }
         
-        // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
+        // ===== 3. KULLANICIYI YENİDEN DOĞRULA =====
         const credential = EmailAuthProvider.credential(currentUser.email, password);
         await reauthenticateWithCredential(currentUser, credential);
         console.log('✅ Kullanıcı yeniden doğrulandı');
         
-        // ===== 3. AUTH EMAIL'İNİ GÜNCELLE =====
+        // ===== 4. EMAİL'İ GÜNCELLE =====
         await updateEmail(currentUser, newEmail);
         console.log('✅ Auth email güncellendi:', newEmail);
         
-        // ===== 4. FIRESTORE'U GÜNCELLE =====
+        // ===== 5. FIRESTORE'U GÜNCELLE =====
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { email: newEmail });
         console.log('✅ Firestore email güncellendi');
         
-        // ===== 5. PROFİL EMAİL'İNİ GÜNCELLE =====
+        // ===== 6. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
         if (profileEmailEl) profileEmailEl.textContent = newEmail;
         
-        // ===== 6. DOĞRULAMA E-POSTASI GÖNDER =====
-        await currentUser.sendEmailVerification();
-        console.log('✅ Doğrulama e-postası gönderildi');
+        // ===== 7. OTURUMU YENİLE =====
+        await currentUser.reload();
         
         showWarning('✅ E-posta adresi başarıyla güncellendi!');
-        showWarning('📧 Doğrulama e-postası gönderildi. Lütfen yeni adresinizi doğrulayın.');
-        showWarning('🔑 Yeni email ile giriş yapabilmek için lütfen doğrulama linkine tıklayın.');
+        showWarning('📧 Doğrulama e-postası gönderildi. Yeni adresinizi doğrulayın.');
         
     } catch(error) {
         console.error('❌ E-posta güncelleme hatası:', error);
         
+        // ===== ÖZEL DURUM: auth/operation-not-allowed =====
         if (error.code === 'auth/operation-not-allowed') {
-            showWarning('❌ E-posta değiştirilemedi. Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.');
-        } else {
-            showWarning('❌ Güncellenemedi: ' + error.message);
+            const result = await Swal.fire({
+                title: '🔒 Güvenlik Doğrulaması Gerekli',
+                html: `
+                    <div style="text-align: left;">
+                        <p style="font-size: 14px;">E-posta değiştirmek için güvenlik nedeniyle <strong>çıkış yapıp tekrar giriş yapmanız</strong> gerekiyor.</p>
+                        <p style="font-size: 13px; opacity: 0.7; margin-top: 10px;">Çıkış yapıp tekrar giriş yaptıktan sonra e-posta değiştirme işlemini tekrar deneyin.</p>
+                    </div>
+                `,
+                icon: 'warning',
+                confirmButtonText: 'Çıkış Yap',
+                cancelButtonText: 'Vazgeç',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280'
+            });
+            
+            if (result.isConfirmed) {
+                await signOut(auth);
+                showWarning('👋 Çıkış yapıldı. Lütfen tekrar giriş yapıp e-posta değiştirme işlemini tekrar deneyin.');
+            }
+            return;
         }
+        
+        let errorMessage = '❌ E-posta değiştirilemedi: ';
+        switch(error.code) {
+            case 'auth/wrong-password':
+                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
+                break;
+            case 'auth/requires-recent-login':
+                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += '❌ Geçersiz e-posta adresi.';
+                break;
+            case 'auth/email-already-in-use':
+                errorMessage += '❌ Bu e-posta zaten kullanılıyor.';
+                break;
+            default:
+                errorMessage += error.message;
+        }
+        showWarning(errorMessage);
     }
 };
+
+
+
+
+
+    
 
 
     
