@@ -3051,7 +3051,7 @@ showBtn.onclick = () => {
 
 
 
-  async function loadUserStats() {
+async function loadUserStats() {
     if (!currentUser) return;
     
     try {
@@ -3077,7 +3077,7 @@ showBtn.onclick = () => {
             
             // ===== SIRALAMADAKİ İLE AYNI FORMÜL =====
             const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = totalWordsViewed * 1;  // 1 ile çarp
+            const kelimePuani = totalWordsViewed * 1;
             const sandikCezasi = sandikCount * 1;
             
             const toplamPuan = Math.round(
@@ -3088,13 +3088,24 @@ showBtn.onclick = () => {
                 sandikCezasi
             );
             
-            // ===== EKRANA YAZ =====
+            // ===== EKRANA YAZ (NORMAL DEĞERLER) =====
             document.getElementById('totalWordsLearned').textContent = totalWordsViewed;
             document.getElementById('totalExamsCompleted').textContent = data.examsCompleted?.length || 0;
             document.getElementById('averageScore').textContent = Math.round(averageScore);
             document.getElementById('karmaScoreProfile').textContent = quizScore.toFixed(2);
             document.getElementById('sandikCountProfile').textContent = sandikCount;
-            document.getElementById('profileToplamPuan').textContent = toplamPuan;
+            
+            // ===== TOPLAM PUAN + HESAPLAMA =====
+            // Hesaplama metnini oluştur
+            const hesaplamaDetay = `(${quizScore.toFixed(1)} + ${Math.round(averageScore)} + ${seviyePuani} + ${kelimePuani} - ${sandikCezasi}) = ${toplamPuan}`;
+            
+            // HTML olarak göster (hem sayı hem hesaplama)
+            document.getElementById('profileToplamPuan').innerHTML = `
+                <span style="font-size: 18px; font-weight: 700; color: #f59e0b;">${toplamPuan}</span>
+                <span style="font-size: 11px; opacity: 0.5; font-weight: 400; display: block; margin-top: 2px;">
+                    ${hesaplamaDetay}
+                </span>
+            `;
             
             const seviyeText = `${mevcutSeviye}/${toplamSeviye}`;
             document.getElementById('seviyeProfile').textContent = seviyeText;
@@ -3106,13 +3117,20 @@ showBtn.onclick = () => {
             displayExamHistory(data.examsCompleted || []);
             
         } else {
-            // Varsayılan değerler
+            // ===== VARSAYILAN DEĞERLER =====
             document.getElementById('totalWordsLearned').textContent = '0';
             document.getElementById('totalExamsCompleted').textContent = '0';
             document.getElementById('averageScore').textContent = '0';
             document.getElementById('karmaScoreProfile').textContent = '0.00';
             document.getElementById('sandikCountProfile').textContent = '0';
-            document.getElementById('profileToplamPuan').textContent = '0';
+            
+            // Varsayılan toplam puan (0)
+            document.getElementById('profileToplamPuan').innerHTML = `
+                <span style="font-size: 18px; font-weight: 700; color: #f59e0b;">0</span>
+                <span style="font-size: 11px; opacity: 0.5; font-weight: 400; display: block; margin-top: 2px;">
+                    (0 + 0 + 0 + 0 - 0) = 0
+                </span>
+            `;
             
             const seviyeProfile = document.getElementById('seviyeProfile');
             if (seviyeProfile) seviyeProfile.textContent = `1/${toplamSeviye}`;
@@ -5102,7 +5120,13 @@ window.loadRanking = async function() {
                         
                         <strong style="font-size: 13px;">📍 Senin Sıralaman</strong><br>
                         <span style="font-size: 22px; color: #f59e0b; font-weight: 700;">${userIndex + 1}. sırada</span><br>
-                        <span style="font-size: 13px;">🏆 Toplam Puan: ${userData.totalScore}</span>
+                        <div style="font-size: 13px; opacity: 0.7; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <span>🏆 Toplam Puan:</span>
+    <span id="profileToplamPuan" style="color: #f59e0b; font-weight: 700; font-size: 15px;">0</span>
+    <span style="font-size: 11px; opacity: 0.5; font-weight: 300;">(</span>
+    <span id="profilePuanHesaplama" style="font-size: 11px; opacity: 0.6; font-weight: 300;"></span>
+    <span style="font-size: 11px; opacity: 0.5; font-weight: 300;">)</span>
+</div>
                         
                         <div style="font-size: 11px; opacity: 0.6; margin-top: 4px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
                             <span>📖 ${userData.totalWords} kelime</span>
