@@ -2221,14 +2221,18 @@ document.getElementById('goBulkUpload').onclick = () => {
 };
 
 async function loadBulkBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('bulkBookSelect');
     select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
+    books.forEach(book => {
         const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
+        option.value = book.id;
+        option.textContent = book.name;
         select.appendChild(option);
     });
 }
@@ -2242,13 +2246,17 @@ document.getElementById('bulkBookSelect').onchange = async () => {
         return;
     }
     const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+    const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    lessons.sort((a, b) => a.name.localeCompare(b.name));
+    
     lessonSelect.disabled = false;
     lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
+    lessons.forEach(lesson => {
         const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
+        option.value = lesson.id;
+        option.textContent = lesson.name;
         lessonSelect.appendChild(option);
     });
 };
@@ -2648,12 +2656,17 @@ if (examBookSelect) {
 
     // Toplu Soru Yükleme - Kitapları yükle
 async function loadBulkExamBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('bulkExamBookSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    books.forEach(book => {
+        select.innerHTML += `<option value="${book.id}">${book.name}</option>`;
     });
 }
 
@@ -2685,24 +2698,35 @@ if (bulkExamBookSelect) {
 }
 
 // Ders seçilince sınavları yükle
-const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
-if (bulkExamLessonSelect) {
-    bulkExamLessonSelect.onchange = async () => {
-        const lessonId = bulkExamLessonSelect.value;
+const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
+if (bulkExamBookSelect) {
+    bulkExamBookSelect.onchange = async () => {
+        const bookId = bulkExamBookSelect.value;
+        const lessonSelect = document.getElementById('bulkExamLessonSelect');
         const examSelect = document.getElementById('bulkExamSelect');
         
-        if (!lessonId) {
+        if (!bookId) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
             examSelect.disabled = true;
             examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
             return;
         }
         
-        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-        examSelect.disabled = false;
-        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            examSelect.innerHTML += `<option value="${doc.id}">${doc.data().title}</option>`;
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== ALFABETİK SIRALA =====
+        lessons.sort((a, b) => a.name.localeCompare(b.name));
+        
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        lessons.forEach(lesson => {
+            lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.name}</option>`;
         });
+        
+        examSelect.disabled = true;
+        examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
     };
 }
 
