@@ -2671,29 +2671,29 @@ async function loadBulkExamBooks() {
 }
 
 // Kitap seçilince dersleri yükle
-const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
-if (bulkExamBookSelect) {
-    bulkExamBookSelect.onchange = async () => {
-        const bookId = bulkExamBookSelect.value;
-        const lessonSelect = document.getElementById('bulkExamLessonSelect');
+const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
+if (bulkExamLessonSelect) {
+    bulkExamLessonSelect.onchange = async () => {
+        const lessonId = bulkExamLessonSelect.value;
         const examSelect = document.getElementById('bulkExamSelect');
         
-        if (!bookId) {
-            lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        if (!lessonId) {
             examSelect.disabled = true;
             examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
             return;
         }
         
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== ALFABETİK SIRALA =====
+        exams.sort((a, b) => a.title.localeCompare(b.title));
+        
+        examSelect.disabled = false;
+        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
+        exams.forEach(exam => {
+            examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
         });
-        examSelect.disabled = true;
-        examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
     };
 }
 
