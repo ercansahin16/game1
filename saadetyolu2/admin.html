@@ -988,7 +988,7 @@
         </div>
 
         <!-- Toplu Kelime Yükleme -->
-      <div id="bulkUploadSection" class="section-card hidden">
+ <div id="bulkUploadSection" class="section-card hidden">
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1014,7 +1014,12 @@
         </div>
     </div>
     <div style="margin: 20px 0;">
-        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+            <button id="copyBulkJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                <i class="fas fa-copy"></i> Örneği Kopyala
+            </button>
+        </div>
         <textarea id="bulkJsonInput" rows="10" placeholder='[
   {"arabic": "كِتَاب", "turkish": "kitap"},
   {"arabic": "قَلَم", "turkish": "kalem"}
@@ -1068,7 +1073,12 @@
         </div>
     </div>
     <div style="margin: 20px 0;">
-        <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+            <button id="copyBulkExamJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                <i class="fas fa-copy"></i> Örneği Kopyala
+            </button>
+        </div>
         <textarea id="bulkExamJsonInput" rows="15" placeholder='[
   {
     "question": "Sorunun metni buraya yazılır?",
@@ -3632,7 +3642,71 @@ document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () =>
     openModal('lessonModal');
 });
 
+    // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
+    const exampleJson = `[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"},
+  {"arabic": "مَسْجِد", "turkish": "cami"},
+  {"arabic": "مَدْرَسَة", "turkish": "okul"}
+]`;
     
+    navigator.clipboard.writeText(exampleJson).then(() => {
+        const btn = document.getElementById('copyBulkJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 2000);
+    }).catch(() => {
+        // Fallback: textarea'ya yaz ve seç
+        const textarea = document.getElementById('bulkJsonInput');
+        textarea.value = exampleJson;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const exampleJson = `[
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]`;
+    
+    navigator.clipboard.writeText(exampleJson).then(() => {
+        const btn = document.getElementById('copyBulkExamJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 2000);
+    }).catch(() => {
+        const textarea = document.getElementById('bulkExamJsonInput');
+        textarea.value = exampleJson;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
 
 </script>
 </body>
