@@ -10,9 +10,9 @@
 <style>
 
 
-    /* ===== SCROLL BAR KORUMASI ===== */
-body {
-    overscroll-behavior: none;
+  /* ===== SCROLL KORUMASI ===== */
+html, body {
+    overscroll-behavior-y: none;
 }
 
 /* Scroll bar olan elementlerde overscroll'a izin ver */
@@ -26,10 +26,10 @@ body {
 .modal-content,
 .swal2-popup,
 [style*="overflow-y"] {
-    overscroll-behavior: auto;
+    overscroll-behavior-y: auto;
     -webkit-overflow-scrolling: touch;
+    overflow-y: auto !important;
 }
-
 
     
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -7696,11 +7696,14 @@ window.refreshRanking = async function() {
 
 
 
-// ===== PULL-TO-REFRESH ENGELLE (SADECE EN ÜSTTE) =====
+// ===== PULL-TO-REFRESH ENGELLE (SCROLL ÇALIŞSIN) =====
 let touchStartY = 0;
+let isAtTop = true;
 
 document.addEventListener('touchstart', function(e) {
     touchStartY = e.touches[0].clientY;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    isAtTop = scrollTop === 0;
 }, { passive: true });
 
 document.addEventListener('touchmove', function(e) {
@@ -7708,10 +7711,12 @@ document.addEventListener('touchmove', function(e) {
     const touchY = e.touches[0].clientY;
     const isPullingDown = touchY > touchStartY;
     
-    // SADECE sayfa en üstteyken ve aşağı çekiliyorsa engelle
+    // SADECE sayfa en üstteyken VE aşağı çekiliyorsa engelle
+    // Eğer scroll yapıyorsa (aşağı inmişse) engelleme
     if (scrollTop === 0 && isPullingDown) {
         e.preventDefault();
     }
+    // Scroll aşağı inmişse hiçbir şey yapma (scroll serbest)
 }, { passive: false });
 
     
