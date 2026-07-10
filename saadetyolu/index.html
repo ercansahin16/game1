@@ -2556,22 +2556,22 @@ body.light-theme #karmaScreen .option-quiz {
                     <i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu
                 </h3>
                 <!-- ===== YENİLE BUTONU ===== -->
-                <button id="refreshRankingBtn" onclick="refreshRanking()" style="
-                    background: rgba(16, 185, 129, 0.15);
-                    border: 1px solid rgba(16, 185, 129, 0.25);
-                    color: #34d399;
-                    padding: 4px 12px;
-                    border-radius: 20px;
-                    font-size: 12px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    transition: all 0.3s ease;
-                ">
-                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span>Yenile</span>
-                </button>
+                <button id="refreshRankingBtn" onclick="window.refreshRanking()" style="
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+">
+    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+    <span>Yenile</span>
+</button>
             </div>
             <div class="word-count" id="rankingCount">0 oyuncu</div>
         </div>
@@ -7609,24 +7609,27 @@ function animateLogo() {
 
 
     // ===== SIRALAMA YENİLEME FONKSİYONU =====
-async function refreshRanking() {
+// ===== SIRALAMA YENİLEME FONKSİYONU (GLOBAL) =====
+window.refreshRanking = async function() {
     const btn = document.getElementById('refreshRankingBtn');
     const icon = document.getElementById('refreshIcon');
-    const originalText = btn.innerHTML;
+    const originalText = btn ? btn.innerHTML : '';
+    
+    if (!btn) return;
     
     // Butonu devre dışı bırak
     btn.style.pointerEvents = 'none';
     btn.style.opacity = '0.6';
     
     // Dönen ikon
-    icon.style.animation = 'spin 0.8s linear infinite';
+    if (icon) icon.style.animation = 'spin 0.8s linear infinite';
     
     // "Yenileniyor..." yaz
     btn.innerHTML = `<i class="fas fa-sync-alt" style="animation: spin 0.8s linear infinite;"></i> Yenileniyor...`;
     
     try {
         // Sıralamayı yeniden yükle
-        await loadRanking();
+        await window.loadRanking();
         
         // Başarılı mesajı
         btn.style.background = 'rgba(16, 185, 129, 0.25)';
@@ -7640,7 +7643,7 @@ async function refreshRanking() {
             btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
             btn.style.pointerEvents = 'auto';
             btn.style.opacity = '1';
-            icon.style.animation = '';
+            if (icon) icon.style.animation = '';
         }, 1500);
         
     } catch (error) {
@@ -7655,10 +7658,10 @@ async function refreshRanking() {
             btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
             btn.style.pointerEvents = 'auto';
             btn.style.opacity = '1';
-            icon.style.animation = '';
+            if (icon) icon.style.animation = '';
         }, 2000);
     }
-}
+};
     
 </script>
 </body>
