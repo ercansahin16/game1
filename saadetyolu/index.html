@@ -2194,6 +2194,47 @@ body.light-theme #karmaScreen .option-quiz {
         width: 3px !important;
     }
 }
+
+    /* ===== SPIN ANİMASYONU ===== */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== YENİLE BUTONU HOVER ===== */
+#refreshRankingBtn:hover {
+    background: rgba(16, 185, 129, 0.25) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    transform: scale(1.02);
+}
+
+#refreshRankingBtn:active {
+    transform: scale(0.95);
+}
+
+/* ===== MOBİL YENİLE BUTONU ===== */
+@media (max-width: 768px) {
+    #refreshRankingBtn {
+        padding: 3px 10px !important;
+        font-size: 10px !important;
+    }
+    #refreshRankingBtn span {
+        display: none; /* Mobilde sadece ikon göster */
+    }
+    #refreshRankingBtn i {
+        font-size: 14px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #refreshRankingBtn {
+        padding: 2px 8px !important;
+        font-size: 9px !important;
+    }
+    #refreshRankingBtn i {
+        font-size: 12px !important;
+    }
+}
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2506,17 +2547,46 @@ body.light-theme #karmaScreen .option-quiz {
         </div>
 
         <!-- Sıralama Ekranı -->
-        <div id="rankingScreen" style="display: none !important;">
-            <div class="words-area">
-                <div class="words-header">
-                    <h3><i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu</h3>
-                    <div class="word-count" id="rankingCount">0 oyuncu</div>
-                </div>
-                <div id="rankingList" class="leaderboard-list"></div>
-                <div id="userRank" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
-                <button class="btn btn-nav" style="margin-top: 20px; width: 100%;" onclick="goHome()"> Bahçeye çık</button>
+        <!-- Sıralama Ekranı -->
+<div id="rankingScreen" style="display: none !important;">
+    <div class="words-area">
+        <div class="words-header">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-trophy"></i> 🏆 Liderlik Tablosu
+                </h3>
+                <!-- ===== YENİLE BUTONU ===== -->
+                <button id="refreshRankingBtn" onclick="refreshRanking()" style="
+                    background: rgba(16, 185, 129, 0.15);
+                    border: 1px solid rgba(16, 185, 129, 0.25);
+                    color: #34d399;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all 0.3s ease;
+                ">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                    <span>Yenile</span>
+                </button>
             </div>
+            <div class="word-count" id="rankingCount">0 oyuncu</div>
         </div>
+        <div id="rankingList" class="leaderboard-list"></div>
+        <div id="userRank" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
+        
+        <!-- Bahçeye çık butonu - Animasyonlu -->
+        <button class="btn btn-nav" id="goHomeBtn" style="margin-top: 20px; width: 100%; padding: 12px; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="goHomeWithAnimation()">
+            <span id="goHomeText">🌿 Bahçeye çık</span>
+            <span id="goHomeLoading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Yükleniyor...
+            </span>
+        </button>
+    </div>
+</div>
 
         <!-- ============================================================
              PROFİL EKRANI - DÜZENLENMİŞ
@@ -7535,6 +7605,60 @@ function animateLogo() {
     }, 1300);
 }
 
+
+
+
+    // ===== SIRALAMA YENİLEME FONKSİYONU =====
+async function refreshRanking() {
+    const btn = document.getElementById('refreshRankingBtn');
+    const icon = document.getElementById('refreshIcon');
+    const originalText = btn.innerHTML;
+    
+    // Butonu devre dışı bırak
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.6';
+    
+    // Dönen ikon
+    icon.style.animation = 'spin 0.8s linear infinite';
+    
+    // "Yenileniyor..." yaz
+    btn.innerHTML = `<i class="fas fa-sync-alt" style="animation: spin 0.8s linear infinite;"></i> Yenileniyor...`;
+    
+    try {
+        // Sıralamayı yeniden yükle
+        await loadRanking();
+        
+        // Başarılı mesajı
+        btn.style.background = 'rgba(16, 185, 129, 0.25)';
+        btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        btn.innerHTML = `<i class="fas fa-check"></i> Güncellendi!`;
+        
+        // 1.5 saniye sonra eski haline dön
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = 'rgba(16, 185, 129, 0.15)';
+            btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            icon.style.animation = '';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Yenileme hatası:', error);
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        btn.innerHTML = `<i class="fas fa-exclamation-circle"></i> Hata!`;
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = 'rgba(16, 185, 129, 0.15)';
+            btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            icon.style.animation = '';
+        }, 2000);
+    }
+}
     
 </script>
 </body>
