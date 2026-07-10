@@ -2139,6 +2139,53 @@ body.light-theme #karmaScreen .option-quiz {
         font-size: 8px !important;
     }
 }
+
+
+
+
+    /* ============================================================
+   LOGO ANİMASYONU - Yanıp Sönme ve Sallanma
+   ============================================================ */
+@keyframes logoPulse {
+    0% { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
+    15% { 
+        opacity: 0.3; 
+        transform: translateX(-6px);
+    }
+    30% { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
+    45% { 
+        opacity: 0.3; 
+        transform: translateX(6px);
+    }
+    60% { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
+    75% { 
+        opacity: 0.5; 
+        transform: translateX(-4px);
+    }
+    90% { 
+        opacity: 1; 
+        transform: translateX(4px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
+}
+
+.logo-animate {
+    animation: logoPulse 1.2s ease forwards;
+    display: inline-block;
+}
+    
     
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -2859,7 +2906,10 @@ window.goHome = () => {
     
     // Logo yazısını eski haline döndür
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) homeLogo.textContent = "Saadetyolu";
+      if (homeLogo) {
+        homeLogo.textContent = "Saadetyolu";
+        homeLogo.classList.remove('logo-animate'); // Animasyonu temizle
+    }
     
     closeMenu();
 };
@@ -2876,8 +2926,10 @@ window.goHome = () => {
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) 
-     homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+   if (homeLogo) {
+        homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+        animateLogo(); // ANİMASYON EKLENDİ
+    }
     
     closeMenu();
 };
@@ -2922,7 +2974,10 @@ if (zoomBtn) {
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+     if (homeLogo) {
+        homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+        animateLogo(); // ANİMASYON EKLENDİ
+    }
     
     await loadUserExamHistory();
     loadExamBooks();
@@ -2953,7 +3008,10 @@ window.showProfile = function() {
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+    if (homeLogo) {
+        homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+        animateLogo(); // ANİMASYON EKLENDİ
+    }
     
     loadUserStats();
     closeMenu();
@@ -5186,7 +5244,10 @@ window.goKarmaGame = () => {
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+    if (homeLogo) {
+        homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+        animateLogo(); // ANİMASYON EKLENDİ
+    }
     
     // Yarışmayı başlat
     startQuizWords();
@@ -5302,7 +5363,10 @@ window.goRanking = () => {
     
     // Logo yazısını değiştir
     const homeLogo = document.getElementById('homeLogo');
-    if (homeLogo) homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+      if (homeLogo) {
+        homeLogo.innerHTML = '<i class="fa-solid fa-arrow-left-long"></i> Bahçeye çık';
+        animateLogo(); // ANİMASYON EKLENDİ
+    }
     
     // Sıralamayı yükle
     loadRanking();
@@ -7407,6 +7471,31 @@ function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, total
         showWarning(msg);
     }
 };
+
+
+
+
+
+
+    // ===== LOGO ANİMASYON FONKSİYONU =====
+function animateLogo() {
+    const homeLogo = document.getElementById('homeLogo');
+    if (!homeLogo) return;
+    
+    // Önce eski animasyonu temizle
+    homeLogo.classList.remove('logo-animate');
+    
+    // Biraz bekleyip animasyonu ekle (sıfırlamak için)
+    setTimeout(() => {
+        homeLogo.classList.add('logo-animate');
+    }, 10);
+    
+    // Animasyon bitince temizle (tekrar kullanılabilir)
+    setTimeout(() => {
+        homeLogo.classList.remove('logo-animate');
+    }, 1300);
+}
+
     
 </script>
 </body>
