@@ -7672,18 +7672,27 @@ window.refreshRanking = async function() {
 
 
 
-
-// ===== PULL-TO-REFRESH ENGELLE (SCROLL ÇALIŞSIN) =====
+// ===== PULL-TO-REFRESH ENGELLE (SCROLL BAR ÇALIŞSIN) =====
 let startY = 0;
+let targetElement = null;
 
 document.addEventListener('touchstart', function(e) {
     startY = e.touches[0].clientY;
+    targetElement = e.target;
 }, { passive: true });
 
 document.addEventListener('touchmove', function(e) {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const currentY = e.touches[0].clientY;
     const isPullingDown = currentY > startY;
+    
+    // HEDEF ELEMENT KONTROLÜ: Scroll bar olan elementleri tespit et
+    const isScrollable = targetElement?.closest?.('#rankingList, .help-modal-content, .info-modal-content, .leaderboard-list, .exam-history-list, .words-area, .sidebar, .modal-content, .swal2-popup, [style*="overflow"]');
+    
+    // Eğer scrollable bir elementin içindeyse veya sayfa en üstte değilse engelleme
+    if (isScrollable || scrollTop > 0 || !isPullingDown) {
+        return; // Scroll çalışsın
+    }
     
     // Sadece sayfa en üstte ve aşağı çekiliyorsa engelle
     if (scrollTop === 0 && isPullingDown) {
