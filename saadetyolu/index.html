@@ -7673,10 +7673,20 @@ window.refreshRanking = async function() {
 
 
 
+// ===== PULL-TO-REFRESH ENGELLE (SCROLL ÇALIŞSIN) =====
+let startY = 0;
 
- // ===== EN SONA EKLE =====
+document.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+}, { passive: true });
+
 document.addEventListener('touchmove', function(e) {
-    if ((window.scrollY || document.documentElement.scrollTop) === 0) {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const currentY = e.touches[0].clientY;
+    const isPullingDown = currentY > startY;
+    
+    // Sadece sayfa en üstte ve aşağı çekiliyorsa engelle
+    if (scrollTop === 0 && isPullingDown) {
         e.preventDefault();
     }
 }, { passive: false });
