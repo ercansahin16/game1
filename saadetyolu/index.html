@@ -7670,24 +7670,41 @@ window.refreshRanking = async function() {
 
 
 
-// ===== PULL-TO-REFRESH TAMAMEN ENGELLE =====
+
+
+
+
+    // ===== PULL-TO-REFRESH - SCROLL KONTROLLÜ =====
 let pullStartY = 0;
 let isPulling = false;
 let warningShown = false;
 
 document.addEventListener('touchstart', function(e) {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    
+    // SADECE sayfa EN ÜSTTE ise (scrollTop === 0) tetikle
     if (scrollTop === 0) {
         pullStartY = e.touches[0].clientY;
         isPulling = true;
         warningShown = false;
+    } else {
+        // Scroll yapıyorsa, pull-to-refresh'i devre dışı bırak
+        isPulling = false;
     }
 }, { passive: true });
 
 document.addEventListener('touchmove', function(e) {
+    // Eğer pull aktif değilse veya scroll yapılıyorsa hiçbir şey yapma
     if (!isPulling) return;
     
-    // Her durumda yenilemeyi engelle
+    // Scroll pozisyonunu tekrar kontrol et (güvenlik)
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    if (scrollTop > 0) {
+        isPulling = false;
+        return;
+    }
+    
+    // Yenilemeyi engelle
     e.preventDefault();
     
     const pullDistance = e.touches[0].clientY - pullStartY;
@@ -7698,7 +7715,7 @@ document.addEventListener('touchmove', function(e) {
         isPulling = false;
         
         Swal.fire({
-            title: '🌿 Bahçeye çıkmak mı istiyorsun?',
+             title: '🌿 Bahçeye çıkmak mı istiyorsun?',
             showCancelButton: true,
             confirmButtonColor: '#f59e0b',
             cancelButtonColor: '#6b7280',
@@ -7723,6 +7740,30 @@ document.addEventListener('touchend', function() {
     isPulling = false;
     pullStartY = 0;
 }, { passive: true });
+
+
+    // ===== MODAL VE LİDERLİK LİSTESİNDE SCROLL KORUMA =====
+document.addEventListener('DOMContentLoaded', function() {
+    // Liderlik listesi
+    const rankingList = document.getElementById('rankingList');
+    if (rankingList) {
+        rankingList.addEventListener('touchstart', function(e) {
+            e.stopPropagation(); // Event'in yukarı çıkmasını engelle
+        }, { passive: true });
+    }
+    
+    // Tüm modal'lar için (dinamik olarak oluşturulanlar için)
+    document.addEventListener('touchstart', function(e) {
+        const modal = e.target.closest('.help-modal, .info-modal, .modal, .swal2-popup');
+        if (modal) {
+            // Modal içinde scroll yapılıyorsa pull-to-refresh'i engelle
+            const scrollTop = modal.scrollTop || 0;
+            if (scrollTop > 0 || modal.querySelector('.swal2-html-container')) {
+                isPulling = false;
+            }
+        }
+    }, { passive: true });
+});
 
     
 </script>
