@@ -8,6 +8,30 @@
     <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
+
+
+    /* ===== SCROLL BAR KORUMASI ===== */
+body {
+    overscroll-behavior: none;
+}
+
+/* Scroll bar olan elementlerde overscroll'a izin ver */
+#rankingList,
+.help-modal-content,
+.info-modal-content,
+.leaderboard-list,
+.exam-history-list,
+.words-area,
+.sidebar,
+.modal-content,
+.swal2-popup,
+[style*="overflow-y"] {
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+    
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -7672,28 +7696,19 @@ window.refreshRanking = async function() {
 
 
 
-// ===== PULL-TO-REFRESH SADECE BODY'DE ENGELLE =====
+// ===== PULL-TO-REFRESH ENGELLE (SADECE EN ÜSTTE) =====
+let touchStartY = 0;
+
+document.addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
 document.addEventListener('touchmove', function(e) {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const currentY = e.touches[0].clientY;
-    const startY = e.touches[0].clientY - e.touches[0].movementY;
-    const isPullingDown = currentY > startY;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const touchY = e.touches[0].clientY;
+    const isPullingDown = touchY > touchStartY;
     
-    // HEDEF: Eğer scroll bar olan bir elementin içindeyse dokunma
-    const target = e.target;
-    const isInScrollable = target.closest('#rankingList') || 
-                          target.closest('.help-modal-content') || 
-                          target.closest('.info-modal-content') ||
-                          target.closest('.leaderboard-list') ||
-                          target.closest('.exam-history-list') ||
-                          target.closest('.words-area') ||
-                          target.closest('.sidebar');
-    
-    if (isInScrollable) {
-        return; // Scroll çalışsın
-    }
-    
-    // Sadece sayfa en üstte ve aşağı çekiliyorsa engelle
+    // SADECE sayfa en üstteyken ve aşağı çekiliyorsa engelle
     if (scrollTop === 0 && isPullingDown) {
         e.preventDefault();
     }
