@@ -7672,25 +7672,24 @@ window.refreshRanking = async function() {
 
 
 
-// ===== PULL-TO-REFRESH ENGELLE (SCROLL BAR ÇALIŞSIN) =====
-let startY = 0;
-let targetElement = null;
-
-document.addEventListener('touchstart', function(e) {
-    startY = e.touches[0].clientY;
-    targetElement = e.target;
-}, { passive: true });
-
+// ===== PULL-TO-REFRESH SADECE BODY'DE ENGELLE =====
 document.addEventListener('touchmove', function(e) {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const currentY = e.touches[0].clientY;
+    const startY = e.touches[0].clientY - e.touches[0].movementY;
     const isPullingDown = currentY > startY;
     
-    // HEDEF ELEMENT KONTROLÜ: Scroll bar olan elementleri tespit et
-    const isScrollable = targetElement?.closest?.('#rankingList, .help-modal-content, .info-modal-content, .leaderboard-list, .exam-history-list, .words-area, .sidebar, .modal-content, .swal2-popup, [style*="overflow"]');
+    // HEDEF: Eğer scroll bar olan bir elementin içindeyse dokunma
+    const target = e.target;
+    const isInScrollable = target.closest('#rankingList') || 
+                          target.closest('.help-modal-content') || 
+                          target.closest('.info-modal-content') ||
+                          target.closest('.leaderboard-list') ||
+                          target.closest('.exam-history-list') ||
+                          target.closest('.words-area') ||
+                          target.closest('.sidebar');
     
-    // Eğer scrollable bir elementin içindeyse veya sayfa en üstte değilse engelleme
-    if (isScrollable || scrollTop > 0 || !isPullingDown) {
+    if (isInScrollable) {
         return; // Scroll çalışsın
     }
     
@@ -7699,6 +7698,8 @@ document.addEventListener('touchmove', function(e) {
         e.preventDefault();
     }
 }, { passive: false });
+
+    
     
 </script>
 </body>
