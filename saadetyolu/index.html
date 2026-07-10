@@ -5397,7 +5397,7 @@ window.loadRanking = async function() {
             const mevcutSeviye = data.mevcutSeviye || 1;
             const seviyePuani = (mevcutSeviye - 1) * 2;  // +2 puan
             const totalWordsViewed = data.totalWordsViewed || 0;
-            const kelimePuani = totalWordsViewed * 0.1;
+            const kelimePuani = totalWordsViewed * 0.01;  // +0.01 puan (DÜZELTİLDİ)
             const sandikCount = data.quizSandik?.length || 0;
             const sandikCezasi = sandikCount * 1;        // -1 ceza
             
@@ -5426,10 +5426,10 @@ window.loadRanking = async function() {
             }
         });
         
-        // ===== PUANA GÖRE SIRALA (ZATEN VAR) =====
+        // ===== PUANA GÖRE SIRALA =====
         users.sort((a, b) => b.totalScore - a.totalScore);
         
-        // ===== TOPLAM OYUNCU SAYISI (SADECE AKTİF OLANLAR) =====
+        // ===== TOPLAM OYUNCU SAYISI =====
         const toplamOyuncu = users.length;
         document.getElementById('rankingCount').textContent = `${toplamOyuncu} oyuncu`;
         
@@ -5447,12 +5447,34 @@ window.loadRanking = async function() {
         
         const ilkler = users.slice(0, ilklerSayisi);
         
-        // ===== LİSTEYİ OLUŞTUR =====
-        let html = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+        // ===== LİSTEYİ OLUŞTUR (SCROLL BAR İLE) =====
+        let html = `
+            <div style="display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+        `;
+        
+        // Scroll bar stilleri
+        html += `
+            <style>
+                #rankingList::-webkit-scrollbar {
+                    width: 4px;
+                }
+                #rankingList::-webkit-scrollbar-track {
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 10px;
+                }
+                #rankingList::-webkit-scrollbar-thumb {
+                    background: rgba(245,158,11,0.3);
+                    border-radius: 10px;
+                }
+                #rankingList::-webkit-scrollbar-thumb:hover {
+                    background: rgba(245,158,11,0.5);
+                }
+            </style>
+        `;
         
         if (ilkler.length > 0) {
             html += `
-                <div style="text-align: center; padding: 6px; background: rgba(245,158,11,0.08); border-radius: 8px; margin-bottom: 4px;">
+                <div style="text-align: center; padding: 6px; background: rgba(245,158,11,0.08); border-radius: 8px; margin-bottom: 4px; flex-shrink: 0;">
                     <span style="color: #f59e0b; font-weight: 600; font-size: 13px;">
                         ⭐ İLK ${ilklerSayisi} ${yuzdeBilgisi !== 'Tüm Oyuncular' ? `(${yuzdeBilgisi})` : ''}
                     </span>
@@ -5465,7 +5487,7 @@ window.loadRanking = async function() {
                 const isCurrentUser = user.id === currentUser?.uid;
                 
                 html += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: ${isCurrentUser ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; border: ${isCurrentUser ? '2px solid #10b981' : 'none'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: ${isCurrentUser ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; border: ${isCurrentUser ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.03)'}; flex-shrink: 0;">
                         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0;">
                             <span style="font-weight: bold; width: 28px; text-align: center;">${medal}</span>
                             <span style="font-weight: 600; font-size: 14px;">${index + 1}.</span>
@@ -5504,8 +5526,11 @@ window.loadRanking = async function() {
             if (userData) {
                 const ilklerdeMi = userIndex < ilklerSayisi && userIndex !== -1;
                 
+                // ===== PUAN DETAYLARINI HESAPLA =====
+                const detaylar = `${userData.quizScore} + ${userData.averageScore} + ${userData.seviyePuani} + ${userData.kelimePuani} - ${userData.sandikCezasi}`;
+                
                 document.getElementById('userRank').innerHTML = `
-                    <div style="text-align: center; padding: 10px; border-radius: 10px; background: ${ilklerdeMi ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.05)'}; border: ${ilklerdeMi ? '1px solid #10b981' : '1px solid rgba(245,158,11,0.15)'};">
+                    <div style="text-align: center; padding: 12px; border-radius: 10px; background: ${ilklerdeMi ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.05)'}; border: ${ilklerdeMi ? '1px solid #10b981' : '1px solid rgba(245,158,11,0.15)'};">
                         
                         <div style="margin-bottom: 6px;">
                             ${ilklerdeMi ? `
@@ -5523,15 +5548,18 @@ window.loadRanking = async function() {
                         
                         <strong style="font-size: 13px;">📍 Senin Sıralaman</strong><br>
                         <span style="font-size: 22px; color: #f59e0b; font-weight: 700;">${userIndex + 1}. sırada</span><br>
-                        <div style="font-size: 13px; opacity: 0.7; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-    <span>🏆 Toplam Puan:</span>
-    <span style="color: #f59e0b; font-weight: 700; font-size: 15px;">0</span>
-    <span style="font-size: 11px; opacity: 0.5; font-weight: 300;">(</span>
-    <span id="profilePuanHesaplama" style="font-size: 11px; opacity: 0.6; font-weight: 300;"></span>
-    <span style="font-size: 11px; opacity: 0.5; font-weight: 300;">)</span>
-</div>
                         
-                        <div style="font-size: 11px; opacity: 0.6; margin-top: 4px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <!-- ===== TOPLAM PUAN - DÜZELTİLDİ ===== -->
+                        <div style="font-size: 15px; opacity: 0.8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 6px;">
+                            <span>🏆 Toplam Puan:</span>
+                            <span style="color: #f59e0b; font-weight: 700; font-size: 24px;">${userData.totalScore}</span>
+                            <span style="font-size: 10px; opacity: 0.4;">=</span>
+                            <span style="font-size: 10px; opacity: 0.5; font-weight: 300; font-family: monospace; background: rgba(255,255,255,0.04); padding: 2px 8px; border-radius: 4px;">
+                                ${detaylar}
+                            </span>
+                        </div>
+                        
+                        <div style="font-size: 11px; opacity: 0.6; margin-top: 6px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
                             <span>📖 ${userData.totalWords} kelime</span>
                             <span>📦 ${userData.sandikCount} sandık</span>
                             <span>🏆 ${userData.mevcutSeviye}/${userData.toplamSeviye}. Seviye</span>
@@ -5541,13 +5569,15 @@ window.loadRanking = async function() {
                             <span>🎲 Yarışma: ${userData.quizScore}</span>
                             <span>📝 Sınav: ${userData.averageScore}</span>
                             <span>🏔️ Seviye: ${userData.seviyePuani}</span>
+                            <span>📚 Kelime: ${userData.kelimePuani}</span>
+                            <span>📦 Ceza: -${userData.sandikCezasi}</span>
                         </div>
                     </div>
                 `;
             } else {
                 // Kullanıcı var ama puansız (0 puan)
                 document.getElementById('userRank').innerHTML = `
-                    <div style="text-align: center; padding: 10px; border-radius: 10px; background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.15);">
+                    <div style="text-align: center; padding: 12px; border-radius: 10px; background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.15);">
                         <div style="margin-bottom: 6px;">
                             <span style="font-size: 28px;">👋</span>
                             <div style="color: #6b7280; font-weight: 600; font-size: 16px;">Henüz Sıralamada Değilsin</div>
