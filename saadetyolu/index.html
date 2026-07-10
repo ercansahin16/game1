@@ -7667,7 +7667,59 @@ window.refreshRanking = async function() {
         }, 2000);
     }
 };
+
+
+
+    // ===== PULL-TO-REFRESH ENGELLEYİCİ =====
+let pullStartY = 0;
+let isPulling = false;
+
+document.addEventListener('touchstart', function(e) {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    if (scrollTop === 0) {
+        pullStartY = e.touches[0].clientY;
+        isPulling = true;
+    }
+}, { passive: true });
+
+document.addEventListener('touchmove', function(e) {
+    if (!isPulling) return;
     
+    const pullDistance = e.touches[0].clientY - pullStartY;
+    
+    if (pullDistance > 50) {
+        e.preventDefault(); // Sayfa yenilenmesini engelle
+        isPulling = false;
+        pullStartY = 0;
+        
+        // SweetAlert ile sor
+        Swal.fire({
+            title: '🌿 Bahçeye çıkmak mı istiyorsun?',
+            text: 'Ana sayfaya dönmek istediğine emin misin?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Evet, çık',
+            cancelButtonText: 'Hayır, kal',
+            backdrop: 'rgba(0,0,0,0.7)',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: {
+                popup: 'compact-swal'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                goHome();
+            }
+        });
+    }
+}, { passive: false });
+
+document.addEventListener('touchend', function() {
+    isPulling = false;
+    pullStartY = 0;
+}, { passive: true });
 </script>
 </body>
 </html>
