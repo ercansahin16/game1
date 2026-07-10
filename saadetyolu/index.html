@@ -7670,29 +7670,33 @@ window.refreshRanking = async function() {
 
 
 
-    // ===== PULL-TO-REFRESH ENGELLEYİCİ =====
+// ===== PULL-TO-REFRESH TAMAMEN ENGELLE =====
 let pullStartY = 0;
 let isPulling = false;
+let warningShown = false;
 
 document.addEventListener('touchstart', function(e) {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     if (scrollTop === 0) {
         pullStartY = e.touches[0].clientY;
         isPulling = true;
+        warningShown = false;
     }
 }, { passive: true });
 
 document.addEventListener('touchmove', function(e) {
     if (!isPulling) return;
     
+    // Her durumda yenilemeyi engelle
+    e.preventDefault();
+    
     const pullDistance = e.touches[0].clientY - pullStartY;
     
-    if (pullDistance > 50) {
-        e.preventDefault(); // Sayfa yenilenmesini engelle
+    // 30px'den fazla çekilirse ve uyarı gösterilmediyse
+    if (pullDistance > 30 && !warningShown) {
+        warningShown = true;
         isPulling = false;
-        pullStartY = 0;
         
-        // SweetAlert ile sor
         Swal.fire({
             title: '🌿 Bahçeye çıkmak mı istiyorsun?',
             text: 'Ana sayfaya dönmek istediğine emin misin?',
@@ -7712,6 +7716,7 @@ document.addEventListener('touchmove', function(e) {
             if (result.isConfirmed) {
                 goHome();
             }
+            warningShown = false;
         });
     }
 }, { passive: false });
@@ -7720,6 +7725,8 @@ document.addEventListener('touchend', function() {
     isPulling = false;
     pullStartY = 0;
 }, { passive: true });
+
+    
 </script>
 </body>
 </html>
