@@ -4115,17 +4115,19 @@ window.checkAndCompleteExam = () => {
         document.getElementById('forgotForm').style.display = 'block';
     };
 
-  document.getElementById('doLoginBtn').onclick = async () => {
+
+
+
+    document.getElementById('doLoginBtn').onclick = async () => {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
     if (!email.trim()) {
-        showWarning('Lütfen e-posta adresinizi girin!', 'E-posta Gerekli');
+        showWarning('Lütfen e-posta adresinizi girin!');
         return;
     }
     
     if (!password.trim()) {
-     
         showWarning('❌ Lütfen şifrenizi girin!');
         return;
     }
@@ -4140,30 +4142,32 @@ window.checkAndCompleteExam = () => {
         
     } catch(error) {
         console.error('Giriş hatası:', error);
+        console.log('Hata kodu:', error.code);
+        console.log('Hata mesajı:', error.message);
         
         let errorMessage = '❌ Giriş başarısız! ';
         
-        switch(error.code) {
-            case 'auth/invalid-email':
-                errorMessage += 'Geçersiz e-posta adresi.';
-                break;
-            case 'auth/user-disabled':
-                errorMessage += 'Bu hesap devre dışı bırakılmış. Lütfen yöneticiyle iletişime geçin.';
-                break;
-            case 'auth/user-not-found':
-                errorMessage += 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.';
-                break;
-            case 'auth/wrong-password':
-                errorMessage += 'Hatalı şifre. Lütfen tekrar deneyin.';
-                break;
-            default:
-                errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+        // ===== DETAYLI HATA KONTROLÜ =====
+        if (error.code === 'auth/invalid-email') {
+            errorMessage += 'Geçersiz e-posta adresi.';
+        } else if (error.code === 'auth/user-disabled') {
+            errorMessage += 'Bu hesap devre dışı bırakılmış. Lütfen yöneticiyle iletişime geçin.';
+        } else if (error.code === 'auth/user-not-found') {
+            errorMessage += 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.';
+        } else if (error.code === 'auth/wrong-password') {
+            errorMessage = '❌ Hatalı şifre! Lütfen tekrar deneyin.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = '⏰ Çok fazla başarısız giriş denemesi yaptınız. Lütfen daha sonra tekrar deneyin.';
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMessage = '⚠️ İnternet bağlantınızı kontrol edin.';
+        } else {
+            errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
         }
         
         showWarning(errorMessage);
-       
     }
 };
+    
 
 
 
