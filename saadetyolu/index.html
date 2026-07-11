@@ -3718,7 +3718,8 @@ async function loadUserStats() {
                         <div style="font-size: 11px; color: #ccc;">${new Date(exam.date).toLocaleDateString('tr-TR')}</div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold; color: ${exam.score >= 70 ? '#10b981' : exam.score >= 50 ? '#f59e0b' : '#ef4444'}">${Math.round(exam.score)} / 100</div>
+                        const scoreDisplay = exam.score < 1 ? exam.score.toFixed(2) : Math.round(exam.score);
+<div style="font-size: 18px; font-weight: bold; color: ${exam.score >= 0.10 ? '#10b981' : exam.score >= 0.05 ? '#f59e0b' : '#ef4444'}">${scoreDisplay}</div>
                         <div style="font-size: 11px;">Doğru: ${exam.correct} / ${exam.total}</div>
                     </div>
                 </div>
@@ -3727,32 +3728,32 @@ async function loadUserStats() {
         });
     }
 
-    async function saveExamResult(examTitle, score, correct, total) {
-        if (!currentUser) return;
-        
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data() || {};
-        
-        const examsCompleted = userData.examsCompleted || [];
-        examsCompleted.push({
-            title: examTitle,
-            date: new Date().toISOString(),
-            score: score,
-            correct: correct,
-            total: total
-        });
-        
-        const totalScore = examsCompleted.reduce((sum, e) => sum + e.score, 0);
-        const averageScore = totalScore / examsCompleted.length;
-        
-        await updateDoc(userRef, {
-            examsCompleted: examsCompleted,
-            averageScore: averageScore
-        });
-        
-        loadUserStats();
-    }
+   async function saveExamResult(examTitle, score, correct, total) {
+    if (!currentUser) return;
+    
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data() || {};
+    
+    const examsCompleted = userData.examsCompleted || [];
+    examsCompleted.push({
+        title: examTitle,
+        date: new Date().toISOString(),
+        score: score,  // Artık 0.01, 0.02 gibi
+        correct: correct,
+        total: total
+    });
+    
+    const totalScore = examsCompleted.reduce((sum, e) => sum + e.score, 0);
+    const averageScore = totalScore / examsCompleted.length;
+    
+    await updateDoc(userRef, {
+        examsCompleted: examsCompleted,
+        averageScore: averageScore
+    });
+    
+    loadUserStats();
+}
 
     window.clearExamHistory = async () => {
         if (!currentUser) return;
@@ -5017,18 +5018,23 @@ function displayExams(exams) {
         let userScore = exam.userScore;
         
         let statusHTML = '';
-        if (userScore !== null && userScore !== undefined && userScore > 0) {
-            const score = Math.round(userScore);
-            if (score < 50) {
-                statusHTML = `<span style="color: #ef4444;">📊 ${score} Puan (⚡ Tekrar Dene)</span>`;
-            } else if (score < 70) {
-                statusHTML = `<span style="color: #f59e0b;">📊 ${score} Puan (👍 İyi)</span>`;
-            } else {
-                statusHTML = `<span style="color: #10b981;">📊 ${score} Puan (🏆 Mükemmel)</span>`;
-            }
-        } else {
-            statusHTML = `<span style="color: #3b82f6;">🆕 Yeni</span>`;
-        }
+      if (userScore !== null && userScore !== undefined && userScore > 0) {
+    // 2 haneli gösterim (0.01, 0.05, 0.10 gibi)
+    const score = Math.round(userScore * 100) / 100;
+    
+    // Puan aralıklarına göre renklendirme (0.01 bazında)
+    if (score < 0.05) {
+        statusHTML = `<span style="color: #ef4444;">📊 ${score.toFixed(2)} Puan (💪 Biraz daha çalış)</span>`;
+    } else if (score < 0.10) {
+        statusHTML = `<span style="color: #f59e0b;">📊 ${score.toFixed(2)} Puan (👍 İyi gidiyorsun)</span>`;
+    } else if (score < 0.20) {
+        statusHTML = `<span style="color: #3b82f6;">📊 ${score.toFixed(2)} Puan (🌟 Çok iyi)</span>`;
+    } else {
+        statusHTML = `<span style="color: #10b981;">📊 ${score.toFixed(2)} Puan (🏆 Mükemmel)</span>`;
+    }
+} else {
+    statusHTML = `<span style="color: #3b82f6;">🆕 Yeni</span>`;
+}
         
         const examCard = document.createElement('div');
         examCard.className = 'exam-card';
