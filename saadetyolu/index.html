@@ -3698,35 +3698,44 @@ async function loadUserStats() {
 
     
 
+ function displayExamHistory(exams) {
+    const container = document.getElementById('examHistoryList');
     
-    function displayExamHistory(exams) {
-        const container = document.getElementById('examHistoryList');
+    if (!exams || exams.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    exams.slice().reverse().forEach(exam => {
+        // ===== scoreDisplay'ı HTML DIŞINDA tanımla =====
+        const scoreDisplay = exam.score < 1 ? exam.score.toFixed(2) : Math.round(exam.score);
         
-        if (!exams || exams.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ccc;">Henüz sınav çözülmemiş</div>';
-            return;
+        // Renk belirle
+        let scoreColor = '#ef4444';
+        if (exam.score >= 0.10) {
+            scoreColor = '#10b981';
+        } else if (exam.score >= 0.05) {
+            scoreColor = '#f59e0b';
         }
         
-        container.innerHTML = '';
-        exams.slice().reverse().forEach(exam => {
-            const examDiv = document.createElement('div');
-            examDiv.className = 'exam-history-item';
-            examDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <strong>${exam.title}</strong>
-                        <div style="font-size: 11px; color: #ccc;">${new Date(exam.date).toLocaleDateString('tr-TR')}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        const scoreDisplay = exam.score < 1 ? exam.score.toFixed(2) : Math.round(exam.score);
-<div style="font-size: 18px; font-weight: bold; color: ${exam.score >= 0.10 ? '#10b981' : exam.score >= 0.05 ? '#f59e0b' : '#ef4444'}">${scoreDisplay}</div>
-                        <div style="font-size: 11px;">Doğru: ${exam.correct} / ${exam.total}</div>
-                    </div>
+        const examDiv = document.createElement('div');
+        examDiv.className = 'exam-history-item';
+        examDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <strong>${exam.title}</strong>
+                    <div style="font-size: 11px; color: #ccc;">${new Date(exam.date).toLocaleDateString('tr-TR')}</div>
                 </div>
-            `;
-            container.appendChild(examDiv);
-        });
-    }
+                <div style="text-align: right;">
+                    <div style="font-size: 18px; font-weight: bold; color: ${scoreColor}">${scoreDisplay}</div>
+                    <div style="font-size: 11px;">Doğru: ${exam.correct} / ${exam.total}</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(examDiv);
+    });
+}
 
    async function saveExamResult(examTitle, score, correct, total) {
     if (!currentUser) return;
