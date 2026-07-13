@@ -2644,9 +2644,22 @@ body.light-theme #profileScreen .info-row button:hover {
             </div>
             <div class="words-area">
                 <div class="words-header">
-                    <h3><i class="fas fa-language"></i> Kelimeler</h3>
-                    <div class="word-count" id="wordCountInfo">0 kelime</div>
-                </div>
+    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-language"></i> Kelimeler
+        </h3>
+        <span style="font-size: 12px; opacity: 0.6;">|</span>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <span style="opacity: 0.6;">🏆 Puan:</span>
+            <span id="wordLearningScore" style="color: #f59e0b; font-weight: 700; font-size: 16px;">0.00</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <span style="opacity: 0.6;">📖 Bu Kelime:</span>
+            <span id="wordLearningPoint" style="color: #10b981; font-weight: 700; font-size: 16px;">+0.00</span>
+        </div>
+    </div>
+    <div class="word-count" id="wordCountInfo">0 kelime</div>
+</div>
                 <div id="wordCard" class="word-card" style="position: relative;">
                     <div style="position: absolute; top: 10px; right: 10px;">
                         <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
@@ -3498,11 +3511,12 @@ if (isZoomed) {
     progressFill.style.width = `${progress}%`;
 }
 
-// showBtn onclick - AYNI KALSIN (değiştirme)
+// ===== showBtn onclick - TEK TANIM =====
 showBtn.onclick = () => {
     if (words.length === 0) return;
     const word = words[currentWordIndex];
-    turkishWord.innerHTML = word.turkish;
+    turkishWord.textContent = word.turkish;
+    turkishWord.style.opacity = '1';
     
     // Zoom durumunu KORU
     if (isZoomed) {
@@ -3511,15 +3525,10 @@ showBtn.onclick = () => {
     }
     
     updateUserProgress();
+    
+    // ===== KELİME ÖĞRENME PUANI =====
+    addWordLearningPoint();
 };
-
-    showBtn.onclick = () => {
-        if (words.length === 0) return;
-        const word = words[currentWordIndex];
-        turkishWord.textContent = word.turkish;
-        turkishWord.style.opacity = '1';
-        updateUserProgress();
-    };
 
     prevBtn.onclick = () => {
         if (words.length === 0) return;
@@ -3609,8 +3618,20 @@ async function loadUserStats() {
             const totalWordsViewed = data.totalWordsViewed || 0;
             const sandikCount = data.quizSandik?.length || 0;
             
+            // ===== KELİME ÖĞREN EKRANI PUAN (YENİ) =====
+            const wordLearningScore = document.getElementById('wordLearningScore');
+            if (wordLearningScore) {
+                wordLearningScore.textContent = quizScore.toFixed(2);
+            }
+            
+            const wordLearningPoint = document.getElementById('wordLearningPoint');
+            if (wordLearningPoint) {
+                wordLearningPoint.textContent = '+0.00';
+                wordLearningPoint.style.color = '#6b7280';
+            }
+            
             const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;  // 0.35
+            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
             const sandikCezasi = sandikCount * 1;
             
             const toplamPuan = Math.round(
@@ -3694,6 +3715,18 @@ async function loadUserStats() {
             
             const sandikCountProfile = document.getElementById('sandikCountProfile');
             if (sandikCountProfile) sandikCountProfile.textContent = '0';
+            
+            // ===== KELİME ÖĞREN EKRANI PUAN (VARSAYILAN) =====
+            const wordLearningScore = document.getElementById('wordLearningScore');
+            if (wordLearningScore) {
+                wordLearningScore.textContent = '0.00';
+            }
+            
+            const wordLearningPoint = document.getElementById('wordLearningPoint');
+            if (wordLearningPoint) {
+                wordLearningPoint.textContent = '+0.00';
+                wordLearningPoint.style.color = '#6b7280';
+            }
             
             const profileToplamPuan = document.getElementById('profileToplamPuan');
             if (profileToplamPuan) {
@@ -8164,7 +8197,75 @@ document.addEventListener('DOMContentLoaded', function() {
         goHome();
     }, 500);
 }
+
+
+
+    // loadUserStats() içinde, quizScore'u göster
+const wordLearningScore = document.getElementById('wordLearningScore');
+if (wordLearningScore) {
+    wordLearningScore.textContent = quizScore.toFixed(2);
+}
+
+
+
+    // ===== KELİME ÖĞRENME PUANI =====
+async function addWordLearningPoint() {
+    if (!currentUser) return;
     
+    try {
+        // Puan ekle (0.01)
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            const currentScore = data.quizScore || 0;
+            const newScore = Math.round((currentScore + 0.01) * 100) / 100;
+            
+            // Firestore'u güncelle
+            await updateDoc(userRef, { quizScore: newScore });
+            
+            // Global değişkeni güncelle
+            quizScore = newScore;
+            
+            // Ekranda göster
+            const wordLearningScore = document.getElementById('wordLearningScore');
+            if (wordLearningScore) {
+                wordLearningScore.textContent = newScore.toFixed(2);
+                wordLearningScore.style.color = '#10b981';
+                wordLearningScore.style.transition = 'color 0.3s';
+                setTimeout(() => {
+                    wordLearningScore.style.color = '#f59e0b';
+                }, 800);
+            }
+            
+            // Bu kelimeden alınan puanı göster
+            const wordLearningPoint = document.getElementById('wordLearningPoint');
+            if (wordLearningPoint) {
+                wordLearningPoint.textContent = '+0.01';
+                wordLearningPoint.style.color = '#10b981';
+                wordLearningPoint.style.transform = 'scale(1.3)';
+                wordLearningPoint.style.transition = 'all 0.3s';
+                setTimeout(() => {
+                    wordLearningPoint.style.transform = 'scale(1)';
+                }, 500);
+            }
+            
+            // Karma puanını da güncelle (eğer yarışma ekranı açıksa)
+            const karmaScore = document.getElementById('karmaScore');
+            if (karmaScore) {
+                karmaScore.textContent = newScore.toFixed(2);
+            }
+            
+            // Profil puanını da güncelle
+            const profileScore = document.getElementById('karmaScoreProfile');
+            if (profileScore) {
+                profileScore.textContent = newScore.toFixed(2);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Puan ekleme hatası:', error);
+    }
+}
 </script>
 </body>
 </html>
