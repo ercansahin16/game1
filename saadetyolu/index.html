@@ -8255,6 +8255,56 @@ async function addWordLearningPoint() {
         console.error('❌ Puan ekleme hatası:', error);
     }
 }
+
+
+
+
+    // ===== PROFİL İÇİ SIRALAMA YENİLEME (Aynı davranış) =====
+window.refreshRankingProfile = async function() {
+    const btn = document.querySelector('#tab3 .btn-nav');
+    if (!btn) return;
+    
+    const originalHTML = btn.innerHTML;
+    
+    // Butonu devre dışı bırak
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.6';
+    btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Yenileniyor...';
+    
+    try {
+        // Sıralamayı yeniden yükle
+        await window.loadRanking();
+        
+        // Başarılı mesajı (aynı ana sayfadaki gibi)
+        btn.style.background = 'rgba(16, 185, 129, 0.25)';
+        btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        btn.innerHTML = '<i class="fas fa-check"></i> Güncellendi!';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Yenileme hatası:', error);
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Hata!';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+        }, 2000);
+    }
+};
+
+    
 </script>
 </body>
 </html>
