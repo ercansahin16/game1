@@ -4180,8 +4180,7 @@ function getBookNameById(bookId) {
 
 
 
-
-    function completeExam() {
+async function completeExam() {
     if (examCompleted) return;
     examCompleted = true;
     stopTimer();
@@ -4218,30 +4217,34 @@ function getBookNameById(bookId) {
     let guncelToplamPuan = 0;
     
     if (currentUser) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
-            const mevcutSeviye = data.mevcutSeviye || 1;
-            const totalWordsViewed = data.totalWordsViewed || 0;
-            const sandikCount = data.quizSandik?.length || 0;
-            
-            const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
-            const sandikCezasi = sandikCount * 1;
-            
-            toplamPuan = Math.round(
-                quizScore + 
-                averageScore + 
-                seviyePuani + 
-                kelimePuani - 
-                sandikCezasi
-            );
-            
-            ortalamaPuan = Math.round(averageScore);
-            guncelToplamPuan = toplamPuan;
+        try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                const quizScore = data.quizScore || 0;
+                const averageScore = data.averageScore || 0;
+                const mevcutSeviye = data.mevcutSeviye || 1;
+                const totalWordsViewed = data.totalWordsViewed || 0;
+                const sandikCount = data.quizSandik?.length || 0;
+                
+                const seviyePuani = (mevcutSeviye - 1) * 2;
+                const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+                const sandikCezasi = sandikCount * 1;
+                
+                toplamPuan = Math.round(
+                    quizScore + 
+                    averageScore + 
+                    seviyePuani + 
+                    kelimePuani - 
+                    sandikCezasi
+                );
+                
+                ortalamaPuan = Math.round(averageScore);
+                guncelToplamPuan = toplamPuan;
+            }
+        } catch (error) {
+            console.error('Kullanıcı verileri alınamadı:', error);
         }
     }
     
@@ -4262,7 +4265,7 @@ function getBookNameById(bookId) {
                 ${correct}/${totalQuestions} doğru
             </div>
             
-            <!-- ===== YENİ: PUAN ÖZETİ ===== -->
+            <!-- ===== PUAN ÖZETİ ===== -->
             <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
@@ -4345,13 +4348,11 @@ function getBookNameById(bookId) {
     container.innerHTML = resultHTML;
     
     // Sınav sonucunu kaydet
-    (async () => {
-        try {
-            await saveExamResult(currentExam.title, score, correct, totalQuestions);
-        } catch (error) {
-            console.error('Kayıt hatası:', error);
-        }
-    })();
+    try {
+        await saveExamResult(currentExam.title, score, correct, totalQuestions);
+    } catch (error) {
+        console.error('Kayıt hatası:', error);
+    }
 }
     
 
