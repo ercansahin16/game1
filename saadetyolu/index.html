@@ -3805,31 +3805,53 @@ async function loadUserStats() {
     });
 }
 
-   async function saveExamResult(examTitle, score, correct, total) {
+async function saveExamResult(examTitle, score, correct, total) {
     if (!currentUser) return;
     
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userDoc = await getDoc(userRef);
-    const userData = userDoc.data() || {};
-    
-    const examsCompleted = userData.examsCompleted || [];
-    examsCompleted.push({
-        title: examTitle,
-        date: new Date().toISOString(),
-        score: score,  // Artık 0.01, 0.02 gibi
-        correct: correct,
-        total: total
-    });
-    
-    const totalScore = examsCompleted.reduce((sum, e) => sum + e.score, 0);
-    const averageScore = totalScore / examsCompleted.length;
-    
-    await updateDoc(userRef, {
-        examsCompleted: examsCompleted,
-        averageScore: averageScore
-    });
-    
-    loadUserStats();
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() || {};
+        
+        // ===== MEVCUT PUANI AL VE YENİ PUANI EKLE =====
+        const currentQuizScore = userData.quizScore || 0;
+        const newQuizScore = Math.round((currentQuizScore + score) * 100) / 100;
+        
+        console.log('📊 Sınav puanı:', score);
+        console.log('📊 Eski quizScore:', currentQuizScore);
+        console.log('📊 Yeni quizScore:', newQuizScore);
+        
+        // ===== SINAV GEÇMİŞİ =====
+        const examsCompleted = userData.examsCompleted || [];
+        examsCompleted.push({
+            title: examTitle,
+            date: new Date().toISOString(),
+            score: score,
+            correct: correct,
+            total: total
+        });
+        
+        // ===== ORTALAMA PUAN =====
+        const totalScore = examsCompleted.reduce((sum, e) => sum + e.score, 0);
+        const averageScore = totalScore / examsCompleted.length;
+        
+        await updateDoc(userRef, {
+            examsCompleted: examsCompleted,
+            averageScore: averageScore,
+            quizScore: newQuizScore  // ← BU ÖNEMLİ
+        });
+        
+        // Global değişkeni güncelle
+        quizScore = newQuizScore;
+        
+        console.log('✅ Sınav sonucu kaydedildi! Yeni puan:', newQuizScore);
+        
+        // Ekranı güncelle
+        loadUserStats();
+        
+    } catch (error) {
+        console.error('❌ Sınav kaydetme hatası:', error);
+    }
 }
 
     window.clearExamHistory = async () => {
