@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -5,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - SaadetYolu</title>
 <style>
+
+     /* Açık tema içinsfvs kelime ve soru metinleri - LACİVERT */
+    
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -775,6 +779,19 @@
                     <div id="statUsers">0</div>
                     <div><i class="fas fa-users"></i> Kullanıcı</div>
                 </div>
+                <!-- Toplu Kelime Yükleme -->
+<div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
+    <div style="font-size: 28px; color: #10b981;">📤</div>
+    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Kelime Yükle</div>
+    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu kelime ekle</div>
+</div>
+
+<!-- Toplu Soru Yükleme -->
+<div class="stats-card" id="statBulkExamUploadCard" style="cursor: pointer; border-color: rgba(59,130,246,0.3);">
+    <div style="font-size: 28px; color: #3b82f6;">📝</div>
+    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
+    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
+</div>
             </div>
         </div>
 
@@ -971,85 +988,114 @@
         </div>
 
         <!-- Toplu Kelime Yükleme -->
-        <div id="bulkUploadSection" class="section-card hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
-            </div>
-            <div class="select-row">
-                <div class="select-wrapper">
-                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
-                    <select id="bulkBookSelect"><option value="">-- Kitap Seçin --</option></select>
-                </div>
-                <div class="select-wrapper">
-                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-                    <select id="bulkLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
-                </div>
-                <div class="action-buttons">
-                    <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
-                </div>
-            </div>
-            <div style="margin: 20px 0;">
-                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
-                <textarea id="bulkJsonInput" rows="10" placeholder='[
+ <div id="bulkUploadSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="bulkAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fas fa-book"></i> Kitap Ekle
+            </button>
+            <button id="bulkAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fas fa-graduation-cap"></i> Ders Ekle
+            </button>
+        </div>
+    </div>
+    <div class="select-row">
+        <div class="select-wrapper">
+            <label><i class="fas fa-book"></i> Kitap Seçin</label>
+            <select id="bulkBookSelect"><option value="">-- Kitap Seçin --</option></select>
+        </div>
+        <div class="select-wrapper">
+            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+            <select id="bulkLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
+        </div>
+        <div class="action-buttons">
+            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
+        </div>
+    </div>
+    <div style="margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+            <button id="copyBulkJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                <i class="fas fa-copy"></i> Örneği Kopyala
+            </button>
+        </div>
+        <textarea id="bulkJsonInput" rows="10" placeholder='[
   {"arabic": "كِتَاب", "turkish": "kitap"},
   {"arabic": "قَلَم", "turkish": "kalem"}
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-            </div>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
-                <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-            </div>
-            <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
-        </div>
+    </div>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
+        <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+    </div>
+    <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
+</div>
 
         <!-- Toplu Soru Yükleme -->
-        <div id="bulkExamUploadSection" class="section-card hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
-            </div>
-            <div class="select-row" style="margin-bottom: 15px;">
-                <div class="select-wrapper">
-                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
-                    <select id="bulkExamBookSelect">
-                        <option value="">-- Kitap Seçin --</option>
-                    </select>
-                </div>
-                <div class="select-wrapper">
-                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-                    <select id="bulkExamLessonSelect" disabled>
-                        <option value="">-- Önce Kitap Seçin --</option>
-                    </select>
-                </div>
-            </div>
-            <div class="select-row" style="margin-bottom: 15px;">
-                <div class="select-wrapper">
-                    <label><i class="fas fa-pen"></i> Sınav Seçin</label>
-                    <select id="bulkExamSelect" disabled>
-                        <option value="">-- Önce Ders Seçin --</option>
-                    </select>
-                </div>
-                <div class="action-buttons">
-                    <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-            </div>
-            <div style="margin: 20px 0;">
-                <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
-                <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+<div id="bulkExamUploadSection" class="section-card hidden">
+    <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fas fa-book"></i> Kitap Ekle
+            </button>
+            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fas fa-graduation-cap"></i> Ders Ekle
+            </button>
+        </div>
+    </div>
+    <div class="select-row" style="margin-bottom: 15px;">
+        <div class="select-wrapper">
+            <label><i class="fas fa-book"></i> Kitap Seçin</label>
+            <select id="bulkExamBookSelect">
+                <option value="">-- Kitap Seçin --</option>
+            </select>
+        </div>
+        <div class="select-wrapper">
+            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+            <select id="bulkExamLessonSelect" disabled>
+                <option value="">-- Önce Kitap Seçin --</option>
+            </select>
+        </div>
+    </div>
+    <div class="select-row" style="margin-bottom: 15px;">
+        <div class="select-wrapper">
+            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+            <select id="bulkExamSelect" disabled>
+                <option value="">-- Önce Ders Seçin --</option>
+            </select>
+        </div>
+        <div class="action-buttons">
+            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+    <div style="margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+            <button id="copyBulkExamJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                <i class="fas fa-copy"></i> Örneği Kopyala
+            </button>
+        </div>
+        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
   {
     "question": "Sorunun metni buraya yazılır?",
     "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
     "correct": 0
   }
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-            </div>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-                <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-            </div>
-            <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
-        </div>
+    </div>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+    </div>
+    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
+</div>
+
+
+        
     </div>
 </div>
 
@@ -1190,177 +1236,95 @@
     }
 
     async function showClearDataModal() {
-    // Koleksiyonlardaki mevcut veri sayılarını al
-    const bookCount = await getCollectionCount('books');
-    const lessonCount = await getCollectionCount('lessons');
-    const wordCount = await getCollectionCount('words');
-    const examCount = await getCollectionCount('exams');
-    const userCount = await getCollectionCount('users');
-    
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9); z-index: 1001;
-        display: flex; align-items: center; justify-content: center;
-    `;
-    modal.innerHTML = `
-        <div class="clear-data-modal" style="background: #1a1a1a; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizleme</h3>
-                <button id="closeClearModalBtn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
-            </div>
-            <p style="margin-bottom: 20px; color: #ccc;">⚠️ UYARI: Bu işlemler GERİ ALINAMAZ! Seçtiğiniz veriler kalıcı olarak silinecektir.</p>
-            
-            <!-- ===== SINAV DÜZELTME (YENİ) ===== -->
-            <div id="fixAllExamsSection" style="background: rgba(16,185,129,0.1); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(16,185,129,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        // Koleksiyonlardaki mevcut veri sayılarını al
+        const bookCount = await getCollectionCount('books');
+        const lessonCount = await getCollectionCount('lessons');
+        const wordCount = await getCollectionCount('words');
+        const examCount = await getCollectionCount('exams');
+        const userCount = await getCollectionCount('users');
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); z-index: 1001;
+            display: flex; align-items: center; justify-content: center;
+        `;
+        modal.innerHTML = `
+            <div class="clear-data-modal" style="background: #1a1a1a; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #ef4444;"><i class="fas fa-trash-alt"></i> Veri Temizleme</h3>
+                    <button id="closeClearModalBtn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <p style="margin-bottom: 20px; color: #ccc;">⚠️ UYARI: Bu işlemler GERİ ALINAMAZ! Seçtiğiniz veriler kalıcı olarak silinecektir.</p>
+                
+                <div id="clearBooksOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
                     <div>
-                        <div style="font-weight: 600; color: #10b981;"><i class="fas fa-wrench"></i> Eski Sınavları Düzelt</div>
-                        <div style="font-size: 11px; opacity: 0.7;">Eski sistemdeki (67, 10) puanları 0.01 sistemine dönüştürür</div>
+                        <div class="clear-option-title"><i class="fas fa-book"></i> Kitaplar</div>
+                        <div class="clear-option-count">${bookCount} kitap</div>
                     </div>
-                    <button id="fixAllExamsModalBtn" class="btn btn-success" style="padding: 6px 14px; font-size: 12px;">
-                        <i class="fas fa-wrench"></i> Düzelt
-                    </button>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <div id="fixAllExamsModalResult" style="margin-top: 8px; display: none; font-size: 12px; padding: 8px; border-radius: 6px;"></div>
-            </div>
-            
-            <!-- ===== MEVCUT VERİ TEMİZLEME ===== -->
-            <div id="clearBooksOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-book"></i> Kitaplar</div>
-                    <div class="clear-option-count">${bookCount} kitap</div>
+                
+                <div id="clearLessonsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-graduation-cap"></i> Dersler</div>
+                        <div class="clear-option-count">${lessonCount} ders</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
-            </div>
-            
-            <div id="clearLessonsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-graduation-cap"></i> Dersler</div>
-                    <div class="clear-option-count">${lessonCount} ders</div>
+                
+                <div id="clearWordsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-language"></i> Kelimeler</div>
+                        <div class="clear-option-count">${wordCount} kelime</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
-            </div>
-            
-            <div id="clearWordsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-language"></i> Kelimeler</div>
-                    <div class="clear-option-count">${wordCount} kelime</div>
+                
+                <div id="clearExamsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-pen"></i> Sınavlar</div>
+                        <div class="clear-option-count">${examCount} sınav</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
-            </div>
-            
-            <div id="clearExamsOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; cursor: pointer;">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-pen"></i> Sınavlar</div>
-                    <div class="clear-option-count">${examCount} sınav</div>
+                
+                <div id="clearUsersOption" class="clear-option warning" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
+                    <div>
+                        <div class="clear-option-title"><i class="fas fa-users"></i> Kullanıcılar ve Tüm Verileri</div>
+                        <div class="clear-option-count">${userCount} kullanıcı</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
-            </div>
-            
-            <div id="clearUsersOption" class="clear-option warning" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);">
-                <div>
-                    <div class="clear-option-title"><i class="fas fa-users"></i> Kullanıcılar ve Tüm Verileri</div>
-                    <div class="clear-option-count">${userCount} kullanıcı</div>
+                
+                <div id="clearAllOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.2); border-radius: 12px; margin-top: 15px; cursor: pointer; border: 1px solid #ef4444;">
+                    <div>
+                        <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> TÜMÜNÜ TEMİZLE</div>
+                        <div class="clear-option-count">Tüm veriler silinecek</div>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 5px 20px;">Temizle</button>
                 </div>
-                <button class="btn btn-danger btn-sm" style="padding: 5px 15px;">Temizle</button>
             </div>
-            
-            <div id="clearAllOption" class="clear-option" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(239,68,68,0.2); border-radius: 12px; margin-top: 15px; cursor: pointer; border: 1px solid #ef4444;">
-                <div>
-                    <div class="clear-option-title" style="color: #ef4444;"><i class="fas fa-trash-alt"></i> TÜMÜNÜ TEMİZLE</div>
-                    <div class="clear-option-count">Tüm veriler silinecek</div>
-                </div>
-                <button class="btn btn-danger" style="padding: 5px 20px;">Temizle</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // ===== MODAL OLUŞTUKTAN SONRA BUTON OLAYLARINI BAĞLA =====
-    
-    // Kapatma işlemi
-    document.getElementById('closeClearModalBtn').onclick = () => modal.remove();
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    
-    // ===== SINAV DÜZELT BUTONU (MODAL İÇİNDE) =====
-    document.getElementById('fixAllExamsModalBtn')?.addEventListener('click', async function() {
-        const btn = this;
-        const resultDiv = document.getElementById('fixAllExamsModalResult');
+        `;
         
-        if (!resultDiv) return;
+        document.body.appendChild(modal);
         
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(59,130,246,0.1)';
-        resultDiv.style.border = '1px solid #3b82f6';
-        resultDiv.style.borderRadius = '6px';
-        resultDiv.style.padding = '8px';
-        resultDiv.innerHTML = '🔄 Sınavlar düzeltiliyor...';
+        const closeModal = () => modal.remove();
+        document.getElementById('closeClearModalBtn').onclick = closeModal;
+        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
         
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Düzeltiliyor...';
-        
-        try {
-            const usersSnapshot = await getDocs(collection(db, 'users'));
-            
-            let totalUsers = 0;
-            let totalFixed = 0;
-            
-            for (const userDoc of usersSnapshot.docs) {
-                const userId = userDoc.id;
-                const data = userDoc.data();
-                const exams = data.examsCompleted || [];
-                
-                if (exams.length === 0) continue;
-                
-                let hasOldExams = false;
-                const fixedExams = exams.map(exam => {
-                    if (exam.score > 1) {
-                        hasOldExams = true;
-                        totalFixed++;
-                        return {
-                            ...exam,
-                            score: Math.round(exam.correct * 0.01 * 100) / 100
-                        };
-                    }
-                    return exam;
-                });
-                
-                if (!hasOldExams) continue;
-                
-                let totalScore = 0;
-                for (const exam of fixedExams) {
-                    totalScore += exam.score;
-                }
-                const newAverage = Math.round((totalScore / fixedExams.length) * 100) / 100;
-                
-                await updateDoc(doc(db, 'users', userId), {
-                    examsCompleted: fixedExams,
-                    averageScore: newAverage
-                });
-                
-                totalUsers++;
+        // Kitapları temizle
+        document.getElementById('clearBooksOption').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm('Kitaplar ve bu kitaplara ait tüm dersler ve kelimeler silinecek. Emin misiniz?')) {
+                const count = await clearCollection('books');
+                await clearCollection('lessons');
+                await clearCollection('words');
+                alert(`✅ ${count} kitap ve ilişkili tüm veriler silindi!`);
+                closeModal();
+                refreshAllData();
             }
-            
-            resultDiv.style.background = 'rgba(16,185,129,0.1)';
-            resultDiv.style.border = '1px solid #10b981';
-            resultDiv.innerHTML = `✅ ${totalUsers} kullanıcı güncellendi, ${totalFixed} sınav düzeltildi!`;
-            
-        } catch (error) {
-            console.error('❌ Hata:', error);
-            resultDiv.style.background = 'rgba(239,68,68,0.1)';
-            resultDiv.style.border = '1px solid #ef4444';
-            resultDiv.innerHTML = `❌ Hata: ${error.message}`;
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-wrench"></i> Düzelt';
-        }
-    });
-    
-    // Diğer temizleme butonları...
-    // (clearBooksOption, clearLessonsOption, vb. için mevcut kodlar buraya)
-
+        };
         
         // Dersleri temizle
         document.getElementById('clearLessonsOption').onclick = async (e) => {
@@ -2162,6 +2126,21 @@ async function loadExamBookSelect() {
         document.getElementById('statUsers').innerHTML = users.size;
     }
 
+    // Toplu Kelime Yükleme Kartı
+document.getElementById('statBulkUploadCard')?.addEventListener('click', () => {
+    showSection('bulkUpload');
+    loadBulkBooks();
+    closeMenu();
+});
+
+// Toplu Soru Yükleme Kartı
+document.getElementById('statBulkExamUploadCard')?.addEventListener('click', () => {
+    showSection('bulkExamUpload');
+    loadBulkExamBooks();
+    closeMenu();
+});
+    
+
     // Word count display için güvenli fonksiyon
 window.updateWordCountDisplay = function(count) {
     const el = document.getElementById('wordCountDisplay');
@@ -2252,14 +2231,18 @@ document.getElementById('goBulkUpload').onclick = () => {
 };
 
 async function loadBulkBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('bulkBookSelect');
     select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
+    books.forEach(book => {
         const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
+        option.value = book.id;
+        option.textContent = book.name;
         select.appendChild(option);
     });
 }
@@ -2273,13 +2256,17 @@ document.getElementById('bulkBookSelect').onchange = async () => {
         return;
     }
     const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+    const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    lessons.sort((a, b) => a.name.localeCompare(b.name));
+    
     lessonSelect.disabled = false;
     lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
+    lessons.forEach(lesson => {
         const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
+        option.value = lesson.id;
+        option.textContent = lesson.name;
         lessonSelect.appendChild(option);
     });
 };
@@ -2679,16 +2666,48 @@ if (examBookSelect) {
 
     // Toplu Soru Yükleme - Kitapları yükle
 async function loadBulkExamBooks() {
-    const snapshot = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('bulkExamBookSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    books.forEach(book => {
+        select.innerHTML += `<option value="${book.id}">${book.name}</option>`;
     });
 }
 
 // Kitap seçilince dersleri yükle
+const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
+if (bulkExamLessonSelect) {
+    bulkExamLessonSelect.onchange = async () => {
+        const lessonId = bulkExamLessonSelect.value;
+        const examSelect = document.getElementById('bulkExamSelect');
+        
+        if (!lessonId) {
+            examSelect.disabled = true;
+            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            return;
+        }
+        
+        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== ALFABETİK SIRALA =====
+        exams.sort((a, b) => a.title.localeCompare(b.title));
+        
+        examSelect.disabled = false;
+        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
+        exams.forEach(exam => {
+            examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
+        });
+    };
+}
+
+// Ders seçilince sınavları yükle
 const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
 if (bulkExamBookSelect) {
     bulkExamBookSelect.onchange = async () => {
@@ -2705,35 +2724,19 @@ if (bulkExamBookSelect) {
         }
         
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== ALFABETİK SIRALA =====
+        lessons.sort((a, b) => a.name.localeCompare(b.name));
+        
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        lessons.forEach(lesson => {
+            lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.name}</option>`;
         });
+        
         examSelect.disabled = true;
         examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
-    };
-}
-
-// Ders seçilince sınavları yükle
-const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
-if (bulkExamLessonSelect) {
-    bulkExamLessonSelect.onchange = async () => {
-        const lessonId = bulkExamLessonSelect.value;
-        const examSelect = document.getElementById('bulkExamSelect');
-        
-        if (!lessonId) {
-            examSelect.disabled = true;
-            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
-            return;
-        }
-        
-        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-        examSelect.disabled = false;
-        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            examSelect.innerHTML += `<option value="${doc.id}">${doc.data().title}</option>`;
-        });
     };
 }
 
@@ -2898,90 +2901,93 @@ if (adminExamLessonSelect) {
 
 
     // Tüm kullanıcıların sandığını sıfırla
-// ===== TÜM KULLANICILARIN SINAVLARINI DÜZELT (0.01 SİSTEMİ) =====
-document.getElementById('fixAllExamsBtn')?.addEventListener('click', window.fixAllUsersExams);
-
-// ===== MODAL İÇİNDEKİ SINAV DÜZELT BUTONU =====
-document.getElementById('fixAllExamsModalBtn')?.addEventListener('click', async function() {
-    const btn = this;
-    const resultDiv = document.getElementById('fixAllExamsModalResult');
+document.getElementById('resetAllSandikBtn')?.addEventListener('click', async () => {
+    const resultDiv = document.getElementById('resetResult');
     
-    if (!resultDiv) return;
+    // Çift onay
+    const confirm1 = confirm('🚨 UYARI: Bu işlem TÜM kullanıcıların sandığındaki kelimeleri KALICI OLARAK silecektir! Devam etmek istediğinize emin misiniz?');
+    
+    if (!confirm1) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const confirm2 = confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Tüm kullanıcıların sandıkları silinecek. Emin misiniz?');
+    
+    if (!confirm2) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '10px';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    // Butonu devre dışı bırak
+    const btn = document.getElementById('resetAllSandikBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
     
     resultDiv.style.display = 'block';
     resultDiv.style.background = 'rgba(59,130,246,0.1)';
     resultDiv.style.border = '1px solid #3b82f6';
-    resultDiv.style.borderRadius = '6px';
-    resultDiv.style.padding = '8px';
-    resultDiv.innerHTML = '🔄 Sınavlar düzeltiliyor...';
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Düzeltiliyor...';
+    resultDiv.style.borderRadius = '10px';
+    resultDiv.style.padding = '10px';
+    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm kullanıcıların sandıkları sıfırlanıyor...</span>';
     
     try {
+        // Tüm kullanıcıları getir
         const usersSnapshot = await getDocs(collection(db, 'users'));
-        
-        let totalUsers = 0;
-        let totalFixed = 0;
+        let updatedCount = 0;
+        let errorCount = 0;
         
         for (const userDoc of usersSnapshot.docs) {
-            const userId = userDoc.id;
-            const data = userDoc.data();
-            const exams = data.examsCompleted || [];
-            
-            if (exams.length === 0) continue;
-            
-            let hasOldExams = false;
-            const fixedExams = exams.map(exam => {
-                if (exam.score > 1) {
-                    hasOldExams = true;
-                    totalFixed++;
-                    return {
-                        ...exam,
-                        score: Math.round(exam.correct * 0.01 * 100) / 100
-                    };
-                }
-                return exam;
-            });
-            
-            if (!hasOldExams) continue;
-            
-            let totalScore = 0;
-            for (const exam of fixedExams) {
-                totalScore += exam.score;
+            try {
+                const userRef = doc(db, 'users', userDoc.id);
+                await updateDoc(userRef, { 
+                    quizSandik: [],
+                    quizScore: 0  // İstersen puanı da sıfırla
+                });
+                updatedCount++;
+                console.log(`✅ ${userDoc.id} sandığı sıfırlandı`);
+            } catch (error) {
+                errorCount++;
+                console.error(`❌ ${userDoc.id} sıfırlanamadı:`, error);
             }
-            const newAverage = Math.round((totalScore / fixedExams.length) * 100) / 100;
-            
-            await updateDoc(doc(db, 'users', userId), {
-                examsCompleted: fixedExams,
-                averageScore: newAverage
-            });
-            
-            totalUsers++;
         }
         
         resultDiv.style.background = 'rgba(16,185,129,0.1)';
         resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `✅ ${totalUsers} kullanıcı güncellendi, ${totalFixed} sınav düzeltildi!`;
-        
-        // Kullanıcı listelerini yenile
-        if (typeof loadUserSelects === 'function') await loadUserSelects();
-        if (typeof loadUsers === 'function') await loadUsers();
+        resultDiv.innerHTML = `
+            <span style="color: #10b981;">
+                ✅ Sıfırlama tamamlandı!<br>
+                📦 ${updatedCount} kullanıcının sandığı sıfırlandı.<br>
+                ${errorCount > 0 ? `⚠️ ${errorCount} kullanıcıda hata oluştu.` : ''}
+            </span>
+        `;
         
     } catch (error) {
-        console.error('❌ Hata:', error);
+        console.error('Sıfırlama hatası:', error);
         resultDiv.style.background = 'rgba(239,68,68,0.1)';
         resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+        resultDiv.innerHTML = `<span style="color: #ef4444;">❌ Hata: ${error.message}</span>`;
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-wrench"></i> Düzelt';
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Tüm Sandıkları Sıfırla';
+        
+        setTimeout(() => {
+            resultDiv.style.display = 'none';
+        }, 5000);
     }
 });
-
-
-
-    
 // ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
 let isOnline = navigator.onLine;
 const offlineBanner = document.getElementById('offlineBanner');
@@ -3610,105 +3616,97 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
 
 
 
+    // ===== TOPLU SORU YÜKLEME - KİTAP EKLE =====
+document.getElementById('bulkExamAddBookBtn')?.addEventListener('click', () => {
+    document.getElementById('bookModalTitle').innerHTML = 'Yeni Kitap Ekle';
+    document.getElementById('editBookId').value = '';
+    document.getElementById('bookName').value = '';
+    document.getElementById('bookDesc').value = '';
+    document.getElementById('bookOrder').value = (books || []).length + 1;
+    openModal('bookModal');
+});
 
-
-
-
-
-    
-
-    // ===== TÜM KULLANICILARIN ESKİ SINAVLARINI DÜZELT (0.01 SİSTEMİ) =====
-// ===== TÜM KULLANICILARIN SINAVLARINI DÜZELT =====
-window.fixAllUsersExams = async function() {
-    const resultDiv = document.getElementById('fixAllExamsResult');
-    if (resultDiv) {
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(59,130,246,0.1)';
-        resultDiv.style.border = '1px solid #3b82f6';
-        resultDiv.innerHTML = '🔄 Tüm kullanıcıların sınavları düzeltiliyor...';
+// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
+document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () => {
+    const bookId = document.getElementById('bulkExamBookSelect').value;
+    if (!bookId) {
+        alert('⚠️ Lütfen önce bir kitap seçin!');
+        return;
     }
+    document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
+    document.getElementById('editLessonId').value = '';
+    document.getElementById('lessonName').value = '';
+    document.getElementById('lessonDesc').value = '';
+    document.getElementById('lessonOrder').value = '';
+    document.getElementById('lessonBookSelectModal').value = bookId;
+    openModal('lessonModal');
+});
+
+    // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
+    const exampleJson = `[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"},
+  {"arabic": "مَسْجِد", "turkish": "cami"},
+  {"arabic": "مَدْرَسَة", "turkish": "okul"}
+]`;
     
-    const btn = document.getElementById('fixAllExamsBtn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Düzeltiliyor...';
-    }
+    navigator.clipboard.writeText(exampleJson).then(() => {
+        const btn = document.getElementById('copyBulkJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 2000);
+    }).catch(() => {
+        // Fallback: textarea'ya yaz ve seç
+        const textarea = document.getElementById('bulkJsonInput');
+        textarea.value = exampleJson;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const exampleJson = `[
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]`;
     
-    try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        console.log(`📊 Toplam kullanıcı: ${usersSnapshot.size}`);
-        
-        let totalUsers = 0;
-        let totalFixed = 0;
-        let totalExams = 0;
-        
-        for (const userDoc of usersSnapshot.docs) {
-            const userId = userDoc.id;
-            const data = userDoc.data();
-            const exams = data.examsCompleted || [];
-            
-            if (exams.length === 0) continue;
-            
-            let hasOldExams = false;
-            const fixedExams = exams.map(exam => {
-                if (exam.score > 1) {
-                    hasOldExams = true;
-                    totalFixed++;
-                    return {
-                        ...exam,
-                        score: Math.round(exam.correct * 0.01 * 100) / 100
-                    };
-                }
-                return exam;
-            });
-            
-            if (!hasOldExams) continue;
-            
-            let totalScore = 0;
-            for (const exam of fixedExams) {
-                totalScore += exam.score;
-            }
-            const newAverage = Math.round((totalScore / fixedExams.length) * 100) / 100;
-            
-            await updateDoc(doc(db, 'users', userId), {
-                examsCompleted: fixedExams,
-                averageScore: newAverage
-            });
-            
-            totalUsers++;
-            totalExams += fixedExams.length;
-            console.log(`✅ ${data.name || userId}: ${fixedExams.length} sınav düzeltildi, yeni ortalama: ${newAverage.toFixed(2)}`);
-        }
-        
-        console.log('🎉 İŞLEM TAMAMLANDI!');
-        console.log(`📊 ${totalUsers} kullanıcı güncellendi`);
-        console.log(`📝 ${totalFixed} sınav düzeltildi`);
-        console.log(`📚 Toplam ${totalExams} sınav işlendi`);
-        
-        if (resultDiv) {
-            resultDiv.style.background = 'rgba(16,185,129,0.1)';
-            resultDiv.style.border = '1px solid #10b981';
-            resultDiv.innerHTML = `
-                ✅ İşlem tamamlandı!<br>
-                📊 ${totalUsers} kullanıcı güncellendi<br>
-                📝 ${totalFixed} sınav düzeltildi
-            `;
-        }
-        
-    } catch (error) {
-        console.error('❌ Hata:', error);
-        if (resultDiv) {
-            resultDiv.style.background = 'rgba(239,68,68,0.1)';
-            resultDiv.style.border = '1px solid #ef4444';
-            resultDiv.innerHTML = `❌ Hata: ${error.message}`;
-        }
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-wrench"></i> Tümünü Düzelt';
-        }
-    }
-};
+    navigator.clipboard.writeText(exampleJson).then(() => {
+        const btn = document.getElementById('copyBulkExamJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 2000);
+    }).catch(() => {
+        const textarea = document.getElementById('bulkExamJsonInput');
+        textarea.value = exampleJson;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
 
 </script>
 </body>
