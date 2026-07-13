@@ -8081,25 +8081,20 @@ function animateLogo() {
 
     // ===== SIRALAMA YENİLEME FONKSİYONU =====
 // ===== SIRALAMA YENİLEME FONKSİYONU (GLOBAL) =====
+// ===== SIRALAMA YENİLEME FONKSİYONU (PROFİL İÇİN) =====
 window.refreshRanking = async function() {
     const btn = document.getElementById('refreshRankingBtn');
-    const icon = document.getElementById('refreshIcon');
-    const originalText = btn ? btn.innerHTML : '';
-    
     if (!btn) return;
+    
+    const originalText = btn.innerHTML;
     
     // Butonu devre dışı bırak
     btn.style.pointerEvents = 'none';
     btn.style.opacity = '0.6';
-    
-    // Dönen ikon
-    if (icon) icon.style.animation = 'spin 0.8s linear infinite';
-    
-    // "Yenileniyor..." yaz
-    btn.innerHTML = `<i class="fas fa-sync-alt" style="animation: spin 0.8s linear infinite;"></i> Yenileniyor...`;
+    btn.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> Yenileniyor...`;
     
     try {
-        // Sıralamayı yeniden yükle
+        // Sıralamayı yeniden yükle (loadRanking zaten tüm #rankingList'leri güncelliyor)
         await window.loadRanking();
         
         // Başarılı mesajı
@@ -8107,14 +8102,12 @@ window.refreshRanking = async function() {
         btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
         btn.innerHTML = `<i class="fas fa-check"></i> Güncellendi!`;
         
-        // 1.5 saniye sonra eski haline dön
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.style.background = 'rgba(16, 185, 129, 0.15)';
-            btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+            btn.style.background = '';
+            btn.style.borderColor = '';
             btn.style.pointerEvents = 'auto';
             btn.style.opacity = '1';
-            if (icon) icon.style.animation = '';
         }, 1500);
         
     } catch (error) {
@@ -8125,11 +8118,10 @@ window.refreshRanking = async function() {
         
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.style.background = 'rgba(16, 185, 129, 0.15)';
-            btn.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+            btn.style.background = '';
+            btn.style.borderColor = '';
             btn.style.pointerEvents = 'auto';
             btn.style.opacity = '1';
-            if (icon) icon.style.animation = '';
         }, 2000);
     }
 };
