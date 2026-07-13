@@ -4343,6 +4343,7 @@ async function completeExam() {
 }
 
 // ===== SINAV ÖZETİNİ GÜNCELLE (Arka planda) =====
+// ===== SINAV ÖZETİNİ GÜNCELLE (Arka planda) =====
 async function updateExamSummary(correct, totalQuestions) {
     if (!currentUser) return;
     
@@ -4358,18 +4359,25 @@ async function updateExamSummary(correct, totalQuestions) {
         if (userDoc.exists()) {
             const data = userDoc.data();
             quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
             const mevcutSeviye = data.mevcutSeviye || 1;
             const totalWordsViewed = data.totalWordsViewed || 0;
             const sandikCount = data.quizSandik?.length || 0;
+            
+            // ===== ORTALAMA PUANI examsCompleted ÜZERİNDEN HESAPLA =====
+            const examsCompleted = data.examsCompleted || [];
+            if (examsCompleted.length > 0) {
+                let totalScore = 0;
+                for (const exam of examsCompleted) {
+                    totalScore += exam.score;
+                }
+                ortalamaPuan = Math.round((totalScore / examsCompleted.length) * 100) / 100;
+            }
             
             const seviyePuani = (mevcutSeviye - 1) * 2;
             const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
             const sandikCezasi = sandikCount * 1;
             
-            toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
-            
-            ortalamaPuan = Math.round(averageScore);
+            toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             guncelToplamPuan = toplamPuan;
         }
         
@@ -4378,28 +4386,28 @@ async function updateExamSummary(correct, totalQuestions) {
         
         // ===== ÖZETİ GÜNCELLE =====
         const summaryDiv = document.getElementById('examResultSummary');
-     if (summaryDiv) {
-    summaryDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
-                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore.toFixed(2)}</div>
-            </div>
-            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
-                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan.toFixed(2)}</div>
-            </div>
-            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
-                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</div>
-            </div>
-            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
-                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan.toFixed(2)}</div>
-            </div>
-        </div>
-    `;
-}
+        if (summaryDiv) {
+            summaryDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore.toFixed(2)}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan.toFixed(2)}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        }
         
     } catch (error) {
         console.error('Özet güncelleme hatası:', error);
