@@ -3830,20 +3830,28 @@ async function saveExamResult(examTitle, score, correct, total) {
             total: total
         });
         
-        // ===== ORTALAMA PUAN =====
-        const totalScore = examsCompleted.reduce((sum, e) => sum + e.score, 0);
-        const averageScore = totalScore / examsCompleted.length;
+        // ===== ORTALAMA PUAN (2 HANELİ ONDALIK) =====
+        let totalScore = 0;
+        for (const exam of examsCompleted) {
+            totalScore += exam.score;
+        }
+        const averageScore = Math.round((totalScore / examsCompleted.length) * 100) / 100;
+        
+        console.log('📊 Toplam sınav puanı:', totalScore);
+        console.log('📊 Sınav sayısı:', examsCompleted.length);
+        console.log('📊 Ortalama puan:', averageScore);
         
         await updateDoc(userRef, {
             examsCompleted: examsCompleted,
             averageScore: averageScore,
-            quizScore: newQuizScore  // ← BU ÖNEMLİ
+            quizScore: newQuizScore
         });
         
         // Global değişkeni güncelle
         quizScore = newQuizScore;
         
         console.log('✅ Sınav sonucu kaydedildi! Yeni puan:', newQuizScore);
+        console.log('✅ Yeni ortalama:', averageScore);
         
         // Ekranı güncelle
         loadUserStats();
