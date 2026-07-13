@@ -3546,9 +3546,6 @@ showBtn.onclick = () => {
     }
 
 
-
-
-
 async function loadUserStats() {
     if (!currentUser) return;
     
@@ -3608,12 +3605,22 @@ async function loadUserStats() {
             const data = userDoc.data();
             
             const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;
             const mevcutSeviye = data.mevcutSeviye || 1;
             const totalWordsViewed = data.totalWordsViewed || 0;
             const sandikCount = data.quizSandik?.length || 0;
             
-            // ===== KELİME ÖĞREN EKRANI PUAN (YENİ) =====
+            // ===== ORTALAMA PUANI examsCompleted ÜZERİNDEN HESAPLA =====
+            const examsCompleted = data.examsCompleted || [];
+            let ortalamaPuan = 0;
+            if (examsCompleted.length > 0) {
+                let totalScore = 0;
+                for (const exam of examsCompleted) {
+                    totalScore += exam.score;
+                }
+                ortalamaPuan = Math.round((totalScore / examsCompleted.length) * 100) / 100;
+            }
+            
+            // ===== KELİME ÖĞREN EKRANI PUAN =====
             const wordLearningScore = document.getElementById('wordLearningScore');
             if (wordLearningScore) {
                 wordLearningScore.textContent = quizScore.toFixed(2);
@@ -3629,20 +3636,20 @@ async function loadUserStats() {
             const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
             const sandikCezasi = sandikCount * 1;
             
-           const toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
+            const toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             // ===== İSTATİSTİK KARTLARI =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
             if (totalWordsLearned) totalWordsLearned.textContent = totalWordsViewed;
             
             const totalExamsCompleted = document.getElementById('totalExamsCompleted');
-            if (totalExamsCompleted) totalExamsCompleted.textContent = data.examsCompleted?.length || 0;
+            if (totalExamsCompleted) totalExamsCompleted.textContent = examsCompleted.length;
             
+            // ===== ORTALAMA PUAN (2 HANELİ ONDALIK) =====
             const averageScoreEl = document.getElementById('averageScore');
-if (averageScoreEl) {
-    const avg = parseFloat(averageScore) || 0;
-    averageScoreEl.textContent = avg.toFixed(2);
-}
+            if (averageScoreEl) {
+                averageScoreEl.textContent = ortalamaPuan.toFixed(2);
+            }
             
             const karmaScoreProfile = document.getElementById('karmaScoreProfile');
             if (karmaScoreProfile) karmaScoreProfile.textContent = quizScore.toFixed(2);
@@ -3650,16 +3657,15 @@ if (averageScoreEl) {
             const sandikCountProfile = document.getElementById('sandikCountProfile');
             if (sandikCountProfile) sandikCountProfile.textContent = sandikCount;
             
-            // ===== TOPLAM PUAN =====
-            // ===== TOPLAM PUAN GÖSTERİMİ =====
-const profileToplamPuan = document.getElementById('profileToplamPuan');
-if (profileToplamPuan) {
-    profileToplamPuan.innerHTML = `
-        <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
-        <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    `;
+            // ===== TOPLAM PUAN GÖSTERİMİ (2 HANELİ) =====
+            const profileToplamPuan = document.getElementById('profileToplamPuan');
+            if (profileToplamPuan) {
+                profileToplamPuan.innerHTML = `
+                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
+                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                `;
                 
                 setTimeout(() => {
                     const detayBtn = document.getElementById('puanDetayBtn');
@@ -3667,7 +3673,7 @@ if (profileToplamPuan) {
                         detayBtn.addEventListener('click', function() {
                             showPuanDetay(
                                 quizScore,
-                                Math.round(averageScore),
+                                ortalamaPuan,
                                 mevcutSeviye,
                                 seviyePuani,
                                 totalWordsViewed,
@@ -3690,7 +3696,7 @@ if (profileToplamPuan) {
             window.mevcutSeviye = mevcutSeviye;
             window.toplamSeviye = toplamSeviye;
             
-            displayExamHistory(data.examsCompleted || []);
+            displayExamHistory(examsCompleted);
             
         } else {
             // ===== VARSAYILAN DEĞERLER =====
@@ -3701,7 +3707,7 @@ if (profileToplamPuan) {
             if (totalExamsCompleted) totalExamsCompleted.textContent = '0';
             
             const averageScoreEl = document.getElementById('averageScore');
-            if (averageScoreEl) averageScoreEl.textContent = '0';
+            if (averageScoreEl) averageScoreEl.textContent = '0.00';
             
             const karmaScoreProfile = document.getElementById('karmaScoreProfile');
             if (karmaScoreProfile) karmaScoreProfile.textContent = '0.00';
@@ -3721,15 +3727,15 @@ if (profileToplamPuan) {
                 wordLearningPoint.style.color = '#6b7280';
             }
             
-            // ===== TOPLAM PUAN GÖSTERİMİ =====
-const profileToplamPuan = document.getElementById('profileToplamPuan');
-if (profileToplamPuan) {
-    profileToplamPuan.innerHTML = `
-        <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
-        <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    `;
+            // ===== TOPLAM PUAN GÖSTERİMİ (VARSAYILAN) =====
+            const profileToplamPuan = document.getElementById('profileToplamPuan');
+            if (profileToplamPuan) {
+                profileToplamPuan.innerHTML = `
+                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">0.00</span>
+                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                `;
                 
                 setTimeout(() => {
                     const detayBtn = document.getElementById('puanDetayBtn');
@@ -3761,6 +3767,9 @@ if (profileToplamPuan) {
         console.error('❌ loadUserStats hatası:', error);
     }
 }
+
+
+
 
 
     
@@ -4369,28 +4378,28 @@ async function updateExamSummary(correct, totalQuestions) {
         
         // ===== ÖZETİ GÜNCELLE =====
         const summaryDiv = document.getElementById('examResultSummary');
-        if (summaryDiv) {
-            summaryDiv.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan}</div>
-                    </div>
-                </div>
-            `;
-        }
+     if (summaryDiv) {
+    summaryDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
+                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore.toFixed(2)}</div>
+            </div>
+            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
+                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan.toFixed(2)}</div>
+            </div>
+            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
+                <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</div>
+            </div>
+            <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
+                <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan.toFixed(2)}</div>
+            </div>
+        </div>
+    `;
+}
         
     } catch (error) {
         console.error('Özet güncelleme hatası:', error);
