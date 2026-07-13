@@ -4177,7 +4177,11 @@ function getBookNameById(bookId) {
     return book ? book.name : 'Kitap bulunamadı';
 }
     
- function completeExam() {
+
+
+
+
+    function completeExam() {
     if (examCompleted) return;
     examCompleted = true;
     stopTimer();
@@ -4198,8 +4202,8 @@ function getBookNameById(bookId) {
     
     const totalQuestions = currentExam.questions.length;
     // Her doğru cevap için 0.01 puan
-const score = correct * 0.01;
-const roundedScore = Math.round(score * 100) / 100;  // 2 haneli
+    const score = correct * 0.01;
+    const roundedScore = Math.round(score * 100) / 100;
     
     const letters = ['A', 'B', 'C', 'D'];
     
@@ -4208,6 +4212,40 @@ const roundedScore = Math.round(score * 100) / 100;  // 2 haneli
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
+    // ===== KULLANICININ GÜNCEL VERİLERİNİ AL =====
+    let toplamPuan = 0;
+    let ortalamaPuan = 0;
+    let guncelToplamPuan = 0;
+    
+    if (currentUser) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            const quizScore = data.quizScore || 0;
+            const averageScore = data.averageScore || 0;
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            const totalWordsViewed = data.totalWordsViewed || 0;
+            const sandikCount = data.quizSandik?.length || 0;
+            
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+            const sandikCezasi = sandikCount * 1;
+            
+            toplamPuan = Math.round(
+                quizScore + 
+                averageScore + 
+                seviyePuani + 
+                kelimePuani - 
+                sandikCezasi
+            );
+            
+            ortalamaPuan = Math.round(averageScore);
+            guncelToplamPuan = toplamPuan;
+        }
+    }
+    
+    // ===== SONUÇ HTML =====
     let resultHTML = `
         <div class="result-card">
             <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 15px;">
@@ -4217,11 +4255,35 @@ const roundedScore = Math.round(score * 100) / 100;  // 2 haneli
                     <span><i class="fas fa-pen"></i> ${examTitle}</span>
                 </div>
             </div>
+            
             <h2>🏆 Sınav Tamamlandı!</h2>
             <div class="score">${roundedScore} Puan</div>
             <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
                 ${correct}/${totalQuestions} doğru
             </div>
+            
+            <!-- ===== YENİ: PUAN ÖZETİ ===== -->
+            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan}</div>
+                    </div>
+                </div>
+            </div>
+            
             <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                 <div style="text-align: center;">
                     <div style="font-size: 36px; color: #10b981;">✓ ${correct}</div>
@@ -4291,6 +4353,7 @@ const roundedScore = Math.round(score * 100) / 100;  // 2 haneli
         }
     })();
 }
+    
 
     
    window.nextQuestion = () => {
