@@ -3708,6 +3708,72 @@ document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => 
     });
 });
 
+
+
+
+
+
+
+
+
+    // ===== TÜM KULLANICILARIN SINAVLARINI DÜZELT (KONSOL İÇİN) =====
+window.fixAllExamsConsole = async function() {
+    console.log('🔄 Sınavlar düzeltiliyor...');
+    
+    try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        
+        let totalUsers = 0;
+        let totalFixed = 0;
+        
+        for (const userDoc of usersSnapshot.docs) {
+            const userId = userDoc.id;
+            const data = userDoc.data();
+            const exams = data.examsCompleted || [];
+            
+            if (exams.length === 0) continue;
+            
+            let hasOldExams = false;
+            const fixedExams = exams.map(exam => {
+                if (exam.score > 1) {
+                    hasOldExams = true;
+                    totalFixed++;
+                    return {
+                        ...exam,
+                        score: Math.round(exam.correct * 0.01 * 100) / 100
+                    };
+                }
+                return exam;
+            });
+            
+            if (!hasOldExams) continue;
+            
+            let totalScore = 0;
+            for (const exam of fixedExams) {
+                totalScore += exam.score;
+            }
+            const newAvg = Math.round((totalScore / fixedExams.length) * 100) / 100;
+            
+            await updateDoc(doc(db, 'users', userId), {
+                examsCompleted: fixedExams,
+                averageScore: newAvg
+            });
+            
+            totalUsers++;
+            console.log(`✅ ${data.name || userId}: ${fixedExams.length} sınav düzeltildi, yeni ortalama: ${newAvg.toFixed(2)}`);
+        }
+        
+        console.log(`🎉 TAMAMLANDI! ${totalUsers} kullanıcı, ${totalFixed} sınav düzeltildi.`);
+        alert(`✅ ${totalUsers} kullanıcı güncellendi, ${totalFixed} sınav düzeltildi!`);
+        
+        return { totalUsers, totalFixed };
+        
+    } catch (error) {
+        console.error('❌ Hata:', error);
+        alert('❌ Hata: ' + error.message);
+        return { error: error.message };
+    }
+};
 </script>
 </body>
 </html>
