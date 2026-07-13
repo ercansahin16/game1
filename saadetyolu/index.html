@@ -3629,13 +3629,7 @@ async function loadUserStats() {
             const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
             const sandikCezasi = sandikCount * 1;
             
-            const toplamPuan = Math.round(
-                quizScore + 
-                averageScore + 
-                seviyePuani + 
-                kelimePuani - 
-                sandikCezasi
-            );
+           const toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             // ===== İSTATİSTİK KARTLARI =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
@@ -3654,14 +3648,15 @@ async function loadUserStats() {
             if (sandikCountProfile) sandikCountProfile.textContent = sandikCount;
             
             // ===== TOPLAM PUAN =====
-            const profileToplamPuan = document.getElementById('profileToplamPuan');
-            if (profileToplamPuan) {
-                profileToplamPuan.innerHTML = `
-                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan}</span>
-                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
-                `;
+            // ===== TOPLAM PUAN GÖSTERİMİ =====
+const profileToplamPuan = document.getElementById('profileToplamPuan');
+if (profileToplamPuan) {
+    profileToplamPuan.innerHTML = `
+        <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
+        <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+            <i class="fas fa-question-circle"></i>
+        </button>
+    `;
                 
                 setTimeout(() => {
                     const detayBtn = document.getElementById('puanDetayBtn');
@@ -3723,14 +3718,15 @@ async function loadUserStats() {
                 wordLearningPoint.style.color = '#6b7280';
             }
             
-            const profileToplamPuan = document.getElementById('profileToplamPuan');
-            if (profileToplamPuan) {
-                profileToplamPuan.innerHTML = `
-                    <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">0</span>
-                    <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
-                `;
+            // ===== TOPLAM PUAN GÖSTERİMİ =====
+const profileToplamPuan = document.getElementById('profileToplamPuan');
+if (profileToplamPuan) {
+    profileToplamPuan.innerHTML = `
+        <span style="font-size: 22px; font-weight: 700; color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
+        <button id="puanDetayBtn" style="background: none; border: none; color: #6b7280; cursor: pointer; font-size: 16px; padding: 0 6px; transition: 0.3s; margin-left: 4px;" title="Puan sistemi hakkında bilgi al">
+            <i class="fas fa-question-circle"></i>
+        </button>
+    `;
                 
                 setTimeout(() => {
                     const detayBtn = document.getElementById('puanDetayBtn');
@@ -4351,13 +4347,7 @@ async function updateExamSummary(correct, totalQuestions) {
             const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
             const sandikCezasi = sandikCount * 1;
             
-            toplamPuan = Math.round(
-                quizScore + 
-                averageScore + 
-                seviyePuani + 
-                kelimePuani - 
-                sandikCezasi
-            );
+            toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             ortalamaPuan = Math.round(averageScore);
             guncelToplamPuan = toplamPuan;
@@ -6052,9 +6042,7 @@ window.loadRanking = async function() {
             const sandikCount = data.quizSandik?.length || 0;
             const sandikCezasi = sandikCount * 1;
             
-            const totalScore = Math.round(
-                quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi
-            );
+            const totalScore = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             if (totalScore > 0) {
                 users.push({
@@ -6204,7 +6192,7 @@ window.loadRanking = async function() {
                             
                             <div style="font-size: 15px; opacity: 0.8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 6px;">
                                 <span>🏆 Toplam Puan:</span>
-                                <span style="color: #f59e0b; font-weight: 700; font-size: 24px;">${userData.totalScore}</span>
+                                <span style="color: #f59e0b; font-weight: 700; font-size: 15px;">${userData.totalScore.toFixed(2)} P</span>
                                 <span style="font-size: 10px; opacity: 0.4;">=</span>
                                 <span style="font-size: 10px; opacity: 0.5; font-weight: 300; font-family: monospace; background: rgba(255,255,255,0.04); padding: 2px 8px; border-radius: 4px;">
                                     ${detaylar}
