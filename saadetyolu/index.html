@@ -4200,55 +4200,15 @@ async function completeExam() {
     });
     
     const totalQuestions = currentExam.questions.length;
-    // Her doğru cevap için 0.01 puan
     const score = correct * 0.01;
     const roundedScore = Math.round(score * 100) / 100;
-    
     const letters = ['A', 'B', 'C', 'D'];
     
-    // Kitap, ders ve SINAV bilgilerini al
     const bookName = getBookNameById(currentExam.bookId);
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
-    // ===== KULLANICININ GÜNCEL VERİLERİNİ AL =====
-    let toplamPuan = 0;
-    let ortalamaPuan = 0;
-    let guncelToplamPuan = 0;
-    
-    if (currentUser) {
-        try {
-            const userRef = doc(db, 'users', currentUser.uid);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                const quizScore = data.quizScore || 0;
-                const averageScore = data.averageScore || 0;
-                const mevcutSeviye = data.mevcutSeviye || 1;
-                const totalWordsViewed = data.totalWordsViewed || 0;
-                const sandikCount = data.quizSandik?.length || 0;
-                
-                const seviyePuani = (mevcutSeviye - 1) * 2;
-                const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
-                const sandikCezasi = sandikCount * 1;
-                
-                toplamPuan = Math.round(
-                    quizScore + 
-                    averageScore + 
-                    seviyePuani + 
-                    kelimePuani - 
-                    sandikCezasi
-                );
-                
-                ortalamaPuan = Math.round(averageScore);
-                guncelToplamPuan = toplamPuan;
-            }
-        } catch (error) {
-            console.error('Kullanıcı verileri alınamadı:', error);
-        }
-    }
-    
-    // ===== SONUÇ HTML =====
+    // ===== ÖNCE SONUCU GÖSTER (FIREBASE BEKLEMEDEN) =====
     let resultHTML = `
         <div class="result-card">
             <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 15px;">
@@ -4265,25 +4225,11 @@ async function completeExam() {
                 ${correct}/${totalQuestions} doğru
             </div>
             
-            <!-- ===== PUAN ÖZETİ ===== -->
-            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan}</div>
-                    </div>
-                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                        <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan}</div>
-                    </div>
+            <!-- ===== PUAN ÖZETİ (YÜKLENİYOR) ===== -->
+            <div id="examResultSummary" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
+                <div style="text-align: center; padding: 10px;">
+                    <i class="fas fa-spinner fa-spin" style="color: #f59e0b; font-size: 20px;"></i>
+                    <span style="font-size: 13px; opacity: 0.7; margin-left: 10px;">İstatistikler yükleniyor...</span>
                 </div>
             </div>
             
@@ -4347,11 +4293,84 @@ async function completeExam() {
     const container = document.getElementById('quizContent');
     container.innerHTML = resultHTML;
     
-    // Sınav sonucunu kaydet
+    // ===== Sınav sonucunu KAYDET (Arka planda) =====
     try {
         await saveExamResult(currentExam.title, score, correct, totalQuestions);
     } catch (error) {
         console.error('Kayıt hatası:', error);
+    }
+    
+    // ===== KULLANICI VERİLERİNİ ARKA PLANDA YÜKLE VE ÖZETİ GÜNCELLE =====
+    updateExamSummary(correct, totalQuestions);
+}
+
+// ===== SINAV ÖZETİNİ GÜNCELLE (Arka planda) =====
+async function updateExamSummary(correct, totalQuestions) {
+    if (!currentUser) return;
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        let toplamPuan = 0;
+        let ortalamaPuan = 0;
+        let guncelToplamPuan = 0;
+        let quizScore = 0;
+        
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            quizScore = data.quizScore || 0;
+            const averageScore = data.averageScore || 0;
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            const totalWordsViewed = data.totalWordsViewed || 0;
+            const sandikCount = data.quizSandik?.length || 0;
+            
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+            const sandikCezasi = sandikCount * 1;
+            
+            toplamPuan = Math.round(
+                quizScore + 
+                averageScore + 
+                seviyePuani + 
+                kelimePuani - 
+                sandikCezasi
+            );
+            
+            ortalamaPuan = Math.round(averageScore);
+            guncelToplamPuan = toplamPuan;
+        }
+        
+        const score = correct * 0.01;
+        const roundedScore = Math.round(score * 100) / 100;
+        
+        // ===== ÖZETİ GÜNCELLE =====
+        const summaryDiv = document.getElementById('examResultSummary');
+        if (summaryDiv) {
+            summaryDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📊 Bu Sınavdan Aldığın Puan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${roundedScore}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">⭐ Sınavların Ortalaması</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;">${ortalamaPuan}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">🏆 Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${toplamPuan}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="font-size: 11px; opacity: 0.6;">📈 Güncel Toplam Puanın</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${guncelToplamPuan}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Özet güncelleme hatası:', error);
     }
 }
     
