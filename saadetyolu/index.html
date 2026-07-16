@@ -3435,7 +3435,10 @@ async function loadBooks() {
     });
 }
 
- bookSelect.onchange = async () => {
+
+
+
+    bookSelect.onchange = async () => {
     const bookId = bookSelect.value;
     const lessonSelect = document.getElementById('lessonSelect');
     
@@ -3454,12 +3457,8 @@ async function loadBooks() {
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Dersleri sırala
-        lessons.sort((a, b) => {
-            const dateA = new Date(a.createdAt || 0);
-            const dateB = new Date(b.createdAt || 0);
-            return dateA - dateB;
-        });
+        // ===== ALFABETİK SIRALA (Türkçe karakter desteği ile) =====
+        lessons.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
         
         closeLoadingAlert();
         
@@ -3512,6 +3511,8 @@ async function loadBooks() {
         });
     }
 };
+
+    
 
     
 
@@ -5152,7 +5153,6 @@ async function loadExamBooks() {
 
     
 // Kitap seçilince dersleri yükle
-// Kitap seçilince
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
@@ -5162,18 +5162,73 @@ if (examBookSelect) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
             document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
             return;
         }
         
-        // Dersleri yükle
-        const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
-        lessonsSnapshot.docs.forEach(doc => {
-            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-        });
+        // ===== YÜKLENİYOR ALERT =====
+        showLoadingAlert('📚 Dersler yükleniyor...');
         
-        document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+        try {
+            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            let dersler = lessonsSnapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            }));
+            
+            // ===== ALFABETİK SIRALA (Türkçe karakter desteği ile) =====
+            dersler.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+            
+            closeLoadingAlert();
+            
+            // ===== DERS LİSTESİ KONTROLÜ =====
+            if (dersler.length === 0) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+                document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📚 Bu kitapta ders bulunamadı</div>';
+                document.getElementById('examCountInfo').textContent = '0 sınav';
+                
+                Swal.fire({
+                    icon: 'info',
+                    title: '📚 Ders Bulunamadı',
+                    text: 'Bu kitaba ait henüz ders eklenmemiş. Lütfen başka bir kitap seçin.',
+                    confirmButtonColor: '#3b82f6',
+                    confirmButtonText: 'Tamam',
+                    width: '380px',
+                    padding: '1.5rem',
+                    customClass: {
+                        popup: 'compact-swal'
+                    }
+                });
+                return;
+            }
+            
+            lessonSelect.disabled = false;
+            lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+            dersler.forEach(ders => {
+                lessonSelect.innerHTML += `<option value="${ders.id}">${ders.name}</option>`;
+            });
+            
+            document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
+            
+        } catch (error) {
+            closeLoadingAlert();
+            console.error('Dersler yüklenirken hata:', error);
+            
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Dersler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: {
+                    popup: 'compact-swal'
+                }
+            });
+        }
     };
 }
 
@@ -5234,20 +5289,46 @@ async function loadExamsByBook(bookId) {
 async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
-    const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-    let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // Sınavları alfabetik sırala
-    exams.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    
-    if (currentUser && userExamHistory) {
-        exams = exams.map(exam => {
-            const result = userExamHistory.find(h => h.title === exam.title);
-            return { ...exam, userScore: result?.score || null };
-        });
+    try {
+        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== SINAVLARI ALFABETİK SIRALA =====
+        exams.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'tr'));
+        
+        if (currentUser && userExamHistory) {
+            exams = exams.map(exam => {
+                const result = userExamHistory.find(h => h.title === exam.title);
+                return { ...exam, userScore: result?.score || null };
+            });
+        }
+        
+        // ===== SINAV LİSTESİ KONTROLÜ =====
+        if (exams.length === 0) {
+            document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📝 Bu derste henüz sınav yok</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
+            
+            Swal.fire({
+                icon: 'info',
+                title: '📝 Sınav Bulunamadı',
+                text: 'Bu derse ait henüz sınav eklenmemiş. Lütfen başka bir ders seçin.',
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: {
+                    popup: 'compact-swal'
+                }
+            });
+            return;
+        }
+        
+        displayExams(exams);
+        
+    } catch (error) {
+        console.error('Sınavlar yüklenirken hata:', error);
+        throw error;
     }
-    
-    displayExams(exams);
 }
 
 
@@ -5554,38 +5635,43 @@ document.addEventListener('DOMContentLoaded', function() {
     const examBookSelect = document.getElementById('examBookSelect');
     const examLessonSelect = document.getElementById('examLessonSelect');
     
-if (examBookSelect) {
-    examBookSelect.onchange = async () => {
-        const bookId = examBookSelect.value;
-        const lessonSelect = document.getElementById('examLessonSelect');
+if (examLessonSelect) {
+    examLessonSelect.onchange = async () => {
+        const lessonId = examLessonSelect.value;
+        const container = document.getElementById('examsList');
         
-        if (!bookId) {
-            if (lessonSelect) {
-                lessonSelect.disabled = true;
-                lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            }
-            const examsList = document.getElementById('examsList');
-            if (examsList) examsList.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+        if (!lessonId) {
+            container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
             return;
         }
         
-        // Dersleri getir
-        const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        let dersler = lessonsSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data() 
-        }));
+        // ===== YÜKLENİYOR ALERT =====
+        showLoadingAlert('📝 Sınavlar yükleniyor...');
         
-        // ===== ALFABETİK SIRALA (Ders-1, Ders-2, Ders-3...) =====
-        dersler.sort((a, b) => {
-            return a.name.localeCompare(b.name, 'tr', { numeric: true });
-        });
-        
-        if (lessonSelect) {
-            lessonSelect.disabled = false;
-            lessonSelect.innerHTML = '<option value="" selected>-- Tüm Dersler --</option>';
-            dersler.forEach(ders => {
-                lessonSelect.innerHTML += `<option value="${ders.id}">${ders.name}</option>`;
+        try {
+            await loadExamsByLesson(lessonId);
+            closeLoadingAlert();
+            
+            // ===== SINAV KONTROLÜ (loadExamsByLesson içinde yapılıyor) =====
+            
+        } catch (error) {
+            closeLoadingAlert();
+            console.error('Sınavlar yüklenirken hata:', error);
+            container.innerHTML = '<div style="text-align:center; padding:40px;">❌ Sınavlar yüklenemedi!</div>';
+            document.getElementById('examCountInfo').textContent = '0 sınav';
+            
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Sınavlar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: {
+                    popup: 'compact-swal'
+                }
             });
         }
     };
