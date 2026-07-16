@@ -3435,8 +3435,10 @@ async function loadBooks() {
     });
 }
 
-  bookSelect.onchange = async () => {
+ bookSelect.onchange = async () => {
     const bookId = bookSelect.value;
+    const lessonSelect = document.getElementById('lessonSelect');
+    
     if (!bookId) {
         lessonSelect.disabled = true;
         lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
@@ -3444,21 +3446,74 @@ async function loadBooks() {
         updateWordDisplay();
         return;
     }
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-    lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // JavaScript ile isme göre sırala
-    lessons.sort((a, b) => a.name.localeCompare(b.name));
+    // ===== YÜKLENİYOR ALERT =====
+    showLoadingAlert('📚 Dersler yükleniyor...');
     
-    lessonSelect.disabled = false;
-    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    lessons.forEach(lesson => {
-        const option = document.createElement('option');
-        option.value = lesson.id;
-        option.textContent = lesson.name;
-        lessonSelect.appendChild(option);
-    });
+    try {
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Dersleri sırala
+        lessons.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateA - dateB;
+        });
+        
+        closeLoadingAlert();
+        
+        // ===== DERS LİSTESİ KONTROLÜ =====
+        if (lessons.length === 0) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+            words = [];
+            updateWordDisplay();
+            
+            Swal.fire({
+                icon: 'info',
+                title: '📚 Ders Bulunamadı',
+                text: 'Bu kitaba ait henüz ders eklenmemiş. Lütfen başka bir kitap seçin.',
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: {
+                    popup: 'compact-swal'
+                }
+            });
+            return;
+        }
+        
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        lessons.forEach(lesson => {
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        closeLoadingAlert();
+        console.error('Dersler yüklenirken hata:', error);
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Hata!',
+            text: 'Dersler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: {
+                popup: 'compact-swal'
+            }
+        });
+    }
 };
+
+    
 
     lessonSelect.onchange = async () => {
         const lessonId = lessonSelect.value;
@@ -8424,6 +8479,65 @@ window.refreshRankingProfile = async function() {
     }
 };
 
+
+
+
+    // ===== SWEETALERT YÜKLENİYOR =====
+function showLoadingAlert(message = '⏳ Yükleniyor, lütfen bekleyin...') {
+    Swal.fire({
+        title: '⏳ Yükleniyor',
+        text: message,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: {
+            popup: 'compact-swal'
+        }
+    });
+}
+
+// ===== SWEETALERT YÜKLENİYOR KAPAT =====
+function closeLoadingAlert() {
+    Swal.close();
+}
+
+// ===== SWEETALERT HATA =====
+function showErrorAlert(message) {
+    Swal.fire({
+        icon: 'error',
+        title: '❌ Hata!',
+        text: message,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Tamam',
+        width: '380px',
+        padding: '1.5rem',
+        customClass: {
+            popup: 'compact-swal'
+        }
+    });
+}
+
+// ===== SWEETALERT BAŞARI =====
+function showSuccessAlert(message) {
+    Swal.fire({
+        icon: 'success',
+        title: '✅ Başarılı!',
+        text: message,
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'Tamam',
+        timer: 2000,
+        timerProgressBar: true,
+        width: '380px',
+        padding: '1.5rem',
+        customClass: {
+            popup: 'compact-swal'
+        }
+    });
+}
+    
     
 </script>
 </body>
