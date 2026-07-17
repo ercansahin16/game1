@@ -3876,14 +3876,6 @@ async function saveExamResult(examTitle, score, correct, total) {
         const userDoc = await getDoc(userRef);
         const userData = userDoc.data() || {};
         
-        // ===== MEVCUT PUANI AL VE YENİ PUANI EKLE =====
-        const currentQuizScore = userData.quizScore || 0;
-        const newQuizScore = Math.round((currentQuizScore + score) * 100) / 100;
-        
-        console.log('📊 Sınav puanı:', score);
-        console.log('📊 Eski quizScore:', currentQuizScore);
-        console.log('📊 Yeni quizScore:', newQuizScore);
-        
         // ===== SINAV GEÇMİŞİ =====
         const examsCompleted = userData.examsCompleted || [];
         examsCompleted.push({
@@ -3901,20 +3893,20 @@ async function saveExamResult(examTitle, score, correct, total) {
         }
         const averageScore = Math.round((totalScore / examsCompleted.length) * 100) / 100;
         
+        console.log('📊 Sınav puanı:', score);
         console.log('📊 Toplam sınav puanı:', totalScore);
         console.log('📊 Sınav sayısı:', examsCompleted.length);
         console.log('📊 Ortalama puan:', averageScore);
         
+        // ===== quizScore'u DEĞİŞTİRME (Sadece yarışma puanı) =====
+        // Sınav puanı quizScore'a eklenmez, sadece averageScore olarak kaydedilir
         await updateDoc(userRef, {
             examsCompleted: examsCompleted,
-            averageScore: averageScore,
-            quizScore: newQuizScore
+            averageScore: averageScore
+            // quizScore: newQuizScore  // ❌ BU SATIRI SİL - Sınav puanı yarışma puanına karışmasın
         });
         
-        // Global değişkeni güncelle
-        quizScore = newQuizScore;
-        
-        console.log('✅ Sınav sonucu kaydedildi! Yeni puan:', newQuizScore);
+        console.log('✅ Sınav sonucu kaydedildi!');
         console.log('✅ Yeni ortalama:', averageScore);
         
         // Ekranı güncelle
