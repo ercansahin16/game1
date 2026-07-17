@@ -6192,16 +6192,16 @@ window.loadRanking = async function() {
             const data = doc.data();
             
             // ===== PUAN HESAPLAMA =====
-            const quizScore = data.quizScore || 0;
-            const averageScore = Math.round((data.averageScore || 0) * 100) / 100;
-            const mevcutSeviye = data.mevcutSeviye || 1;
-            const seviyePuani = (mevcutSeviye - 1) * 2;
-            const totalWordsViewed = data.totalWordsViewed || 0;
-            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
-            const sandikCount = data.quizSandik?.length || 0;
-            const sandikCezasi = sandikCount * 1;
-            
-            const totalScore = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
+          const quizScore = Number((data.quizScore || 0).toFixed(2));
+const averageScore = Number((data.averageScore || 0).toFixed(2));
+const mevcutSeviye = data.mevcutSeviye || 1;
+const seviyePuani = (mevcutSeviye - 1) * 2;
+const totalWordsViewed = data.totalWordsViewed || 0;
+const kelimePuani = Number((totalWordsViewed * 0.01).toFixed(2));
+const sandikCount = data.quizSandik?.length || 0;
+const sandikCezasi = sandikCount * 1;  // ✅ SANDIK CEZASINA DOKUNMA (tam sayı)
+
+const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi).toFixed(2));
             
             if (totalScore > 0) {
                 users.push({
