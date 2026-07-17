@@ -3688,7 +3688,7 @@ async function loadUserStats() {
             }
             
             const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+            const kelimePuani = totalWordsViewed * 0.01;
             const sandikCezasi = sandikCount * 1;
             
             const toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
@@ -4421,7 +4421,7 @@ async function updateExamSummary(correct, totalQuestions) {
             }
             
             const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+            const kelimePuani = totalWordsViewed * 0.01;
             const sandikCezasi = sandikCount * 1;
             
             toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
@@ -6193,11 +6193,11 @@ window.loadRanking = async function() {
             
             // ===== PUAN HESAPLAMA =====
           const quizScore = Number((data.quizScore || 0).toFixed(2));
-const averageScore = Math.round((data.averageScore || 0) * 100) / 100;
+const averageScore = data.averageScore || 0;
 const mevcutSeviye = data.mevcutSeviye || 1;
 const seviyePuani = (mevcutSeviye - 1) * 2;
 const totalWordsViewed = data.totalWordsViewed || 0;
-const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
+const kelimePuani = totalWordsViewed * 0.01;
 const sandikCount = data.quizSandik?.length || 0;
 const sandikCezasi = sandikCount * 1;  // ✅ SANDIK CEZASINA DOKUNMA (tam sayı)
 
@@ -8624,148 +8624,6 @@ function showSuccessAlert(message) {
 
 
 
-
-    // ===== GEÇİCİ VERİ GÖSTERİM FONKSİYONU =====
-// Bu fonksiyonu konsolda çalıştır, Firestore verilerini gösterir.
-// Kullanım: showUserData()
-
-window.showUserData = async function() {
-    console.log('🔍 ===== KULLANICI VERİLERİ OKUNUYOR =====');
-    
-    try {
-        // ===== 1. OTURUM KONTROLÜ =====
-        const user = auth.currentUser;
-        if (!user) {
-            console.log('❌ Oturum açık değil! Lütfen giriş yapın.');
-            return;
-        }
-        console.log('✅ Oturum açık:');
-        console.log('   ├─ Email:', user.email);
-        console.log('   ├─ UID:', user.uid);
-        console.log('   ├─ DisplayName:', user.displayName);
-        
-        // ===== 2. FIRESTORE VERİLERİ =====
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (!userDoc.exists()) {
-            console.log('❌ Firestore\'da kullanıcı belgesi bulunamadı!');
-            return;
-        }
-        
-        const data = userDoc.data();
-        
-        // ===== 3. TÜM VERİLERİ GÖSTER =====
-        console.log('📁 Firestore Verileri:');
-        console.log('   ├─ name:', data.name || 'Belirtilmemiş');
-        console.log('   ├─ email:', data.email);
-        console.log('   ├─ totalWordsViewed:', data.totalWordsViewed || 0);
-        console.log('   ├─ quizScore:', data.quizScore || 0);
-        console.log('   ├─ averageScore:', data.averageScore || 0);
-        console.log('   ├─ mevcutSeviye:', data.mevcutSeviye || 1);
-        
-        // ===== 4. SINAV GEÇMİŞİ =====
-        const exams = data.examsCompleted || [];
-        console.log(`   ├─ examsCompleted (${exams.length} adet):`);
-        if (exams.length === 0) {
-            console.log('   │   └─ Henüz sınav çözülmemiş');
-        } else {
-            exams.forEach((exam, index) => {
-                console.log(`   │   ${index + 1}. ${exam.title}`);
-                console.log(`   │      ├─ Tarih: ${new Date(exam.date).toLocaleString('tr-TR')}`);
-                console.log(`   │      ├─ Puan: ${exam.score}`);
-                console.log(`   │      ├─ Doğru: ${exam.correct}/${exam.total}`);
-                console.log(`   │      └─ Başarı: ${(exam.correct / exam.total * 100).toFixed(0)}%`);
-            });
-        }
-        
-        // ===== 5. SANDIK =====
-        const sandik = data.quizSandik || [];
-        console.log(`   ├─ quizSandik (${sandik.length} adet):`);
-        if (sandik.length === 0) {
-            console.log('   │   └─ Sandık boş');
-        } else {
-            sandik.forEach((kelime, index) => {
-                console.log(`   │   ${index + 1}. ${kelime.arabic} → ${kelime.turkish}`);
-            });
-        }
-        
-        // ===== 6. PUAN HESAPLAMA (KONTROL) =====
-        console.log('🧮 Puan Hesaplama Kontrolü:');
-        const quizScore = data.quizScore || 0;
-        const averageScore = data.averageScore || 0;
-        const mevcutSeviye = data.mevcutSeviye || 1;
-        const totalWordsViewed = data.totalWordsViewed || 0;
-        const sandikCount = data.quizSandik?.length || 0;
-        
-        const seviyePuani = (mevcutSeviye - 1) * 2;
-        const kelimePuani = Math.round(totalWordsViewed * 0.01 * 100) / 100;
-        const sandikCezasi = sandikCount * 1;
-        const toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
-        
-        console.log('   ├─ 🎲 Yarışma Puanı:', quizScore);
-        console.log('   ├─ 📝 Sınav Ortalaması:', averageScore);
-        console.log('   ├─ 🏔️ Seviye Bonusu:', seviyePuani, `(${mevcutSeviye}. seviye)`);
-        console.log('   ├─ 📚 Kelime Puanı:', kelimePuani, `(${totalWordsViewed} kelime)`);
-        console.log('   ├─ 📦 Sandık Cezası:', sandikCezasi, `(${sandikCount} sandık)`);
-        console.log('   ├─ 🏆 Hesaplanan Toplam:', toplamPuan);
-        
-        // ===== 7. MODAL İLE GÖSTER =====
-        Swal.fire({
-            title: '📊 Kullanıcı Verileri',
-            html: `
-                <div style="text-align: left; font-size: 13px; line-height: 1.6;">
-                    <div style="background: rgba(245,158,11,0.06); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-                        <strong>👤 Kullanıcı:</strong> ${data.name || 'Belirtilmemiş'}<br>
-                        <strong>📧 Email:</strong> ${data.email}
-                    </div>
-                    
-                    <div style="background: rgba(59,130,246,0.06); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-                        <strong>📊 İstatistikler:</strong><br>
-                        📚 Öğrenilen Kelime: ${data.totalWordsViewed || 0}<br>
-                        📝 Tamamlanan Sınav: ${exams.length}<br>
-                        ⭐ Sınav Ortalaması: <span style="color: #f59e0b; font-weight: 700;">${data.averageScore || 0}</span><br>
-                        🎲 Yarışma Puanı: ${data.quizScore || 0}<br>
-                        📦 Sandıktaki Kelime: ${sandik.length}
-                    </div>
-                    
-                    <div style="background: rgba(16,185,129,0.06); border-radius: 8px; padding: 10px;">
-                        <strong>🏆 Toplam Puan Hesabı:</strong><br>
-                        🎲 ${quizScore} + 📝 ${averageScore} + 🏔️ ${seviyePuani} + 📚 ${kelimePuani} - 📦 ${sandikCezasi}<br>
-                        <strong style="color: #f59e0b; font-size: 16px;">= ${toplamPuan}</strong>
-                    </div>
-                    
-                    <div style="margin-top: 8px; font-size: 11px; opacity: 0.5; text-align: center;">
-                        ${exams.length > 0 ? `✅ ${exams.length} sınav kaydı bulundu` : '⚠️ Henüz sınav çözülmemiş'}
-                    </div>
-                </div>
-            `,
-            icon: 'info',
-            confirmButtonText: 'Tamam',
-            confirmButtonColor: '#f59e0b',
-            width: '420px',
-            padding: '1.2rem',
-            customClass: {
-                popup: 'compact-swal'
-            }
-        });
-        
-        console.log('✅ Veri okuma tamamlandı!');
-        console.log('📊 ===== BİTTİ =====');
-        
-    } catch (error) {
-        console.error('❌ Veri okuma hatası:', error);
-        Swal.fire({
-            icon: 'error',
-            title: '❌ Hata!',
-            text: 'Veriler okunamadı: ' + error.message,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Tamam',
-            width: '380px',
-            padding: '1.5rem'
-        });
-    }
-};
     
 </script>
 </body>
