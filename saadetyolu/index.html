@@ -6183,7 +6183,6 @@ window.loadRanking = async function() {
         const snapshot = await getDocs(collection(db, 'users'));
         const users = [];
         
-        // Toplam kelime sayısını al (seviye hesaplamak için)
         const wordsSnapshot = await getDocs(collection(db, 'words'));
         const totalWords = wordsSnapshot.docs.length;
         const toplamSeviye = Math.ceil(totalWords / 15);
@@ -6191,17 +6190,17 @@ window.loadRanking = async function() {
         snapshot.forEach(doc => {
             const data = doc.data();
             
-            // ===== PUAN HESAPLAMA =====
-          const quizScore = Number((data.quizScore || 0).toFixed(2));
-const averageScore = data.averageScore || 0;
-const mevcutSeviye = data.mevcutSeviye || 1;
-const seviyePuani = (mevcutSeviye - 1) * 2;
-const totalWordsViewed = data.totalWordsViewed || 0;
-const kelimePuani = totalWordsViewed * 0.01;
-const sandikCount = data.quizSandik?.length || 0;
-const sandikCezasi = sandikCount * 1;  // ✅ SANDIK CEZASINA DOKUNMA (tam sayı)
-
-const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi).toFixed(2));
+            // ===== PUAN HESAPLAMA (YUVARLAMA YOK) =====
+            const quizScore = data.quizScore || 0;
+            const averageScore = data.averageScore || 0;  // ✅ DOĞRUDAN OKU
+            const mevcutSeviye = data.mevcutSeviye || 1;
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const totalWordsViewed = data.totalWordsViewed || 0;
+            const kelimePuani = totalWordsViewed * 0.01;
+            const sandikCount = data.quizSandik?.length || 0;
+            const sandikCezasi = sandikCount * 1;
+            
+            const totalScore = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             if (totalScore > 0) {
                 users.push({
@@ -6209,8 +6208,8 @@ const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani 
                     name: data.name || data.email?.split('@')[0] || 'İsimsiz',
                     email: data.email,
                     totalScore: Math.max(0, totalScore),
-                    quizScore: Number((data.quizScore || 0).toFixed(2)),
-                    averageScore: Math.round(averageScore),
+                    quizScore: quizScore,
+                    averageScore: averageScore,  // ✅ 0.05 OLARAK KALIR
                     seviyePuani: seviyePuani,
                     kelimePuani: kelimePuani,
                     sandikCezasi: sandikCezasi,
@@ -6237,7 +6236,7 @@ const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani 
         }
         const ilkler = users.slice(0, ilklerSayisi);
         
-        // ===== RANKING LİSTESİNİ OLUŞTUR (HEM ANA SAYFA HEM PROFİL İÇİN) =====
+        // ===== RANKING LİSTESİNİ OLUŞTUR =====
         const rankingContainers = document.querySelectorAll('#rankingList');
         rankingContainers.forEach(container => {
             if (!container) return;
@@ -6246,7 +6245,6 @@ const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani 
                 <div style="display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
             `;
             
-            // Scroll bar stilleri
             html += `
                 <style>
                     #rankingList::-webkit-scrollbar {
@@ -6327,7 +6325,15 @@ const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani 
                 
                 if (userData) {
                     const ilklerdeMi = userIndex < ilklerSayisi && userIndex !== -1;
-                    const detaylar = `${userData.quizScore} + ${userData.averageScore} + ${userData.seviyePuani} + ${userData.kelimePuani.toFixed(2)} - ${userData.sandikCezasi}`;
+                    
+                    // ===== DETAYLARI OLUŞTUR (DOĞRU DEĞERLERLE) =====
+                    const quizScore = userData.quizScore || 0;
+                    const averageScore = userData.averageScore || 0;
+                    const seviyePuani = userData.seviyePuani || 0;
+                    const kelimePuani = userData.kelimePuani || 0;
+                    const sandikCezasi = userData.sandikCezasi || 0;
+                    
+                    const detaylar = `${quizScore.toFixed(2)} + ${averageScore.toFixed(2)} + ${seviyePuani} + ${kelimePuani.toFixed(2)} - ${sandikCezasi}`;
                     
                     container.innerHTML = `
                         <div style="text-align: center; padding: 12px; border-radius: 10px; background: ${ilklerdeMi ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.05)'}; border: ${ilklerdeMi ? '1px solid #10b981' : '1px solid rgba(245,158,11,0.15)'};">
@@ -6365,11 +6371,11 @@ const totalScore = Number((quizScore + averageScore + seviyePuani + kelimePuani 
                             </div>
                             
                             <div style="font-size: 10px; opacity: 0.4; margin-top: 4px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                               <span>🎲 Yarışma: ${userData.quizScore.toFixed(2)}</span>
-<span>📝 Sınav: ${userData.averageScore.toFixed(2)}</span>
-<span>🏔️ Seviye: ${userData.seviyePuani}</span>
-<span>📚 Kelime: ${userData.kelimePuani.toFixed(2)}</span>
-<span>📦 Ceza: -${userData.sandikCezasi.toFixed(2)}</span>
+                                <span>🎲 Yarışma: ${(userData.quizScore || 0).toFixed(2)}</span>
+                                <span>📝 Sınav: ${(userData.averageScore || 0).toFixed(2)}</span>
+                                <span>🏔️ Seviye: ${userData.seviyePuani}</span>
+                                <span>📚 Kelime: ${(userData.kelimePuani || 0).toFixed(2)}</span>
+                                <span>📦 Ceza: -${userData.sandikCezasi}</span>
                             </div>
                         </div>
                     `;
