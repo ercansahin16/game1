@@ -1172,6 +1172,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"; // ✅ YENİ
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -1183,6 +1184,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const functions = getFunctions(app); // ✅ YENİ
 
     let books = [];
     let currentLessonBookId = null;
@@ -3337,6 +3339,7 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
 };
 
 // ===== 4. Kullanıcı Sil =====
+// ===== KULLANICI SİL (Firestore + Authentication) =====
 document.getElementById('deleteUserBtn').onclick = async () => {
     const userId = document.getElementById('userDeleteSelect').value;
     const resultDiv = document.getElementById('deleteUserResult');
@@ -3352,7 +3355,15 @@ document.getElementById('deleteUserBtn').onclick = async () => {
     const userSelect = document.getElementById('userDeleteSelect');
     const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
     
+    // ===== ÇİFT ONAY =====
     if (!confirm(`🚨 "${userName}" kullanıcısı ve TÜM verileri KALICI OLARAK silinecek! Devam?`)) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    if (!confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
         setTimeout(() => resultDiv.style.display = 'none', 3000);
@@ -3367,15 +3378,25 @@ document.getElementById('deleteUserBtn').onclick = async () => {
     resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Kullanıcı siliniyor...</span>';
     
     try {
-        await deleteDoc(doc(db, 'users', userId));
-        resultDiv.style.background = 'rgba(16,185,129,0.1)';
-        resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `✅ "${userName}" kullanıcısı başarıyla silindi!`;
-        await loadUserSelects();
-        await loadUsers();
-        await updateStats();
+        // ===== CLOUD FUNCTION'U ÇAĞIR =====
+        const deleteUser = httpsCallable(functions, 'deleteUser');
+        const result = await deleteUser({ uid: userId });
+        
+        if (result.data.success) {
+            resultDiv.style.background = 'rgba(16,185,129,0.1)';
+            resultDiv.style.border = '1px solid #10b981';
+            resultDiv.innerHTML = `✅ "${userName}" kullanıcısı (Firestore + Authentication) başarıyla silindi!`;
+            
+            // Listeleri yenile
+            await loadUserSelects();
+            await loadUsers();
+            await updateStats();
+        }
+        
     } catch (error) {
+        console.error('❌ Silme hatası:', error);
         resultDiv.style.background = 'rgba(239,68,68,0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
         resultDiv.innerHTML = `❌ Hata: ${error.message}`;
     } finally {
         btn.disabled = false;
@@ -3383,7 +3404,6 @@ document.getElementById('deleteUserBtn').onclick = async () => {
         setTimeout(() => resultDiv.style.display = 'none', 5000);
     }
 };
-
 // ===== 5. Tek Kullanıcının Sandığını Sıfırla =====
 document.getElementById('resetUserSandikBtn').onclick = async () => {
     const userId = document.getElementById('userSandikSelect').value;
