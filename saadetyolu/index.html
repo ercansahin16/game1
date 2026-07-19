@@ -3454,7 +3454,12 @@ async function loadBooks() {
     showLoadingAlert('📚 Dersler yükleniyor...');
     
     try {
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        // YENİ (orderBy ile)
+const snapshot = await getDocs(query(
+    collection(db, 'lessons'), 
+    where('bookId', '==', bookId),
+    orderBy('order', 'asc') // 'order' alanına göre sırala
+));
         lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         // ===== ALFABETİK SIRALA (Türkçe karakter desteği ile) =====
@@ -5162,7 +5167,12 @@ if (examBookSelect) {
         showLoadingAlert('📚 Dersler yükleniyor...');
         
         try {
-            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            // YENİ (orderBy ile)
+const snapshot = await getDocs(query(
+    collection(db, 'lessons'), 
+    where('bookId', '==', bookId),
+    orderBy('order', 'asc') // 'order' alanına göre sırala
+));
             let dersler = lessonsSnapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data() 
