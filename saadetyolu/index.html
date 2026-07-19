@@ -5166,7 +5166,8 @@ async function loadExamBooks() {
 
 
     
-// Kitap seçilince dersleri yükle
+
+// Kitap seçilince dersleri yükle (Sınavlar için)
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
@@ -5184,19 +5185,18 @@ if (examBookSelect) {
         showLoadingAlert('📚 Dersler yükleniyor...');
         
         try {
-            // YENİ (orderBy ile)
-const snapshot = await getDocs(query(
-    collection(db, 'lessons'), 
-    where('bookId', '==', bookId),
-    orderBy('order', 'asc') // 'order' alanına göre sırala
-));
-            let dersler = lessonsSnapshot.docs.map(doc => ({ 
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            let dersler = snapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data() 
             }));
             
-            // ===== ALFABETİK SIRALA (Türkçe karakter desteği ile) =====
-            dersler.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+            // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+            dersler.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
             
             closeLoadingAlert();
             
@@ -5225,7 +5225,10 @@ const snapshot = await getDocs(query(
             lessonSelect.disabled = false;
             lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
             dersler.forEach(ders => {
-                lessonSelect.innerHTML += `<option value="${ders.id}">${ders.name}</option>`;
+                const option = document.createElement('option');
+                option.value = ders.id;
+                option.textContent = ders.name;
+                lessonSelect.appendChild(option);
             });
             
             document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
