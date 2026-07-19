@@ -3347,72 +3347,7 @@ document.getElementById('resetAllDataBtn').onclick = async () => {
     }
 };
 
-// ===== 4. Kullanıcı Sil =====
-// ===== KULLANICI SİL (Firestore + Authentication) =====
-document.getElementById('deleteUserBtn').onclick = async () => {
-    const userId = document.getElementById('userDeleteSelect').value;
-    const resultDiv = document.getElementById('deleteUserResult');
-    
-    if (!userId) {
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(239,68,68,0.1)';
-        resultDiv.innerHTML = '⚠️ Lütfen bir kullanıcı seçin!';
-        setTimeout(() => resultDiv.style.display = 'none', 3000);
-        return;
-    }
-    
-    const userSelect = document.getElementById('userDeleteSelect');
-    const userName = userSelect.options[userSelect.selectedIndex]?.text || 'Kullanıcı';
-    
-    // ===== ÇİFT ONAY =====
-    if (!confirm(`🚨 "${userName}" kullanıcısı ve TÜM verileri KALICI OLARAK silinecek! Devam?`)) {
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
-        setTimeout(() => resultDiv.style.display = 'none', 3000);
-        return;
-    }
-    
-    if (!confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Emin misiniz?')) {
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
-        setTimeout(() => resultDiv.style.display = 'none', 3000);
-        return;
-    }
-    
-    const btn = document.getElementById('deleteUserBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Siliniyor...';
-    
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Kullanıcı siliniyor...</span>';
-    
-    try {
-        // ===== CLOUD FUNCTION'U ÇAĞIR =====
-        const deleteUser = httpsCallable(functions, 'deleteUser');
-        const result = await deleteUser({ uid: userId });
-        
-        if (result.data.success) {
-            resultDiv.style.background = 'rgba(16,185,129,0.1)';
-            resultDiv.style.border = '1px solid #10b981';
-            resultDiv.innerHTML = `✅ "${userName}" kullanıcısı (Firestore + Authentication) başarıyla silindi!`;
-            
-            // Listeleri yenile
-            await loadUserSelects();
-            await loadUsers();
-            await updateStats();
-        }
-        
-    } catch (error) {
-        console.error('❌ Silme hatası:', error);
-        resultDiv.style.background = 'rgba(239,68,68,0.1)';
-        resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-user-slash"></i> Kullanıcıyı Sil';
-        setTimeout(() => resultDiv.style.display = 'none', 5000);
-    }
-};
+
 // ===== 5. Tek Kullanıcının Sandığını Sıfırla =====
 document.getElementById('resetUserSandikBtn').onclick = async () => {
     const userId = document.getElementById('userSandikSelect').value;
