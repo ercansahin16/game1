@@ -3438,7 +3438,7 @@ async function loadBooks() {
 
 
 
-    bookSelect.onchange = async () => {
+bookSelect.onchange = async () => {
     const bookId = bookSelect.value;
     const lessonSelect = document.getElementById('lessonSelect');
     
@@ -3454,16 +3454,20 @@ async function loadBooks() {
     showLoadingAlert('📚 Dersler yükleniyor...');
     
     try {
-        // YENİ (orderBy ile)
-const snapshot = await getDocs(query(
-    collection(db, 'lessons'), 
-    where('bookId', '==', bookId),
-    orderBy('order', 'asc') // 'order' alanına göre sırala
-));
+        // ===== DERSLERİ GETİR (orderBy ile) =====
+        const snapshot = await getDocs(query(
+            collection(db, 'lessons'), 
+            where('bookId', '==', bookId),
+            orderBy('order', 'asc') // 'order' alanına göre sırala
+        ));
         lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // ===== ALFABETİK SIRALA (Türkçe karakter desteği ile) =====
-        lessons.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        lessons.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
         
         closeLoadingAlert();
         
@@ -3519,6 +3523,19 @@ const snapshot = await getDocs(query(
 
     
 
+
+
+            // ===== DERSLERİ SAYISAL SIRALA (JavaScript) =====
+function sortLessonsByName(lessons) {
+    return lessons.sort((a, b) => {
+        // "Ders-1", "Ders-2", "Ders-10" gibi sayıları ayıkla
+        const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+        return numA - numB;
+    });
+}
+
+    
     
 
     lessonSelect.onchange = async () => {
@@ -5292,18 +5309,28 @@ async function loadExamsByLesson(lessonId) {
     if (!lessonId) return;
     
     try {
+        // ===== YÜKLENİYOR ALERT =====
+        showLoadingAlert('📝 Sınavlar yükleniyor...');
+        
         const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
         let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // ===== SINAVLARI ALFABETİK SIRALA =====
-        exams.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'tr'));
+        // ===== SINAVLARI SAYISAL SIRALA (Sınav-1, Sınav-2, Sınav-3...) =====
+        exams.sort((a, b) => {
+            const numA = parseInt((a.title || '').replace(/\D/g, '')) || 0;
+            const numB = parseInt((b.title || '').replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
         
+        // ===== KULLANICI PUANLARINI EKLE =====
         if (currentUser && userExamHistory) {
             exams = exams.map(exam => {
                 const result = userExamHistory.find(h => h.title === exam.title);
                 return { ...exam, userScore: result?.score || null };
             });
         }
+        
+        closeLoadingAlert();
         
         // ===== SINAV LİSTESİ KONTROLÜ =====
         if (exams.length === 0) {
@@ -5328,11 +5355,23 @@ async function loadExamsByLesson(lessonId) {
         displayExams(exams);
         
     } catch (error) {
+        closeLoadingAlert();
         console.error('Sınavlar yüklenirken hata:', error);
-        throw error;
+        
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Hata!',
+            text: 'Sınavlar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: {
+                popup: 'compact-swal'
+            }
+        });
     }
 }
-
 
 function displayExams(exams) {
     const container = document.getElementById('examsList');
