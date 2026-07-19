@@ -8693,6 +8693,7 @@ function showSuccessAlert(message) {
 
 
 // ===== YARIŞMADAN ÇIKIŞ ONAYI (GÜNCEL DEĞERLERLE) =====
+// ===== YARIŞMADAN ÇIKIŞ ONAYI (SANDIK UYARILI) =====
 window.confirmExitKarma = function() {
     // Mevcut değerleri al
     const score = document.getElementById('karmaScore')?.textContent || '0.00';
@@ -8700,6 +8701,22 @@ window.confirmExitKarma = function() {
     const sandik = document.getElementById('sandikCount')?.textContent || '0';
     const seviye = document.getElementById('karmaSeviye')?.textContent || '1';
     const toplamSeviye = document.getElementById('karmaToplamSeviye')?.textContent || '7';
+    
+    // Sandıkta kelime var mı?
+    const sandikSayisi = parseInt(sandik) || 0;
+    const sandikUyarisi = sandikSayisi > 0 ? `
+        <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid rgba(239,68,68,0.3);">
+            <p style="margin: 0; font-size: 13px; color: #ef4444; font-weight: 600;">
+                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+                ⚠️ ÖNEMLİ UYARI!
+            </p>
+            <p style="margin: 6px 0 0 0; font-size: 12px; opacity: 0.9; color: #fca5a5;">
+                Sandıktaki <strong>${sandikSayisi} kelimeyi</strong> kurtarmalısın! 
+                Kurtarmazsan <strong style="color: #ef4444;">-${sandikSayisi} puan</strong> ceza alırsın 
+                ve <strong style="color: #f59e0b;">sıralamadan düşebilirsin</strong>! 😔
+            </p>
+        </div>
+    ` : '';
     
     Swal.fire({
         title: '⚠️ Dikkat!',
@@ -8719,7 +8736,8 @@ window.confirmExitKarma = function() {
                         <span>📦 ${sandik}</span>
                     </div>
                 </div>
-                <p style="font-size: 13px; color: #10b981;">
+                ${sandikUyarisi}
+                <p style="font-size: 13px; color: #10b981; margin-top: 10px;">
                     <i class="fas fa-lightbulb"></i>
                     <strong>İpucu:</strong> Seviyeyi tamamla, <strong>+2 puan</strong> bonus kazan!
                 </p>
@@ -8731,7 +8749,7 @@ window.confirmExitKarma = function() {
         cancelButtonColor: '#6b7280',
         confirmButtonText: 'Evet, çık',
         cancelButtonText: 'Hayır, devam et',
-        width: '420px',
+        width: '450px',
         padding: '1.5rem',
         customClass: {
             popup: 'compact-swal'
@@ -8742,7 +8760,6 @@ window.confirmExitKarma = function() {
         }
     });
 };
-
 
 
     
