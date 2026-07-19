@@ -927,29 +927,70 @@
             </div>
 
        <!-- Kullanıcı Silme - Yönlendirme -->
-<div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid #3b82f6;">
-    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-        <div style="font-size: 32px;">👤</div>
+<!-- Kullanıcı Silme - İki Adımlı Yönlendirme -->
+<div style="background: rgba(239,68,68,0.08); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(239,68,68,0.3);">
+    <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
+        <div style="font-size: 32px; margin-top: 4px;">🗑️</div>
         <div style="flex: 1;">
-            <h4 style="color: #3b82f6; margin: 0 0 5px 0;">Kullanıcı Silme</h4>
-            <p style="font-size: 13px; opacity: 0.8; margin: 0 0 8px 0;">
-                Kullanıcıları silmek için Firebase Console'u kullanın.
+            <h4 style="color: #ef4444; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                Kullanıcı Silme
+                <span style="font-size: 11px; background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 400;">2 Adım</span>
+            </h4>
+            
+            <p style="font-size: 13px; opacity: 0.9; margin: 0 0 12px 0;">
+                <i class="fas fa-arrow-right" style="color: #f59e0b;"></i>
+                Bir kullanıcıyı tamamen silmek için <strong>önce Firestore'dan, sonra Authentication'dan</strong> silmeniz gerekir.
             </p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
-                   target="_blank" 
-                   style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; transition: 0.3s;"
-                   onmouseover="this.style.background='#2563eb'"
-                   onmouseout="this.style.background='#3b82f6'">
-                    <i class="fas fa-external-link-alt"></i> Firebase Console'a Git
-                </a>
-                <span style="font-size: 12px; opacity: 0.6;">
-                    <i class="fas fa-envelope"></i> Email: <strong>asbekbas@gmail.com</strong>
+            
+            <!-- ADIM 1: FIRESTORE'DAN SİL -->
+            <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #10b981;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">1. ADIM</span>
+                    <span style="font-size: 13px; font-weight: 500;">Firestore'dan Sil</span>
+                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının tüm verilerini (puan, sınav geçmişi, sandık) siler</span>
+                    <button onclick="adminFirestoreDelete()" style="background: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.3s; white-space: nowrap;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                        <i class="fas fa-database"></i> Firestore'dan Sil
+                    </button>
+                </div>
+                <div id="firestoreDeleteResult" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+            </div>
+            
+            <!-- ADIM 2: AUTHENTICATION'DAN SİL -->
+            <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 14px; border-left: 3px solid #3b82f6;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span style="background: #3b82f6; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">2. ADIM</span>
+                    <span style="font-size: 13px; font-weight: 500;">Authentication'dan Sil</span>
+                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının giriş bilgilerini (email, şifre) siler</span>
+                    <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
+                       target="_blank" 
+                       style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: 0.3s; white-space: nowrap;"
+                       onmouseover="this.style.background='#2563eb'"
+                       onmouseout="this.style.background='#3b82f6'">
+                        <i class="fas fa-external-link-alt"></i> Firebase Console
+                    </a>
+                </div>
+                <div style="margin-top: 6px; font-size: 11px; opacity: 0.6;">
+                    <i class="fas fa-info-circle"></i> 
+                    Authentication → Users → Kullanıcıyı bulun → <strong>Delete</strong>
+                </div>
+            </div>
+            
+            <!-- KULLANICI SEÇİMİ -->
+            <div style="margin-top: 12px; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span style="font-size: 12px; font-weight: 500;"><i class="fas fa-user"></i> Kullanıcı Seç:</span>
+                <select id="adminUserDeleteSelect" style="flex: 1; min-width: 180px; padding: 6px 12px; border-radius: 6px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); font-size: 12px;">
+                    <option value="">-- Kullanıcı Seçin --</option>
+                </select>
+                <span style="font-size: 11px; opacity: 0.5;">
+                    <i class="fas fa-arrow-up"></i> Önce seçin, sonra silin
                 </span>
             </div>
-            <div style="margin-top: 10px; padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 12px; opacity: 0.7;">
-                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
-                Silme işlemi için Firebase Console'da Authentication → Users bölümüne gidin.
+            
+            <!-- BİLGİ NOTU -->
+            <div style="margin-top: 12px; padding: 10px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 12px; opacity: 0.8;">
+                <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                <strong>Önemli:</strong> Her iki adımı da tamamlamazsanız kullanıcı tamamen silinmez. 
+                Önce <strong>Firestore</strong>'dan, sonra <strong>Authentication</strong>'dan silin.
             </div>
         </div>
     </div>
@@ -3672,6 +3713,53 @@ document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => 
     });
 });
 
+
+
+
+    // ===== ADMIN: FIRESTORE'DAN KULLANICI SİL =====
+async function adminFirestoreDelete() {
+    const select = document.getElementById('adminUserDeleteSelect');
+    const userId = select.value;
+    const resultDiv = document.getElementById('firestoreDeleteResult');
+    
+    if (!userId) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.color = '#ef4444';
+        resultDiv.innerHTML = '⚠️ Lütfen önce bir kullanıcı seçin!';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    const userName = select.options[select.selectedIndex]?.text || 'Kullanıcı';
+    
+    if (!confirm(`⚠️ "${userName}" kullanıcısının TÜM VERİLERİ (puan, sınav, sandık) silinecek! Devam?`)) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.color = '#ef4444';
+        resultDiv.innerHTML = '❌ İşlem iptal edildi.';
+        setTimeout(() => resultDiv.style.display = 'none', 3000);
+        return;
+    }
+    
+    try {
+        await deleteDoc(doc(db, 'users', userId));
+        
+        resultDiv.style.display = 'block';
+        resultDiv.style.color = '#10b981';
+        resultDiv.innerHTML = `✅ "${userName}" kullanıcısı Firestore'dan silindi! Şimdi 2. adımı uygulayın.`;
+        
+        // Listeyi yenile
+        await loadUserSelects();
+        await loadUsers();
+        await updateStats();
+        
+    } catch (error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.color = '#ef4444';
+        resultDiv.innerHTML = `❌ Hata: ${error.message}`;
+    }
+}
+
+    
 </script>
 </body>
 </html>
