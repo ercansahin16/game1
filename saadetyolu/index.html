@@ -3624,6 +3624,8 @@ showBtn.onclick = () => {
     }
 
 
+
+
 async function loadUserStats() {
     if (!currentUser) return;
     
@@ -3636,17 +3638,31 @@ async function loadUserStats() {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
 
+        // ===== KULLANICI FIRESTORE'DA YOKSA OTURUMU KAPAT =====
+        if (!userDoc.exists()) {
+            console.warn('⚠️ Kullanıcı Firestore\'da bulunamadı. Oturum kapatılıyor...');
+            await signOut(auth);
+            Swal.fire({
+                icon: 'info',
+                title: '👋 Hesap Bulunamadı',
+                text: 'Hesabınız silinmiş veya bulunamadı. Lütfen tekrar giriş yapın.',
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                timer: 3000,
+                timerProgressBar: true,
+                customClass: { popup: 'compact-swal' }
+            });
+            return;
+        }
+
         // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
         console.log('📧 Email:', currentUser.email);
         console.log('👤 Auth displayName:', currentUser.displayName);
-        
-        if (userDoc.exists()) {
-            console.log('📁 Firestore name:', userDoc.data().name);
-            console.log('📁 Firestore tüm veri:', userDoc.data());
-        } else {
-            console.log('❌ Firestore kaydı yok');
-        }
+        console.log('📁 Firestore name:', userDoc.data().name);
+        console.log('📁 Firestore tüm veri:', userDoc.data());
         console.log('🔍 ===== BİTTİ =====');
         
         // ===== 2. KULLANICI ADINI FIRESTORE'DAN AL =====
@@ -3682,7 +3698,8 @@ async function loadUserStats() {
         if (userDoc.exists()) {
             const data = userDoc.data();
             
-            const quizScore = data.quizScore || 0;
+            // ===== PUANLAR =====
+            const quizScore = data.quizScore || 0;              // YARIŞMA PUANI
             const mevcutSeviye = data.mevcutSeviye || 1;
             const totalWordsViewed = data.totalWordsViewed || 0;
             const sandikCount = data.quizSandik?.length || 0;
@@ -3698,10 +3715,18 @@ async function loadUserStats() {
                 ortalamaPuan = Math.round((totalScore / examsCompleted.length) * 100) / 100;
             }
             
-            // ===== KELİME ÖĞREN EKRANI PUAN =====
+            // ===== HESAPLAMALAR =====
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const kelimePuani = totalWordsViewed * 0.01;  // Her kelime 0.01 puan
+            const sandikCezasi = sandikCount * 1;
+            
+            // ===== TOPLAM PUAN =====
+            const toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
+            
+            // ===== KELİME ÖĞREN EKRANI PUAN (SADECE kelime puanı göster) =====
             const wordLearningScore = document.getElementById('wordLearningScore');
             if (wordLearningScore) {
-                wordLearningScore.textContent = quizScore.toFixed(2);
+                wordLearningScore.textContent = kelimePuani.toFixed(2);  // quizScore DEĞİL, kelimePuani!
             }
             
             const wordLearningPoint = document.getElementById('wordLearningPoint');
@@ -3709,12 +3734,6 @@ async function loadUserStats() {
                 wordLearningPoint.textContent = '+0.00';
                 wordLearningPoint.style.color = '#6b7280';
             }
-            
-            const seviyePuani = (mevcutSeviye - 1) * 2;
-            const kelimePuani = totalWordsViewed * 0.01;
-            const sandikCezasi = sandikCount * 1;
-            
-            const toplamPuan = Math.round((quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
             
             // ===== İSTATİSTİK KARTLARI =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
@@ -3729,6 +3748,7 @@ async function loadUserStats() {
                 averageScoreEl.textContent = ortalamaPuan.toFixed(2);
             }
             
+            // ===== YARIŞMA PUANI (Profilde) =====
             const karmaScoreProfile = document.getElementById('karmaScoreProfile');
             if (karmaScoreProfile) karmaScoreProfile.textContent = quizScore.toFixed(2);
             
@@ -3843,10 +3863,27 @@ async function loadUserStats() {
         
     } catch (error) {
         console.error('❌ loadUserStats hatası:', error);
+        
+        // Hata durumunda da güvenli bir şekilde çıkış yapmayı dene
+        if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+            try {
+                await signOut(auth);
+                Swal.fire({
+                    icon: 'warning',
+                    title: '🔒 Oturum Sonlandı',
+                    text: 'Oturum bilgileriniz geçersiz. Lütfen tekrar giriş yapın.',
+                    confirmButtonColor: '#f59e0b',
+                    confirmButtonText: 'Tamam',
+                    width: '380px',
+                    padding: '1.5rem',
+                    customClass: { popup: 'compact-swal' }
+                });
+            } catch (signOutError) {
+                console.error('❌ Çıkış hatası:', signOutError);
+            }
+        }
     }
 }
-
-
 
 
 
@@ -8230,19 +8267,6 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
   // ===== PUAN SİSTEMİ DETAY MODALI =====
 function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, totalWordsViewed, kelimePuani, sandikCount, sandikCezasi, toplamPuan) {
     
-    // ===== SAYILARI GÜVENCE ALTINA AL =====
-    const qScore = parseFloat(quizScore) || 0;
-    const aScore = parseFloat(averageScore) || 0;
-    const sPuani = parseFloat(seviyePuani) || 0;
-    const kPuani = parseFloat(kelimePuani) || 0;
-    const sCezasi = parseFloat(sandikCezasi) || 0;
-    const tPuan = parseFloat(toplamPuan) || 0;
-    const mevcutS = parseFloat(mevcutSeviye) || 1;
-    const tWords = parseFloat(totalWordsViewed) || 0;
-    const sCount = parseFloat(sandikCount) || 0;
-    
-    const hesaplama = `${qScore.toFixed(2)} + ${aScore} + ${sPuani} + ${kPuani} - ${sCezasi} = ${tPuan}`;
-    
     Swal.fire({
         title: '🏆 Puan Sistemi',
         html: `
@@ -8254,53 +8278,53 @@ function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, total
                 <div style="background: rgba(245,158,11,0.06); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <span>🎲 Yarışma Puanı</span>
-                        <span style="color: #f59e0b; font-weight: 600;">${qScore.toFixed(2)}</span>
+                        <span style="color: #f59e0b; font-weight: 600;">${quizScore.toFixed(2)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <span>📝 Sınav Ortalaması</span>
-                        <span style="color: #f59e0b; font-weight: 600;">${aScore}</span>
+                        <span style="color: #3b82f6; font-weight: 600;">${averageScore.toFixed(2)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <span>🏔️ Seviye Bonusu (${mevcutS}. seviye)</span>
-                        <span style="color: #f59e0b; font-weight: 600;">+${sPuani}</span>
+                        <span>📚 Kelime Puanı (${totalWordsViewed} kelime)</span>
+                        <span style="color: #10b981; font-weight: 600;">+${kelimePuani.toFixed(2)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <span>📚 Kelime Puanı (${tWords} kelime)</span>
-                        <span style="color: #f59e0b; font-weight: 600;">+${kPuani}</span>
+                        <span>🏔️ Seviye Bonusu (${mevcutSeviye}. seviye)</span>
+                        <span style="color: #f59e0b; font-weight: 600;">+${seviyePuani}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                        <span>📦 Sandık Cezası (${sCount} kelime)</span>
-                        <span style="color: #ef4444; font-weight: 600;">-${sCezasi}</span>
+                        <span>📦 Sandık Cezası (${sandikCount} kelime)</span>
+                        <span style="color: #ef4444; font-weight: 600;">-${sandikCezasi}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 6px 0 0 0; margin-top: 6px; border-top: 2px solid rgba(245,158,11,0.2); font-weight: 700; font-size: 16px;">
                         <span>🏆 <strong>Toplam Puan</strong></span>
-                        <span style="color: #f59e0b;">${tPuan}</span>
+                        <span style="color: #f59e0b;">${toplamPuan.toFixed(2)}</span>
                     </div>
                 </div>
                 
                 <div style="background: rgba(16,185,129,0.06); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; border-left: 3px solid #10b981;">
                     <p style="margin: 0; font-weight: 600; color: #10b981; font-size: 13px;">🧮 Nasıl Hesaplanıyor?</p>
                     <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8; font-family: monospace;">
-                        ${hesaplama}
+                        ${quizScore.toFixed(2)} + ${averageScore.toFixed(2)} + ${seviyePuani} + ${kelimePuani.toFixed(2)} - ${sandikCezasi} = ${toplamPuan.toFixed(2)}
                     </p>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
                     <div style="background: rgba(16,185,129,0.05); border-radius: 8px; padding: 8px; text-align: center;">
-                        <div style="font-size: 11px; opacity: 0.6;">✅ Doğru Cevap</div>
+                        <div style="font-size: 11px; opacity: 0.6;">🎲 Doğru Cevap (Yarışma)</div>
                         <div style="color: #10b981; font-weight: 700; font-size: 14px;">+0.01 puan</div>
                     </div>
                     <div style="background: rgba(239,68,68,0.05); border-radius: 8px; padding: 8px; text-align: center;">
-                        <div style="font-size: 11px; opacity: 0.6;">❌ Yanlış Cevap</div>
+                        <div style="font-size: 11px; opacity: 0.6;">🎲 Yanlış Cevap (Yarışma)</div>
                         <div style="color: #ef4444; font-weight: 700; font-size: 14px;">-1 puan</div>
+                    </div>
+                    <div style="background: rgba(16,185,129,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.6;">📚 Kelime Öğrenme</div>
+                        <div style="color: #10b981; font-weight: 700; font-size: 14px;">+0.01 puan</div>
                     </div>
                     <div style="background: rgba(245,158,11,0.05); border-radius: 8px; padding: 8px; text-align: center;">
                         <div style="font-size: 11px; opacity: 0.6;">🏔️ Seviye Atlama</div>
                         <div style="color: #f59e0b; font-weight: 700; font-size: 14px;">+2 puan</div>
-                    </div>
-                    <div style="background: rgba(139,92,246,0.05); border-radius: 8px; padding: 8px; text-align: center;">
-                        <div style="font-size: 11px; opacity: 0.6;">📚 Kelime Öğrenme</div>
-                        <div style="color: #8b5cf6; font-weight: 700; font-size: 14px;">+0.01 puan</div>
                     </div>
                 </div>
                 
@@ -8509,36 +8533,26 @@ if (wordLearningScore) {
 
 
     // ===== KELİME ÖĞRENME PUANI =====
+// ===== KELİME ÖĞRENME PUANI =====
 async function addWordLearningPoint() {
     if (!currentUser) return;
     
     try {
-        // Puan ekle (0.01)
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
+        
         if (userDoc.exists()) {
             const data = userDoc.data();
-            const currentScore = data.quizScore || 0;
-            const newScore = Math.round((currentScore + 0.01) * 100) / 100;
+            const currentTotal = data.totalWordsViewed || 0;
+            const newTotal = currentTotal + 1;
             
-            // Firestore'u güncelle
-            await updateDoc(userRef, { quizScore: newScore });
+            // SADECE totalWordsViewed'ı güncelle (quizScore DEĞİŞMEZ!)
+            await updateDoc(userRef, { 
+                totalWordsViewed: newTotal
+            });
             
-            // Global değişkeni güncelle
-            quizScore = newScore;
-            
-            // Ekranda göster
-            const wordLearningScore = document.getElementById('wordLearningScore');
-            if (wordLearningScore) {
-                wordLearningScore.textContent = newScore.toFixed(2);
-                wordLearningScore.style.color = '#10b981';
-                wordLearningScore.style.transition = 'color 0.3s';
-                setTimeout(() => {
-                    wordLearningScore.style.color = '#f59e0b';
-                }, 800);
-            }
-            
-            // Bu kelimeden alınan puanı göster
+            // ===== EKRANI GÜNCELLE =====
+            // 📖 Bu Kelime
             const wordLearningPoint = document.getElementById('wordLearningPoint');
             if (wordLearningPoint) {
                 wordLearningPoint.textContent = '+0.01';
@@ -8550,17 +8564,10 @@ async function addWordLearningPoint() {
                 }, 500);
             }
             
-            // Karma puanını da güncelle (eğer yarışma ekranı açıksa)
-            const karmaScore = document.getElementById('karmaScore');
-            if (karmaScore) {
-                karmaScore.textContent = newScore.toFixed(2);
-            }
+            // Puanları yeniden yükle
+            await loadUserStats();
             
-            // Profil puanını da güncelle
-            const profileScore = document.getElementById('karmaScoreProfile');
-            if (profileScore) {
-                profileScore.textContent = newScore.toFixed(2);
-            }
+            console.log('✅ Kelime sayısı arttı:', newTotal);
         }
     } catch (error) {
         console.error('❌ Puan ekleme hatası:', error);
