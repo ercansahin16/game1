@@ -3601,7 +3601,8 @@ showBtn.onclick = () => {
     }
 
 
-async function loadUserStats() {
+
+    async function loadUserStats() {
     if (!currentUser) return;
     
     try {
@@ -3613,17 +3614,39 @@ async function loadUserStats() {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
 
+        // ===== KULLANICI FIRESTORE'DA YOKSA OTURUMU KAPAT VE YÖNLENDİR =====
+        if (!userDoc.exists()) {
+            console.warn('⚠️ Kullanıcı Firestore\'da bulunamadı. Oturum kapatılıyor...');
+            
+            // Oturumu kapat
+            await signOut(auth);
+            
+            // Kullanıcıya bilgi ver
+            Swal.fire({
+                icon: 'info',
+                title: '👋 Hesap Bulunamadı',
+                text: 'Hesabınız silinmiş veya bulunamadı. Lütfen tekrar giriş yapın.',
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Tamam',
+                width: '380px',
+                padding: '1.5rem',
+                timer: 3000,
+                timerProgressBar: true,
+                customClass: {
+                    popup: 'compact-swal'
+                }
+            });
+            
+            // Bu noktada onAuthStateChanged tekrar çalışacak ve giriş sayfasını gösterecek
+            return;
+        }
+
         // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
         console.log('📧 Email:', currentUser.email);
         console.log('👤 Auth displayName:', currentUser.displayName);
-        
-        if (userDoc.exists()) {
-            console.log('📁 Firestore name:', userDoc.data().name);
-            console.log('📁 Firestore tüm veri:', userDoc.data());
-        } else {
-            console.log('❌ Firestore kaydı yok');
-        }
+        console.log('📁 Firestore name:', userDoc.data().name);
+        console.log('📁 Firestore tüm veri:', userDoc.data());
         console.log('🔍 ===== BİTTİ =====');
         
         // ===== 2. KULLANICI ADINI FIRESTORE'DAN AL =====
@@ -3754,7 +3777,7 @@ async function loadUserStats() {
             displayExamHistory(examsCompleted);
             
         } else {
-            // ===== VARSAYILAN DEĞERLER =====
+            // ===== VARSAYILAN DEĞERLER (Buraya gelmemeli ama güvenlik için) =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
             if (totalWordsLearned) totalWordsLearned.textContent = '0';
             
@@ -3770,7 +3793,6 @@ async function loadUserStats() {
             const sandikCountProfile = document.getElementById('sandikCountProfile');
             if (sandikCountProfile) sandikCountProfile.textContent = '0';
             
-            // ===== KELİME ÖĞREN EKRANI PUAN (VARSAYILAN) =====
             const wordLearningScore = document.getElementById('wordLearningScore');
             if (wordLearningScore) {
                 wordLearningScore.textContent = '0.00';
@@ -3782,7 +3804,6 @@ async function loadUserStats() {
                 wordLearningPoint.style.color = '#6b7280';
             }
             
-            // ===== TOPLAM PUAN GÖSTERİMİ (VARSAYILAN) =====
             const profileToplamPuan = document.getElementById('profileToplamPuan');
             if (profileToplamPuan) {
                 profileToplamPuan.innerHTML = `
@@ -3820,8 +3841,31 @@ async function loadUserStats() {
         
     } catch (error) {
         console.error('❌ loadUserStats hatası:', error);
+        
+        // Hata durumunda da güvenli bir şekilde çıkış yapmayı dene
+        if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+            try {
+                await signOut(auth);
+                Swal.fire({
+                    icon: 'warning',
+                    title: '🔒 Oturum Sonlandı',
+                    text: 'Oturum bilgileriniz geçersiz. Lütfen tekrar giriş yapın.',
+                    confirmButtonColor: '#f59e0b',
+                    confirmButtonText: 'Tamam',
+                    width: '380px',
+                    padding: '1.5rem',
+                    customClass: {
+                        popup: 'compact-swal'
+                    }
+                });
+            } catch (signOutError) {
+                console.error('❌ Çıkış hatası:', signOutError);
+            }
+        }
     }
 }
+
+    
 
 
 
@@ -4935,69 +4979,123 @@ document.getElementById('doLoginBtn').onclick = async () => {
 
 
 
+
+
     onAuthStateChanged(auth, async (user) => {
     if (user) {
-        currentUser = user;
-        menuBtn.classList.remove('hidden');
-        document.getElementById('mainHeader').style.display = 'flex';
-        document.getElementById('logoutIconBtn').classList.remove('hidden');
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'flex';
-        themeIconBtn.classList.add('hidden');
-        
-        // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
-        // loadUserStats bunları dolduracak (Firestore'dan)
-        document.getElementById('userNameDisplay').textContent = '';
-        document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> Yükleniyor';
-        
-        // userBadge'i gizle (loadUserStats sonunda gösterilecek)
-        const userBadge = document.getElementById('userBadge');
-        if (userBadge) userBadge.style.display = 'none';
-        
-        // Giriş yapınca yarışma ekranlarını gizle (ana sayfada olsun)
-        const karmaScreen = document.getElementById('karmaScreen');
-        if (karmaScreen) karmaScreen.style.display = 'none';
-        
-        const rankingScreen = document.getElementById('rankingScreen');
-        if (rankingScreen) rankingScreen.style.display = 'none';
-        
-        await loadBooks();
-        await loadUserStats();  // Burada header ve sidebar doldurulacak
-        await loadLessonsList();
-        await loadUserExamHistory();
-        
-        // ===== SEVİYEYİ YÜKLE (GÜÇLENDİRİLMİŞ) =====
+        // ===== KULLANICI OTURUM AÇTI, ÖNCE FIRESTORE'DA VAR MI KONTROL ET =====
         try {
             const userRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                if (data.mevcutSeviye && data.mevcutSeviye > 0) {
-                    mevcutSeviye = data.mevcutSeviye;
-                    console.log('📌 Girişte seviye yüklendi:', mevcutSeviye);
-                } else {
-                    mevcutSeviye = 1;
-                    console.log('📌 Girişte seviye yok, 1 olarak ayarlandı');
-                }
-                // Puanı da yükle
-                if (data.quizScore !== undefined) {
-                    quizScore = data.quizScore;
-                    console.log('💰 Girişte puan yüklendi:', quizScore);
-                }
-                // Sandığı da yükle
-                if (data.quizSandik) {
-                    quizSandik = data.quizSandik;
-                    console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
-                }
+            
+            // ===== FIRESTORE'DA YOKSA OTURUMU KAPAT VE YÖNLENDİR =====
+            if (!userDoc.exists()) {
+                console.warn('⚠️ Oturum açan kullanıcı Firestore\'da bulunamadı. Çıkış yapılıyor...');
+                await signOut(auth);
+                
+                // Kullanıcıya bilgi ver
+                Swal.fire({
+                    icon: 'info',
+                    title: '👋 Hesap Bulunamadı',
+                    text: 'Hesabınız silinmiş veya bulunamadı. Lütfen tekrar giriş yapın veya kaydolun.',
+                    confirmButtonColor: '#f59e0b',
+                    confirmButtonText: 'Tamam',
+                    width: '380px',
+                    padding: '1.5rem',
+                    timer: 4000,
+                    timerProgressBar: true,
+                    customClass: {
+                        popup: 'compact-swal'
+                    }
+                });
+                
+                return; // İşlemi durdur, onAuthStateChanged tekrar çalışacak
             }
+            
+            // ===== FIRESTORE'DA VARSA NORMAL AKIŞA DEVAM ET =====
+            currentUser = user;
+            menuBtn.classList.remove('hidden');
+            document.getElementById('mainHeader').style.display = 'flex';
+            document.getElementById('logoutIconBtn').classList.remove('hidden');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'flex';
+            themeIconBtn.classList.add('hidden');
+            
+            // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
+            // loadUserStats bunları dolduracak (Firestore'dan)
+            document.getElementById('userNameDisplay').textContent = '';
+            document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> Yükleniyor';
+            
+            // userBadge'i gizle (loadUserStats sonunda gösterilecek)
+            const userBadge = document.getElementById('userBadge');
+            if (userBadge) userBadge.style.display = 'none';
+            
+            // Giriş yapınca yarışma ekranlarını gizle (ana sayfada olsun)
+            const karmaScreen = document.getElementById('karmaScreen');
+            if (karmaScreen) karmaScreen.style.display = 'none';
+            
+            const rankingScreen = document.getElementById('rankingScreen');
+            if (rankingScreen) rankingScreen.style.display = 'none';
+            
+            await loadBooks();
+            await loadUserStats();  // Burada header ve sidebar doldurulacak
+            await loadLessonsList();
+            await loadUserExamHistory();
+            
+            // ===== SEVİYEYİ YÜKLE (GÜÇLENDİRİLMİŞ) =====
+            try {
+                // userDoc zaten yukarıda çekildi, tekrar çekmeye gerek yok
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    if (data.mevcutSeviye && data.mevcutSeviye > 0) {
+                        mevcutSeviye = data.mevcutSeviye;
+                        console.log('📌 Girişte seviye yüklendi:', mevcutSeviye);
+                    } else {
+                        mevcutSeviye = 1;
+                        console.log('📌 Girişte seviye yok, 1 olarak ayarlandı');
+                    }
+                    // Puanı da yükle
+                    if (data.quizScore !== undefined) {
+                        quizScore = data.quizScore;
+                        console.log('💰 Girişte puan yüklendi:', quizScore);
+                    }
+                    // Sandığı da yükle
+                    if (data.quizSandik) {
+                        quizSandik = data.quizSandik;
+                        console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
+                    }
+                }
+            } catch (error) {
+                console.log('⚠️ Seviye yükleme hatası:', error);
+            }
+            
+            // Zoom başlangıç durumu
+            isZoomed = true;
+            const zoomBtn = document.getElementById('zoomBtn');
+            if (zoomBtn) zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+            
         } catch (error) {
-            console.log('⚠️ Seviye yükleme hatası:', error);
+            console.error('❌ Oturum açma doğrulama hatası:', error);
+            
+            // Hata durumunda güvenli bir şekilde çıkış yap
+            try {
+                await signOut(auth);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Oturum Doğrulanamadı',
+                    text: 'Oturum bilgileriniz geçersiz. Lütfen tekrar giriş yapın.',
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Tamam',
+                    width: '380px',
+                    padding: '1.5rem',
+                    customClass: {
+                        popup: 'compact-swal'
+                    }
+                });
+            } catch (signOutError) {
+                console.error('❌ Çıkış hatası:', signOutError);
+            }
         }
-        
-        // Zoom başlangıç durumu
-        isZoomed = true;
-        const zoomBtn = document.getElementById('zoomBtn');
-        if (zoomBtn) zoomBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
         
     } else {
         // ===== KULLANICI ÇIKIŞ YAPTIĞINDA =====
@@ -5074,6 +5172,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
         console.log('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
     }
 });
+
+    
         
 
     // Yardım / İletişim
