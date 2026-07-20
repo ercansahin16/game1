@@ -6278,19 +6278,21 @@ window.goRanking = () => {
 
 window.loadRanking = async function() {
     try {
+        // ===== TOPLAM DERS SAYISINI AL (SEVİYE SAYISI) =====
+        const lessonsSnapshot = await getDocs(collection(db, 'lessons'));
+        const toplamDers = lessonsSnapshot.docs.length;
+        const toplamSeviye = Math.max(1, toplamDers);
+
         const snapshot = await getDocs(collection(db, 'users'));
         const users = [];
         
-        const wordsSnapshot = await getDocs(collection(db, 'words'));
-        const totalWords = wordsSnapshot.docs.length;
-        const toplamSeviye =  Math.max(1, toplamDers);
+        // wordsSnapshot KALDIRILDI - artık gerek yok
         
         snapshot.forEach(doc => {
             const data = doc.data();
             
-            // ===== PUAN HESAPLAMA (YUVARLAMA YOK) =====
             const quizScore = data.quizScore || 0;
-            const averageScore = data.averageScore || 0;  // ✅ DOĞRUDAN OKU
+            const averageScore = data.averageScore || 0;
             const mevcutSeviye = data.mevcutSeviye || 1;
             const seviyePuani = (mevcutSeviye - 1) * 2;
             const totalWordsViewed = data.totalWordsViewed || 0;
@@ -6307,7 +6309,7 @@ window.loadRanking = async function() {
                     email: data.email,
                     totalScore: Math.max(0, totalScore),
                     quizScore: quizScore,
-                    averageScore: averageScore,  // ✅ 0.05 OLARAK KALIR
+                    averageScore: averageScore,
                     seviyePuani: seviyePuani,
                     kelimePuani: kelimePuani,
                     sandikCezasi: sandikCezasi,
