@@ -2789,16 +2789,36 @@ if (bulkExamBookSelect) {
             return;
         }
         
+        // ===== YÜKLENİYOR GÖSTER =====
+        lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+        lessonSelect.disabled = true;
+        
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // ===== ALFABETİK SIRALA =====
-        lessons.sort((a, b) => a.name.localeCompare(b.name));
+        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        lessons.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        // ===== DERS KONTROLÜ =====
+        if (lessons.length === 0) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+            examSelect.disabled = true;
+            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            return;
+        }
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
         lessons.forEach(lesson => {
-            lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.name}</option>`;
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
         });
         
         examSelect.disabled = true;
@@ -2855,11 +2875,16 @@ async function loadAllExams() {
 }
 
 // Admin paneli - Kitaba göre sınavları getir
-async function loadExamsByBook(bookId) {
-    const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    displayAdminExams(exams);
-}
+// BUL: lessonBookSelect.onchange
+const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', currentLessonBookId), orderBy('order', 'asc')));
+let lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+// ===== SAYISAL SIRALA =====
+lessons.sort((a, b) => {
+    const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+    const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+    return numA - numB;
+});
 
 // Admin paneli - Derse göre sınavları getir
 async function loadExamsByLesson(lessonId) {
@@ -2915,12 +2940,37 @@ if (adminExamBookSelect) {
             return;
         }
         
+        // ===== YÜKLENİYOR GÖSTER =====
+        lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+        lessonSelect.disabled = true;
+        
         // Dersleri yükle
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        lessons.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        // ===== DERS KONTROLÜ =====
+        if (lessons.length === 0) {
+            lessonSelect.disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+            container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
+            document.getElementById('statExams').innerHTML = '0';
+            return;
+        }
+        
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        lessons.forEach(lesson => {
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
         });
         
         // Sınavları GÖSTERME, sadece mesaj göster
