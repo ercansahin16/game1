@@ -5251,9 +5251,10 @@ async function loadExamBooks() {
 
 
 
-    
 
-// Kitap seçilince dersleri yükle (Sınavlar için)
+
+
+    // Kitap seçilince dersleri yükle (Sınavlar için)
 if (examBookSelect) {
     examBookSelect.onchange = async () => {
         const bookId = examBookSelect.value;
@@ -5267,17 +5268,25 @@ if (examBookSelect) {
             return;
         }
         
-        // ===== YÜKLENİYOR ALERT =====
         showLoadingAlert('📚 Dersler yükleniyor...');
         
         try {
+            // ===== 1. DERSLERİ GETİR =====
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             let dersler = snapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data() 
             }));
             
-            // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+            // ===== 2. TÜM SINAVLARI TEK SEFERDE AL =====
+            const allExams = await getDocs(collection(db, 'exams'));
+            const examCounts = {};
+            allExams.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+            });
+            
+            // ===== 3. SAYISAL SIRALA =====
             dersler.sort((a, b) => {
                 const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
@@ -5286,25 +5295,11 @@ if (examBookSelect) {
             
             closeLoadingAlert();
             
-            // ===== DERS LİSTESİ KONTROLÜ =====
             if (dersler.length === 0) {
                 lessonSelect.disabled = true;
                 lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
                 document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📚 Bu kitapta ders bulunamadı</div>';
                 document.getElementById('examCountInfo').textContent = '0 sınav';
-                
-                Swal.fire({
-                    icon: 'info',
-                    title: '📚 Ders Bulunamadı',
-                    text: 'Bu kitaba ait henüz ders eklenmemiş. Lütfen başka bir kitap seçin.',
-                    confirmButtonColor: '#3b82f6',
-                    confirmButtonText: 'Tamam',
-                    width: '380px',
-                    padding: '1.5rem',
-                    customClass: {
-                        popup: 'compact-swal'
-                    }
-                });
                 return;
             }
             
@@ -5313,7 +5308,9 @@ if (examBookSelect) {
             dersler.forEach(ders => {
                 const option = document.createElement('option');
                 option.value = ders.id;
-                option.textContent = ders.name;
+                // ===== 📝 PARANTEZ İÇİNDE SINAV SAYISI =====
+                const count = examCounts[ders.id] || 0;
+                option.textContent = `${ders.name} (${count} sınav)`;
                 lessonSelect.appendChild(option);
             });
             
@@ -5323,22 +5320,21 @@ if (examBookSelect) {
         } catch (error) {
             closeLoadingAlert();
             console.error('Dersler yüklenirken hata:', error);
-            
             Swal.fire({
                 icon: 'error',
                 title: '❌ Hata!',
-                text: 'Dersler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+                text: 'Dersler yüklenirken bir hata oluştu.',
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'Tamam',
                 width: '380px',
-                padding: '1.5rem',
-                customClass: {
-                    popup: 'compact-swal'
-                }
+                padding: '1.5rem'
             });
         }
     };
 }
+
+
+
 
 // Ders seçilince - BURASI ÖNEMLİ
 if (examLessonSelect) {
