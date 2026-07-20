@@ -1507,8 +1507,14 @@
     }
 }
 
-    window.closeModal = function(id) { document.getElementById(id).classList.remove('visible'); };
-    function openModal(id) { document.getElementById(id).classList.add('visible'); }
+  // ===== MODAL FONKSİYONLARINI GLOBAL YAP =====
+window.openModal = function(id) { 
+    document.getElementById(id).classList.add('visible'); 
+};
+
+window.closeModal = function(id) { 
+    document.getElementById(id).classList.remove('visible'); 
+};
 
    async function loadBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
@@ -3633,25 +3639,42 @@ document.getElementById('bulkAddBookBtn')?.addEventListener('click', function() 
     document.getElementById('bookName').value = '';
     document.getElementById('bookDesc').value = '';
     document.getElementById('bookOrder').value = (books || []).length + 1;
-    openModal('bookModal');
+    window.openModal('bookModal');
 });
 
 // ============================================================
 // TOPLU KELİME YÜKLEME - DERS EKLE
 // ============================================================
+// ============================================================
+// TOPLU KELİME YÜKLEME - DERS EKLE
+// ============================================================
 document.getElementById('bulkAddLessonBtn')?.addEventListener('click', function() {
     const bookId = document.getElementById('bulkBookSelect').value;
+    
     if (!bookId) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
+        Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Uyarı',
+            text: 'Lütfen önce bir kitap seçin!',
+            confirmButtonColor: '#f59e0b',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: {
+                popup: 'compact-swal'
+            }
+        });
         return;
     }
+    
     document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
     document.getElementById('editLessonId').value = '';
     document.getElementById('lessonName').value = '';
     document.getElementById('lessonDesc').value = '';
     document.getElementById('lessonOrder').value = '';
     document.getElementById('lessonBookSelectModal').value = bookId;
-    openModal('lessonModal');
+    
+    window.openModal('lessonModal');
 });
 
 
