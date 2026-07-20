@@ -5303,16 +5303,37 @@ if (examBookSelect) {
                 return;
             }
             
-            lessonSelect.disabled = false;
-            lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
-            dersler.forEach(ders => {
-                const option = document.createElement('option');
-                option.value = ders.id;
-                // ===== 📝 PARANTEZ İÇİNDE SINAV SAYISI =====
-                const count = examCounts[ders.id] || 0;
-                option.textContent = `${ders.name} (${count} sınav)`;
-                lessonSelect.appendChild(option);
-            });
+         lessonSelect.disabled = false;
+lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+
+dersler.forEach(ders => {
+    const option = document.createElement('option');
+    option.value = ders.id;
+    const count = examCounts[ders.id] || 0;
+    
+    // ===== EMOJİ VE RENK =====
+    let emoji = '📝';
+    let renk = '';
+    
+    if (count === 0) {
+        emoji = '📭';
+        renk = 'color: #6b7280;'; // gri
+    } else if (count <= 3) {
+        emoji = '📗';
+        renk = 'color: #10b981;'; // yeşil
+    } else if (count <= 6) {
+        emoji = '📘';
+        renk = 'color: #3b82f6;'; // mavi
+    } else {
+        emoji = '📚';
+        renk = 'color: #f59e0b;'; // altın
+    }
+    
+    // ===== SEÇENEK OLUŞTUR =====
+    option.textContent = `${ders.name} ${emoji} (${count} sınav)`;
+    option.style.cssText = renk;
+    lessonSelect.appendChild(option);
+});
             
             document.getElementById('examsList').innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
             document.getElementById('examCountInfo').textContent = '0 sınav';
