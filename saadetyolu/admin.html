@@ -1520,21 +1520,20 @@ window.closeModal = function(id) {
     if (modal) modal.classList.remove('visible');
 };
 
-   async function loadBooks() {
+async function loadBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // JavaScript ile isme göre sırala
+    // ===== ALFABETİK SIRALA =====
     books.sort((a, b) => a.name.localeCompare(b.name));
     
-    const container = document.getElementById('booksList');
-    container.innerHTML = '';
+    bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
     books.forEach(book => {
-        const div = document.createElement('div'); div.className = 'item';
-        div.innerHTML = `<div class="item-info"><strong>${book.name}</strong><small>${book.description || ''} | Sıra: ${book.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button></div>`;
-        container.appendChild(div);
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        bookSelect.appendChild(option);
     });
-    document.getElementById('statBooks').innerHTML = books.length;
 }
 
     window.editBook = (id) => {
@@ -2849,11 +2848,12 @@ async function loadExams() {
 }
 
 // Admin paneli - Kitapları yükle
+// Admin paneli - Kitapları yükle
 async function loadAdminExamBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // JavaScript ile isme göre sırala
+    // ===== ALFABETİK SIRALA =====
     books.sort((a, b) => a.name.localeCompare(b.name));
     
     const select = document.getElementById('adminExamBookSelect');
