@@ -5230,13 +5230,22 @@ document.getElementById('goHelp').onclick = () => {
 
 
     // Kitapları yükle (Sınavlar için)
+// Kitapları yükle (Sınavlar için)
 async function loadExamBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== ALFABETİK SIRALA =====
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
     const select = document.getElementById('examBookSelect');
     if (!select) return;
     select.innerHTML = '<option value="" selected>-- Kitap Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        select.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        select.appendChild(option);
     });
 }
 
