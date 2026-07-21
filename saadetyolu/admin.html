@@ -1527,13 +1527,28 @@ async function loadBooks() {
     // ===== ALFABETİK SIRALA =====
     books.sort((a, b) => a.name.localeCompare(b.name));
     
-    bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    books.forEach(book => {
-        const option = document.createElement('option');
-        option.value = book.id;
-        option.textContent = book.name;
-        bookSelect.appendChild(option);
-    });
+    // ===== ADMIN İÇİN KİTAP LİSTESİ =====
+    const container = document.getElementById('booksList');
+    if (container) {
+        container.innerHTML = '';
+        books.forEach(book => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `
+                <div class="item-info">
+                    <strong>${book.name}</strong>
+                    <small>${book.description || ''} | Sıra: ${book.order || 0}</small>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger icon-btn" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    document.getElementById('statBooks').innerHTML = books.length;
 }
 
     window.editBook = (id) => {
@@ -2296,20 +2311,30 @@ document.getElementById('goBulkUpload').onclick = () => {
 };
 
 async function loadBulkBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
-    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // ===== ALFABETİK SIRALA =====
-    books.sort((a, b) => a.name.localeCompare(b.name));
-    
-    const select = document.getElementById('bulkBookSelect');
-    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    books.forEach(book => {
-        const option = document.createElement('option');
-        option.value = book.id;
-        option.textContent = book.name;
-        select.appendChild(option);
-    });
+    try {
+        const snapshot = await getDocs(collection(db, 'books'));
+        const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== ALFABETİK SIRALA =====
+        books.sort((a, b) => a.name.localeCompare(b.name));
+        
+        const select = document.getElementById('bulkBookSelect');
+        if (!select) {
+            console.warn('⚠️ bulkBookSelect elementi bulunamadı!');
+            return;
+        }
+        
+        select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        books.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book.id;
+            option.textContent = book.name;
+            select.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('loadBulkBooks hatası:', error);
+    }
 }
 
 // ===== BULK BOOK SELECT - ONCHANGE =====
