@@ -3208,17 +3208,7 @@ function updateOnlineStatus() {
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
-// Sayfa yüklendiğinde kontrol et
-document.addEventListener('DOMContentLoaded', function() {
-    // Başlangıçta internet yoksa göster
-    if (!navigator.onLine) {
-        offlineBanner.style.display = 'block';
-        offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin.';
-        offlineBanner.style.background = '#ef4444';
-    }
-    
-    // ... diğer DOMContentLoaded kodları ...
-});
+
 
 // Firestore hata yakalama (opsiyonel)
 // Firestore bağlantı hatası durumunda ek bilgi
@@ -3916,6 +3906,151 @@ async function loadAdminUserSelect() {
     }
 }
 
+
+    // ============================================================
+// SAYFA YÜKLENDİĞİNDE TÜM KONTROLLER (SADECE ADMIN)
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===== 1. İNTERNET BAĞLANTISI KONTROLÜ =====
+    const offlineBanner = document.getElementById('offlineBanner');
+    const offlineMessage = document.getElementById('offlineMessage');
+    
+    if (!navigator.onLine) {
+        if (offlineBanner) {
+            offlineBanner.style.display = 'block';
+            offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin.';
+            offlineBanner.style.background = '#ef4444';
+        }
+    } else {
+        if (offlineBanner) {
+            offlineBanner.style.display = 'none';
+        }
+    }
+    
+    // ===== 2. ADMIN EXAM BOOK SELECT =====
+    const adminExamBookSelect = document.getElementById('adminExamBookSelect');
+    if (adminExamBookSelect) {
+        adminExamBookSelect.onchange = async () => {
+            const bookId = adminExamBookSelect.value;
+            const lessonSelect = document.getElementById('adminExamLessonSelect');
+            const container = document.getElementById('examsList');
+            
+            if (!bookId) {
+                if (lessonSelect) {
+                    lessonSelect.disabled = true;
+                    lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+                }
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+                }
+                document.getElementById('statExams').innerHTML = '0';
+                return;
+            }
+            
+            if (lessonSelect) {
+                lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+                lessonSelect.disabled = true;
+            }
+            
+            try {
+                const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+                const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // ===== SAYISAL SIRALA =====
+                lessons.sort((a, b) => {
+                    const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+                
+                if (lessons.length === 0) {
+                    if (lessonSelect) {
+                        lessonSelect.disabled = true;
+                        lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+                    }
+                    if (container) {
+                        container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
+                    }
+                    document.getElementById('statExams').innerHTML = '0';
+                    return;
+                }
+                
+                if (lessonSelect) {
+                    lessonSelect.disabled = false;
+                    lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+                    lessons.forEach(lesson => {
+                        const option = document.createElement('option');
+                        option.value = lesson.id;
+                        option.textContent = lesson.name;
+                        lessonSelect.appendChild(option);
+                    });
+                }
+                
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+                }
+                document.getElementById('statExams').innerHTML = '0';
+                
+            } catch (error) {
+                console.error('Dersler yüklenirken hata:', error);
+            }
+        };
+    }
+    
+    // ===== 3. ADMIN EXAM LESSON SELECT =====
+    const adminExamLessonSelect = document.getElementById('adminExamLessonSelect');
+    if (adminExamLessonSelect) {
+        adminExamLessonSelect.onchange = async () => {
+            const lessonId = adminExamLessonSelect.value;
+            const container = document.getElementById('examsList');
+            
+            if (!lessonId) {
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+                }
+                document.getElementById('statExams').innerHTML = '0';
+                return;
+            }
+            
+            try {
+                const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+                let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // ===== SINAVLARI SAYISAL SIRALA =====
+                exams.sort((a, b) => {
+                    const numA = parseInt((a.title || '').replace(/\D/g, '')) || 0;
+                    const numB = parseInt((b.title || '').replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+                
+                if (exams.length === 0) {
+                    if (container) {
+                        container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz sınav yok</div>';
+                    }
+                    document.getElementById('statExams').innerHTML = '0';
+                } else {
+                    displayAdminExams(exams);
+                }
+                
+            } catch (error) {
+                console.error('Sınavlar yüklenirken hata:', error);
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px;">❌ Sınavlar yüklenemedi</div>';
+                }
+            }
+        };
+    }
+    
+    // ===== 4. TEMA AYARLARI =====
+    const savedTheme = localStorage.getItem('adminTheme');
+    if (savedTheme === 'light') {
+        isDark = false;
+        applyTheme();
+    }
+    
+    console.log('✅ Admin DOMContentLoaded tamamlandı!');
+});
     
 </script>
 </body>
