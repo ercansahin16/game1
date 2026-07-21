@@ -2312,29 +2312,65 @@ async function loadBulkBooks() {
     });
 }
 
-document.getElementById('bulkBookSelect').onchange = async () => {
-    const bookId = document.getElementById('bulkBookSelect').value;
-    const lessonSelect = document.getElementById('bulkLessonSelect');
-    if (!bookId) {
-        lessonSelect.disabled = true;
-        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-        return;
-    }
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-    const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // ===== ALFABETİK SIRALA =====
-    lessons.sort((a, b) => a.name.localeCompare(b.name));
-    
-    lessonSelect.disabled = false;
-    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    lessons.forEach(lesson => {
-        const option = document.createElement('option');
-        option.value = lesson.id;
-        option.textContent = lesson.name;
-        lessonSelect.appendChild(option);
-    });
-};
+// ===== BULK BOOK SELECT - ONCHANGE =====
+const bulkBookSelect = document.getElementById('bulkBookSelect');
+if (bulkBookSelect) {
+    bulkBookSelect.onchange = async () => {
+        const bookId = bulkBookSelect.value;
+        const lessonSelect = document.getElementById('bulkLessonSelect');
+        
+        if (!bookId) {
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            }
+            return;
+        }
+        
+        try {
+            if (lessonSelect) {
+                lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+                lessonSelect.disabled = true;
+            }
+            
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // ===== SAYISAL SIRALA =====
+            lessons.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            if (lessons.length === 0) {
+                if (lessonSelect) {
+                    lessonSelect.disabled = true;
+                    lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+                }
+                return;
+            }
+            
+            if (lessonSelect) {
+                lessonSelect.disabled = false;
+                lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+                lessons.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    option.textContent = lesson.name;
+                    lessonSelect.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Dersler yüklenirken hata:', error);
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+            }
+        }
+    };
+}
 
 document.getElementById('bulkUploadBtn').onclick = async () => {
     const btn = document.getElementById('bulkUploadBtn');
