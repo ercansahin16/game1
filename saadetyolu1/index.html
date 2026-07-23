@@ -9496,6 +9496,7 @@ window.addToMyWords = async function(wordId, arabic, turkish) {
 };
 
 // 2. Kelimeyi listeden kaldır
+// 2. Kelimeyi listeden kaldır - ANLIK GÜNCELLEME İLE
 window.removeFromMyWords = async function(wordId) {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
@@ -9517,16 +9518,43 @@ window.removeFromMyWords = async function(wordId) {
         const filtered = myWords.filter(w => w.id !== wordId);
         
         if (filtered.length === myWords.length) {
-            //showWarning('⚠️ Bu kelime listenizde bulunamadı!');
             return false;
         }
         
         await updateDoc(userRef, { myWords: filtered });
         
-        // Buton görünümünü güncelle
+        // Buton görünümünü güncelle (Kelime Öğren sayfasındaki + butonu)
         updateAddButton(wordId, false);
         
-        //showSuccess('✅ Kelime listenizden çıkarıldı!', '📚 Başarılı');
+        // ===== ANLIK OLARAK LİSTEDEN KALDIR =====
+        // Kelime Listem sayfasındaki kartı kaldır
+        const wordCard = document.querySelector(`[data-word-id="${wordId}"]`);
+        if (wordCard) {
+            // Kartı kaldır
+            wordCard.remove();
+            
+            // Kelime sayısını güncelle
+            const countEl = document.getElementById('myWordsCount');
+            if (countEl) {
+                const currentCount = parseInt(countEl.textContent) || 0;
+                const newCount = currentCount - 1;
+                countEl.textContent = `${newCount} kelime`;
+            }
+            
+            // Eğer hiç kelime kalmadıysa boş mesajı göster
+            const container = document.getElementById('myWordsList');
+            if (container && container.children.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
+                        <p>Henüz hiç kelime eklenmemiş</p>
+                        <p style="font-size: 13px; opacity: 0.6;">Kelime Öğren bölümünde <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak kelime ekleyebilirsin!</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Başarılı mesajı GÖSTERME (sessizce çalışır)
         return true;
         
     } catch (error) {
@@ -9750,27 +9778,29 @@ async function loadMyWordsList() {
             return;
         }
         
-        container.innerHTML = myWords.map(word => `
-            <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #10b981; position: relative; transition: all 0.3s ease;" 
-                 onmouseenter="this.style.background='rgba(255,255,255,0.06)'" 
-                 onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
-                <button onclick="removeFromMyWords('${word.id}')" 
-                    style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
-                    onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
-                    onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-                <div style="font-size: 22px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
-                    ${word.arabic}
-                </div>
-                <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
-                    ${word.turkish}
-                </div>
-                <div style="font-size: 10px; opacity: 0.3; margin-top: 6px; display: flex; justify-content: space-between;">
-                    <span>📅 ${new Date(word.addedAt).toLocaleDateString('tr-TR')}</span>
-                </div>
-            </div>
-        `).join('');
+       // loadMyWordsList içinde kart oluştururken
+container.innerHTML = myWords.map(word => `
+    <div data-word-id="${word.id}" 
+         style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #10b981; position: relative; transition: all 0.3s ease;" 
+         onmouseenter="this.style.background='rgba(255,255,255,0.06)'" 
+         onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
+        <button onclick="removeFromMyWords('${word.id}')" 
+            style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
+            onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
+            onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'">
+            <i class="fas fa-times-circle"></i>
+        </button>
+        <div style="font-size: 22px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
+            ${word.arabic}
+        </div>
+        <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
+            ${word.turkish}
+        </div>
+        <div style="font-size: 10px; opacity: 0.3; margin-top: 6px; display: flex; justify-content: space-between;">
+            <span>📅 ${new Date(word.addedAt).toLocaleDateString('tr-TR')}</span>
+        </div>
+    </div>
+`).join('');
         
     } catch (error) {
         console.error('❌ Kelime listesi hatası:', error);
