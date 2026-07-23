@@ -3132,7 +3132,56 @@ body.light-theme #profileScreen .info-row button:hover {
 <!-- ========== PROFİL EKRANI SONU ========== -->
 
 
+     <!-- ============================================================
+     📚 KELİME LİSTEM EKRANI
+     ============================================================ -->
+<div id="myWordsScreen" style="display: none;">
+    <div class="words-area">
+        <div class="words-header">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #f59e0b;">
+                    <i class="fas fa-list"></i> 📚 Kelime Listem
+                </h3>
+                <span style="font-size: 13px; opacity: 0.6;" id="myWordsCount">0 kelime</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-nav" onclick="goHome()" style="padding: 6px 14px; font-size: 12px;">
+                    <i class="fas fa-home"></i>
+                </button>
+            </div>
+        </div>
         
+        <!-- Kitaplar ve Dersler için Filtre -->
+        <div class="select-area" style="margin-bottom: 15px;">
+            <div class="select-box">
+                <label><i class="fas fa-book"></i> Kitap Seçiniz</label>
+                <select id="myWordsBookSelect">
+                    <option value="">-- Tüm Kitaplar --</option>
+                </select>
+            </div>
+            <div class="select-box">
+                <label><i class="fas fa-graduation-cap"></i> Ders Seçiniz</label>
+                <select id="myWordsLessonSelect" disabled>
+                    <option value="">-- Önce Kitap Seçin --</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Kelime Listesi -->
+        <div id="myWordsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; max-height: 60vh; overflow-y: auto; padding: 4px;">
+            <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
+                <p>Henüz hiç kelime eklenmemiş</p>
+                <p style="font-size: 13px; opacity: 0.6;">Kelime Öğren bölümünde <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak kelime ekleyebilirsin!</p>
+            </div>
+        </div>
+        
+        <!-- Bahçeye çık -->
+        <button class="btn btn-nav" onclick="goHome()" style="margin-top: 15px; width: 100%; padding: 12px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);">
+            🌿 Bahçeye çık
+        </button>
+    </div>
+</div>   
 
     </div>
     <!-- ========== CONTAINER SONU ========== -->
@@ -3388,7 +3437,7 @@ window.goHome = () => {
     }
     
     // Tüm ekranları gizle
-    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'quizScreen', 'profileScreen', 'examsScreen'];
+    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'quizScreen', 'profileScreen', 'examsScreen', 'myWordsScreen'];
     screens.forEach(screen => {
         const el = document.getElementById(screen);
         if (el) {
@@ -5942,29 +5991,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const titleText = titleDiv.textContent || '';
         
         // 📚 Kelime Listem
-        if (titleText.includes('📚 Kelime Listem')) {
-            card.style.cursor = 'pointer';
-            card.onclick = function(e) {
-                e.stopPropagation();
-                if (typeof window.showMyWordsList === 'function') {
-                    window.showMyWordsList();
-                } else {
-                    if (typeof showWarning === 'function') {
-                        showWarning('⚠️ Bu özellik henüz aktif değil!');
-                    }
-                }
-            };
-            card.addEventListener('mouseenter', function() {
-                this.style.opacity = '1';
-                this.style.transform = 'translateY(-3px)';
-                this.style.boxShadow = '0 4px 15px rgba(59,130,246,0.2)';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.opacity = '0.85';
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = 'none';
-            });
-        }
+       if (titleText.includes('📚 Kelime Listem')) {
+    card.style.cursor = 'pointer';
+    card.onclick = function(e) {
+        e.stopPropagation();
+        window.showMyWordsList();
+    };
+    card.addEventListener('mouseenter', function() {
+        this.style.opacity = '1';
+        this.style.transform = 'translateY(-3px)';
+        this.style.boxShadow = '0 4px 15px rgba(59,130,246,0.2)';
+    });
+    card.addEventListener('mouseleave', function() {
+        this.style.opacity = '0.85';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+    });
+}
         
         // 📦 Sandıktaki Kelimeler
         if (titleText.includes('📦 Sandıktaki Kelimeler')) {
@@ -9425,7 +9468,7 @@ window.addToMyWords = async function(wordId, arabic, turkish) {
         
         // Kelime zaten listede mi?
         if (myWords.some(w => w.id === wordId)) {
-            showWarning('⚠️ Bu kelime zaten listenizde!');
+            //showWarning('⚠️ Bu kelime zaten listenizde!');
             return false;
         }
         
@@ -9442,7 +9485,7 @@ window.addToMyWords = async function(wordId, arabic, turkish) {
         // Buton görünümünü güncelle
         updateAddButton(wordId, true);
         
-        showSuccess('✅ Kelime listenize eklendi!', '📚 Başarılı');
+        //showSuccess('✅ Kelime listenize eklendi!', '📚 Başarılı');
         return true;
         
     } catch (error) {
@@ -9474,7 +9517,7 @@ window.removeFromMyWords = async function(wordId) {
         const filtered = myWords.filter(w => w.id !== wordId);
         
         if (filtered.length === myWords.length) {
-            showWarning('⚠️ Bu kelime listenizde bulunamadı!');
+            //showWarning('⚠️ Bu kelime listenizde bulunamadı!');
             return false;
         }
         
@@ -9483,7 +9526,7 @@ window.removeFromMyWords = async function(wordId) {
         // Buton görünümünü güncelle
         updateAddButton(wordId, false);
         
-        showSuccess('✅ Kelime listenizden çıkarıldı!', '📚 Başarılı');
+        /showSuccess('✅ Kelime listenizden çıkarıldı!', '📚 Başarılı');
         return true;
         
     } catch (error) {
@@ -9530,11 +9573,113 @@ async function isWordInMyList(wordId) {
 }
 
 // 5. 📚 Kelime Listemi Göster (Stat Kartı)
+// ============================================================
+// 📚 KELİME LİSTEM - SAYFA OLARAK GÖSTER
+// ============================================================
 window.showMyWordsList = async function() {
     if (!currentUser) {
         showWarning('❌ Lütfen önce giriş yapın!');
         return;
     }
+    
+    // Tüm ekranları gizle
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('wordsLearningScreen').style.display = 'none';
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('examsScreen').classList.add('hidden');
+    document.getElementById('quizScreen').style.display = 'none';
+    document.getElementById('profileScreen').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'none';
+    document.getElementById('rankingScreen').style.display = 'none';
+    
+    // Kelime Listem ekranını göster
+    const myWordsScreen = document.getElementById('myWordsScreen');
+    if (myWordsScreen) {
+        myWordsScreen.style.display = 'block';
+    }
+    
+    // Logo yazısını değiştir
+    const homeLogo = document.getElementById('homeLogo');
+    if (homeLogo) {
+        homeLogo.innerHTML = 'Bahçeye Çık';
+        animateLogo();
+    }
+    
+    // Kitapları ve kelimeleri yükle
+    await loadMyWordsBooks();
+    await loadMyWordsList();
+    
+    closeMenu();
+};
+
+// Kitapları yükle
+async function loadMyWordsBooks() {
+    const snapshot = await getDocs(collection(db, 'books'));
+    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    books.sort((a, b) => a.name.localeCompare(b.name));
+    
+    const select = document.getElementById('myWordsBookSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Tüm Kitaplar --</option>';
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        select.appendChild(option);
+    });
+}
+
+// Kitap seçilince dersleri yükle
+document.addEventListener('DOMContentLoaded', function() {
+    const bookSelect = document.getElementById('myWordsBookSelect');
+    const lessonSelect = document.getElementById('myWordsLessonSelect');
+    
+    if (bookSelect) {
+        bookSelect.onchange = async function() {
+            const bookId = this.value;
+            if (!bookId) {
+                if (lessonSelect) {
+                    lessonSelect.disabled = true;
+                    lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+                }
+                await loadMyWordsList();
+                return;
+            }
+            
+            // Dersleri yükle
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            lessons.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            if (lessonSelect) {
+                lessonSelect.disabled = false;
+                lessonSelect.innerHTML = '<option value="">-- Tüm Dersler --</option>';
+                lessons.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    option.textContent = lesson.name;
+                    lessonSelect.appendChild(option);
+                });
+            }
+            
+            await loadMyWordsList();
+        };
+    }
+    
+    if (lessonSelect) {
+        lessonSelect.onchange = async function() {
+            await loadMyWordsList();
+        };
+    }
+});
+
+// Kelime listesini yükle ve göster
+async function loadMyWordsList() {
+    if (!currentUser) return;
     
     try {
         const userRef = doc(db, 'users', currentUser.uid);
@@ -9546,97 +9691,87 @@ window.showMyWordsList = async function() {
         }
         
         const data = userDoc.data();
-        const myWords = data.myWords || [];
+        let myWords = data.myWords || [];
+        
+        // Filtreleme
+        const bookId = document.getElementById('myWordsBookSelect')?.value;
+        const lessonId = document.getElementById('myWordsLessonSelect')?.value;
+        
+        if (bookId || lessonId) {
+            // Kelimelerin detaylarını getir
+            const allWords = [];
+            for (const word of myWords) {
+                const wordDoc = await getDoc(doc(db, 'words', word.id));
+                if (wordDoc.exists()) {
+                    const wordData = wordDoc.data();
+                    allWords.push({
+                        ...word,
+                        ...wordData,
+                        lessonId: wordData.lessonId
+                    });
+                }
+            }
+            
+            // Kitap filtresi
+            if (bookId) {
+                // Dersleri getir
+                const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+                const lessonIds = lessonsSnapshot.docs.map(d => d.id);
+                myWords = allWords.filter(w => lessonIds.includes(w.lessonId));
+            }
+            
+            // Ders filtresi
+            if (lessonId) {
+                myWords = allWords.filter(w => w.lessonId === lessonId);
+            }
+        }
+        
+        // Kelime sayısını güncelle
+        const countEl = document.getElementById('myWordsCount');
+        if (countEl) countEl.textContent = `${myWords.length} kelime`;
+        
+        // Listeyi göster
+        const container = document.getElementById('myWordsList');
+        if (!container) return;
         
         if (myWords.length === 0) {
-            Swal.fire({
-                icon: 'info',
-                title: '📚 Henüz Kelime Eklenmemiş',
-                html: `
-                    <div style="text-align: center; padding: 10px 0;">
-                        <p style="font-size: 14px; margin-bottom: 8px;">
-                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
-                            Kelime Öğren bölümünde beğendiğin kelimeleri 
-                            <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak 
-                            bu listeye ekleyebilirsin!
-                        </p>
-                        <p style="font-size: 13px; opacity: 0.7;">
-                            📖 Daha sonra tekrar etmek istediğin kelimeleri burada bulabilirsin.
-                        </p>
-                    </div>
-                `,
-                confirmButtonColor: '#f59e0b',
-                confirmButtonText: 'Tamam',
-                width: '400px',
-                padding: '1.5rem',
-                customClass: { popup: 'compact-swal' }
-            });
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
+                    <p>Henüz hiç kelime eklenmemiş</p>
+                    <p style="font-size: 13px; opacity: 0.6;">Kelime Öğren bölümünde <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak kelime ekleyebilirsin!</p>
+                </div>
+            `;
             return;
         }
         
-        // Modal oluştur
-        const modal = document.createElement('div');
-        modal.className = 'info-modal';
-        modal.innerHTML = `
-            <div class="info-modal-content" style="max-width: 550px; max-height: 80vh; overflow-y: auto;">
-                <div class="info-modal-header">
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <div class="icon-box blue">📚</div>
-                        <div>
-                            <div class="info-modal-title">Kelime Listem</div>
-                            <div class="info-modal-subtitle">${myWords.length} kelime - Kişisel tekrar listen</div>
-                        </div>
-                    </div>
-                    <button class="info-modal-close">&times;</button>
+        container.innerHTML = myWords.map(word => `
+            <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #10b981; position: relative; transition: all 0.3s ease;" 
+                 onmouseenter="this.style.background='rgba(255,255,255,0.06)'" 
+                 onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
+                <button onclick="removeFromMyWords('${word.id}')" 
+                    style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
+                    onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
+                    onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+                <div style="font-size: 22px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
+                    ${word.arabic}
                 </div>
-                <div class="info-modal-body">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 4px;">
-                        ${myWords.map(word => `
-                            <div style="background: rgba(16,185,129,0.05); border-radius: 8px; padding: 8px 10px; border-left: 2px solid #10b981; position: relative;">
-                                <button onclick="removeFromMyWords('${word.id}')" 
-                                    style="position: absolute; top: 4px; right: 4px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; opacity: 0.5; transition: 0.3s;"
-                                    onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
-                                <div style="font-size: 18px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 20px;">
-                                    ${word.arabic}
-                                </div>
-                                <div style="font-size: 12px; opacity: 0.7; margin-top: 2px;">
-                                    ${word.turkish}
-                                </div>
-                                <div style="font-size: 9px; opacity: 0.3; margin-top: 4px;">
-                                    ${new Date(word.addedAt).toLocaleDateString('tr-TR')}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div style="background: rgba(245,158,11,0.06); border-radius: 8px; padding: 8px 12px; margin-top: 10px; border-left: 3px solid #f59e0b;">
-                        <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                            💡 <strong>İpucu:</strong> Listedeki kelimeleri çalışmak için 
-                            <span style="color: #10b981;">Kelime Öğren</span> bölümüne gidebilirsin!
-                        </p>
-                    </div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
+                    ${word.turkish}
                 </div>
-                <div class="info-modal-footer" style="display: flex; gap: 10px;">
-                    <button onclick="this.closest('.info-modal').remove(); goWordsLearning();" style="flex: 1; padding: 10px; background: #f59e0b; color: #121212; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-book-open"></i> Kelime Öğren'e Git
-                    </button>
-                    <button onclick="this.closest('.info-modal').remove()" style="flex: 0 0 auto; padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 10px; cursor: pointer;">
-                        <i class="fas fa-times"></i> Kapat
-                    </button>
+                <div style="font-size: 10px; opacity: 0.3; margin-top: 6px; display: flex; justify-content: space-between;">
+                    <span>📅 ${new Date(word.addedAt).toLocaleDateString('tr-TR')}</span>
                 </div>
             </div>
-        `;
-        
-        document.body.appendChild(modal);
-        modal.querySelector('.info-modal-close').onclick = () => modal.remove();
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        `).join('');
         
     } catch (error) {
         console.error('❌ Kelime listesi hatası:', error);
         showWarning('❌ Kelime listesi yüklenemedi!');
     }
-};
+}
 
     
 </script>
