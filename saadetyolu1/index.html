@@ -9542,10 +9542,12 @@ async function loadMyWordsBooks() {
 // ============================================================
 // 📚 KELİME LİSTEM - SWEETALERT LOADER İLE
 // ============================================================
+// ============================================================
+// 📚 KELİME LİSTEM - DERS BİLGİSİ VE SAAT İLE
+// ============================================================
 async function loadMyWordsList() {
     if (!currentUser) return;
     
-    // ===== SWEETALERT LOADER GÖSTER =====
     showLoadingAlert('📚 Kelimeleriniz yükleniyor...');
     
     try {
@@ -9561,36 +9563,58 @@ async function loadMyWordsList() {
         const data = userDoc.data();
         let myWords = data.myWords || [];
         
-        // Filtreleme
+        // SADECE KİTAP FİLTRESİ
         const bookId = document.getElementById('myWordsBookSelect')?.value;
-        const lessonId = document.getElementById('myWordsLessonSelect')?.value;
         
-        if (bookId || lessonId) {
-            const allWords = [];
-            for (const word of myWords) {
-                const wordDoc = await getDoc(doc(db, 'words', word.id));
-                if (wordDoc.exists()) {
-                    const wordData = wordDoc.data();
-                    allWords.push({
-                        ...word,
-                        ...wordData,
-                        lessonId: wordData.lessonId
-                    });
+        // Kelimelerin detaylarını ve ders bilgilerini al
+        const allWords = [];
+        const lessonCache = {}; // Ders bilgilerini önbelleğe al
+        
+        for (const word of myWords) {
+            const wordDoc = await getDoc(doc(db, 'words', word.id));
+            if (wordDoc.exists()) {
+                const wordData = wordDoc.data();
+                const lessonId = wordData.lessonId;
+                
+                // Ders bilgisini önbellekten al veya getir
+                let lessonName = 'Ders bilgisi yok';
+                if (lessonId) {
+                    if (lessonCache[lessonId]) {
+                        lessonName = lessonCache[lessonId];
+                    } else {
+                        const lessonDoc = await getDoc(doc(db, 'lessons', lessonId));
+                        if (lessonDoc.exists()) {
+                            lessonName = lessonDoc.data().name || 'Ders bilgisi yok';
+                            lessonCache[lessonId] = lessonName;
+                        }
+                    }
                 }
-            }
-            
-            if (bookId) {
-                const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-                const lessonIds = lessonsSnapshot.docs.map(d => d.id);
-                myWords = allWords.filter(w => lessonIds.includes(w.lessonId));
-            }
-            
-            if (lessonId) {
-                myWords = allWords.filter(w => w.lessonId === lessonId);
+                
+                allWords.push({
+                    ...word,
+                    ...wordData,
+                    lessonId: lessonId,
+                    lessonName: lessonName
+                });
             }
         }
         
-        // ===== LOADER'ı KAPAT =====
+        // Kitap filtresi
+        if (bookId) {
+            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessonIds = lessonsSnapshot.docs.map(d => d.id);
+            // allWords üzerinden filtrele (myWords değil)
+            const filteredWords = [];
+            for (const word of allWords) {
+                if (lessonIds.includes(word.lessonId)) {
+                    filteredWords.push(word);
+                }
+            }
+            myWords = filteredWords;
+        } else {
+            myWords = allWords;
+        }
+        
         closeLoadingAlert();
         
         // Kelime sayısını güncelle
@@ -9604,36 +9628,42 @@ async function loadMyWordsList() {
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
                     <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
-                    <p>Henüz hiç kelime eklenmemiş</p>
+                    <p>${bookId ? 'Bu kitapta henüz kelime eklenmemiş' : 'Henüz hiç kelime eklenmemiş'}</p>
                     <p style="font-size: 13px; opacity: 0.6;">Kelime Öğren bölümünde <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak kelime ekleyebilirsin!</p>
                 </div>
             `;
             return;
         }
         
-       // loadMyWordsList içinde kart oluştururken
-container.innerHTML = myWords.map(word => `
-    <div data-word-id="${word.id}" 
-         style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #10b981; position: relative; transition: all 0.3s ease;" 
-         onmouseenter="this.style.background='rgba(255,255,255,0.06)'" 
-         onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
-        <button onclick="removeFromMyWords('${word.id}')" 
-            style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
-            onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
-            onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'">
-            <i class="fas fa-times-circle"></i>
-        </button>
-        <div style="font-size: 22px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
-            ${word.arabic}
-        </div>
-        <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
-            ${word.turkish}
-        </div>
-        <div style="font-size: 10px; opacity: 0.3; margin-top: 6px; display: flex; justify-content: space-between;">
-            <span>📅 ${new Date(word.addedAt).toLocaleDateString('tr-TR')}</span>
-        </div>
-    </div>
-`).join('');
+        container.innerHTML = myWords.map(word => {
+            // Tarih ve saat formatı
+            const addedDate = new Date(word.addedAt);
+            const dateStr = addedDate.toLocaleDateString('tr-TR');
+            const timeStr = addedDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+            <div data-word-id="${word.id}" 
+                 style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #10b981; position: relative; transition: all 0.3s ease;" 
+                 onmouseenter="this.style.background='rgba(255,255,255,0.06)'" 
+                 onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
+                <button onclick="removeFromMyWords('${word.id}')" 
+                    style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
+                    onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
+                    onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+                <div style="font-size: 22px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
+                    ${word.arabic}
+                </div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
+                    ${word.turkish}
+                </div>
+                <div style="font-size: 10px; opacity: 0.4; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                    <span><i class="fas fa-book" style="margin-right: 3px;"></i> ${word.lessonName}</span>
+                    <span><i class="fas fa-calendar-alt" style="margin-right: 3px;"></i> ${dateStr} ${timeStr}</span>
+                </div>
+            </div>
+        `}).join('');
         
     } catch (error) {
         console.error('❌ Kelime listesi hatası:', error);
