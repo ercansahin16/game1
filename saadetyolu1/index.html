@@ -9678,14 +9678,21 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Kelime listesini yükle ve göster
+// ============================================================
+// 📚 KELİME LİSTEM - SWEETALERT LOADER İLE
+// ============================================================
 async function loadMyWordsList() {
     if (!currentUser) return;
+    
+    // ===== SWEETALERT LOADER GÖSTER =====
+    showLoadingAlert('📚 Kelimeleriniz yükleniyor...');
     
     try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (!userDoc.exists()) {
+            closeLoadingAlert();
             showWarning('⚠️ Kullanıcı bulunamadı!');
             return;
         }
@@ -9698,7 +9705,6 @@ async function loadMyWordsList() {
         const lessonId = document.getElementById('myWordsLessonSelect')?.value;
         
         if (bookId || lessonId) {
-            // Kelimelerin detaylarını getir
             const allWords = [];
             for (const word of myWords) {
                 const wordDoc = await getDoc(doc(db, 'words', word.id));
@@ -9712,25 +9718,24 @@ async function loadMyWordsList() {
                 }
             }
             
-            // Kitap filtresi
             if (bookId) {
-                // Dersleri getir
                 const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
                 const lessonIds = lessonsSnapshot.docs.map(d => d.id);
                 myWords = allWords.filter(w => lessonIds.includes(w.lessonId));
             }
             
-            // Ders filtresi
             if (lessonId) {
                 myWords = allWords.filter(w => w.lessonId === lessonId);
             }
         }
         
+        // ===== LOADER'ı KAPAT =====
+        closeLoadingAlert();
+        
         // Kelime sayısını güncelle
         const countEl = document.getElementById('myWordsCount');
         if (countEl) countEl.textContent = `${myWords.length} kelime`;
         
-        // Listeyi göster
         const container = document.getElementById('myWordsList');
         if (!container) return;
         
@@ -9769,6 +9774,7 @@ async function loadMyWordsList() {
         
     } catch (error) {
         console.error('❌ Kelime listesi hatası:', error);
+        closeLoadingAlert();
         showWarning('❌ Kelime listesi yüklenemedi!');
     }
 }
