@@ -3591,7 +3591,8 @@ function sortLessonsByName(lessons) {
         updateWordDisplay();
     };
 
-function updateWordDisplay() {
+// Mevcut updateWordDisplay fonksiyonunu değiştir
+async function updateWordDisplay() {
     if (words.length === 0) {
         arabicWord.textContent = 'Yükleniyor';
         turkishWord.textContent = '';
@@ -3607,14 +3608,24 @@ function updateWordDisplay() {
     turkishWord.innerHTML = `<div class="big-question">?</div>`;
     turkishWord.style.opacity = '1';
     
-    // Zoom durumunu KORU (sıfırlama)
-  // Zoom durumunu koru (kelime değişince)
-if (isZoomed) {
-    arabicWord.style.setProperty('font-size', '56px', 'important');
-    arabicWord.style.setProperty('font-weight', '700', 'important');
-} else {
+    if (isZoomed) {
+        arabicWord.style.setProperty('font-size', '56px', 'important');
+        arabicWord.style.setProperty('font-weight', '700', 'important');
+    } else {
         arabicWord.style.fontSize = '';
         arabicWord.style.fontWeight = '';
+    }
+    
+    // ===== + BUTONUNU GÜNCELLE =====
+    const addBtn = document.getElementById('addToMyWordsBtn');
+    if (addBtn && word.id) {
+        addBtn.dataset.wordId = word.id;
+        addBtn.dataset.arabic = word.arabic;
+        addBtn.dataset.turkish = word.turkish;
+        
+        // Kelime listede mi kontrol et
+        const isAdded = await isWordInMyList(word.id);
+        updateAddButton(word.id, isAdded);
     }
     
     currentIndexSpan.textContent = currentWordIndex + 1;
@@ -3623,6 +3634,8 @@ if (isZoomed) {
     const progress = ((currentWordIndex + 1) / words.length) * 100;
     progressFill.style.width = `${progress}%`;
 }
+
+    
 
 // ===== showBtn onclick - TEK TANIM =====
 showBtn.onclick = () => {
@@ -3667,6 +3680,17 @@ showBtn.onclick = () => {
 
 
 async function loadUserStats() {
+    // loadUserStats fonksiyonunun başında veya sonunda
+if (userDoc.exists()) {
+    const data = userDoc.data();
+    
+    // Eğer myWords yoksa oluştur
+    if (!data.myWords) {
+        await updateDoc(userRef, { myWords: [] });
+        console.log('✅ myWords alanı eklendi');
+    }
+}
+    
     if (!currentUser) return;
     
     try {
@@ -4785,6 +4809,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             quizSandik: [],
             quizScore: 0,
             mevcutSeviye: 1,
+            myWords: [],
             createdAt: new Date().toISOString() 
         });
         console.log('✅ Firestore\'a kullanıcı verileri kaydedildi!');
@@ -5729,15 +5754,21 @@ async function safeFirestoreOperation(operation, fallbackData = null) {
     }
 }
 
-// ========== SAYFA YÜKLENDİKTEN SONRA DROPDOWN OLAYLARI ==========
+
+
+
+// ============================================================
+// DOM YÜKLENDİ - TÜM OLAYLAR TEK BLOKTA (EKSİKSİZ)
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
+    
+    console.log('🚀 DOM yükleniyor...');
+    
+    // ============================================================
+    // 1. İNTERNET BAĞLANTISI KONTROLÜ
+    // ============================================================
     const offlineBanner = document.getElementById('offlineBanner');
     const offlineMessage = document.getElementById('offlineMessage');
-      const puanDetayBtn = document.getElementById('puanDetayBtn');
-    if (puanDetayBtn) {
-        puanDetayBtn.addEventListener('click', showPuanDetay);
-    }
     
     // Sayfa yüklendiğinde internet durumunu kontrol et
     if (!navigator.onLine) {
@@ -5746,7 +5777,6 @@ document.addEventListener('DOMContentLoaded', function() {
             offlineMessage.textContent = '⚠️ İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.';
             offlineBanner.style.background = '#ef4444';
         }
-        // Kullanıcıya bildirim göster
         if (typeof showTempMessage === 'function') {
             showTempMessage('⚠️ İnternet bağlantınız kesildi!', '#ef4444');
         }
@@ -5756,7 +5786,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ========== GİRİŞ EKRANINDA TÜM EKRANLARI GİZLE ==========
+    // ============================================================
+    // 2. GİRİŞ EKRANINDA TÜM EKRANLARI GİZLE
+    // ============================================================
     const loginScreen = document.getElementById('loginScreen');
     const karmaScreen = document.getElementById('karmaScreen');
     const rankingScreen = document.getElementById('rankingScreen');
@@ -5766,7 +5798,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const quizScreen = document.getElementById('quizScreen');
     const profileScreen = document.getElementById('profileScreen');
     
-    // Tüm ekranları gizle (giriş ekranı hariç)
     if (karmaScreen) karmaScreen.style.display = 'none';
     if (rankingScreen) rankingScreen.style.display = 'none';
     if (mainContent) mainContent.style.display = 'none';
@@ -5774,70 +5805,299 @@ document.addEventListener('DOMContentLoaded', function() {
     if (examsScreen) examsScreen.classList.add('hidden');
     if (quizScreen) quizScreen.style.display = 'none';
     if (profileScreen) profileScreen.style.display = 'none';
-    
-    // Giriş ekranını göster
     if (loginScreen) loginScreen.style.display = 'block';
     
-    // ========== SINAV FİLTRELEME ==========
-    const examBookSelect = document.getElementById('examBookSelect');
-    const examLessonSelect = document.getElementById('examLessonSelect');
+    // ============================================================
+    // 3. PUAN DETAY BUTONU
+    // ============================================================
+    const puanDetayBtn = document.getElementById('puanDetayBtn');
+    if (puanDetayBtn) {
+        puanDetayBtn.addEventListener('click', function() {
+            if (typeof showPuanDetay === 'function') {
+                // Mevcut değerleri al
+                const quizScore = parseFloat(document.getElementById('karmaScoreProfile')?.textContent || '0');
+                const averageScore = parseFloat(document.getElementById('averageScore')?.textContent || '0');
+                const seviyeText = document.getElementById('seviyeProfile')?.textContent || '1/7';
+                const mevcutSeviye = parseInt(seviyeText.split('/')[0]) || 1;
+                const seviyePuani = (mevcutSeviye - 1) * 2;
+                const totalWordsViewed = parseInt(document.getElementById('totalWordsLearned')?.textContent || '0');
+                const kelimePuani = totalWordsViewed * 0.01;
+                const sandikCount = parseInt(document.getElementById('sandikCountProfile')?.textContent || '0');
+                const sandikCezasi = sandikCount * 1;
+                const toplamPuan = Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100;
+                
+                showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, totalWordsViewed, kelimePuani, sandikCount, sandikCezasi, toplamPuan);
+            }
+        });
+    }
     
-if (examLessonSelect) {
-    examLessonSelect.onchange = async () => {
-        const lessonId = examLessonSelect.value;
-        const container = document.getElementById('examsList');
-        
-        if (!lessonId) {
-            container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
-            document.getElementById('examCountInfo').textContent = '0 sınav';
-            return;
-        }
-        
-        // ===== YÜKLENİYOR ALERT =====
-        showLoadingAlert('📝 Sınavlar yükleniyor...');
-        
-        try {
-            await loadExamsByLesson(lessonId);
-            closeLoadingAlert();
+    // ============================================================
+    // 4. 📚 KELİME LİSTEME EKLE BUTONU
+    // ============================================================
+    const addBtn = document.getElementById('addToMyWordsBtn');
+    if (addBtn) {
+        addBtn.onclick = async function(e) {
+            e.stopPropagation();
             
-            // ===== SINAV KONTROLÜ (loadExamsByLesson içinde yapılıyor) =====
+            const wordId = this.dataset.wordId;
+            const arabic = this.dataset.arabic;
+            const turkish = this.dataset.turkish;
             
-        } catch (error) {
-            closeLoadingAlert();
-            console.error('Sınavlar yüklenirken hata:', error);
-            container.innerHTML = '<div style="text-align:center; padding:40px;">❌ Sınavlar yüklenemedi!</div>';
-            document.getElementById('examCountInfo').textContent = '0 sınav';
-            
-            Swal.fire({
-                icon: 'error',
-                title: '❌ Hata!',
-                text: 'Sınavlar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Tamam',
-                width: '380px',
-                padding: '1.5rem',
-                customClass: {
-                    popup: 'compact-swal'
+            if (!wordId) {
+                if (typeof showWarning === 'function') {
+                    showWarning('⚠️ Kelime bilgisi bulunamadı!');
                 }
-            });
-        }
-    };
-}
-    
-    if (examLessonSelect) {
-        examLessonSelect.onchange = async () => {
-            const lessonId = examLessonSelect.value;
-            await loadExamsByLesson(lessonId);
+                return;
+            }
+            
+            if (this.classList.contains('added')) {
+                if (typeof window.removeFromMyWords === 'function') {
+                    await window.removeFromMyWords(wordId);
+                }
+            } else {
+                if (typeof window.addToMyWords === 'function') {
+                    await window.addToMyWords(wordId, arabic, turkish);
+                }
+            }
         };
     }
     
-    // ========== YARIŞMA BUTONLARI ==========
+    // ============================================================
+    // 5. 📚 STAT KARTLARI - TIKLAMA OLAYLARI
+    // ============================================================
+    const statCards = document.querySelectorAll('.stats-card');
+    statCards.forEach(card => {
+        const titleDiv = card.querySelector('div:nth-child(2)');
+        if (!titleDiv) return;
+        
+        const titleText = titleDiv.textContent || '';
+        
+        // 📚 Kelime Listem
+        if (titleText.includes('📚 Kelime Listem')) {
+            card.style.cursor = 'pointer';
+            card.onclick = function(e) {
+                e.stopPropagation();
+                if (typeof window.showMyWordsList === 'function') {
+                    window.showMyWordsList();
+                } else {
+                    if (typeof showWarning === 'function') {
+                        showWarning('⚠️ Bu özellik henüz aktif değil!');
+                    }
+                }
+            };
+            card.addEventListener('mouseenter', function() {
+                this.style.opacity = '1';
+                this.style.transform = 'translateY(-3px)';
+                this.style.boxShadow = '0 4px 15px rgba(59,130,246,0.2)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.opacity = '0.85';
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        }
+        
+        // 📦 Sandıktaki Kelimeler
+        if (titleText.includes('📦 Sandıktaki Kelimeler')) {
+            card.style.cursor = 'pointer';
+            card.onclick = function(e) {
+                e.stopPropagation();
+                if (typeof window.showSandikWords === 'function') {
+                    window.showSandikWords();
+                } else {
+                    if (typeof showWarning === 'function') {
+                        showWarning('⚠️ Bu özellik henüz aktif değil!');
+                    }
+                }
+            };
+            card.addEventListener('mouseenter', function() {
+                this.style.opacity = '1';
+                this.style.transform = 'translateY(-3px)';
+                this.style.boxShadow = '0 4px 15px rgba(239,68,68,0.2)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.opacity = '0.85';
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        }
+    });
+    
+    // ============================================================
+    // 6. TAB YÖNETİMİ (PROFİL)
+    // ============================================================
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = {
+        tab1: document.getElementById('tab1'),
+        tab2: document.getElementById('tab2'),
+        tab3: document.getElementById('tab3')
+    };
+    
+    function setActiveTab(activeTab) {
+        // Tüm tab'ları pasif yap
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.style.background = '';
+            t.style.color = '';
+        });
+        
+        // Tüm içerikleri gizle
+        Object.values(contents).forEach(c => {
+            if (c) c.style.display = 'none';
+        });
+        
+        // Aktif tab'ı belirle
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.style.background = '#f59e0b';
+            activeTab.style.color = '#121212';
+            
+            const tabId = activeTab.dataset.tab;
+            if (contents[tabId]) {
+                contents[tabId].style.display = 'block';
+            }
+        }
+    }
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            setActiveTab(this);
+        });
+    });
+    
+    // Başlangıçta ilk tab'ı aktif yap
+    const firstActiveTab = document.querySelector('.tab-btn.active');
+    if (firstActiveTab) {
+        setActiveTab(firstActiveTab);
+    } else if (tabs.length > 0) {
+        setActiveTab(tabs[0]);
+    }
+    
+    // Tema değişince tab stillerini güncelle
+    function refreshTabStyles() {
+        const activeTab = document.querySelector('.tab-btn.active');
+        tabs.forEach(tab => {
+            if (tab === activeTab) {
+                tab.style.background = '#f59e0b';
+                tab.style.color = '#121212';
+            } else {
+                tab.style.background = '';
+                tab.style.color = '';
+            }
+        });
+    }
+    
+    const themeObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                refreshTabStyles();
+            }
+        });
+    });
+    themeObserver.observe(document.body, { attributes: true });
+    
+    const themeButtons = [
+        document.getElementById('themeIconBtn'),
+        document.getElementById('themeBtnSidebar')
+    ];
+    themeButtons.forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', function() {
+                setTimeout(refreshTabStyles, 50);
+            });
+        }
+    });
+    
+    // ============================================================
+    // 7. SINAV FİLTRELEME
+    // ============================================================
+    const examBookSelect = document.getElementById('examBookSelect');
+    const examLessonSelect = document.getElementById('examLessonSelect');
+    
+    if (examBookSelect) {
+        examBookSelect.onchange = async function() {
+            const bookId = this.value;
+            if (!bookId) {
+                if (examLessonSelect) {
+                    examLessonSelect.disabled = true;
+                    examLessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+                }
+                const examsList = document.getElementById('examsList');
+                if (examsList) {
+                    examsList.innerHTML = '<div style="text-align:center; padding:40px;">📚 Lütfen bir kitap seçin</div>';
+                }
+                const examCountInfo = document.getElementById('examCountInfo');
+                if (examCountInfo) examCountInfo.textContent = '0 sınav';
+                return;
+            }
+            
+            if (typeof loadExamBooks === 'function') {
+                await loadExamBooks();
+            }
+        };
+    }
+    
+    if (examLessonSelect) {
+        examLessonSelect.onchange = async function() {
+            const lessonId = this.value;
+            const container = document.getElementById('examsList');
+            
+            if (!lessonId) {
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+                }
+                const examCountInfo = document.getElementById('examCountInfo');
+                if (examCountInfo) examCountInfo.textContent = '0 sınav';
+                return;
+            }
+            
+            if (typeof showLoadingAlert === 'function') {
+                showLoadingAlert('📝 Sınavlar yükleniyor...');
+            }
+            
+            try {
+                if (typeof loadExamsByLesson === 'function') {
+                    await loadExamsByLesson(lessonId);
+                }
+                if (typeof closeLoadingAlert === 'function') {
+                    closeLoadingAlert();
+                }
+            } catch (error) {
+                if (typeof closeLoadingAlert === 'function') {
+                    closeLoadingAlert();
+                }
+                console.error('Sınavlar yüklenirken hata:', error);
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px;">❌ Sınavlar yüklenemedi!</div>';
+                }
+                const examCountInfo = document.getElementById('examCountInfo');
+                if (examCountInfo) examCountInfo.textContent = '0 sınav';
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '❌ Hata!',
+                        text: 'Sınavlar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Tamam',
+                        width: '380px',
+                        padding: '1.5rem',
+                        customClass: { popup: 'compact-swal' }
+                    });
+                }
+            }
+        };
+    }
+    
+    // ============================================================
+    // 8. YARIŞMA BUTONLARI (Bilemedim / Geç)
+    // ============================================================
     const bilmedimBtn = document.getElementById('bilmedimBtn');
     const gecBtn = document.getElementById('gecBtn');
     
     if (bilmedimBtn) {
-        bilmedimBtn.onclick = async () => {
-            if (quizAnswered || !currentQuizWord) return;
+        bilmedimBtn.onclick = async function() {
+            if (typeof quizAnswered === 'undefined' || quizAnswered || !currentQuizWord) return;
             quizAnswered = true;
             
             const allOptions = document.querySelectorAll('.option-quiz');
@@ -5847,25 +6107,33 @@ if (examLessonSelect) {
                 }
             });
             
-            showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
+            if (typeof showTempMessage === 'function') {
+                showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
+            }
             
-            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+            if (typeof quizSandik !== 'undefined' && !quizSandik.some(w => w.id === currentQuizWord.id)) {
                 quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-                await saveSandikToFirestore();
-                updateSandikDisplay();
+                if (typeof saveSandikToFirestore === 'function') {
+                    await saveSandikToFirestore();
+                }
+                if (typeof updateSandikDisplay === 'function') {
+                    updateSandikDisplay();
+                }
             }
             
             allOptions.forEach(opt => opt.classList.add('disabled'));
             
             setTimeout(() => {
-                loadNextQuizWord();
+                if (typeof loadNextQuizWord === 'function') {
+                    loadNextQuizWord();
+                }
             }, 1000);
         };
     }
     
     if (gecBtn) {
-        gecBtn.onclick = async () => {
-            if (quizAnswered || !currentQuizWord) return;
+        gecBtn.onclick = async function() {
+            if (typeof quizAnswered === 'undefined' || quizAnswered || !currentQuizWord) return;
             quizAnswered = true;
             
             const allOptions = document.querySelectorAll('.option-quiz');
@@ -5875,191 +6143,433 @@ if (examLessonSelect) {
                 }
             });
             
-            showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
+            if (typeof showTempMessage === 'function') {
+                showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
+            }
             
-            if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
+            if (typeof quizSandik !== 'undefined' && !quizSandik.some(w => w.id === currentQuizWord.id)) {
                 quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
-                await saveSandikToFirestore();
-                updateSandikDisplay();
+                if (typeof saveSandikToFirestore === 'function') {
+                    await saveSandikToFirestore();
+                }
+                if (typeof updateSandikDisplay === 'function') {
+                    updateSandikDisplay();
+                }
             }
             
             allOptions.forEach(opt => opt.classList.add('disabled'));
             
             setTimeout(() => {
-                loadNextQuizWord();
+                if (typeof loadNextQuizWord === 'function') {
+                    loadNextQuizWord();
+                }
             }, 1000);
         };
     }
     
-    // ========== YARDIM MODALI ==========
+    // ============================================================
+    // 9. YARDIM MODALI (Karma Yardım)
+    // ============================================================
     const showKarmaHelp = document.getElementById('showKarmaHelp');
-
     
-if (showKarmaHelp) {
-    showKarmaHelp.onclick = () => {
-        const existingModal = document.querySelector('.help-modal');
-        if (existingModal) existingModal.remove();
-        
-        const modal = document.createElement('div');
-        modal.className = 'help-modal';
-        modal.innerHTML = `
-            <div class="help-modal-content" style="max-width: 480px;">
-                <div class="help-modal-header">
-                    <h3><i class="fas fa-mosque" style="color: #f59e0b;"></i> 🎯 Karma Kelime Sistemi</h3>
-                    <button class="help-modal-close">&times;</button>
+    if (showKarmaHelp) {
+        showKarmaHelp.onclick = function() {
+            const existingModal = document.querySelector('.help-modal');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.className = 'help-modal';
+            modal.style.cssText = `
+                position: fixed; top:0; left:0; right:0; bottom:0;
+                background: rgba(0,0,0,0.85);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 1001;
+                backdrop-filter: blur(4px);
+                animation: modalFadeIn 0.3s ease;
+            `;
+            modal.innerHTML = `
+                <div class="help-modal-content" style="max-width: 480px; max-height: 90vh; overflow-y: auto; background: #1a1a1a; border-radius: 20px; padding: 25px; width: 92%; border: 1px solid rgba(245,158,11,0.1);">
+                    <div class="help-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px;">
+                        <h3 style="color: #f59e0b; font-size: 20px; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-mosque" style="color: #f59e0b;"></i> 🎯 Karma Kelime Sistemi
+                        </h3>
+                        <button class="help-modal-close" style="background: none; border: none; color: #6b7280; font-size: 24px; cursor: pointer; transition: 0.3s;">&times;</button>
+                    </div>
+                    <div class="help-modal-body" style="line-height: 1.7; font-size: 14px; color: #d1d5db;">
+                        <div style="background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(245,158,11,0.15);">
+                            <span style="font-size: 20px;">👋</span>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; color: #f59e0b; font-weight: 500;">
+                                Merhaba Kelime Avcısı! 🦸‍♂️
+                            </p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.7;">
+                                Her doğru cevap seni zirveye bir adım daha yaklaştırır!
+                            </p>
+                        </div>
+
+                        <p style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #f59e0b;">
+                            <i class="fas fa-star"></i> Puan Sistemi
+                        </p>
+                        <ul style="margin: 0 0 12px 20px; padding: 0; list-style: none;">
+                            <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                                <span style="background: #10b981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✓</span>
+                                <div>
+                                    <strong class="correct" style="color: #10b981;">Doğru cevap:</strong>
+                                    <span style="font-weight: 600; color: #10b981;">+0.01 puan</span>
+                                    <span style="font-size: 11px; opacity: 0.6; display: block;">🎉 Harika! Kelime sandıktan çıkar ve puanın artar!</span>
+                                </div>
+                            </li>
+                            <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                                <span style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✗</span>
+                                <div>
+                                    <strong class="wrong" style="color: #ef4444;">Yanlış cevap:</strong>
+                                    <span style="font-weight: 600; color: #ef4444;">-1 puan</span>
+                                    <span style="font-size: 11px; opacity: 0.6; display: block;">😅 Oops! Kelime sandığa gider ama pes etme!</span>
+                                </div>
+                            </li>
+                            <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                                <span style="background: #f59e0b; color: #121212; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">💡</span>
+                                <div>
+                                    <strong class="neutral" style="color: #f59e0b;">Bilemedim:</strong>
+                                    <span style="font-weight: 600; color: #6b7280;">0 puan</span>
+                                    <span style="font-size: 11px; opacity: 0.6; display: block;">🧠 Öğrenme fırsatı! Doğru cevabı gör, kelime sandığa gider</span>
+                                </div>
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                                <span style="background: #6b7280; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">⏩</span>
+                                <div>
+                                    <strong style="color: #6b7280;">Geç:</strong>
+                                    <span style="font-weight: 600; color: #6b7280;">0 puan</span>
+                                    <span style="font-size: 11px; opacity: 0.6; display: block;">🤔 Biraz düşünme zamanı! Kelime sandığa gider</span>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div style="background: rgba(245,158,11,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #f59e0b;">
+                            <p style="margin: 0; font-size: 13px;">
+                                <strong style="color: #f59e0b;">📦 Sandık Sistemi</strong>
+                            </p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                Her 10 kelimede bir sandıktan 1 kelime gelir. 
+                                <span style="color: #10b981; font-weight: 500;">Doğru cevaplanana kadar orada kalır!</span> 
+                                Sandıktaki her kelime <strong style="color: #ef4444;">-1 puan</strong> ceza getirir. 
+                                Sandıktaki kelimeleri kurtarmak sana bağlı! 🏆
+                            </p>
+                        </div>
+
+                        <div style="background: rgba(16,185,129,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #10b981;">
+                            <p style="margin: 0; font-size: 13px;">
+                                <strong style="color: #10b981;">🏆 Seviye Sistemi</strong>
+                            </p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                Her seviye atladığında <strong style="color: #f59e0b;">+2 puan</strong> kazanırsın!
+                                Ne kadar çok seviye, o kadar çok puan! 🚀
+                            </p>
+                        </div>
+
+                        <div style="text-align: center; padding: 8px; background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(16,185,129,0.05)); border-radius: 10px; margin-top: 8px;">
+                            <p style="margin: 0; font-size: 12px; opacity: 0.7;">
+                                🌟 <strong>İpucu:</strong> Sandıktaki kelimeleri kurtar, puanını katla! 
+                                <span style="display: inline-block; animation: bounce 1s infinite;">⚡</span>
+                            </p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.5;">
+                                Her doğru cevap seni <strong>Kelime Ustası</strong> yapmaya bir adım daha yaklaştırır! 🎯
+                            </p>
+                        </div>
+
+                        <button class="btn btn-primary" style="width:100%; margin-top: 15px; padding: 10px; font-size: 14px; border-radius: 12px; background: #f59e0b; color: #121212; border: none; cursor: pointer; font-weight: 600;" onclick="this.closest('.help-modal').remove()">
+                            <i class="fas fa-rocket"></i> Anladım, Başlıyorum! 🚀
+                        </button>
+                    </div>
                 </div>
-                <div class="help-modal-body">
-                    <!-- Hoş Geldin Mesajı -->
-                    <div style="background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(245,158,11,0.15);">
-                        <span style="font-size: 20px;">👋</span>
-                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #f59e0b; font-weight: 500;">
-                            Merhaba Kelime Avcısı! 🦸‍♂️
-                        </p>
-                        <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.7;">
-                            Her doğru cevap seni zirveye bir adım daha yaklaştırır!
-                        </p>
-                    </div>
-
-                    <!-- Puan Sistemi -->
-                    <p style="font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #f59e0b;">
-                        <i class="fas fa-star"></i> Puan Sistemi
-                    </p>
-                    <ul style="margin: 0 0 12px 20px; padding: 0; list-style: none;">
-                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
-                            <span style="background: #10b981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✓</span>
-                            <div>
-                                <strong class="correct" style="color: #10b981;">Doğru cevap:</strong>
-                                <span style="font-weight: 600; color: #10b981;">+0.01 puan</span>
-                                <span style="font-size: 11px; opacity: 0.6; display: block;">🎉 Harika! Kelime sandıktan çıkar ve puanın artar!</span>
-                            </div>
-                        </li>
-                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
-                            <span style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">✗</span>
-                            <div>
-                                <strong class="wrong" style="color: #ef4444;">Yanlış cevap:</strong>
-                                <span style="font-weight: 600; color: #ef4444;">-1 puan</span>
-                                <span style="font-size: 11px; opacity: 0.6; display: block;">😅 Oops! Kelime sandığa gider ama pes etme!</span>
-                            </div>
-                        </li>
-                        <li style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
-                            <span style="background: #f59e0b; color: #121212; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">💡</span>
-                            <div>
-                                <strong class="neutral" style="color: #f59e0b;">Bilemedim:</strong>
-                                <span style="font-weight: 600; color: #6b7280;">0 puan</span>
-                                <span style="font-size: 11px; opacity: 0.6; display: block;">🧠 Öğrenme fırsatı! Doğru cevabı gör, kelime sandığa gider</span>
-                            </div>
-                        </li>
-                        <li style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
-                            <span style="background: #6b7280; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">⏩</span>
-                            <div>
-                                <strong style="color: #6b7280;">Geç:</strong>
-                                <span style="font-weight: 600; color: #6b7280;">0 puan</span>
-                                <span style="font-size: 11px; opacity: 0.6; display: block;">🤔 Biraz düşünme zamanı! Kelime sandığa gider</span>
-                            </div>
-                        </li>
-                    </ul>
-
-                    <!-- Sandık Sistemi -->
-                    <div style="background: rgba(245,158,11,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #f59e0b;">
-                        <p style="margin: 0; font-size: 13px;">
-                            <strong style="color: #f59e0b;">📦 Sandık Sistemi</strong>
-                        </p>
-                        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
-                            Her 10 kelimede bir sandıktan 1 kelime gelir. 
-                            <span style="color: #10b981; font-weight: 500;">Doğru cevaplanana kadar orada kalır!</span> 
-                            Sandıktaki her kelime <strong style="color: #ef4444;">-1 puan</strong> ceza getirir. 
-                            Sandıktaki kelimeleri kurtarmak sana bağlı! 🏆
-                        </p>
-                    </div>
-
-                    <!-- Seviye Sistemi -->
-                    <div style="background: rgba(16,185,129,0.05); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 3px solid #10b981;">
-                        <p style="margin: 0; font-size: 13px;">
-                            <strong style="color: #10b981;">🏆 Seviye Sistemi</strong>
-                        </p>
-                        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
-                            Her seviye atladığında <strong style="color: #f59e0b;">+2 puan</strong> kazanırsın!
-                            Ne kadar çok seviye, o kadar çok puan! 🚀
-                        </p>
-                    </div>
-
-                    <!-- Eğlenceli Motivasyon -->
-                    <div style="text-align: center; padding: 8px; background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(16,185,129,0.05)); border-radius: 10px; margin-top: 8px;">
-                        <p style="margin: 0; font-size: 12px; opacity: 0.7;">
-                            🌟 <strong>İpucu:</strong> Sandıktaki kelimeleri kurtar, puanını katla! 
-                            <span style="display: inline-block; animation: bounce 1s infinite;">⚡</span>
-                        </p>
-                        <p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.5;">
-                            Her doğru cevap seni <strong>Kelime Ustası</strong> yapmaya bir adım daha yaklaştırır! 🎯
-                        </p>
-                    </div>
-
-                    <button class="btn btn-primary" style="width:100%; margin-top: 15px; padding: 10px; font-size: 14px; border-radius: 12px;" onclick="this.closest('.help-modal').remove()">
-                        <i class="fas fa-rocket"></i> Anladım, Başlıyorum! 🚀
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        modal.querySelector('.help-modal-close').onclick = () => modal.remove();
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    };
-}
-
-        // ============================================================
-    // ========== GİRİŞ EKRANI - ENTER TUŞU DESTEĞİ ==========
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.help-modal-close').onclick = function() {
+                modal.remove();
+            };
+            modal.onclick = function(e) {
+                if (e.target === modal) modal.remove();
+            };
+        };
+    }
+    
+    // ============================================================
+    // 10. GİRİŞ EKRANI - ENTER TUŞU DESTEĞİ
     // ============================================================
     
-    // 1. Login (Giriş) Enter
-    const loginPassword = document.getElementById('loginPassword');
-    const loginEmail = document.getElementById('loginEmail');
+    // Login Enter
+    const loginPassword2 = document.getElementById('loginPassword');
+    const loginEmail2 = document.getElementById('loginEmail');
     
     function loginWithEnter(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            document.getElementById('doLoginBtn').click();
+            const btn = document.getElementById('doLoginBtn');
+            if (btn) btn.click();
         }
     }
     
-    if (loginPassword) {
-        loginPassword.addEventListener('keypress', loginWithEnter);
+    if (loginPassword2) {
+        loginPassword2.addEventListener('keypress', loginWithEnter);
     }
-    if (loginEmail) {
-        loginEmail.addEventListener('keypress', loginWithEnter);
+    if (loginEmail2) {
+        loginEmail2.addEventListener('keypress', loginWithEnter);
     }
     
-    // 2. Register (Kayıt) Enter
-    const regPassword = document.getElementById('regPassword');
-    const regEmail = document.getElementById('regEmail');
+    // Register Enter
+    const regPassword2 = document.getElementById('regPassword');
+    const regEmail2 = document.getElementById('regEmail');
     
     function registerWithEnter(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            document.getElementById('doRegisterBtn').click();
+            const btn = document.getElementById('doRegisterBtn');
+            if (btn) btn.click();
         }
     }
     
-    if (regPassword) {
-        regPassword.addEventListener('keypress', registerWithEnter);
+    if (regPassword2) {
+        regPassword2.addEventListener('keypress', registerWithEnter);
     }
-    if (regEmail) {
-        regEmail.addEventListener('keypress', registerWithEnter);
+    if (regEmail2) {
+        regEmail2.addEventListener('keypress', registerWithEnter);
     }
     
-    // 3. Forgot Password (Şifre Sıfırlama) Enter
-    const forgotEmail = document.getElementById('forgotEmail');
-    if (forgotEmail) {
-        forgotEmail.addEventListener('keypress', function(e) {
+    // Forgot Password Enter
+    const forgotEmail2 = document.getElementById('forgotEmail');
+    if (forgotEmail2) {
+        forgotEmail2.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('doForgotBtn').click();
+                const btn = document.getElementById('doForgotBtn');
+                if (btn) btn.click();
             }
         });
     }
     
-    console.log('✅ Enter tuşu ile giriş desteği aktif!');
+    // ============================================================
+    // 11. ZOOM BUTONU
+    // ============================================================
+    const zoomBtn = document.getElementById('zoomBtn');
+    if (zoomBtn) {
+        zoomBtn.onclick = function() {
+            if (typeof toggleZoom === 'function') {
+                toggleZoom();
+            }
+        };
+    }
+    
+    // ============================================================
+    // 12. YARDIM BUTONU (Header - Help Game)
+    // ============================================================
+    const helpGameBtn = document.getElementById('helpGameBtn');
+    if (helpGameBtn) {
+        helpGameBtn.addEventListener('click', function() {
+            // Yardım modalını aç - mevcut kodun aynısı
+            const modal = document.createElement('div');
+            modal.className = 'help-modal';
+            modal.style.cssText = `
+                position: fixed; top:0; left:0; right:0; bottom:0;
+                background: rgba(0,0,0,0.85);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 1001;
+                backdrop-filter: blur(4px);
+                animation: modalFadeIn 0.3s ease;
+            `;
+            modal.innerHTML = `
+                <div class="help-modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: #1a1a1a; border-radius: 20px; padding: 28px; width: 92%; border: 1px solid rgba(245,158,11,0.1);">
+                    <div class="help-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+                        <h3 style="color: #f59e0b; font-size: 20px; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-mosque" style="color: #f59e0b;"></i> 
+                            SaadetYolu - Nasıl Oynanır?
+                        </h3>
+                        <button class="help-modal-close" style="background: none; border: none; color: #6b7280; font-size: 24px; cursor: pointer; transition: 0.3s;">&times;</button>
+                    </div>
+                    
+                    <div class="help-modal-body" style="line-height: 1.7; font-size: 14px; color: #d1d5db;">
+                        <div style="background: rgba(245,158,11,0.06); border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(245,158,11,0.1);">
+                            <span style="font-size: 28px;">🕌</span>
+                            <p style="margin: 4px 0 0 0; font-size: 15px; color: #f59e0b; font-weight: 600;">SaadetYolu'na Hoş Geldin!</p>
+                            <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.7;">Arapça kelimeleri öğrenerek puan topla ve zirveye ulaş!</p>
+                        </div>
+                        
+                        <div style="background: rgba(59,130,246,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #3b82f6;">
+                            <p style="margin: 0; font-weight: 600; color: #60a5fa;">📚 1. Kelime Öğren</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                                <strong>Kitap ve Ders</strong> seçerek kelimeleri öğren.
+                                <span style="color: #f59e0b;">"Göster"</span> butonuna tıkla, kelimeyi öğren ve 
+                                <span style="color: #10b981;">+0.01 puan</span> kazan!
+                            </p>
+                        </div>
+                        
+                        <div style="background: rgba(139,92,246,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
+                            <p style="margin: 0; font-weight: 600; color: #a78bfa;">📝 2. Sınavlar</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                                Öğrendiklerini test et! Her soru <span style="color: #f59e0b;">+0.01 puan</span>.
+                                <span style="color: #10b981;">30 saniyen</span> var, süre dolunca otomatik geçer.
+                            </p>
+                        </div>
+                        
+                        <div style="background: rgba(236,72,153,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #ec4899;">
+                            <p style="margin: 0; font-weight: 600; color: #f472b6;">🎲 3. Yarışma</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                                <span style="color: #10b981;">✅ Doğru:</span> +0.01 puan, kelime sandıktan çıkar<br>
+                                <span style="color: #ef4444;">❌ Yanlış:</span> -1 puan, kelime sandığa gider<br>
+                                <span style="color: #f59e0b;">💡 Bilemedim / ⏩ Geç:</span> 0 puan, kelime sandığa gider
+                            </p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                            <div style="background: rgba(16,185,129,0.06); border-radius: 10px; padding: 12px; border-left: 3px solid #10b981;">
+                                <p style="margin: 0; font-weight: 600; color: #34d399;">🏆 Seviye</p>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                    Her Dersteki kelime Sayısı = 1 seviye<br>
+                                    <span style="color: #f59e0b;">Her seviye +2 puan!</span>
+                                </p>
+                            </div>
+                            <div style="background: rgba(251,146,60,0.06); border-radius: 10px; padding: 12px; border-left: 3px solid #fb923c;">
+                                <p style="margin: 0; font-weight: 600; color: #fb923c;">📦 Sandık</p>
+                                <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                    Yanlış/Geç/Bilemedim → Sandığa gider<br>
+                                    <span style="color: #ef4444;">Her sandık -1 puan ceza!</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(245,158,11,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #f59e0b;">
+                            <p style="margin: 0; font-weight: 600; color: #f59e0b;">🏆 5. Sıralama</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                                En çok puan toplayan oyuncular <span style="color: #f59e0b;">İlkler</span> listesinde gösterilir.
+                                Kendi sıralamanı ve puanını her zaman görebilirsin!
+                            </p>
+                        </div>
+                        
+                        <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px; margin-top: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #f59e0b;">📊 PUAN SİSTEMİ ÖZETİ</p>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; font-size: 11px; opacity: 0.8;">
+                                <span>📚 Kelime: <strong style="color: #10b981;">+0.01</strong></span>
+                                <span>📝 Sınav: <strong style="color: #10b981;">+0.01</strong></span>
+                                <span>🎲 Doğru: <strong style="color: #10b981;">+0.01</strong></span>
+                                <span>🎲 Yanlış: <strong style="color: #ef4444;">-1</strong></span>
+                                <span>🏆 Seviye: <strong style="color: #f59e0b;">+2</strong></span>
+                                <span>📦 Sandık: <strong style="color: #ef4444;">-1</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(16,185,129,0.06); border-radius: 10px; padding: 12px; margin-top: 10px; text-align: center; border: 1px solid rgba(16,185,129,0.15);">
+                            <p style="margin: 0; font-size: 13px; color: #34d399;">
+                                🚀 <strong>Yeni başlıyorsan:</strong> Önce Kelime Öğren'e git, sonra Sınavlara gir, 
+                                ardından Yarışmaya katıl!
+                            </p>
+                        </div>
+                        
+                        <button class="btn btn-primary" style="width:100%; margin-top: 16px; padding: 12px; font-size: 15px; border-radius: 12px; background: #f59e0b; color: #121212; border: none; cursor: pointer; font-weight: 600;" onclick="this.closest('.help-modal').remove()">
+                            <i class="fas fa-check"></i> Anladım, Başlıyorum! 🚀
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.help-modal-close').onclick = function() {
+                modal.remove();
+            };
+            modal.onclick = function(e) {
+                if (e.target === modal) modal.remove();
+            };
+        });
+    }
+    
+    // ============================================================
+    // 13. RUHU DİNLET BUTONU
+    // ============================================================
+    const ruhuDinletBtn = document.getElementById('ruhuDinletBtn');
+    if (ruhuDinletBtn) {
+        ruhuDinletBtn.addEventListener('click', function() {
+            if (typeof ruhuDinletToggle === 'function') {
+                ruhuDinletToggle();
+            }
+        });
+    }
+    
+    // ============================================================
+    // 14. KARMA SAYFASINA GİT (Stat Kartı)
+    // ============================================================
+    const goKarma = document.getElementById('goKarma');
+    if (goKarma) {
+        goKarma.onclick = function() {
+            if (typeof goKarmaGame === 'function') {
+                goKarmaGame();
+            }
+        };
+    }
+    
+    // ============================================================
+    // 15. SIRALAMA SAYFASINA GİT (Stat Kartı)
+    // ============================================================
+    const goRanking = document.getElementById('goRanking');
+    if (goRanking) {
+        goRanking.onclick = function() {
+            if (typeof goRanking === 'function') {
+                window.goRanking();
+            }
+        };
+    }
+    
+    // ============================================================
+    // 16. KELİME ÖĞREN SAYFASINA GİT (Stat Kartı)
+    // ============================================================
+    const goWordsLearning = document.querySelector('.stats-card[onclick*="goWordsLearning"]');
+    if (goWordsLearning) {
+        // onclick zaten HTML'de var, ekstra bir şey yapmaya gerek yok
+    }
+    
+    // ============================================================
+    // 17. SINAVLAR SAYFASINA GİT (Stat Kartı)
+    // ============================================================
+    const goExams = document.querySelector('.stats-card[onclick*="goExams"]');
+    if (goExams) {
+        // onclick zaten HTML'de var
+    }
+    
+    // ============================================================
+    // 18. PROFİL SAYFASINA GİT (Sidebar ve Header)
+    // ============================================================
+    const profileItems = document.querySelectorAll('[onclick*="showProfile"]');
+    profileItems.forEach(item => {
+        // onclick zaten HTML'de var
+    });
+    
+    // ============================================================
+    // 19. MENÜ BUTONU
+    // ============================================================
+    const menuBtn = document.getElementById('menuBtn');
+    if (menuBtn) {
+        menuBtn.onclick = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('active');
+        };
+    }
+    
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.onclick = function() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        };
+    }
+    
+    console.log('✅ DOM yüklendi - Tüm olaylar bağlandı!');
 });
+
+
+
+
+    
 
 // ========== İNTERNET BAĞLANTISI DEĞİŞİKLİKLERİNİ İZLE ==========
 window.addEventListener('online', function() {
@@ -8164,7 +8674,7 @@ function updateRuhuDinletUI(aktif) {
 }
 
 // Butona tıklama olayını bağla
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('', function() {
     const btn = document.getElementById('ruhuDinletBtn');
     if (btn) {
         btn.addEventListener('click', ruhuDinletToggle);
@@ -8438,6 +8948,7 @@ function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, total
                 quizSandik: [],
                 quizScore: 0,
                 mevcutSeviye: 1,
+                myWords: [],
                 createdAt: new Date().toISOString(),
                 provider: 'google'
             });
@@ -8532,43 +9043,9 @@ window.refreshRanking = async function() {
 
 
 
-// ===== TAB YÖNETİMİ =====
-// ===== TAB YÖNETİMİ (3 TAB) =====
-document.addEventListener('DOMContentLoaded', function() {
-    const tabs = document.querySelectorAll('.tab-btn');
-    const contents = {
-        tab1: document.getElementById('tab1'),
-        tab2: document.getElementById('tab2'),
-        tab3: document.getElementById('tab3')
-    };
     
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Tüm tab'ları pasif yap
-            tabs.forEach(t => {
-                t.style.background = 'rgba(255,255,255,0.05)';
-                t.style.color = '#1a1a2e';
-                t.classList.remove('active');
-            });
-            
-            // Tüm içerikleri gizle
-            Object.values(contents).forEach(c => {
-                if (c) c.style.display = 'none';
-            });
-            
-            // Tıklanan tab'ı aktif yap
-            this.style.background = '#f59e0b';
-            this.style.color = '#1a1a2e';
-            this.classList.add('active');
-            
-            // İçeriği göster
-            const tabId = this.dataset.tab;
-            if (contents[tabId]) {
-                contents[tabId].style.display = 'block';
-            }
-        });
-    });
-});
+
+
 
 
 
@@ -8850,6 +9327,248 @@ function handleHeaderExit() {
 
 // ===== GLOBAL OLARAK TANIMLA =====
 window.handleHeaderExit = handleHeaderExit;
+
+
+
+
+    // ============================================================
+// 📚 KELİME LİSTEM - KİŞİSEL TEKRAR LİSTESİ
+// ============================================================
+
+// 1. Kelimeyi listeye ekle
+window.addToMyWords = async function(wordId, arabic, turkish) {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return false;
+    }
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+            showWarning('⚠️ Kullanıcı bulunamadı!');
+            return false;
+        }
+        
+        const data = userDoc.data();
+        const myWords = data.myWords || [];
+        
+        // Kelime zaten listede mi?
+        if (myWords.some(w => w.id === wordId)) {
+            showWarning('⚠️ Bu kelime zaten listenizde!');
+            return false;
+        }
+        
+        // Yeni kelimeyi ekle
+        myWords.push({
+            id: wordId,
+            arabic: arabic,
+            turkish: turkish,
+            addedAt: new Date().toISOString()
+        });
+        
+        await updateDoc(userRef, { myWords: myWords });
+        
+        // Buton görünümünü güncelle
+        updateAddButton(wordId, true);
+        
+        showSuccess('✅ Kelime listenize eklendi!', '📚 Başarılı');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Kelime ekleme hatası:', error);
+        showWarning('❌ Kelime eklenemedi: ' + error.message);
+        return false;
+    }
+};
+
+// 2. Kelimeyi listeden kaldır
+window.removeFromMyWords = async function(wordId) {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return false;
+    }
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+            showWarning('⚠️ Kullanıcı bulunamadı!');
+            return false;
+        }
+        
+        const data = userDoc.data();
+        let myWords = data.myWords || [];
+        
+        const filtered = myWords.filter(w => w.id !== wordId);
+        
+        if (filtered.length === myWords.length) {
+            showWarning('⚠️ Bu kelime listenizde bulunamadı!');
+            return false;
+        }
+        
+        await updateDoc(userRef, { myWords: filtered });
+        
+        // Buton görünümünü güncelle
+        updateAddButton(wordId, false);
+        
+        showSuccess('✅ Kelime listenizden çıkarıldı!', '📚 Başarılı');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Kelime kaldırma hatası:', error);
+        showWarning('❌ Kelime kaldırılamadı: ' + error.message);
+        return false;
+    }
+};
+
+// 3. Buton görünümünü güncelle
+function updateAddButton(wordId, isAdded) {
+    const btn = document.querySelector(`.btn-add-to-list[data-word-id="${wordId}"]`);
+    if (!btn) return;
+    
+    if (isAdded) {
+        btn.classList.add('added');
+        btn.innerHTML = '<i class="fas fa-minus-circle"></i>';
+        btn.title = 'Listeden Kaldır';
+    } else {
+        btn.classList.remove('added');
+        btn.innerHTML = '<i class="fas fa-plus-circle"></i>';
+        btn.title = 'Kelime Listeme Ekle';
+    }
+}
+
+// 4. Kelime listede mi kontrol et
+async function isWordInMyList(wordId) {
+    if (!currentUser) return false;
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) return false;
+        
+        const data = userDoc.data();
+        const myWords = data.myWords || [];
+        return myWords.some(w => w.id === wordId);
+        
+    } catch (error) {
+        console.error('❌ Kontrol hatası:', error);
+        return false;
+    }
+}
+
+// 5. 📚 Kelime Listemi Göster (Stat Kartı)
+window.showMyWordsList = async function() {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+            showWarning('⚠️ Kullanıcı bulunamadı!');
+            return;
+        }
+        
+        const data = userDoc.data();
+        const myWords = data.myWords || [];
+        
+        if (myWords.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: '📚 Henüz Kelime Eklenmemiş',
+                html: `
+                    <div style="text-align: center; padding: 10px 0;">
+                        <p style="font-size: 14px; margin-bottom: 8px;">
+                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                            Kelime Öğren bölümünde beğendiğin kelimeleri 
+                            <strong style="color: #10b981;">"+"</strong> butonuna tıklayarak 
+                            bu listeye ekleyebilirsin!
+                        </p>
+                        <p style="font-size: 13px; opacity: 0.7;">
+                            📖 Daha sonra tekrar etmek istediğin kelimeleri burada bulabilirsin.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Tamam',
+                width: '400px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+            return;
+        }
+        
+        // Modal oluştur
+        const modal = document.createElement('div');
+        modal.className = 'info-modal';
+        modal.innerHTML = `
+            <div class="info-modal-content" style="max-width: 550px; max-height: 80vh; overflow-y: auto;">
+                <div class="info-modal-header">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div class="icon-box blue">📚</div>
+                        <div>
+                            <div class="info-modal-title">Kelime Listem</div>
+                            <div class="info-modal-subtitle">${myWords.length} kelime - Kişisel tekrar listen</div>
+                        </div>
+                    </div>
+                    <button class="info-modal-close">&times;</button>
+                </div>
+                <div class="info-modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 4px;">
+                        ${myWords.map(word => `
+                            <div style="background: rgba(16,185,129,0.05); border-radius: 8px; padding: 8px 10px; border-left: 2px solid #10b981; position: relative;">
+                                <button onclick="removeFromMyWords('${word.id}')" 
+                                    style="position: absolute; top: 4px; right: 4px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; opacity: 0.5; transition: 0.3s;"
+                                    onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                                <div style="font-size: 18px; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 20px;">
+                                    ${word.arabic}
+                                </div>
+                                <div style="font-size: 12px; opacity: 0.7; margin-top: 2px;">
+                                    ${word.turkish}
+                                </div>
+                                <div style="font-size: 9px; opacity: 0.3; margin-top: 4px;">
+                                    ${new Date(word.addedAt).toLocaleDateString('tr-TR')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="background: rgba(245,158,11,0.06); border-radius: 8px; padding: 8px 12px; margin-top: 10px; border-left: 3px solid #f59e0b;">
+                        <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+                            💡 <strong>İpucu:</strong> Listedeki kelimeleri çalışmak için 
+                            <span style="color: #10b981;">Kelime Öğren</span> bölümüne gidebilirsin!
+                        </p>
+                    </div>
+                </div>
+                <div class="info-modal-footer" style="display: flex; gap: 10px;">
+                    <button onclick="this.closest('.info-modal').remove(); goWordsLearning();" style="flex: 1; padding: 10px; background: #f59e0b; color: #121212; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-book-open"></i> Kelime Öğren'e Git
+                    </button>
+                    <button onclick="this.closest('.info-modal').remove()" style="flex: 0 0 auto; padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 10px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Kapat
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.querySelector('.info-modal-close').onclick = () => modal.remove();
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        
+    } catch (error) {
+        console.error('❌ Kelime listesi hatası:', error);
+        showWarning('❌ Kelime listesi yüklenemedi!');
+    }
+};
+
     
 </script>
 </body>
