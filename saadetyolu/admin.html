@@ -2398,17 +2398,44 @@ if (bulkBookSelect) {
     };
 }
 
-document.getElementById('bulkUploadBtn').onclick = async () => {
+
+
+
+
+    document.getElementById('bulkUploadBtn').onclick = async () => {
     const btn = document.getElementById('bulkUploadBtn');
     const originalText = btn.innerHTML;
+    
+    // ===== KONTROLLER =====
+    const bookSelect = document.getElementById('bulkExamBookSelect');
+    const lessonSelect = document.getElementById('bulkExamLessonSelect');
+    const jsonInput = document.getElementById('bulkJsonInput');
+    const resultDiv = document.getElementById('bulkResult');
+    
+    // KİTAP KONTROLÜ
+    if (!bookSelect || !bookSelect.value) {
+        alert('⚠️ Lütfen önce bir KİTAP seçin!');
+        return;
+    }
+    
+    // DERS KONTROLÜ
+    if (!lessonSelect || !lessonSelect.value) {
+        alert('⚠️ Lütfen önce bir DERS seçin!');
+        return;
+    }
+    
+    // JSON KONTROLÜ
+    if (!jsonInput || !jsonInput.value.trim()) {
+        alert('⚠️ Lütfen JSON verisi girin!');
+        return;
+    }
     
     // Loader ekle
     btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
     btn.disabled = true;
     
-    const lessonId = document.getElementById('bulkLessonSelect').value;
-    const jsonInput = document.getElementById('bulkJsonInput').value;
-    const resultDiv = document.getElementById('bulkResult');
+    const lessonId = lessonSelect.value;
+    const jsonData = jsonInput.value;
     
     if (!resultDiv) {
         console.error('resultDiv bulunamadı!');
@@ -2417,25 +2444,16 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         return;
     }
     
-    if (!lessonId) {
-        alert('Lütfen bir ders seçin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
-    if (!jsonInput.trim()) {
-        alert('Lütfen JSON verisi girin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
     try {
-        const words = JSON.parse(jsonInput);
+        const words = JSON.parse(jsonData);
         
         if (!Array.isArray(words)) {
             throw new Error('Veri bir dizi olmalıdır');
+        }
+        
+        // Kelime sayısı kontrolü
+        if (words.length === 0) {
+            throw new Error('Hiç kelime bulunamadı!');
         }
         
         let successCount = 0;
@@ -2462,11 +2480,12 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         resultDiv.style.padding = '15px';
         resultDiv.innerHTML = `
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <strong>Yükleme Tamamlandı!</strong><br>
-            ✅ Başarılı: ${successCount} kelime<br>
-            ❌ Hatalı: ${errorCount} kelime
+            <strong>✅ Yükleme Tamamlandı!</strong><br>
+            📚 Başarılı: ${successCount} kelime<br>
+            ${errorCount > 0 ? `❌ Hatalı: ${errorCount} kelime` : ''}
         `;
         
+        // Kelime listesini güncelle
         if (currentWordLessonId === lessonId) {
             document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
         }
@@ -2481,11 +2500,10 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         resultDiv.style.padding = '15px';
         resultDiv.innerHTML = `
             <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-            <strong>Hata!</strong><br>
+            <strong>❌ Hata!</strong><br>
             ${error.message}
         `;
     } finally {
-        // Loader kaldır
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
