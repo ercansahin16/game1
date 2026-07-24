@@ -1690,15 +1690,88 @@ if (addBookBtn) {
         }
     };
     
-    window.deleteLesson = async (id) => {
-        if (confirm('Bu dersi silmek istediğinize emin misiniz?')) {
-            const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
-            for (const word of wordsSnap.docs) await deleteDoc(doc(db, 'words', word.id));
-            await deleteDoc(doc(db, 'lessons', id));
-            document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
-            updateStats();
+   // ============================================================
+// DERS SİLME - LOADER EKLİ
+// ============================================================
+window.deleteLesson = async (id) => {
+    // Kullanıcıya onay soralım
+    const confirmResult = await Swal.fire({
+        title: '⚠️ Dersi Sil',
+        text: 'Bu dersi ve içindeki tüm kelimeleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'İptal',
+        width: '420px',
+        padding: '1.5rem',
+        customClass: { popup: 'compact-swal' }
+    });
+    
+    if (!confirmResult.isConfirmed) return;
+    
+    // Loading göster
+    Swal.fire({
+        title: '⏳ Siliniyor...',
+        text: 'Ders ve kelimeler siliniyor, lütfen bekleyin...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: { popup: 'compact-swal' }
+    });
+    
+    try {
+        // 1. Bu derse ait kelimeleri sil
+        const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
+        let wordCount = 0;
+        
+        for (const word of wordsSnap.docs) {
+            await deleteDoc(doc(db, 'words', word.id));
+            wordCount++;
         }
-    };
+        
+        // 2. Dersi sil
+        await deleteDoc(doc(db, 'lessons', id));
+        
+        // 3. Başarılı mesajı
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Silindi!',
+            html: `
+                <div style="text-align: center; padding: 5px 0;">
+                    <p>📚 Ders başarıyla silindi.</p>
+                    <p style="font-size: 13px; opacity: 0.7;">${wordCount} kelime silindi.</p>
+                </div>
+            `,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+        
+        // 4. Listeyi yenile
+        document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
+        updateStats();
+        
+    } catch (error) {
+        console.error('Ders silme hatası:', error);
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Hata!',
+            text: 'Ders silinirken bir hata oluştu: ' + error.message,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+    }
+};
 
     document.getElementById('addLessonBtn').onclick = () => {
         if (!currentLessonBookId) { alert('Lütfen önce bir kitap seçin!'); return; }
