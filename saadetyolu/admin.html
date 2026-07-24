@@ -2445,10 +2445,50 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
     }
     
     try {
-        const words = JSON.parse(jsonData);
+        // ===== JSON PARSE =====
+        let words;
+        try {
+            words = JSON.parse(jsonData);
+        } catch (parseError) {
+            // JSON hatası için özel mesaj
+            const errorMsg = parseError.message;
+            let userFriendlyMsg = '❌ JSON formatı geçersiz! ';
+            
+            if (errorMsg.includes('Unexpected token')) {
+                userFriendlyMsg += `
+                    <br><br>
+                    <div style="background: rgba(239,68,68,0.1); padding: 10px; border-radius: 8px; font-size: 13px;">
+                        <strong>📌 Sorun:</strong> JSON'da geçersiz karakter veya eksik tırnak var.<br>
+                        <strong>💡 Çözüm:</strong><br>
+                        • Tüm metinler <strong>çift tırnak</strong> içinde olmalı (" )<br>
+                        • Arapça metinler <strong>çift tırnak</strong> içinde olmalı<br>
+                        • Her kelime için <strong>virgül</strong> kullanın<br>
+                        • Son elemandan sonra <strong>virgül</strong> olmamalı
+                    </div>
+                    <br>
+                    <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+                        <strong>✅ Doğru Örnek:</strong><br>
+                        <code style="font-size: 11px; color: #10b981;">
+                        [
+                          {"arabic": "كِتَاب", "turkish": "kitap"},
+                          {"arabic": "قَلَم", "turkish": "kalem"}
+                        ]
+                        </code>
+                    </div>
+                `;
+            } else if (errorMsg.includes('Unexpected end')) {
+                userFriendlyMsg += 'JSON eksik veya yarım kalmış. Lütfen tüm süslü parantezleri ve köşeli parantezleri kontrol edin.';
+            } else if (errorMsg.includes('Expected')) {
+                userFriendlyMsg += 'Eksik virgül veya süslü parantez olabilir. Lütfen formatı kontrol edin.';
+            } else {
+                userFriendlyMsg += parseError.message;
+            }
+            
+            throw new Error(userFriendlyMsg);
+        }
         
         if (!Array.isArray(words)) {
-            throw new Error('Veri bir dizi olmalıdır');
+            throw new Error('Veri bir dizi olmalıdır. Örnek: [ { "arabic": "...", "turkish": "..." } ]');
         }
         
         // Kelime sayısı kontrolü
@@ -2458,18 +2498,24 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         
         let successCount = 0;
         let errorCount = 0;
+        const errors = [];
         
-        for (const word of words) {
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
             if (word.arabic && word.turkish) {
                 await setDoc(doc(collection(db, 'words')), {
-                    arabic: word.arabic,
-                    turkish: word.turkish,
+                    arabic: word.arabic.trim(),
+                    turkish: word.turkish.trim(),
                     lessonId: lessonId,
                     createdAt: new Date().toISOString()
                 });
                 successCount++;
             } else {
                 errorCount++;
+                const missing = [];
+                if (!word.arabic) missing.push('arabic');
+                if (!word.turkish) missing.push('turkish');
+                errors.push(`${i+1}. kelime (${missing.join(', ')} eksik)`);
             }
         }
         
@@ -2482,7 +2528,7 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
             <strong>✅ Yükleme Tamamlandı!</strong><br>
             📚 Başarılı: ${successCount} kelime<br>
-            ${errorCount > 0 ? `❌ Hatalı: ${errorCount} kelime` : ''}
+            ${errorCount > 0 ? `❌ Hatalı: ${errorCount} kelime (${errors.join(', ')})` : ''}
         `;
         
         // ===== TEXTAREA'YI TEMİZLE =====
@@ -3890,54 +3936,42 @@ document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () =>
 });
 
     // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
-document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
-    const exampleJson = `[
-  {"arabic": "كِتَاب", "turkish": "kitap"},
-  {"arabic": "قَلَم", "turkish": "kalem"},
-  {"arabic": "مَسْجِد", "turkish": "cami"},
-  {"arabic": "مَدْرَسَة", "turkish": "okul"}
-]`;
-    
-    navigator.clipboard.writeText(exampleJson).then(() => {
-        const btn = document.getElementById('copyBulkJsonBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
-        btn.style.borderColor = '#10b981';
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.borderColor = '';
-        }, 2000);
-    }).catch(() => {
-        // Fallback: textarea'ya yaz ve seç
-        const textarea = document.getElementById('bulkJsonInput');
-        textarea.value = exampleJson;
-        textarea.select();
-        document.execCommand('copy');
-        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
-    });
-});
-
 // ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
 document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
-    const exampleJson = `[
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 0
   },
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 1
   },
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 2
   }
-]`;
+]
+
+📌 NOTLAR:
+• "question" içinde \\n ile alt satıra geçebilirsin
+• "options" 4 şık içermeli (A, B, C, D)
+• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+
+Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
     
-    navigator.clipboard.writeText(exampleJson).then(() => {
+    navigator.clipboard.writeText(promptAndExample).then(() => {
         const btn = document.getElementById('copyBulkExamJsonBtn');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
@@ -3945,10 +3979,78 @@ document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => 
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.style.borderColor = '';
-        }, 2000);
+        }, 3000);
     }).catch(() => {
+        // Fallback
         const textarea = document.getElementById('bulkExamJsonInput');
-        textarea.value = exampleJson;
+        textarea.value = `[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  }
+]`;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]
+
+📌 NOTLAR:
+• "question" içinde \\n ile alt satıra geçebilirsin
+• "options" 4 şık içermeli (A, B, C, D)
+• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+
+Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
+    
+    navigator.clipboard.writeText(promptAndExample).then(() => {
+        const btn = document.getElementById('copyBulkExamJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 3000);
+    }).catch(() => {
+        // Fallback
+        const textarea = document.getElementById('bulkExamJsonInput');
+        textarea.value = `[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  }
+]`;
         textarea.select();
         document.execCommand('copy');
         showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
