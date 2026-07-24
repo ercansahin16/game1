@@ -4286,6 +4286,154 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Admin DOMContentLoaded tamamlandı!');
 });
+
+
+
+
+
+
+
+
+
+
+
+    // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeleri JSON formatında hazırlar mısın?
+Her kelime için "arabic" ve "turkish" alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"},
+  {"arabic": "مَسْجِد", "turkish": "cami"},
+  {"arabic": "مَدْرَسَة", "turkish": "okul"},
+  {"arabic": "طَالِب", "turkish": "öğrenci"},
+  {"arabic": "مُعَلِّم", "turkish": "öğretmen"}
+]
+
+📌 NOTLAR:
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+• Arapça metinler doğru yazılmalı
+
+Şimdi bu formatı kullanarak kelimeleri JSON'a çevir.`;
+    
+    copyToClipboard(promptAndExample, 'copyBulkJsonBtn');
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]
+
+📌 NOTLAR:
+• "question" içinde \\n ile alt satıra geçebilirsin
+• "options" 4 şık içermeli (A, B, C, D)
+• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+
+Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
+    
+    copyToClipboard(promptAndExample, 'copyBulkExamJsonBtn');
+});
+
+// ===== EVRENSEL KOPYALAMA FONKSİYONU =====
+function copyToClipboard(text, btnId) {
+    const btn = document.getElementById(btnId);
+    const originalText = btn.innerHTML;
+    
+    // Yöntem 1: navigator.clipboard (modern tarayıcılar)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopySuccess(btn, originalText);
+        }).catch(() => {
+            // Yöntem 2: Fallback - textarea oluştur
+            fallbackCopy(text, btn, originalText);
+        });
+    } else {
+        // Yöntem 2: Fallback - textarea oluştur
+        fallbackCopy(text, btn, originalText);
+    }
+}
+
+function fallbackCopy(text, btn, originalText) {
+    // Geçici textarea oluştur
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    
+    try {
+        const success = document.execCommand('copy');
+        if (success) {
+            showCopySuccess(btn, originalText);
+        } else {
+            btn.innerHTML = '<i class="fas fa-times" style="color: #ef4444;"></i> Kopyalanamadı!';
+            btn.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.borderColor = '';
+            }, 2000);
+            // Metni textarea'ya göster
+            const targetTextarea = document.getElementById('bulkJsonInput') || document.getElementById('bulkExamJsonInput');
+            if (targetTextarea) {
+                targetTextarea.value = text;
+                targetTextarea.select();
+                alert('✅ Metin textarea\'ya eklendi! Lütfen manuel olarak kopyalayın (Ctrl+C).');
+            }
+        }
+    } catch (err) {
+        console.error('Kopyalama hatası:', err);
+        btn.innerHTML = '<i class="fas fa-times" style="color: #ef4444;"></i> Hata!';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function showCopySuccess(btn, originalText) {
+    btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+    btn.style.borderColor = '#10b981';
+    btn.style.background = 'rgba(16, 185, 129, 0.1)';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.borderColor = '';
+        btn.style.background = '';
+    }, 2500);
+}
     
 </script>
 </body>
