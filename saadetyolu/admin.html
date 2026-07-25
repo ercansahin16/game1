@@ -3296,7 +3296,7 @@ function displayAdminExams(exams) {
 
 
     
-// ===== ADMIN PANELİ - KİTAP SEÇİLİNCE DERSLERİ YÜKLE =====
+// ===== ADMIN PANELİ - KİTAP SEÇİLİNCE DERSLERİ YÜKLE (SINAV SAYISI İLE) =====
 const adminExamBookSelect = document.getElementById('adminExamBookSelect');
 if (adminExamBookSelect) {
     adminExamBookSelect.onchange = async function() {
@@ -3323,23 +3323,25 @@ if (adminExamBookSelect) {
         }
         
         try {
-            // ===== DERSLERİ GETİR =====
+            // ===== 1. DERSLERİ GETİR =====
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
-            lessons.sort((a, b) => {
-                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
-                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
-                return numA - numB;
-            });
-            
-            // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+            // ===== 2. TÜM SINAVLARI AL (Sınav sayısı için) =====
             const allExams = await getDocs(collection(db, 'exams'));
             const examCounts = {};
             allExams.docs.forEach(doc => {
                 const lessonId = doc.data().lessonId;
-                examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                if (lessonId) {  // ✅ lessonId varsa say
+                    examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                }
+            });
+            
+            // ===== 3. SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+            lessons.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
             });
             
             if (lessons.length === 0) {
@@ -3354,7 +3356,7 @@ if (adminExamBookSelect) {
                 return;
             }
             
-            // ===== DERSLERİ LİSTELE (Sınav sayısı ile) =====
+            // ===== 4. DERSLERİ LİSTELE (Sınav sayısı ile) =====
             if (lessonSelect) {
                 lessonSelect.disabled = false;
                 lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
@@ -3398,6 +3400,9 @@ if (adminExamBookSelect) {
             if (lessonSelect) {
                 lessonSelect.disabled = true;
                 lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+            }
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:20px;">❌ Dersler yüklenemedi</div>';
             }
         }
     };
