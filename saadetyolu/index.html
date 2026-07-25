@@ -2701,18 +2701,7 @@ body.light-theme #profileScreen .info-row button:hover {
     
 </div>
 
-    <!-- ✅ 2. YENİ STAT - SANDIKTAKİ KELİMELER -->
-   <div class="stats-card" style="cursor: pointer; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05);  transition: all 0.3s ease;">
-    <div style="font-size: 36px; color: #f59e0b; "><i class="fas fa-box"></i></div>
-    <div style="font-size: 18px; font-weight: bold; margin-top: 8px;">📦 Sandıktaki Kelimeler</div>
-    <div style="font-size: 11px;  margin-top: 4px; line-height: 1.4;">
-        Yanlış cevapladığınız veya bilemediğiniz kelimeler 
-        <strong>sandığa düşer</strong>, buradan tekrar edebilirsiniz.
-    </div>
-    <div style="font-size: 10px; color: #f59e0b; margin-top: 6px;">
-        <i class="fas fa-clock"></i> Yakında açılacak
-    </div>
-</div>
+   
 </div>
         </div>
 
@@ -3176,6 +3165,67 @@ body.light-theme #profileScreen .info-row button:hover {
     </div>
 </div>  
 
+
+
+        <!-- ============================================================
+     📦 SANDIKTAKİ KELİMELER EKRANI
+     ============================================================ -->
+<div id="sandikScreen" style="display: none;">
+    <div class="words-area">
+        <div class="words-header">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #f59e0b;">
+                    <i class="fas fa-box"></i> 📦 Sandıktaki Kelimeler
+                </h3>
+                <span style="font-size: 13px; opacity: 0.6;" id="sandikCountDisplay">0 kelime</span>
+                <span style="font-size: 11px; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 10px; border-radius: 20px;">
+                    ⚠️ Her kelime -1 puan ceza!
+                </span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-nav" onclick="goHome()" style="padding: 6px 14px; font-size: 12px;">
+                    <i class="fas fa-home"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Bilgi Kartı -->
+        <div style="background: rgba(239,68,68,0.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 15px; border-left: 3px solid #ef4444;">
+            <p style="margin: 0; font-size: 13px; color: #fca5a5;">
+                <i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>
+                <strong>Bu kelimeleri doğru cevaplayana kadar sandıkta kalırlar!</strong>
+                Her sandık <span style="color: #ef4444; font-weight: 700;">-1 puan</span> ceza getirir.
+                <span style="color: #f59e0b; font-weight: 500;">Kurtar, puanını artır! 🚀</span>
+            </p>
+        </div>
+        
+        <!-- Kelime Listesi -->
+        <div id="sandikWordsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; max-height: 60vh; overflow-y: auto; padding: 4px;">
+            <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                <p>Sandıkta hiç kelime yok!</p>
+                <p style="font-size: 13px; opacity: 0.6;">Harika gidiyorsun! 💪</p>
+            </div>
+        </div>
+        
+        <!-- Butonlar -->
+        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="goKarmaGame()" style="flex: 1; padding: 12px;">
+                <i class="fas fa-rocket"></i> Kurtarmaya Git
+            </button>
+            <button class="btn btn-danger" onclick="clearSandikWords()" style="flex: 0 0 auto; padding: 12px 20px;">
+                <i class="fas fa-trash-alt"></i> Sandığı Temizle
+            </button>
+        </div>
+        
+        <!-- Bahçeye çık -->
+        <button class="btn btn-nav" onclick="goHome()" style="margin-top: 15px; width: 100%; padding: 12px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);">
+            🌿 Bahçeye çık
+        </button>
+    </div>
+</div>
+
+        
     </div>
     <!-- ========== CONTAINER SONU ========== -->
 <script type="module">
@@ -3430,7 +3480,7 @@ window.goHome = () => {
     }
     
     // Tüm ekranları gizle
-    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'quizScreen', 'profileScreen', 'examsScreen', 'myWordsScreen'];
+    const screens = ['karmaScreen', 'rankingScreen', 'wordsLearningScreen', 'quizScreen', 'profileScreen', 'examsScreen', 'myWordsScreen', 'sandikScreen'];
     screens.forEach(screen => {
         const el = document.getElementById(screen);
         if (el) {
@@ -8585,6 +8635,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!titleDiv) return;
         
         const titleText = titleDiv.textContent || '';
+
+
+        // 📦 Sandıktaki Kelimeler
+if (titleText.includes('📦 Sandıktaki Kelimeler')) {
+    card.style.cursor = 'pointer';
+    card.onclick = function(e) {
+        e.stopPropagation();
+        window.showSandikWords();
+    };
+    card.addEventListener('mouseenter', function() {
+        this.style.opacity = '1';
+        this.style.transform = 'translateY(-3px)';
+        this.style.boxShadow = '0 4px 15px rgba(239,68,68,0.2)';
+    });
+    card.addEventListener('mouseleave', function() {
+        this.style.opacity = '0.85';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+    });
+}
+
+        
         
         // 📚 Kelime Listem
         if (titleText.includes('📚 Kelime Listem')) {
@@ -9669,6 +9741,289 @@ async function loadMyWordsList() {
         showWarning('❌ Kelime listesi yüklenemedi!');
     }
 }
+
+
+
+
+
+
+    // ============================================================
+// 📦 SANDIKTAKİ KELİMELER - SAYFA OLARAK GÖSTER
+// ============================================================
+
+// Sandık sayfasını göster
+window.showSandikWords = async function() {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    // Tüm ekranları gizle
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('wordsLearningScreen').style.display = 'none';
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('examsScreen').classList.add('hidden');
+    document.getElementById('quizScreen').style.display = 'none';
+    document.getElementById('profileScreen').style.display = 'none';
+    document.getElementById('karmaScreen').style.display = 'none';
+    document.getElementById('rankingScreen').style.display = 'none';
+    document.getElementById('myWordsScreen').style.display = 'none';
+    
+    // Sandık ekranını göster
+    const sandikScreen = document.getElementById('sandikScreen');
+    if (sandikScreen) {
+        sandikScreen.style.display = 'block';
+    }
+    
+    // Logo yazısını değiştir
+    const homeLogo = document.getElementById('homeLogo');
+    if (homeLogo) {
+        homeLogo.innerHTML = 'Bahçeye Çık';
+        animateLogo();
+    }
+    
+    // Sandık listesini yükle
+    await loadSandikWordsList();
+    
+    closeMenu();
+};
+
+// Sandık kelime listesini yükle
+async function loadSandikWordsList() {
+    if (!currentUser) return;
+    
+    showLoadingAlert('📦 Sandıktaki kelimeler yükleniyor...');
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+            closeLoadingAlert();
+            showWarning('⚠️ Kullanıcı bulunamadı!');
+            return;
+        }
+        
+        const data = userDoc.data();
+        const sandik = data.quizSandik || [];
+        
+        closeLoadingAlert();
+        
+        // Kelime sayısını güncelle
+        const countEl = document.getElementById('sandikCountDisplay');
+        if (countEl) countEl.textContent = `${sandik.length} kelime`;
+        
+        const container = document.getElementById('sandikWordsList');
+        if (!container) return;
+        
+        if (sandik.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                    <p>Sandıkta hiç kelime yok!</p>
+                    <p style="font-size: 13px; opacity: 0.6;">Harika gidiyorsun! 💪</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Kelimelerin ders bilgilerini al
+        const allWords = [];
+        const lessonCache = {};
+        
+        for (const word of sandik) {
+            const wordDoc = await getDoc(doc(db, 'words', word.id));
+            if (wordDoc.exists()) {
+                const wordData = wordDoc.data();
+                const lessonId = wordData.lessonId;
+                
+                let lessonName = 'Ders bilgisi yok';
+                if (lessonId) {
+                    if (lessonCache[lessonId]) {
+                        lessonName = lessonCache[lessonId];
+                    } else {
+                        const lessonDoc = await getDoc(doc(db, 'lessons', lessonId));
+                        if (lessonDoc.exists()) {
+                            lessonName = lessonDoc.data().name || 'Ders bilgisi yok';
+                            lessonCache[lessonId] = lessonName;
+                        }
+                    }
+                }
+                
+                allWords.push({
+                    ...word,
+                    ...wordData,
+                    lessonName: lessonName
+                });
+            }
+        }
+        
+        container.innerHTML = allWords.map(word => `
+            <div data-word-id="${word.id}" 
+                 style="background: rgba(239,68,68,0.05); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #ef4444; position: relative; transition: all 0.3s ease;" 
+                 onmouseenter="this.style.background='rgba(239,68,68,0.1)'" 
+                 onmouseleave="this.style.background='rgba(239,68,68,0.05)'">
+                <button onclick="removeFromSandik('${word.id}')" 
+                    style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: #10b981; cursor: pointer; font-size: 16px; opacity: 0.4; transition: 0.3s;"
+                    onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)'" 
+                    onmouseout="this.style.opacity='0.4'; this.style.transform='scale(1)'"
+                    title="Doğru cevapladım, sandıktan çıkar">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <div style="font-size: 35px; font-weight: 700; font-family: 'Scheherazade New', serif; direction: rtl; text-align: right; color: #7db4d8; padding-right: 24px;">
+                    ${word.arabic}
+                </div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">
+                    ${word.turkish}
+                </div>
+                <div style="font-size: 10px; opacity: 0.4; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                    <span><i class="fas fa-book" style="margin-right: 3px;"></i> ${word.lessonName}</span>
+                    <span style="color: #ef4444;"><i class="fas fa-exclamation-triangle" style="margin-right: 3px;"></i> -1 puan</span>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('❌ Sandık listesi hatası:', error);
+        closeLoadingAlert();
+        showWarning('❌ Sandık listesi yüklenemedi!');
+    }
+}
+
+// Kelimeyi sandıktan çıkar (doğru cevaplandı)
+window.removeFromSandik = async function(wordId) {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+            showWarning('⚠️ Kullanıcı bulunamadı!');
+            return;
+        }
+        
+        const data = userDoc.data();
+        let sandik = data.quizSandik || [];
+        
+        const filtered = sandik.filter(w => w.id !== wordId);
+        
+        if (filtered.length === sandik.length) {
+            showWarning('⚠️ Bu kelime sandıkta bulunamadı!');
+            return;
+        }
+        
+        await updateDoc(userRef, { quizSandik: filtered });
+        
+        // Global sandık değişkenini güncelle
+        quizSandik = filtered;
+        
+        // ===== ANLIK OLARAK LİSTEDEN KALDIR =====
+        const wordCard = document.querySelector(`[data-word-id="${wordId}"]`);
+        if (wordCard) {
+            wordCard.remove();
+            
+            // Kelime sayısını güncelle
+            const countEl = document.getElementById('sandikCountDisplay');
+            if (countEl) {
+                const currentCount = parseInt(countEl.textContent) || 0;
+                const newCount = currentCount - 1;
+                countEl.textContent = `${newCount} kelime`;
+            }
+            
+            // Eğer hiç kelime kalmadıysa boş mesajı göster
+            const container = document.getElementById('sandikWordsList');
+            if (container && container.children.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                        <p>Sandıkta hiç kelime yok!</p>
+                        <p style="font-size: 13px; opacity: 0.6;">Harika gidiyorsun! 💪</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Profil sandık sayısını güncelle
+        const sandikProfileEl = document.getElementById('sandikCountProfile');
+        if (sandikProfileEl) sandikProfileEl.textContent = filtered.length;
+        
+        // Karma ekranındaki sandık sayısını güncelle
+        const sandikCountEl = document.getElementById('sandikCount');
+        if (sandikCountEl) sandikCountEl.textContent = filtered.length;
+        
+        // Seviye bilgisini güncelle
+        const seviyeEl = document.getElementById('seviyeBilgi');
+        if (seviyeEl) {
+            seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${quizWordsAll?.length || 0}</span> kelime | 📦 <span id="seviyeSandikSayisi">${filtered.length}</span> sandık`;
+        }
+        
+        // Başarı mesajı
+        showSuccess('✅ Kelime sandıktan çıkarıldı!', '🎉 Tebrikler!');
+        
+    } catch (error) {
+        console.error('❌ Sandıktan çıkarma hatası:', error);
+        showWarning('❌ Kelime sandıktan çıkarılamadı: ' + error.message);
+    }
+};
+
+// Sandığı tamamen temizle
+window.clearSandikWords = async function() {
+    if (!currentUser) {
+        showWarning('❌ Lütfen önce giriş yapın!');
+        return;
+    }
+    
+    const result = await Swal.fire({
+        title: '⚠️ Sandığı Temizle',
+        text: 'Sandıktaki tüm kelimeler KALICI OLARAK silinecek! Bu işlem geri alınamaz. Emin misiniz?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Evet, temizle',
+        cancelButtonText: 'İptal',
+        width: '420px',
+        padding: '1.5rem',
+        customClass: { popup: 'compact-swal' }
+    });
+    
+    if (!result.isConfirmed) return;
+    
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { quizSandik: [] });
+        
+        // Global sandık değişkenini güncelle
+        quizSandik = [];
+        
+        // Ekranı güncelle
+        await loadSandikWordsList();
+        
+        // Profil sandık sayısını güncelle
+        const sandikProfileEl = document.getElementById('sandikCountProfile');
+        if (sandikProfileEl) sandikProfileEl.textContent = '0';
+        
+        // Karma ekranındaki sandık sayısını güncelle
+        const sandikCountEl = document.getElementById('sandikCount');
+        if (sandikCountEl) sandikCountEl.textContent = '0';
+        
+        // Seviye bilgisini güncelle
+        const seviyeEl = document.getElementById('seviyeBilgi');
+        if (seviyeEl) {
+            seviyeEl.innerHTML = `📚 Seviye <span id="seviyeNo">${mevcutSeviye}</span>/<span id="toplamSeviyeNo">${toplamSeviye}</span> | 📝 <span id="seviyeKelimeSayisi">${quizWordsAll?.length || 0}</span> kelime | 📦 <span id="seviyeSandikSayisi">0</span> sandık`;
+        }
+        
+        showSuccess('✅ Sandık başarıyla temizlendi!', '🧹 Temizlendi');
+        
+    } catch (error) {
+        console.error('❌ Sandık temizleme hatası:', error);
+        showWarning('❌ Sandık temizlenemedi: ' + error.message);
+    }
+};
 
     
 </script>
