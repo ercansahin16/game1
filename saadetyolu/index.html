@@ -9802,45 +9802,58 @@ window.showSandikWords = async function() {
     closeMenu();
 };
 
+
+
 // Sandık kelime listesini yükle
 async function loadSandikWordsList() {
     if (!currentUser) return;
     
-    showLoadingAlert('📦 Sandıktaki kelimeler yükleniyor...');
+    const container = document.getElementById('sandikWordsList');
+    if (!container) return;
+    
+    // ===== YÜKLENİYOR MESAJI =====
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⏳</div>
+            <p style="font-size: 14px; opacity: 0.8;">Sandık yükleniyor...</p>
+            <p style="font-size: 12px; opacity: 0.5;">Lütfen bekleyin</p>
+        </div>
+    `;
     
     try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (!userDoc.exists()) {
-            closeLoadingAlert();
-            showWarning('⚠️ Kullanıcı bulunamadı!');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
+                    <p>Kullanıcı bulunamadı!</p>
+                </div>
+            `;
             return;
         }
         
         const data = userDoc.data();
         const sandik = data.quizSandik || [];
         
-        closeLoadingAlert();
-        
         // Kelime sayısını güncelle
         const countEl = document.getElementById('sandikCountDisplay');
         if (countEl) countEl.textContent = `${sandik.length} kelime`;
         
-        const container = document.getElementById('sandikWordsList');
-        if (!container) return;
-        
         if (sandik.length === 0) {
+            // ===== SANDIK BOŞ =====
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
                     <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
-                    <p>Sandıkta hiç kelime yok!</p>
+                    <p style="font-size: 16px; font-weight: 500;">Sandıkta hiç kelime yok!</p>
                     <p style="font-size: 13px; opacity: 0.6;">Harika gidiyorsun! 💪</p>
                 </div>
             `;
             return;
         }
         
+        // ===== KELİMELERİ LİSTELE =====
         // Kelimelerin ders bilgilerini al
         const allWords = [];
         const lessonCache = {};
@@ -9872,7 +9885,6 @@ async function loadSandikWordsList() {
             }
         }
         
-        // ✅ KALDIRMA BUTONU OLMADAN SADECE GÖRÜNTÜLEME
         container.innerHTML = allWords.map(word => `
             <div data-word-id="${word.id}" 
                  style="background: rgba(239,68,68,0.05); border-radius: 12px; padding: 14px 16px; border-left: 3px solid #ef4444; position: relative; transition: all 0.3s ease;" 
@@ -9893,12 +9905,15 @@ async function loadSandikWordsList() {
         
     } catch (error) {
         console.error('❌ Sandık listesi hatası:', error);
-        closeLoadingAlert();
-        showWarning('❌ Sandık listesi yüklenemedi!');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #ef4444; grid-column: 1 / -1;">
+                <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                <p>Sandık yüklenirken bir hata oluştu!</p>
+                <p style="font-size: 13px; opacity: 0.6;">Lütfen sayfayı yenileyin.</p>
+            </div>
+        `;
     }
 }
-
-
 
 
 
