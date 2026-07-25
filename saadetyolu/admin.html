@@ -1115,13 +1115,15 @@
     <div class="select-row" style="margin-bottom: 15px;">
         <div class="select-wrapper">
             <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="bulkExamBookSelect">
+            <!-- ✅ YENİ ID: bulkExamBookSelectSoru -->
+            <select id="bulkExamBookSelectSoru">
                 <option value="">-- Kitap Seçin --</option>
             </select>
         </div>
         <div class="select-wrapper">
             <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled>
+            <!-- ✅ YENİ ID: bulkExamLessonSelectSoru -->
+            <select id="bulkExamLessonSelectSoru" disabled>
                 <option value="">-- Önce Kitap Seçin --</option>
             </select>
         </div>
@@ -2471,10 +2473,9 @@ async function loadBulkBooks() {
         
         books.sort((a, b) => a.name.localeCompare(b.name));
         
-        // ✅ ID'yi DÜZELT: bulkBookSelect
-        const select = document.getElementById('bulkBookSelect');
+        const select = document.getElementById('bulkExamBookSelect');
         if (!select) {
-            console.warn('⚠️ bulkBookSelect elementi bulunamadı!');
+            console.warn('⚠️ bulkExamBookSelect elementi bulunamadı!');
             return;
         }
         
@@ -2859,8 +2860,9 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
     const originalText = btn.innerHTML;
     
     // ===== KONTROLLER =====
-    const bookSelect = document.getElementById('bulkExamBookSelect');
-    const lessonSelect = document.getElementById('bulkExamLessonSelect');
+    // ✅ YENİ ID'LER
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
     const examSelect = document.getElementById('bulkExamSelect');
     const jsonInput = document.getElementById('bulkExamJsonInput');
     const resultDiv = document.getElementById('bulkExamResult');
@@ -3061,27 +3063,28 @@ if (examBookSelect) {
 
 
 
-    // Toplu Soru Yükleme - Kitapları yükle
 async function loadBulkExamBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
     const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // ===== ALFABETİK SIRALA =====
     books.sort((a, b) => a.name.localeCompare(b.name));
     
-    const select = document.getElementById('bulkExamBookSelect');
+    // ✅ YENİ ID
+    const select = document.getElementById('bulkExamBookSelectSoru');
     if (!select) return;
+    
     select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
     books.forEach(book => {
         select.innerHTML += `<option value="${book.id}">${book.name}</option>`;
     });
 }
 
-// Kitap seçilince dersleri yükle
-const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
-if (bulkExamLessonSelect) {
-    bulkExamLessonSelect.onchange = async () => {
-        const lessonId = bulkExamLessonSelect.value;
+// Ders seçilince sınavları yükle (Toplu Soru)
+// ✅ YENİ ID: bulkExamLessonSelectSoru
+const bulkExamLessonSelectSoru = document.getElementById('bulkExamLessonSelectSoru');
+if (bulkExamLessonSelectSoru) {
+    bulkExamLessonSelectSoru.onchange = async () => {
+        const lessonId = bulkExamLessonSelectSoru.value;
         const examSelect = document.getElementById('bulkExamSelect');
         
         if (!lessonId) {
@@ -3104,12 +3107,14 @@ if (bulkExamLessonSelect) {
     };
 }
 
-// Ders seçilince sınavları yükle
-const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
-if (bulkExamBookSelect) {
-    bulkExamBookSelect.onchange = async () => {
-        const bookId = bulkExamBookSelect.value;
-        const lessonSelect = document.getElementById('bulkExamLessonSelect');
+// Kitap seçilince dersleri yükle (Toplu Soru)
+// ✅ YENİ ID: bulkExamBookSelectSoru
+const bulkExamBookSelectSoru = document.getElementById('bulkExamBookSelectSoru');
+if (bulkExamBookSelectSoru) {
+    bulkExamBookSelectSoru.onchange = async () => {
+        const bookId = bulkExamBookSelectSoru.value;
+        // ✅ YENİ ID: bulkExamLessonSelectSoru
+        const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
         const examSelect = document.getElementById('bulkExamSelect');
         
         if (!bookId) {
