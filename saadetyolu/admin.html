@@ -1825,25 +1825,95 @@ window.deleteLesson = async (id) => {
         });
     }
 
-    document.getElementById('wordBookSelect').onchange = async () => {
-        currentWordBookId = document.getElementById('wordBookSelect').value;
-        const lessonSelect = document.getElementById('wordLessonSelect');
-        if (!currentWordBookId) {
+ document.getElementById('wordBookSelect').onchange = async () => {
+    currentWordBookId = document.getElementById('wordBookSelect').value;
+    const lessonSelect = document.getElementById('wordLessonSelect');
+    const addBtn = document.getElementById('addWordBtn');
+    
+    if (!currentWordBookId) {
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        addBtn.disabled = true;
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+        updateWordCountDisplay(0);
+        return;
+    }
+    
+    // ===== YÜKLENİYOR =====
+    lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+    lessonSelect.disabled = true;
+    
+    try {
+        // ===== 1. DERSLERİ GETİR =====
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', currentWordBookId), orderBy('order', 'asc')));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== 2. TÜM KELİMELERİ AL (Kelime sayısı için) =====
+        const allWords = await getDocs(collection(db, 'words'));
+        const wordCounts = {};
+        allWords.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            wordCounts[lessonId] = (wordCounts[lessonId] || 0) + 1;
+        });
+        
+        // ===== 3. SAYISAL SIRALA =====
+        lessons.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        if (lessons.length === 0) {
             lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            document.getElementById('addWordBtn').disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+            addBtn.disabled = true;
+            document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
+            updateWordCountDisplay(0);
             return;
         }
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', currentWordBookId), orderBy('order', 'asc')));
+        
+        // ===== 4. DERSLERİ LİSTELE (Kelime sayısı ile) =====
         lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
+        lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        
+        lessons.forEach(lesson => {
             const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = doc.data().name;
+            option.value = lesson.id;
+            const count = wordCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 10) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 30) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            option.textContent = `${lesson.name} ${emoji} (${count} kelime)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
-    };
+        
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+        updateWordCountDisplay(0);
+        addBtn.disabled = true;
+        
+    } catch (error) {
+        console.error('Dersler yüklenirken hata:', error);
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+    }
+};
 
    document.getElementById('wordLessonSelect').onchange = async () => {
     currentWordLessonId = document.getElementById('wordLessonSelect').value;
