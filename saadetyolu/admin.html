@@ -3296,13 +3296,16 @@ function displayAdminExams(exams) {
 
 
     
-// ===== ADMIN PANELİ - KİTAP SEÇİLİNCE DERSLERİ YÜKLE (SINAV SAYISI İLE) =====
+// ===== ADMIN PANELİ - KİTAP SEÇİLİNCE DERSLERİ YÜKLE =====
 const adminExamBookSelect = document.getElementById('adminExamBookSelect');
 if (adminExamBookSelect) {
     adminExamBookSelect.onchange = async function() {
         const bookId = this.value;
         const lessonSelect = document.getElementById('adminExamLessonSelect');
         const container = document.getElementById('examsList');
+        
+        console.log('🔍 adminExamBookSelect.onchange çalıştı!');
+        console.log('📚 Seçili Kitap ID:', bookId);
         
         if (!bookId) {
             if (lessonSelect) {
@@ -3323,21 +3326,23 @@ if (adminExamBookSelect) {
         }
         
         try {
-            // ===== 1. DERSLERİ GETİR =====
+            // ===== DERSLERİ GETİR =====
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log('📖 Dersler:', lessons);
             
-            // ===== 2. TÜM SINAVLARI AL (Sınav sayısı için) =====
+            // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
             const allExams = await getDocs(collection(db, 'exams'));
             const examCounts = {};
             allExams.docs.forEach(doc => {
                 const lessonId = doc.data().lessonId;
-                if (lessonId) {  // ✅ lessonId varsa say
+                if (lessonId) {
                     examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
                 }
             });
+            console.log('📊 Sınav Sayıları:', examCounts);
             
-            // ===== 3. SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+            // ===== SAYISAL SIRALA =====
             lessons.sort((a, b) => {
                 const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
@@ -3356,7 +3361,7 @@ if (adminExamBookSelect) {
                 return;
             }
             
-            // ===== 4. DERSLERİ LİSTELE (Sınav sayısı ile) =====
+            // ===== DERSLERİ LİSTELE (Sınav sayısı ile) =====
             if (lessonSelect) {
                 lessonSelect.disabled = false;
                 lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
@@ -3387,6 +3392,8 @@ if (adminExamBookSelect) {
                     option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
                     option.style.cssText = renk;
                     lessonSelect.appendChild(option);
+                    
+                    console.log(`✅ Eklendi: ${lesson.name} ${emoji} (${count} sınav)`);
                 });
             }
             
@@ -3396,7 +3403,7 @@ if (adminExamBookSelect) {
             document.getElementById('statExams').innerHTML = '0';
             
         } catch (error) {
-            console.error('Dersler yüklenirken hata:', error);
+            console.error('❌ Dersler yüklenirken hata:', error);
             if (lessonSelect) {
                 lessonSelect.disabled = true;
                 lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
@@ -3407,7 +3414,6 @@ if (adminExamBookSelect) {
         }
     };
 }
-
 
 
     // ===== ADMIN PANELİ - DERS SEÇİLİNCE SINAVLARI GETİR =====
