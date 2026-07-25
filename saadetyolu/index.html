@@ -3593,6 +3593,18 @@ if (zoomBtn) {
     
 
 window.showProfile = function() {
+    // ===== YARIŞMA KONTROLÜ =====
+    const karmaScreen = document.getElementById('karmaScreen');
+    const isKarmaOpen = karmaScreen && 
+                        karmaScreen.style.display !== 'none' && 
+                        karmaScreen.style.display !== '';
+    
+    if (isKarmaOpen) {
+        // Yarışma açıkken profil açılmak isteniyor, uyarı göster
+        confirmExitKarmaFromProfile();
+        return;
+    }
+    
     // Ana sayfayı gizle
     document.getElementById('mainContent').style.display = 'none';
     document.getElementById('wordsLearningScreen').style.display = 'none';
@@ -3602,8 +3614,8 @@ window.showProfile = function() {
     document.getElementById('profileScreen').style.display = 'block';
     
     // YARIŞMA VE SIRALAMA EKRANLARINI DA GİZLE
-    const karmaScreen = document.getElementById('karmaScreen');
-    if (karmaScreen) karmaScreen.style.display = 'none';
+    const karmaScreen2 = document.getElementById('karmaScreen');
+    if (karmaScreen2) karmaScreen2.style.display = 'none';
     
     const rankingScreen = document.getElementById('rankingScreen');
     if (rankingScreen) rankingScreen.style.display = 'none';
@@ -9915,7 +9927,7 @@ window.goKarmaGameFromSandik = function() {
 
 
 
-    // ===== YARIŞMADAN PROFİLE ÇIKIŞ ONAYI =====
+// ===== YARIŞMADAN PROFİLE ÇIKIŞ ONAYI =====
 window.confirmExitKarmaFromProfile = function() {
     // Mevcut değerleri al
     const score = document.getElementById('karmaScore')?.textContent || '0.00';
@@ -9978,11 +9990,39 @@ window.confirmExitKarmaFromProfile = function() {
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // Profili aç
             openProfileAfterExit();
         }
     });
 };
+
+// ===== YARIŞMADAN ÇIKIP PROFİLİ AÇ =====
+function openProfileAfterExit() {
+    // Tüm ekranları gizle
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('wordsLearningScreen').style.display = 'none';
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('examsScreen').classList.add('hidden');
+    document.getElementById('quizScreen').style.display = 'none';
+    document.getElementById('profileScreen').style.display = 'block';
+    
+    // YARIŞMA VE SIRALAMA EKRANLARINI DA GİZLE
+    const karmaScreen = document.getElementById('karmaScreen');
+    if (karmaScreen) karmaScreen.style.display = 'none';
+    
+    const rankingScreen = document.getElementById('rankingScreen');
+    if (rankingScreen) rankingScreen.style.display = 'none';
+    
+    // Logo yazısını değiştir
+    const homeLogo = document.getElementById('homeLogo');
+    if (homeLogo) {
+        homeLogo.innerHTML = 'Bahçeye Çık';
+        animateLogo();
+    }
+    
+    loadUserStats();
+    loadRanking();
+    closeMenu();
+}
 
 // ===== YARIŞMADAN ÇIKIP PROFİLİ AÇ =====
 function openProfileAfterExit() {
