@@ -5014,11 +5014,19 @@ Sadece JSON çıktısı ver, başka bir şey yazma.
 // ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
 document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
     const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
-Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
-Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
-Sadece JSON çıktısı ver, başka bir şey yazma.
 
-📌 ÖRNEK JSON FORMATI:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+
+⚠️ ÇOK ÖNEMLİ KURALLAR (KESİNLİKLE UYGULA):
+1. Arapça kelime "question" içinde TIRNAK KULLANMA! Sadece metnin sonuna \\n ile yaz.
+2. Örnek: "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب"
+3. Arapça kelimeyi "..." içine alma! (örnek: "كِتَاب" YAPMA, sadece كِتَاب yaz)
+4. "options" 4 şık içermeli (A, B, C, D)
+5. "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+6. Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+7. Son elemandan sonra virgül OLMAMALI
+
+📌 KESİNLİKLE UYGULANACAK FORMAT (Arapça tırnak içinde DEĞİL):
 [
   {
     "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
@@ -5037,14 +5045,21 @@ Sadece JSON çıktısı ver, başka bir şey yazma.
   }
 ]
 
-📌 NOTLAR:
-• "question" içinde \\n ile alt satıra geçebilirsin
-• "options" 4 şık içermeli (A, B, C, D)
-• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
-• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
-• Son elemandan sonra virgül OLMAMALI
+❌ YANLIŞ ÖRNEK (SAKIN YAPMA):
+{
+  "question": "Aşağıdaki kelimelerden hangisi \"رَحْمٰن\" kelimesinin Türkçe karşılığıdır?",  // ❌ TIRNAK İÇİNDE!
+  "options": ["Bağışlayan", "Merhamet sahibi", "Esirgeyen", "Ayıpları örten"],
+  "correct": 0
+}
 
-Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
+✅ DOĞRU ÖRNEK:
+{
+  "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nرَحْمٰن",
+  "options": ["Bağışlayan", "Merhamet sahibi", "Esirgeyen", "Ayıpları örten"],
+  "correct": 0
+}
+
+Şimdi bu formatı KESİNLİKLE uygulayarak soruları JSON'a çevir. Arapça kelimeleri TIRNAK İÇİNE ALMA!`;
     
     copyToClipboard(promptAndExample, 'copyBulkExamJsonBtn');
 });
