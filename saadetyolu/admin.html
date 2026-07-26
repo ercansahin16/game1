@@ -1113,29 +1113,34 @@
         </div>
 
     <!-- Toplu Soru Yükleme -->
+<!-- Toplu Soru Yükleme -->
 <div id="bulkExamUploadSection" class="section-card hidden">
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <!-- Kitap Ekle -->
             <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
                 <i class="fas fa-book"></i> Kitap Ekle
             </button>
+            <!-- Ders Ekle -->
             <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
                 <i class="fas fa-graduation-cap"></i> Ders Ekle
+            </button>
+            <!-- ✅ YENİ: Sınav Ekle -->
+            <button id="bulkExamAddExamBtn" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fas fa-plus"></i> Sınav Ekle
             </button>
         </div>
     </div>
     <div class="select-row" style="margin-bottom: 15px;">
         <div class="select-wrapper">
             <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <!-- ✅ YENİ ID: bulkExamBookSelectSoru -->
             <select id="bulkExamBookSelectSoru">
                 <option value="">-- Kitap Seçin --</option>
             </select>
         </div>
         <div class="select-wrapper">
             <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <!-- ✅ YENİ ID: bulkExamLessonSelectSoru -->
             <select id="bulkExamLessonSelectSoru" disabled>
                 <option value="">-- Önce Kitap Seçin --</option>
             </select>
@@ -2210,7 +2215,12 @@ async function loadExamBookSelect() {
     });
 }
     
-   document.getElementById('saveExamBtn').onclick = async () => {
+   
+
+
+
+
+    document.getElementById('saveExamBtn').onclick = async () => {
     const id = document.getElementById('editExamId').value;
     const title = document.getElementById('examTitle').value;
     const bookId = document.getElementById('examBookSelect').value;
@@ -2236,7 +2246,6 @@ async function loadExamBookSelect() {
         return;
     }
     
-    // Soruları kontrol et
     for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (!q.question) {
@@ -2258,21 +2267,39 @@ async function loadExamBookSelect() {
     const data = { 
         title, 
         questions, 
-        bookId,      // YENİ
-        lessonId,    // YENİ
+        bookId,
+        lessonId,
         createdAt: new Date().toISOString() 
     };
     
-    if (id) {
-        await updateDoc(doc(db, 'exams', id), data);
-    } else {
-        await setDoc(doc(collection(db, 'exams')), data);
+    try {
+        if (id) {
+            await updateDoc(doc(db, 'exams', id), data);
+        } else {
+            await setDoc(doc(collection(db, 'exams')), data);
+        }
+        
+        closeModal('examModal');
+        
+        // ===== DROPDOWN'LARI YENİLE =====
+        const lessonSelectSoru = document.getElementById('bulkExamLessonSelectSoru');
+        if (lessonSelectSoru) {
+            lessonSelectSoru.dispatchEvent(new Event('change'));
+        }
+        
+        loadExams();
+        updateStats();
+        
+        alert('✅ Sınav başarıyla kaydedildi!');
+        
+    } catch (error) {
+        console.error('Sınav kaydedilirken hata:', error);
+        alert('❌ Hata: ' + error.message);
     }
-    
-    closeModal('examModal');
-    loadExams();
-    updateStats();
 };
+
+
+    
     // ========== KULLANICILAR ==========
 // ========== KULLANICILAR ==========
 window.loadUsers = async function() {
@@ -3207,6 +3234,16 @@ if (bulkExamBookSelectSoru) {
             
             console.log('📖 Dersler bulundu:', lessons.length);
             
+            // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+            const allExams = await getDocs(collection(db, 'exams'));
+            const examCounts = {};
+            allExams.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                if (lessonId) {
+                    examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                }
+            });
+            
             // ===== SAYISAL SIRALA =====
             lessons.sort((a, b) => {
                 const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
@@ -3233,7 +3270,29 @@ if (bulkExamBookSelectSoru) {
                 lessons.forEach(lesson => {
                     const option = document.createElement('option');
                     option.value = lesson.id;
-                    option.textContent = lesson.name;
+                    const count = examCounts[lesson.id] || 0;
+                    
+                    // ===== EMOJİ VE RENK =====
+                    let emoji = '📝';
+                    let renk = '';
+                    
+                    if (count === 0) {
+                        emoji = '📭';
+                        renk = 'color: #6b7280;';
+                    } else if (count <= 3) {
+                        emoji = '📗';
+                        renk = 'color: #10b981;';
+                    } else if (count <= 6) {
+                        emoji = '📘';
+                        renk = 'color: #3b82f6;';
+                    } else {
+                        emoji = '📚';
+                        renk = 'color: #f59e0b;';
+                    }
+                    
+                    // ✅ Sınav sayısını göster
+                    option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
+                    option.style.cssText = renk;
                     lessonSelect.appendChild(option);
                 });
             }
@@ -3254,13 +3313,12 @@ if (bulkExamBookSelectSoru) {
 }
 
 // ===== TOPLU SORU YÜKLEME - DERS SEÇİLİNCE SINAVLARI YÜKLE =====
+// ===== TOPLU SORU YÜKLEME - DERS SEÇİLİNCE SINAVLARI YÜKLE =====
 const bulkExamLessonSelectSoru = document.getElementById('bulkExamLessonSelectSoru');
 if (bulkExamLessonSelectSoru) {
     bulkExamLessonSelectSoru.onchange = async function() {
         const lessonId = this.value;
         const examSelect = document.getElementById('bulkExamSelect');
-        
-        console.log('📝 Ders seçildi:', lessonId);
         
         if (!lessonId) {
             if (examSelect) {
@@ -3271,13 +3329,9 @@ if (bulkExamLessonSelectSoru) {
         }
         
         try {
-            // ===== SINAVLARI GETİR =====
             const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
             const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            console.log('📝 Sınavlar bulundu:', exams.length);
-            
-            // ===== ALFABETİK SIRALA =====
             exams.sort((a, b) => a.title.localeCompare(b.title));
             
             if (examSelect) {
@@ -3308,10 +3362,10 @@ if (bulkExamLessonSelectSoru) {
 }
 
 
-
     
 
 // Temizle butonu
+// ===== TOPLU SORU YÜKLEME - TEMİZLE =====
 document.getElementById('bulkExamClearBtn').onclick = () => {
     document.getElementById('bulkExamJsonInput').value = '';
     document.getElementById('bulkExamResult').style.display = 'none';
@@ -3391,15 +3445,14 @@ if (examBookSelect) {
 
 
 // Toplu Soru Yükleme - Kitapları yükle
+// ===== TOPLU SORU YÜKLEME - KİTAPLARI YÜKLE =====
 async function loadBulkExamBooks() {
     try {
         const snapshot = await getDocs(collection(db, 'books'));
         const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // ===== ALFABETİK SIRALA =====
         books.sort((a, b) => a.name.localeCompare(b.name));
         
-        // ✅ YENİ ID: bulkExamBookSelectSoru
         const select = document.getElementById('bulkExamBookSelectSoru');
         if (!select) {
             console.warn('⚠️ bulkExamBookSelectSoru elementi bulunamadı!');
@@ -3534,12 +3587,12 @@ if (bulkExamBookSelect) {
 }
 
     // BUNU EKLE
+// ===== TOPLU SORU YÜKLEME - MENÜDEN AÇ =====
 document.getElementById('goBulkExamUpload').onclick = () => {
     showSection('bulkExamUpload');
     loadBulkExamBooks();
     closeMenu();
 };
-
 
 
 
@@ -4512,24 +4565,195 @@ document.getElementById('bulkExamAddBookBtn')?.addEventListener('click', () => {
     document.getElementById('editBookId').value = '';
     document.getElementById('bookName').value = '';
     document.getElementById('bookDesc').value = '';
-    document.getElementById('bookOrder').value = (books || []).length + 1;
-    window.openModal('bookModal');  // ← window.openModal KULLAN
+    const bookCount = (typeof books !== 'undefined' && Array.isArray(books)) ? books.length : 0;
+    document.getElementById('bookOrder').value = bookCount + 1;
+    window.openModal('bookModal');
 });
 
-// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
-document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () => {
-    const bookId = document.getElementById('bulkExamBookSelect').value;
-    if (!bookId) {
+
+
+    // ===== TOPLU SORU YÜKLEME - SINAV EKLE =====
+document.getElementById('bulkExamAddExamBtn')?.addEventListener('click', () => {
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    
+    if (!bookSelect?.value) {
         alert('⚠️ Lütfen önce bir kitap seçin!');
         return;
     }
+    
+    if (!lessonSelect?.value) {
+        alert('⚠️ Lütfen önce bir ders seçin!');
+        return;
+    }
+    
+    document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
+    document.getElementById('editExamId').value = '';
+    document.getElementById('examTitle').value = '';
+    questions = [];
+    renderQuestions();
+    
+    // Kitap ve dersi seçili olarak ayarla
+    setTimeout(() => {
+        document.getElementById('examBookSelect').value = bookSelect.value;
+        const examBookSelect = document.getElementById('examBookSelect');
+        examBookSelect.dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+            document.getElementById('examLessonSelect').value = lessonSelect.value;
+        }, 300);
+    }, 100);
+    
+    window.openModal('examModal');
+});
+
+
+
+    // ===== TOPLU SORU YÜKLEME - SORULARI YÜKLE =====
+document.getElementById('bulkExamUploadBtn').onclick = async () => {
+    const btn = document.getElementById('bulkExamUploadBtn');
+    const originalText = btn.innerHTML;
+    
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    const examSelect = document.getElementById('bulkExamSelect');
+    const jsonInput = document.getElementById('bulkExamJsonInput');
+    const resultDiv = document.getElementById('bulkExamResult');
+    
+    if (!bookSelect || !bookSelect.value) {
+        alert('⚠️ Lütfen önce bir KİTAP seçin!');
+        return;
+    }
+    
+    if (!lessonSelect || !lessonSelect.value) {
+        alert('⚠️ Lütfen önce bir DERS seçin!');
+        return;
+    }
+    
+    if (!examSelect || !examSelect.value) {
+        alert('⚠️ Lütfen önce bir SINAV seçin!');
+        return;
+    }
+    
+    if (!jsonInput || !jsonInput.value.trim()) {
+        alert('⚠️ Lütfen JSON verisi girin!');
+        return;
+    }
+    
+    btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
+    btn.disabled = true;
+    
+    const examId = examSelect.value;
+    const jsonData = jsonInput.value;
+    
+    if (!resultDiv) {
+        console.error('resultDiv bulunamadı!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+    }
+    
+    try {
+        const questions = JSON.parse(jsonData);
+        
+        if (!Array.isArray(questions)) {
+            throw new Error('Veri bir dizi olmalıdır');
+        }
+        
+        if (questions.length === 0) {
+            throw new Error('Hiç soru bulunamadı!');
+        }
+        
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (!q.question) {
+                throw new Error(`${i + 1}. sorunun metni eksik!`);
+            }
+            if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+                throw new Error(`${i + 1}. sorunun 4 şıkkı olmalı!`);
+            }
+            for (let j = 0; j < 4; j++) {
+                if (!q.options[j]) {
+                    throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
+                }
+            }
+            if (q.correct === undefined || q.correct === null || q.correct < 0 || q.correct > 3) {
+                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz!`);
+            }
+        }
+        
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, {
+            questions: questions,
+            updatedAt: new Date().toISOString()
+        });
+        
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <strong>✅ Yükleme Tamamlandı!</strong><br>
+            📝 ${questions.length} soru başarıyla yüklendi!
+        `;
+        
+        if (jsonInput) {
+            jsonInput.value = '';
+        }
+        
+        loadExams();
+        updateStats();
+        
+        // Sınav listesini yenile
+        if (lessonSelect) {
+            lessonSelect.dispatchEvent(new Event('change'));
+        }
+        
+    } catch (error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <strong>❌ Hata!</strong><br>
+            ${error.message}
+        `;
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+    
+    
+// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
+// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
+document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () => {
+    // Toplu Soru Yükleme'deki kitap seçimini kontrol et
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    let selectedBookId = bookSelect?.value;
+    
+    // Eğer seçili değilse Toplu Kelime Yükleme'deki select'i kontrol et
+    if (!selectedBookId) {
+        const bookSelect2 = document.getElementById('bulkExamBookSelect');
+        selectedBookId = bookSelect2?.value;
+    }
+    
+    if (!selectedBookId) {
+        alert('⚠️ Lütfen önce bir kitap seçin!');
+        return;
+    }
+    
     document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
     document.getElementById('editLessonId').value = '';
     document.getElementById('lessonName').value = '';
     document.getElementById('lessonDesc').value = '';
     document.getElementById('lessonOrder').value = '';
-    document.getElementById('lessonBookSelectModal').value = bookId;
-    window.openModal('lessonModal');  // ← window.openModal KULLAN
+    document.getElementById('lessonBookSelectModal').value = selectedBookId;
+    window.openModal('lessonModal');
 });
 
     // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
