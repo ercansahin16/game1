@@ -5228,18 +5228,7 @@ window.openLessonModal = function() {
 window.openExamModal = function() {
     console.log('📝 Sınav Ekle butonuna tıklandı!');
     
-    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
-    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
-    
-    if (!bookSelect?.value) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
-        return;
-    }
-    
-    if (!lessonSelect?.value) {
-        alert('⚠️ Lütfen önce bir ders seçin!');
-        return;
-    }
+    // ✅ UYARIYI KALDIRIYORUZ - Modal içinde zaten seçim yapılabiliyor
     
     document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
     document.getElementById('editExamId').value = '';
@@ -5250,16 +5239,23 @@ window.openExamModal = function() {
     // ✅ KİTAPLARI YÜKLE
     loadExamBookSelect();
     
-    // Kitap ve dersi seçili olarak ayarla
-    setTimeout(() => {
-        document.getElementById('examBookSelect').value = bookSelect.value;
-        const examBookSelect = document.getElementById('examBookSelect');
-        examBookSelect.dispatchEvent(new Event('change'));
-        
+    // ✅ Eğer Toplu Soru Yükleme'de kitap ve ders seçiliyse otomatik doldur
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    
+    if (bookSelect?.value) {
         setTimeout(() => {
-            document.getElementById('examLessonSelect').value = lessonSelect.value;
-        }, 300);
-    }, 100);
+            document.getElementById('examBookSelect').value = bookSelect.value;
+            const examBookSelect = document.getElementById('examBookSelect');
+            examBookSelect.dispatchEvent(new Event('change'));
+            
+            if (lessonSelect?.value) {
+                setTimeout(() => {
+                    document.getElementById('examLessonSelect').value = lessonSelect.value;
+                }, 300);
+            }
+        }, 100);
+    }
     
     window.openModal('examModal');
 };
