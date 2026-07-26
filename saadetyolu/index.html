@@ -4469,6 +4469,7 @@ function startExam(exam) {
     });
 }
 
+
 function showCurrentQuestion() {
     // ===== SORU KONTROLÜ =====
     if (!currentExam || !currentExam.questions || currentExam.questions.length === 0) {
@@ -4495,7 +4496,6 @@ function showCurrentQuestion() {
     const letters = ['A', 'B', 'C', 'D'];
     const answeredCount = userAnswers.filter(a => a !== null).length;
     
-    // Kitap, ders ve SINAV bilgilerini al
     const bookName = getBookNameById(currentExam.bookId);
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
@@ -4525,9 +4525,9 @@ function showCurrentQuestion() {
             </button>
         </div>
         <div class="quiz-card">
-           <div class="question-text"> 
+           <div class="question-text" style="direction: ltr; text-align: left;"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap; direction: ltr; unicode-bidi: bidi-override;">${fixedQuestion}</span>
+                <span style="white-space: pre-wrap;">${fixedQuestion}</span>
             </div>
             <div class="options" id="optionsContainer">
                 ${question.options.map((opt, i) => `
@@ -4550,18 +4550,15 @@ function showCurrentQuestion() {
 function fixArabicText(text) {
     if (!text) return text;
     
-    // Tırnak içindeki Arapça metinleri LRM ile sar
+    // Tırnak içindeki Arapça metinleri bul ve RTL olarak işaretle
     let fixed = text.replace(/"([^"]*)"/g, function(match, p1) {
-        // Arapça karakter içeriyorsa LRM ekle
+        // Arapça karakter içeriyorsa
         if (/[\u0600-\u06FF]/.test(p1)) {
-            return '"\u200E' + p1 + '\u200E"';
+            // Arapça metni RTL olarak işaretle (‏ = RLM - Right-to-Left Mark)
+            return '"\u200F' + p1 + '\u200F"';
         }
         return match;
     });
-    
-    // Arapça karakterlerden önce ve sonra boşluk varsa koru
-    fixed = fixed.replace(/([\u0600-\u06FF])\s+/g, '$1 ');
-    fixed = fixed.replace(/\s+([\u0600-\u06FF])/g, ' $1');
     
     return fixed;
 }
