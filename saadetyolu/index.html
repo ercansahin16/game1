@@ -4524,17 +4524,18 @@ function showCurrentQuestion() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
-    // ===== ARAPÇA METNİ DÜZELT =====
+    // ===== ARAPÇA METNİ DÜZELT (LRM ile) =====
     let questionText = question.question;
-    // Tırnak içindeki Arapça metinlere class ekle
+    // Tırnak içindeki tüm metinleri LRM ile sar
     questionText = questionText.replace(/"([^"]*)"/g, function(match, p1) {
+        // Arapça karakter içeriyorsa LRM ekle
         if (/[\u0600-\u06FF]/.test(p1)) {
-            return '<span class="arabic-word">"' + p1 + '"</span>';
+            return '"\u200E' + p1 + '\u200E"';  // \u200E = LRM (Left-to-Right Mark)
         }
         return match;
     });
     
-    // ===== TÜM METNİ LTR OLARAK AYARLA, SADECE ARAPÇA KISIM RTL =====
+    // ===== TÜM METNİ LTR OLARAK AYARLA =====
     const container = document.getElementById('quizContent');
     container.innerHTML = `
         <div class="quiz-header">
@@ -4557,13 +4558,13 @@ function showCurrentQuestion() {
             </button>
         </div>
         <div class="quiz-card">
-           <div class="question-text" style="direction: ltr; text-align: left;"> 
+           <div class="question-text" style="direction: ltr; text-align: left; unicode-bidi: bidi-override;"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
                 <span style="white-space: pre-wrap;">${questionText}</span>
             </div>
-            <div class="options" id="optionsContainer" style="direction: ltr; text-align: left;">
+            <div class="options" id="optionsContainer">
                 ${question.options.map((opt, i) => `
-                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="direction: ltr; text-align: left;">
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
                         <div class="option-letter">${letters[i]}.</div>
                         <div class="option-text" style="direction: ltr; text-align: left;">${opt}</div>
                     </div>
