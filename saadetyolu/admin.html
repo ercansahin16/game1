@@ -4454,40 +4454,7 @@ document.getElementById('bulkExamAddBookBtn')?.addEventListener('click', () => {
 
 
 
-    // ===== TOPLU SORU YÜKLEME - SINAV EKLE =====
-document.getElementById('bulkExamAddExamBtn')?.addEventListener('click', () => {
-    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
-    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
-    
-    if (!bookSelect?.value) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
-        return;
-    }
-    
-    if (!lessonSelect?.value) {
-        alert('⚠️ Lütfen önce bir ders seçin!');
-        return;
-    }
-    
-    document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
-    document.getElementById('editExamId').value = '';
-    document.getElementById('examTitle').value = '';
-    questions = [];
-    renderQuestions();
-    
-    // Kitap ve dersi seçili olarak ayarla
-    setTimeout(() => {
-        document.getElementById('examBookSelect').value = bookSelect.value;
-        const examBookSelect = document.getElementById('examBookSelect');
-        examBookSelect.dispatchEvent(new Event('change'));
-        
-        setTimeout(() => {
-            document.getElementById('examLessonSelect').value = lessonSelect.value;
-        }, 300);
-    }, 100);
-    
-    window.openModal('examModal');
-});
+
 
 
 
@@ -4610,33 +4577,8 @@ document.getElementById('bulkExamUploadBtn').onclick = async () => {
     }
 };
     
-    
-// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
-// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
-document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () => {
-    // Toplu Soru Yükleme'deki kitap seçimini kontrol et
-    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
-    let selectedBookId = bookSelect?.value;
-    
-    // Eğer seçili değilse Toplu Kelime Yükleme'deki select'i kontrol et
-    if (!selectedBookId) {
-        const bookSelect2 = document.getElementById('bulkExamBookSelect');
-        selectedBookId = bookSelect2?.value;
-    }
-    
-    if (!selectedBookId) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
-        return;
-    }
-    
-    document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
-    document.getElementById('editLessonId').value = '';
-    document.getElementById('lessonName').value = '';
-    document.getElementById('lessonDesc').value = '';
-    document.getElementById('lessonOrder').value = '';
-    document.getElementById('lessonBookSelectModal').value = selectedBookId;
-    window.openModal('lessonModal');
-});
+
+
 
     // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
 // ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
@@ -5199,27 +5141,26 @@ window.openBookModal = function() {
 window.openLessonModal = function() {
     console.log('📚 Ders Ekle butonuna tıklandı!');
     
-    // Önce Toplu Soru'daki kitap seçimini kontrol et
-    let bookSelect = document.getElementById('bulkExamBookSelectSoru');
-    let selectedBookId = bookSelect?.value;
-    
-    // Eğer seçili değilse Toplu Kelime'deki select'i kontrol et
-    if (!selectedBookId) {
-        bookSelect = document.getElementById('bulkExamBookSelect');
-        selectedBookId = bookSelect?.value;
-    }
-    
-    if (!selectedBookId) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
-        return;
-    }
+    // ✅ KİTAP KONTROLÜNÜ KALDIRIYORUZ - Modal içinde zaten seçim yapılabiliyor
     
     document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
     document.getElementById('editLessonId').value = '';
     document.getElementById('lessonName').value = '';
     document.getElementById('lessonDesc').value = '';
     document.getElementById('lessonOrder').value = '';
-    document.getElementById('lessonBookSelectModal').value = selectedBookId;
+    
+    // ✅ Eğer Toplu Kelime veya Toplu Soru'da kitap seçiliyse otomatik doldur
+    let bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    let selectedBookId = bookSelect?.value;
+    
+    if (!selectedBookId) {
+        bookSelect = document.getElementById('bulkExamBookSelect');
+        selectedBookId = bookSelect?.value;
+    }
+    
+    // Seçili kitap varsa otomatik doldur, yoksa boş bırak
+    document.getElementById('lessonBookSelectModal').value = selectedBookId || '';
+    
     window.openModal('lessonModal');
 };
 
