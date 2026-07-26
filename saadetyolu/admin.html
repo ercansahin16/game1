@@ -2959,6 +2959,7 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
     
     const lessonId = lessonSelect.value;
     const jsonData = jsonInput.value;
+    const currentBookId = bookSelect.value; // Seçili kitabı hatırla
     
     if (!resultDiv) {
         console.error('resultDiv bulunamadı!');
@@ -2973,7 +2974,6 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         try {
             words = JSON.parse(jsonData);
         } catch (parseError) {
-            // JSON hatası için özel mesaj
             const errorMsg = parseError.message;
             let userFriendlyMsg = '❌ JSON formatı geçersiz! ';
             
@@ -3014,7 +3014,6 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
             throw new Error('Veri bir dizi olmalıdır. Örnek: [ { "arabic": "...", "turkish": "..." } ]');
         }
         
-        // Kelime sayısı kontrolü
         if (words.length === 0) {
             throw new Error('Hiç kelime bulunamadı!');
         }
@@ -3057,6 +3056,14 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         // ===== TEXTAREA'YI TEMİZLE =====
         if (jsonInput) {
             jsonInput.value = '';
+        }
+        
+        // ===== DROPDOWN'LARI YENİLE (KELİME SAYILARINI GÜNCELLE) =====
+        // Seçili kitabı koru
+        if (bookSelect) {
+            bookSelect.value = currentBookId;
+            // Kitap seçimini tetikle -> dersleri yeniden yükle
+            bookSelect.dispatchEvent(new Event('change'));
         }
         
         // Kelime listesini güncelle
