@@ -2773,12 +2773,12 @@ async function loadBulkBooks() {
     }
 }
 
-// ===== BULK BOOK SELECT - ONCHANGE =====
-const bulkBookSelect = document.getElementById('bulkBookSelect');
+// ===== BULK BOOK SELECT - ONCHANGE (Toplu Kelime Yükleme) =====
+const bulkBookSelect = document.getElementById('bulkExamBookSelect');
 if (bulkBookSelect) {
     bulkBookSelect.onchange = async () => {
         const bookId = bulkBookSelect.value;
-        const lessonSelect = document.getElementById('bulkLessonSelect');
+        const lessonSelect = document.getElementById('bulkExamLessonSelect');
         
         if (!bookId) {
             if (lessonSelect) {
@@ -2794,8 +2794,19 @@ if (bulkBookSelect) {
                 lessonSelect.disabled = true;
             }
             
+            // ===== DERSLERİ GETİR =====
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // ===== TÜM KELİMELERİ AL (Kelime sayısı için) =====
+            const allWords = await getDocs(collection(db, 'words'));
+            const wordCounts = {};
+            allWords.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                if (lessonId) {
+                    wordCounts[lessonId] = (wordCounts[lessonId] || 0) + 1;
+                }
+            });
             
             // ===== SAYISAL SIRALA =====
             lessons.sort((a, b) => {
@@ -2815,10 +2826,33 @@ if (bulkBookSelect) {
             if (lessonSelect) {
                 lessonSelect.disabled = false;
                 lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+                
                 lessons.forEach(lesson => {
                     const option = document.createElement('option');
                     option.value = lesson.id;
-                    option.textContent = lesson.name;
+                    const count = wordCounts[lesson.id] || 0;
+                    
+                    // ===== EMOJİ VE RENK =====
+                    let emoji = '📝';
+                    let renk = '';
+                    
+                    if (count === 0) {
+                        emoji = '📭';
+                        renk = 'color: #6b7280;';
+                    } else if (count <= 10) {
+                        emoji = '📗';
+                        renk = 'color: #10b981;';
+                    } else if (count <= 30) {
+                        emoji = '📘';
+                        renk = 'color: #3b82f6;';
+                    } else {
+                        emoji = '📚';
+                        renk = 'color: #f59e0b;';
+                    }
+                    
+                    // ✅ Kelime sayısını göster
+                    option.textContent = `${lesson.name} ${emoji} (${count} kelime)`;
+                    option.style.cssText = renk;
                     lessonSelect.appendChild(option);
                 });
             }
@@ -2832,7 +2866,6 @@ if (bulkBookSelect) {
         }
     };
 }
-
 
 
 
