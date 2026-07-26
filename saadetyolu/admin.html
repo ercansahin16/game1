@@ -2193,7 +2193,7 @@ window.editExam = async (id) => {
 };
 
     // Sınav modalı - Kitap seçilince dersleri yükle
-// Sınav modalı - Kitap seçilince dersleri yükle (SIRALI)
+// Sınav modalı - Kitap seçilince dersleri yükle (SAYISAL SIRALI)
 document.getElementById('examBookSelect').onchange = async function() {
     const bookId = this.value;
     const lessonSelect = document.getElementById('examLessonSelect');
@@ -2204,24 +2204,32 @@ document.getElementById('examBookSelect').onchange = async function() {
         return;
     }
     
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-    const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
-    lessons.sort((a, b) => {
-        const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
-        const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
-        return numA - numB;
-    });
-    
-    lessonSelect.disabled = false;
-    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    lessons.forEach(lesson => {
-        const option = document.createElement('option');
-        option.value = lesson.id;
-        option.textContent = lesson.name;
-        lessonSelect.appendChild(option);
-    });
+    try {
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        lessons.sort((a, b) => {
+            // Ders-1, Ders-2, Ders-3... gibi isimlerden sayıyı çıkar
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        lessons.forEach(lesson => {
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Dersler yüklenirken hata:', error);
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+    }
 };
 
     // Sınav modalı için kitapları yükle
