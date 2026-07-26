@@ -4529,54 +4529,59 @@ function showCurrentQuestion() {
     
     // ===== SORU METNİNİ DÜZENLE =====
     let questionText = question.question;
-    
-    // \n'leri <br>'e çevir
     questionText = questionText.replace(/\n/g, '<br>');
     
-    // Arapça metinleri tespit et (tırnak içinde değilse)
-    // Yeni formatta Arapça kelime tırnak içinde değil, direkt yazılıyor
-    // Örneğin: "Aşağıdaki kelimelerden hangisinin Türkçe anlamı aşağıdaki gibidir?\nكُمْ"
-    // Burada كُمْ tırnak içinde değil, direkt yazılıyor
-    
-    // ===== TÜM METNİ LTR OLARAK AYARLA =====
     const container = document.getElementById('quizContent');
     container.innerHTML = `
         <div class="quiz-header">
-            <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 10px; margin-bottom: 10px;">
-                <div style="font-size: 13px; color: #f59e0b; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <!-- Kitap, Ders, Sınav bilgileri - DAHA KOMPAKT -->
+            <div style="background: rgba(245,158,11,0.08); padding: 4px 10px; border-radius: 8px; margin-bottom: 6px;">
+                <div style="font-size: 11px; color: #f59e0b; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
                     <span><i class="fas fa-book"></i> ${bookName}</span>
                     <span><i class="fas fa-graduation-cap"></i> ${lessonName}</span>
                     <span><i class="fas fa-pen"></i> ${examTitle}</span>
                 </div>
             </div>
-            <div class="quiz-info">
+            <!-- Bilgi satırı - DAHA KOMPAKT -->
+            <div class="quiz-info" style="font-size: 12px; gap: 12px; margin-bottom: 4px;">
                 <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
-                <div><i class="fas fa-check-circle"></i> Cevaplanan: <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
+                <div><i class="fas fa-check-circle"></i> <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
             </div>
-            <div id="questionTimer" style="font-size: 14px; font-weight: bold; color: #f59e0b;">
-                <i class="fas fa-hourglass-half"></i> Kalan Süre: ${timeLeft} sn
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div id="questionTimer" style="font-size: 13px; font-weight: bold; color: ${timeLeft <= 10 ? '#ef4444' : '#f59e0b'};">
+                    <i class="fas fa-hourglass-half"></i> ${timeLeft} sn
+                </div>
+                <button class="btn btn-danger" onclick="checkAndCompleteExam()" style="padding: 4px 12px; font-size: 11px;">
+                    <i class="fas fa-flag-checkered"></i> Sınavı Bitir
+                </button>
             </div>
-            <button class="btn btn-danger" onclick="checkAndCompleteExam()" style="padding: 6px 12px; font-size: 12px;">
-                <i class="fas fa-flag-checkered"></i> Sınavı Bitir
-            </button>
         </div>
-        <div class="quiz-card">
-           <div class="question-text" style="direction: ltr; text-align: left;"> 
-                <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap; direction: ltr; text-align: left;">${questionText}</span>
+        
+        <!-- SORU KARTI - DAHA KOMPAKT -->
+        <div class="quiz-card" style="padding: 14px 16px; margin-bottom: 12px;">
+           <div class="question-text" style="direction: ltr; text-align: left; font-size: 18px !important; margin-bottom: 12px !important;"> 
+                <span style="background: #f59e0b20; padding: 2px 10px; border-radius: 14px; margin-right: 8px !important; margin-bottom: 4px !important; display: inline-block; font-size: 13px;">Soru ${currentQuestionIndex + 1}</span>
+                <span style="white-space: pre-wrap; direction: ltr; text-align: left; font-size: 18px;">${questionText}</span>
             </div>
-            <div class="options" id="optionsContainer">
+            
+            <!-- ŞIKLAR - DAHA KOMPAKT -->
+            <div class="options" id="optionsContainer" style="gap: 6px; margin-bottom: 12px;">
                 ${question.options.map((opt, i) => `
-                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
-                        <div class="option-letter">${letters[i]}.</div>
-                        <div class="option-text" style="direction: ltr; text-align: left;">${opt}</div>
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="padding: 8px 12px; gap: 8px; border-radius: 8px;">
+                        <div class="option-letter" style="font-size: 14px !important; min-width: 20px;">${letters[i]}.</div>
+                        <div class="option-text" style="direction: ltr; text-align: left; font-size: 14px !important;">${opt}</div>
                     </div>
                 `).join('')}
             </div>
         </div>
-        <div class="quiz-navigation">
-            <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()">
-                Sonraki Soru <i class="fas fa-arrow-right"></i>
+        
+        <!-- NAVİGASYON - DAHA KOMPAKT -->
+        <div class="quiz-navigation" style="margin-top: 8px; gap: 8px;">
+            <button class="btn btn-nav" ${currentQuestionIndex === 0 ? 'disabled' : ''} onclick="previousQuestion()" style="padding: 6px 12px; font-size: 12px;">
+                <i class="fas fa-arrow-left"></i> Önceki
+            </button>
+            <button class="btn btn-nav" ${currentQuestionIndex === currentExam.questions.length - 1 ? 'disabled' : ''} onclick="nextQuestion()" style="padding: 6px 12px; font-size: 12px;">
+                Sonraki <i class="fas fa-arrow-right"></i>
             </button>
         </div>
     `;
