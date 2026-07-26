@@ -4481,9 +4481,9 @@ function showCurrentQuestion() {
                     Sınav soruları henüz yüklenmedi veya eklenmemiş.<br>
                     Lütfen daha sonra tekrar deneyin.
                 </p>
-                 <button class="btn btn-nav" onclick="goHome()" style="margin-top: 15px; width: 100%; padding: 12px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);">
-    🌿 Bahçeye çık
-</button>
+                <button class="btn btn-nav" onclick="goHome()" style="margin-top: 15px; width: 100%; padding: 12px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);">
+                    🌿 Bahçeye çık
+                </button>
             </div>
         `;
         return;
@@ -4499,6 +4499,9 @@ function showCurrentQuestion() {
     const bookName = getBookNameById(currentExam.bookId);
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
+    
+    // ===== ARAPÇA METNİ DÜZELT =====
+    const fixedQuestion = fixArabicText(question.question);
     
     const container = document.getElementById('quizContent');
     container.innerHTML = `
@@ -4524,7 +4527,7 @@ function showCurrentQuestion() {
         <div class="quiz-card">
            <div class="question-text"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap;">${question.question}</span>
+                <span style="white-space: pre-wrap; direction: ltr; unicode-bidi: bidi-override;">${fixedQuestion}</span>
             </div>
             <div class="options" id="optionsContainer">
                 ${question.options.map((opt, i) => `
@@ -4541,6 +4544,26 @@ function showCurrentQuestion() {
             </button>
         </div>
     `;
+}
+
+// ===== ARAPÇA METİN DÜZELTME FONKSİYONU =====
+function fixArabicText(text) {
+    if (!text) return text;
+    
+    // Tırnak içindeki Arapça metinleri LRM ile sar
+    let fixed = text.replace(/"([^"]*)"/g, function(match, p1) {
+        // Arapça karakter içeriyorsa LRM ekle
+        if (/[\u0600-\u06FF]/.test(p1)) {
+            return '"\u200E' + p1 + '\u200E"';
+        }
+        return match;
+    });
+    
+    // Arapça karakterlerden önce ve sonra boşluk varsa koru
+    fixed = fixed.replace(/([\u0600-\u06FF])\s+/g, '$1 ');
+    fixed = fixed.replace(/\s+([\u0600-\u06FF])/g, ' $1');
+    
+    return fixed;
 }
     
    window.selectOption = (questionIdx, optionIdx) => {
