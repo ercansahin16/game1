@@ -3116,7 +3116,7 @@ async function loadAdminExamBooks() {
         select.appendChild(option);
     });
 
-    // ===== ONCHANGE OLAYINI BURADA TANIMLA =====
+    // ===== KİTAP SEÇİLİNCE DERSLERİ YÜKLE (Sınav sayısı ile) =====
     select.onchange = async () => {
         const bookId = select.value;
         const lessonSelect = document.getElementById('adminExamLessonSelect');
@@ -3133,9 +3133,21 @@ async function loadAdminExamBooks() {
         lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
         lessonSelect.disabled = true;
         
+        // ===== DERSLERİ GETİR =====
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
+        // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+        const allExams = await getDocs(collection(db, 'exams'));
+        const examCounts = {};
+        allExams.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            if (lessonId) {
+                examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+            }
+        });
+        
+        // ===== SAYISAL SIRALA =====
         lessons.sort((a, b) => {
             const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
             const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
@@ -3152,10 +3164,33 @@ async function loadAdminExamBooks() {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        
         lessons.forEach(lesson => {
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = lesson.name;
+            const count = examCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 3) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 6) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            // ✅ Sınav sayısını göster
+            option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
         
