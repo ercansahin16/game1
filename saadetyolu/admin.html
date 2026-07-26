@@ -2272,83 +2272,134 @@ async function loadExamBookSelect() {
     updateStats();
 };
     // ========== KULLANICILAR ==========
-  // ========== KULLANICILAR ==========
-async function loadUsers() {
-    const snapshot = await getDocs(collection(db, 'users'));
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const container = document.getElementById('usersList');
-    
-    // ===== İSTATİSTİKLER =====
-    document.getElementById('userTotalCount').textContent = users.length;
-    
-    // Aktif kullanıcılar (son 7 gün)
+// ========== KULLANICILAR ==========
+window.loadUsers = async function() {
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const container = document.getElementById('usersList');
+        
+        // ===== İSTATİSTİKLER =====
+        document.getElementById('userTotalCount').textContent = users.length;
+        
+        // Aktif kullanıcılar (son 7 gün)
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const activeUsers = users.filter(u => u.lastActive && new Date(u.lastActive) > sevenDaysAgo);
+        document.getElementById('userActiveCount').textContent = activeUsers.length;
+        
+        // Ortalama kelime
+        const totalWords = users.reduce((sum, u) => sum + (u.totalWordsViewed || 0), 0);
+        document.getElementById('userAvgWords').textContent = users.length > 0 ? Math.round(totalWords / users.length) : 0;
+        
+        // Toplam sınav
+        const totalExams = users.reduce((sum, u) => sum + (u.examsCompleted?.length || 0), 0);
+        document.getElementById('userTotalExams').textContent = totalExams;
+        
+        document.getElementById('statUsers').innerHTML = users.length;
+        
+        if (users.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        users.forEach(user => {
+            const div = document.createElement('div'); 
+            div.className = 'item';
+            
+            // Kullanıcı seviyesi ve rozet
+            const level = user.mevcutSeviye || 1;
+            const levelBadge = getLevelBadge(level);
+            
+            // Son aktiflik
+            const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
+            
+            // Sandık sayısı
+            const sandikCount = user.quizSandik?.length || 0;
+            
+            // Sınav sayısı
+            const examCount = user.examsCompleted?.length || 0;
+            
+            div.innerHTML = `
+                <div class="item-info">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
+                        ${levelBadge}
+                        <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
+                            <i class="fas fa-layer-group"></i> ${level}
+                        </span>
+                    </div>
+                    <small>
+                        ${user.email || 'Email yok'} 
+                        | 📖 ${user.totalWordsViewed || 0} kelime 
+                        | 📝 ${examCount} sınav 
+                        | 📦 ${sandikCount} sandık
+                        | 🟢 ${lastActive}
+                    </small>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+        
+    } catch (error) {
+        console.error('Kullanıcılar yüklenirken hata:', error);
+        const container = document.getElementById('usersList');
+        if (container) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color: #ef4444;">❌ Kullanıcılar yüklenirken hata oluştu!</div>';
+        }
+    }
+};
+
+// ===== SEVİYE ROZETİ =====
+function getLevelBadge(level) {
+    if (level >= 10) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 2px 10px; border-radius: 12px;">👑 USTA</span>';
+    if (level >= 7) return '<span style="font-size: 11px; background: linear-gradient(135deg, #10b981, #3b82f6); color: white; padding: 2px 10px; border-radius: 12px;">⭐ İLERİ</span>';
+    if (level >= 4) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 10px; border-radius: 12px;">📈 ORTA</span>';
+    return '<span style="font-size: 11px; background: #6b7280; color: white; padding: 2px 10px; border-radius: 12px;">🌱 BAŞLANGIÇ</span>';
+}
+
+// ===== ZAMAN FARKI =====
+function timeAgo(date) {
+    if (!date || isNaN(date.getTime())) return 'Hiç';
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const activeUsers = users.filter(u => u.lastActive && new Date(u.lastActive) > sevenDaysAgo);
-    document.getElementById('userActiveCount').textContent = activeUsers.length;
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    // Ortalama kelime
-    const totalWords = users.reduce((sum, u) => sum + (u.totalWordsViewed || 0), 0);
-    document.getElementById('userAvgWords').textContent = users.length > 0 ? Math.round(totalWords / users.length) : 0;
-    
-    // Toplam sınav
-    const totalExams = users.reduce((sum, u) => sum + (u.examsCompleted?.length || 0), 0);
-    document.getElementById('userTotalExams').textContent = totalExams;
-    
-    document.getElementById('statUsers').innerHTML = users.length;
-    
-    if (users.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
+    if (diffMins < 1) return 'Az önce';
+    if (diffMins < 60) return `${diffMins} dk önce`;
+    if (diffHours < 24) return `${diffHours} sa önce`;
+    if (diffDays < 7) return `${diffDays} g önce`;
+    return date.toLocaleDateString('tr-TR');
+}
+
+// ===== TEK KULLANICI SANDIĞINI SIFIRLA =====
+window.resetUserSandik = async function(userId) {
+    if (!userId) {
+        alert('❌ Kullanıcı ID bulunamadı!');
         return;
     }
+    if (!confirm('Bu kullanıcının sandığını sıfırlamak istediğinize emin misiniz?')) return;
     
-    container.innerHTML = '';
-    users.forEach(user => {
-        const div = document.createElement('div'); 
-        div.className = 'item';
-        
-        // Kullanıcı seviyesi ve rozet
-        const level = user.mevcutSeviye || 1;
-        const levelBadge = getLevelBadge(level);
-        
-        // Son aktiflik
-        const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
-        
-        // Sandık sayısı
-        const sandikCount = user.quizSandik?.length || 0;
-        
-        // Sınav sayısı
-        const examCount = user.examsCompleted?.length || 0;
-        
-        div.innerHTML = `
-            <div class="item-info">
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
-                    ${levelBadge}
-                    <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
-                        <i class="fas fa-layer-group"></i> ${level}
-                    </span>
-                </div>
-                <small>
-                    ${user.email || 'Email yok'} 
-                    | 📖 ${user.totalWordsViewed || 0} kelime 
-                    | 📝 ${examCount} sınav 
-                    | 📦 ${sandikCount} sandık
-                    | 🟢 ${lastActive}
-                </small>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
+    try {
+        await updateDoc(doc(db, 'users', userId), { quizSandik: [] });
+        alert('✅ Sandık sıfırlandı!');
+        loadUsers();
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
 
 // ===== SEVİYE ROZETİ =====
 function getLevelBadge(level) {
