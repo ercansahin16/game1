@@ -2508,15 +2508,27 @@ body.light-theme #profileScreen .info-row button:hover {
 }
 
 
-    .question-text {
+/* ===== SORU METNİ - ANA KISIM LTR ===== */
+.question-text {
     direction: ltr;
     text-align: left;
 }
 
+/* ===== ARAPÇA KELİME - SADECE BU KISIM RTL ===== */
 .question-text .arabic-word {
     direction: rtl;
     unicode-bidi: embed;
     display: inline-block;
+    font-family: 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', 'Traditional Arabic', serif !important;
+    font-size: 28px !important;
+    font-weight: 600 !important;
+    color: #1e3a5f !important;
+}
+
+/* ===== ŞIK METNİ - LTR ===== */
+.option-text {
+    direction: ltr !important;
+    text-align: left !important;
 }
 
     
@@ -4512,7 +4524,7 @@ function showCurrentQuestion() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
-    // ===== ARAPÇA KELİMELERİ ETİKETLE =====
+    // ===== ARAPÇA METNİ DÜZELT =====
     let questionText = question.question;
     // Tırnak içindeki Arapça metinlere class ekle
     questionText = questionText.replace(/"([^"]*)"/g, function(match, p1) {
@@ -4522,6 +4534,7 @@ function showCurrentQuestion() {
         return match;
     });
     
+    // ===== TÜM METNİ LTR OLARAK AYARLA, SADECE ARAPÇA KISIM RTL =====
     const container = document.getElementById('quizContent');
     container.innerHTML = `
         <div class="quiz-header">
@@ -4544,15 +4557,15 @@ function showCurrentQuestion() {
             </button>
         </div>
         <div class="quiz-card">
-           <div class="question-text"> 
+           <div class="question-text" style="direction: ltr; text-align: left;"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
                 <span style="white-space: pre-wrap;">${questionText}</span>
             </div>
-            <div class="options" id="optionsContainer">
+            <div class="options" id="optionsContainer" style="direction: ltr; text-align: left;">
                 ${question.options.map((opt, i) => `
-                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})">
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="direction: ltr; text-align: left;">
                         <div class="option-letter">${letters[i]}.</div>
-                        <div class="option-text">${opt}</div>
+                        <div class="option-text" style="direction: ltr; text-align: left;">${opt}</div>
                     </div>
                 `).join('')}
             </div>
@@ -4569,12 +4582,11 @@ function showCurrentQuestion() {
 function fixArabicText(text) {
     if (!text) return text;
     
-    // Tırnak içindeki Arapça metinleri bul ve sadece onları RTL olarak işaretle
+    // Sadece tırnak içindeki Arapça metinleri RTL olarak işaretle
     let fixed = text.replace(/"([^"]*)"/g, function(match, p1) {
-        // Arapça karakter içeriyorsa
         if (/[\u0600-\u06FF]/.test(p1)) {
-            // Sadece Arapça metni RTL olarak işaretle, tırnaklar dışarıda kalsın
-            return '"‏' + p1 + '‏"';
+            // Arapça metni RTL olarak işaretle, ama Türkçe kısım LTR kalsın
+            return '"\u200F' + p1 + '\u200F"';
         }
         return match;
     });
