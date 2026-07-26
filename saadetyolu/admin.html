@@ -695,8 +695,7 @@
 </head>
 <body>
 
-
-    <!-- İnternet Bağlantısı Uyarısı -->
+<!-- İnternet Bağlantısı Uyarısı -->
 <div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 12px 20px; text-align: center; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
     <i class="fas fa-wifi"></i> 
     <span id="offlineMessage">İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.</span>
@@ -780,18 +779,17 @@
                     <div><i class="fas fa-users"></i> Kullanıcı</div>
                 </div>
                 <!-- Toplu Kelime Yükleme -->
-<div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
-    <div style="font-size: 28px; color: #10b981;">📤</div>
-    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Kelime Yükle</div>
-    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu kelime ekle</div>
-</div>
-
-<!-- Toplu Soru Yükleme -->
-<div class="stats-card" id="statBulkExamUploadCard" style="cursor: pointer; border-color: rgba(59,130,246,0.3);">
-    <div style="font-size: 28px; color: #3b82f6;">📝</div>
-    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
-    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
-</div>
+                <div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
+                    <div style="font-size: 28px; color: #10b981;">📤</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Kelime Yükle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu kelime ekle</div>
+                </div>
+                <!-- Toplu Soru Yükleme -->
+                <div class="stats-card" id="statBulkExamUploadCard" style="cursor: pointer; border-color: rgba(59,130,246,0.3);">
+                    <div style="font-size: 28px; color: #3b82f6;">📝</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
+                </div>
             </div>
         </div>
 
@@ -868,10 +866,39 @@
             <div class="items-list" id="examsList"></div>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- KULLANICILAR BÖLÜMÜ (GÜNCELLENMİŞ) -->
+        <!-- ============================================================ -->
         <div id="usersSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-users"></i> Kullanıcılar</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="refreshUsersBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadUsers()">
+                        <i class="fas fa-sync"></i> Yenile
+                    </button>
+                </div>
             </div>
+            
+            <!-- Kullanıcı İstatistikleri -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f59e0b;" id="userTotalCount">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Toplam Kullanıcı</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #10b981;" id="userActiveCount">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Aktif (Son 7 Gün)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #3b82f6;" id="userAvgWords">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Ort. Kelime</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f59e0b;" id="userTotalExams">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Toplam Sınav</div>
+                </div>
+            </div>
+            
             <div class="items-list" id="usersList"></div>
         </div>
 
@@ -926,78 +953,78 @@
                 <div id="resetAllDataResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
             </div>
 
-<!-- Kullanıcı Silme - İki Adımlı Yönlendirme -->
-<hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 25px 0 20px 0;">
+            <!-- Kullanıcı Silme - İki Adımlı Yönlendirme -->
+            <hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 25px 0 20px 0;">
 
-<div style="background: rgba(239,68,68,0.08); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(239,68,68,0.3);">
-    <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
-        <div style="font-size: 32px; margin-top: 4px;">🗑️</div>
-        <div style="flex: 1;">
-            <h4 style="color: #ef4444; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                Kullanıcı Silme
-                <span style="font-size: 11px; background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 400;">2 Adım</span>
-            </h4>
-            
-            <!-- KULLANICI SEÇİMİ - BAŞTA -->
-            <div style="margin-bottom: 14px; padding: 10px 14px; background: rgba(255,255,255,0.06); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                <span style="font-size: 13px; font-weight: 600;"><i class="fas fa-user" style="color: #f59e0b;"></i> Kullanıcı Seç:</span>
-                <select id="adminUserDeleteSelect" style="flex: 1; min-width: 200px; padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; cursor: pointer;">
-                    <option value="">-- Kullanıcı Seçin --</option>
-                </select>
-                <span style="font-size: 11px; opacity: 0.5; display: flex; align-items: center; gap: 4px;">
-                    <i class="fas fa-arrow-up" style="color: #f59e0b;"></i> Önce seçin
-                </span>
-            </div>
-            
-            <p style="font-size: 13px; opacity: 0.8; margin: 0 0 12px 0; padding-left: 4px;">
-                <i class="fas fa-arrow-right" style="color: #f59e0b;"></i>
-                Bir kullanıcıyı tamamen silmek için <strong>önce Firestore'dan, sonra Authentication'dan</strong> silmeniz gerekir.
-            </p>
-            
-            <!-- ADIM 1: FIRESTORE'DAN SİL -->
-            <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #10b981;">
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">1. ADIM</span>
-                    <span style="font-size: 13px; font-weight: 500;">Firestore'dan Sil</span>
-                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının tüm verilerini (puan, sınav geçmişi, sandık) siler</span>
-                    <button onclick="adminFirestoreDelete()" style="background: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.3s; white-space: nowrap;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                        <i class="fas fa-database"></i> Firestore'dan Sil
-                    </button>
+            <div style="background: rgba(239,68,68,0.08); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(239,68,68,0.3);">
+                <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px; margin-top: 4px;">🗑️</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #ef4444; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            Kullanıcı Silme
+                            <span style="font-size: 11px; background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 400;">2 Adım</span>
+                        </h4>
+                        
+                        <!-- KULLANICI SEÇİMİ - BAŞTA -->
+                        <div style="margin-bottom: 14px; padding: 10px 14px; background: rgba(255,255,255,0.06); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span style="font-size: 13px; font-weight: 600;"><i class="fas fa-user" style="color: #f59e0b;"></i> Kullanıcı Seç:</span>
+                            <select id="adminUserDeleteSelect" style="flex: 1; min-width: 200px; padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; cursor: pointer;">
+                                <option value="">-- Kullanıcı Seçin --</option>
+                            </select>
+                            <span style="font-size: 11px; opacity: 0.5; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-arrow-up" style="color: #f59e0b;"></i> Önce seçin
+                            </span>
+                        </div>
+                        
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 12px 0; padding-left: 4px;">
+                            <i class="fas fa-arrow-right" style="color: #f59e0b;"></i>
+                            Bir kullanıcıyı tamamen silmek için <strong>önce Firestore'dan, sonra Authentication'dan</strong> silmeniz gerekir.
+                        </p>
+                        
+                        <!-- ADIM 1: FIRESTORE'DAN SİL -->
+                        <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #10b981;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">1. ADIM</span>
+                                <span style="font-size: 13px; font-weight: 500;">Firestore'dan Sil</span>
+                                <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının tüm verilerini (puan, sınav geçmişi, sandık) siler</span>
+                                <button onclick="adminFirestoreDelete()" style="background: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.3s; white-space: nowrap;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                    <i class="fas fa-database"></i> Firestore'dan Sil
+                                </button>
+                            </div>
+                            <div id="firestoreDeleteResult" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+                        </div>
+                        
+                        <!-- ADIM 2: AUTHENTICATION'DAN SİL -->
+                        <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 14px; border-left: 3px solid #3b82f6;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <span style="background: #3b82f6; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">2. ADIM</span>
+                                <span style="font-size: 13px; font-weight: 500;">Authentication'dan Sil</span>
+                                <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının giriş bilgilerini (email, şifre) siler</span>
+                                <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
+                                   target="_blank" 
+                                   style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: 0.3s; white-space: nowrap;"
+                                   onmouseover="this.style.background='#2563eb'"
+                                   onmouseout="this.style.background='#3b82f6'">
+                                    <i class="fas fa-external-link-alt"></i> Firebase Console
+                                </a>
+                            </div>
+                            <div style="margin-top: 6px; font-size: 11px; opacity: 0.6;">
+                                <i class="fas fa-info-circle"></i> 
+                                Authentication → Users → Kullanıcıyı bulun → <strong>Delete</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- BİLGİ NOTU -->
+                        <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 12px; opacity: 0.8;">
+                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                            <strong>Önemli:</strong> Her iki adımı da tamamlamazsanız kullanıcı tamamen silinmez. 
+                            Önce <strong>Firestore</strong>'dan, sonra <strong>Authentication</strong>'dan silin.
+                        </div>
+                    </div>
                 </div>
-                <div id="firestoreDeleteResult" style="margin-top: 8px; font-size: 12px; display: none;"></div>
             </div>
-            
-            <!-- ADIM 2: AUTHENTICATION'DAN SİL -->
-            <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 14px; border-left: 3px solid #3b82f6;">
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span style="background: #3b82f6; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">2. ADIM</span>
-                    <span style="font-size: 13px; font-weight: 500;">Authentication'dan Sil</span>
-                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının giriş bilgilerini (email, şifre) siler</span>
-                    <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
-                       target="_blank" 
-                       style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: 0.3s; white-space: nowrap;"
-                       onmouseover="this.style.background='#2563eb'"
-                       onmouseout="this.style.background='#3b82f6'">
-                        <i class="fas fa-external-link-alt"></i> Firebase Console
-                    </a>
-                </div>
-                <div style="margin-top: 6px; font-size: 11px; opacity: 0.6;">
-                    <i class="fas fa-info-circle"></i> 
-                    Authentication → Users → Kullanıcıyı bulun → <strong>Delete</strong>
-                </div>
-            </div>
-            
-            <!-- BİLGİ NOTU -->
-            <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 12px; opacity: 0.8;">
-                <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
-                <strong>Önemli:</strong> Her iki adımı da tamamlamazsanız kullanıcı tamamen silinmez. 
-                Önce <strong>Firestore</strong>'dan, sonra <strong>Authentication</strong>'dan silin.
-            </div>
-        </div>
-    </div>
-</div>
 
-<hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 20px 0 25px 0;">
+            <hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 20px 0 25px 0;">
 
             <!-- Tek Kullanıcı Sandık Sıfırlama -->
             <div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px;">
@@ -1040,118 +1067,112 @@
             </div>
         </div>
 
-
-<!-- Toplu Kelime Yükleme -->
-<div id="bulkUploadSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- ✅ ID'ler SORU YÜKLEME İLE AYNI -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
-                <i class="fas fa-book"></i> Kitap Ekle
-            </button>
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
-                <i class="fas fa-graduation-cap"></i> Ders Ekle
-            </button>
-        </div>
-    </div>
-    <div class="select-row">
-        <div class="select-wrapper">
-            <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <!-- ✅ SELECT ID'LERİ DE AYNI YAPALIM (isteğe bağlı) -->
-            <select id="bulkExamBookSelect"><option value="">-- Kitap Seçin --</option></select>
-        </div>
-        <div class="select-wrapper">
-            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
-        </div>
-        <div class="action-buttons">
-            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
-        </div>
-    </div>
-    <div style="margin: 20px 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
-            <button id="copyBulkJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
-                <i class="fas fa-copy"></i> Örneği Kopyala
-            </button>
-        </div>
-        <textarea id="bulkJsonInput" rows="10" placeholder='[
+        <!-- Toplu Kelime Yükleme -->
+        <div id="bulkUploadSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-book"></i> Kitap Ekle
+                    </button>
+                    <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-graduation-cap"></i> Ders Ekle
+                    </button>
+                </div>
+            </div>
+            <div class="select-row">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                    <select id="bulkExamBookSelect"><option value="">-- Kitap Seçin --</option></select>
+                </div>
+                <div class="select-wrapper">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                    <select id="bulkExamLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
+                </div>
+                <div class="action-buttons">
+                    <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
+                </div>
+            </div>
+            <div style="margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> JSON Verisi</label>
+                    <button id="copyBulkJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                        <i class="fas fa-copy"></i> Örneği Kopyala
+                    </button>
+                </div>
+                <textarea id="bulkJsonInput" rows="10" placeholder='[
   {"arabic": "كِتَاب", "turkish": "kitap"},
   {"arabic": "قَلَم", "turkish": "kalem"}
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-    </div>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
-        <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-    </div>
-    <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
-</div>
-<!-- Toplu Soru Yükleme -->
-<div id="bulkExamUploadSection" class="section-card hidden">
-    <div class="section-header">
-        <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- ✅ KİTAP EKLE -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
-                <i class="fas fa-book"></i> Kitap Ekle
-            </button>
-            <!-- ✅ DERS EKLE -->
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
-                <i class="fas fa-graduation-cap"></i> Ders Ekle
-            </button>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
+                <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+            </div>
+            <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
         </div>
-    </div>
-    <div class="select-row" style="margin-bottom: 15px;">
-        <div class="select-wrapper">
-            <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="bulkExamBookSelect">
-                <option value="">-- Kitap Seçin --</option>
-            </select>
-        </div>
-        <div class="select-wrapper">
-            <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled>
-                <option value="">-- Önce Kitap Seçin --</option>
-            </select>
-        </div>
-    </div>
-    <div class="select-row" style="margin-bottom: 15px;">
-        <div class="select-wrapper">
-            <label><i class="fas fa-pen"></i> Sınav Seçin</label>
-            <select id="bulkExamSelect" disabled>
-                <option value="">-- Önce Ders Seçin --</option>
-            </select>
-        </div>
-        <div class="action-buttons">
-            <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
-                <i class="fas fa-download"></i>
-            </button>
-        </div>
-    </div>
-    <div style="margin: 20px 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
-            <button id="copyBulkExamJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
-                <i class="fas fa-copy"></i> Örneği Kopyala
-            </button>
-        </div>
-        <textarea id="bulkExamJsonInput" rows="15" placeholder='[
+
+        <!-- Toplu Soru Yükleme -->
+        <div id="bulkExamUploadSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-book"></i> Kitap Ekle
+                    </button>
+                    <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-graduation-cap"></i> Ders Ekle
+                    </button>
+                </div>
+            </div>
+            <div class="select-row" style="margin-bottom: 15px;">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-book"></i> Kitap Seçin</label>
+                    <select id="bulkExamBookSelect">
+                        <option value="">-- Kitap Seçin --</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
+                    <select id="bulkExamLessonSelect" disabled>
+                        <option value="">-- Önce Kitap Seçin --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="select-row" style="margin-bottom: 15px;">
+                <div class="select-wrapper">
+                    <label><i class="fas fa-pen"></i> Sınav Seçin</label>
+                    <select id="bulkExamSelect" disabled>
+                        <option value="">-- Önce Ders Seçin --</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button id="downloadQuestionsBtn" class="btn btn-info icon-btn" title="Bu sınavdaki soruları indir">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div style="margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="color: #f59e0b; font-size: 13px;"><i class="fas fa-code"></i> Soru JSON Verisi</label>
+                    <button id="copyBulkExamJsonBtn" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                        <i class="fas fa-copy"></i> Örneği Kopyala
+                    </button>
+                </div>
+                <textarea id="bulkExamJsonInput" rows="15" placeholder='[
   {
     "question": "Sorunun metni buraya yazılır?",
     "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı"],
     "correct": 0
   }
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
-    </div>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
-    </div>
-    <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
-</div>
-
-
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
+                <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+            </div>
+            <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
+        </div>
         
     </div>
 </div>
@@ -1216,8 +1237,9 @@
     </div>
 </div>
 
+<!-- Kullanıcı Detay Modalı (Güncellenmiş) -->
 <div id="userDetailModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
             <h3 id="userDetailTitle">Kullanıcı Detayı</h3>
             <button class="modal-close" onclick="closeModal('userDetailModal')">&times;</button>
@@ -2250,95 +2272,332 @@ async function loadExamBookSelect() {
     updateStats();
 };
     // ========== KULLANICILAR ==========
-    async function loadUsers() {
-        const snapshot = await getDocs(collection(db, 'users'));
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('usersList');
-        document.getElementById('statUsers').innerHTML = users.length;
-        
-        if (users.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        users.forEach(user => {
-            const div = document.createElement('div'); 
-            div.className = 'item';
-            div.onclick = () => showUserDetail(user);
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong><i class="fas fa-user"></i> ${user.name || user.email.split('@')[0]}</strong>
-                    <small>${user.email} | Kayıt: ${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '?'}</small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})"><i class="fas fa-eye"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+  // ========== KULLANICILAR ==========
+async function loadUsers() {
+    const snapshot = await getDocs(collection(db, 'users'));
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const container = document.getElementById('usersList');
+    
+    // ===== İSTATİSTİKLER =====
+    document.getElementById('userTotalCount').textContent = users.length;
+    
+    // Aktif kullanıcılar (son 7 gün)
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const activeUsers = users.filter(u => u.lastActive && new Date(u.lastActive) > sevenDaysAgo);
+    document.getElementById('userActiveCount').textContent = activeUsers.length;
+    
+    // Ortalama kelime
+    const totalWords = users.reduce((sum, u) => sum + (u.totalWordsViewed || 0), 0);
+    document.getElementById('userAvgWords').textContent = users.length > 0 ? Math.round(totalWords / users.length) : 0;
+    
+    // Toplam sınav
+    const totalExams = users.reduce((sum, u) => sum + (u.examsCompleted?.length || 0), 0);
+    document.getElementById('userTotalExams').textContent = totalExams;
+    
+    document.getElementById('statUsers').innerHTML = users.length;
+    
+    if (users.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
+        return;
     }
-
-    window.showUserDetail = async (user) => {
-        const userRef = doc(db, 'users', user.id);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data();
+    
+    container.innerHTML = '';
+    users.forEach(user => {
+        const div = document.createElement('div'); 
+        div.className = 'item';
         
-        const examsCompleted = userData?.examsCompleted || [];
-        const totalWords = userData?.totalWordsViewed || 0;
-        const avgScore = userData?.averageScore || 0;
+        // Kullanıcı seviyesi ve rozet
+        const level = user.mevcutSeviye || 1;
+        const levelBadge = getLevelBadge(level);
         
-        let examsHTML = '';
-        if (examsCompleted.length === 0) {
-            examsHTML = '<div style="text-align:center; padding:20px;">Henüz sınav çözülmemiş.</div>';
-        } else {
-            examsHTML = examsCompleted.slice().reverse().map(exam => `
-                <div class="user-exam-item">
-                    <div style="display: flex; justify-content: space-between;">
-                        <strong>${exam.title}</strong>
-                        <span style="color: ${exam.score >= 70 ? '#10b981' : exam.score >= 50 ? '#f59e0b' : '#ef4444'}">${Math.round(exam.score)} / 100</span>
-                    </div>
-                    <div style="font-size: 12px; margin-top: 5px;">
-                        📅 ${new Date(exam.date).toLocaleDateString('tr-TR')} | 
-                        ✅ Doğru: ${exam.correct} / ${exam.total}
-                    </div>
+        // Son aktiflik
+        const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
+        
+        // Sandık sayısı
+        const sandikCount = user.quizSandik?.length || 0;
+        
+        // Sınav sayısı
+        const examCount = user.examsCompleted?.length || 0;
+        
+        div.innerHTML = `
+            <div class="item-info">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
+                    ${levelBadge}
+                    <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
+                        <i class="fas fa-layer-group"></i> ${level}
+                    </span>
                 </div>
-            `).join('');
-        }
-        
-        document.getElementById('userDetailTitle').innerHTML = `<i class="fas fa-user"></i> ${user.name || user.email.split('@')[0]} - Detaylar`;
-        document.getElementById('userDetailContent').innerHTML = `
-            <div class="user-detail-row">
-                <span class="user-detail-label">E-posta:</span>
-                <span>${user.email}</span>
+                <small>
+                    ${user.email || 'Email yok'} 
+                    | 📖 ${user.totalWordsViewed || 0} kelime 
+                    | 📝 ${examCount} sınav 
+                    | 📦 ${sandikCount} sandık
+                    | 🟢 ${lastActive}
+                </small>
             </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">Kayıt Tarihi:</span>
-                <span>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">Son Aktiflik:</span>
-                <span>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📖 Öğrenilen Kelime:</span>
-                <span>${totalWords}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📝 Tamamlanan Sınav:</span>
-                <span>${examsCompleted.length}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📊 Ortalama Puan:</span>
-                <span>${Math.round(avgScore)} / 100</span>
-            </div>
-            <div style="margin-top: 20px;">
-                <h4 style="color: #f59e0b; margin-bottom: 10px;"><i class="fas fa-chart-line"></i> Sınav Geçmişi</h4>
-                ${examsHTML}
+            <div class="item-actions">
+                <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
         `;
+        container.appendChild(div);
+    });
+}
+
+// ===== SEVİYE ROZETİ =====
+function getLevelBadge(level) {
+    if (level >= 10) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 2px 10px; border-radius: 12px;">👑 USTA</span>';
+    if (level >= 7) return '<span style="font-size: 11px; background: linear-gradient(135deg, #10b981, #3b82f6); color: white; padding: 2px 10px; border-radius: 12px;">⭐ İLERİ</span>';
+    if (level >= 4) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 10px; border-radius: 12px;">📈 ORTA</span>';
+    return '<span style="font-size: 11px; background: #6b7280; color: white; padding: 2px 10px; border-radius: 12px;">🌱 BAŞLANGIÇ</span>';
+}
+
+// ===== ZAMAN FARKI =====
+function timeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Az önce';
+    if (diffMins < 60) return `${diffMins} dk önce`;
+    if (diffHours < 24) return `${diffHours} sa önce`;
+    if (diffDays < 7) return `${diffDays} g önce`;
+    return date.toLocaleDateString('tr-TR');
+}
+
+// ===== TEK KULLANICI SANDIĞINI SIFIRLA =====
+window.resetUserSandik = async (userId) => {
+    if (!confirm('Bu kullanıcının sandığını sıfırlamak istediğinize emin misiniz?')) return;
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { quizSandik: [] });
+        alert('✅ Sandık sıfırlandı!');
+        loadUsers();
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+   window.showUserDetail = async (user) => {
+    const userRef = doc(db, 'users', user.id);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data();
+    
+    if (!userData) {
+        document.getElementById('userDetailContent').innerHTML = '<p>Kullanıcı bulunamadı.</p>';
         openModal('userDetailModal');
-    };
+        return;
+    }
+    
+    const examsCompleted = userData.examsCompleted || [];
+    const totalWords = userData.totalWordsViewed || 0;
+    const avgScore = userData.averageScore || 0;
+    const quizScore = userData.quizScore || 0;
+    const sandik = userData.quizSandik || [];
+    const level = userData.mevcutSeviye || 1;
+    const myWords = userData.myWords || [];
+    
+    // ===== SON SINAV PERFORMANSI =====
+    let lastExamHTML = '';
+    if (examsCompleted.length > 0) {
+        const lastExam = examsCompleted[examsCompleted.length - 1];
+        lastExamHTML = `
+            <div class="user-detail-row">
+                <span class="user-detail-label">Son Sınav:</span>
+                <span>${lastExam.title} - ${Math.round(lastExam.score)}/100 (${lastExam.correct}/${lastExam.total})</span>
+            </div>
+        `;
+    }
+    
+    // ===== SINAV GEÇMİŞİ =====
+    let examsHTML = '';
+    if (examsCompleted.length === 0) {
+        examsHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Henüz sınav çözülmemiş.</div>';
+    } else {
+        examsHTML = examsCompleted.slice().reverse().map(exam => `
+            <div class="user-exam-item">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>${exam.title}</strong>
+                    <span style="color: ${exam.score >= 70 ? '#10b981' : exam.score >= 50 ? '#f59e0b' : '#ef4444'}">${Math.round(exam.score)} / 100</span>
+                </div>
+                <div style="font-size: 12px; margin-top: 5px;">
+                    📅 ${new Date(exam.date).toLocaleDateString('tr-TR')} | 
+                    ✅ Doğru: ${exam.correct} / ${exam.total}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // ===== KELİME LİSTESİ (Son 10) =====
+    let wordsHTML = '';
+    if (myWords.length === 0) {
+        wordsHTML = '<div style="text-align:center; padding:10px; opacity:0.6;">Henüz kelime eklenmemiş.</div>';
+    } else {
+        const recentWords = myWords.slice(-10).reverse();
+        wordsHTML = recentWords.map(w => `
+            <span style="display: inline-block; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 13px;">
+                ${w.arabic} - ${w.turkish}
+            </span>
+        `).join('');
+    }
+    
+    // ===== SANDIK KELİMELERİ (Son 5) =====
+    let sandikHTML = '';
+    if (sandik.length === 0) {
+        sandikHTML = '<div style="text-align:center; padding:10px; opacity:0.6;">Sandık boş.</div>';
+    } else {
+        const recentSandik = sandik.slice(-5).reverse();
+        sandikHTML = recentSandik.map(w => `
+            <span style="display: inline-block; background: rgba(245,158,11,0.1); padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 13px; border: 1px solid rgba(245,158,11,0.2);">
+                ${w.arabic} - ${w.turkish}
+            </span>
+        `).join('');
+    }
+    
+    // ===== KARMA İSTATİSTİKLERİ =====
+    const karmaStats = userData.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
+    
+    document.getElementById('userDetailTitle').innerHTML = `
+        <i class="fas fa-user"></i> ${userData.name || user.email.split('@')[0]} 
+        <span style="font-size: 12px; background: #f59e0b; color: #121212; padding: 2px 12px; border-radius: 20px;">Seviye ${level}</span>
+    `;
+    
+    document.getElementById('userDetailContent').innerHTML = `
+        <!-- PROFİL BİLGİLERİ -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">E-posta</div>
+                <div style="font-weight: bold;">${userData.email || 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Kayıt Tarihi</div>
+                <div style="font-weight: bold;">${userData.createdAt ? new Date(userData.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Son Aktiflik</div>
+                <div style="font-weight: bold;">${userData.lastActive ? new Date(userData.lastActive).toLocaleString('tr-TR') : 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Seviye</div>
+                <div style="font-weight: bold; color: #f59e0b;">${level} ${getLevelBadge(level)}</div>
+            </div>
+        </div>
+        
+        <!-- İSTATİSTİKLER -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div style="background: rgba(16,185,129,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #10b981;">${totalWords}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📖 Kelime</div>
+            </div>
+            <div style="background: rgba(59,130,246,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${examsCompleted.length}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📝 Sınav</div>
+            </div>
+            <div style="background: rgba(245,158,11,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #f59e0b;">${Math.round(avgScore)}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📊 Ort. Puan</div>
+            </div>
+            <div style="background: rgba(239,68,68,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #ef4444;">${sandik.length}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📦 Sandık</div>
+            </div>
+        </div>
+        
+        <!-- KARMA İSTATİSTİKLERİ -->
+        <div style="background: rgba(16,185,129,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(16,185,129,0.1);">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #f59e0b;">🎯 Karma İstatistikleri</div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div><span style="opacity:0.6;">Toplam:</span> <strong>${karmaStats.total}</strong></div>
+                <div><span style="color:#10b981;">✅ Doğru:</span> <strong>${karmaStats.correct}</strong></div>
+                <div><span style="color:#ef4444;">❌ Yanlış:</span> <strong>${karmaStats.wrong}</strong></div>
+                <div><span style="color:#3b82f6;">🎯 Başarı:</span> <strong>${karmaAccuracy}%</strong></div>
+            </div>
+        </div>
+        
+        ${lastExamHTML}
+        
+        <!-- SON EKLENEN KELİMELER -->
+        <div style="margin-top: 15px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 14px;"><i class="fas fa-plus-circle"></i> Son Eklenen Kelimeler</h4>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; min-height: 40px;">
+                ${wordsHTML}
+            </div>
+        </div>
+        
+        <!-- SANDIK KELİMELERİ -->
+        <div style="margin-top: 15px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 14px;"><i class="fas fa-box"></i> Sandıktaki Kelimeler (Son 5)</h4>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; min-height: 40px;">
+                ${sandikHTML}
+            </div>
+        </div>
+        
+        <!-- SINAV GEÇMİŞİ -->
+        <div style="margin-top: 20px;">
+            <h4 style="color: #f59e0b; margin-bottom: 10px; font-size: 14px;"><i class="fas fa-chart-line"></i> Sınav Geçmişi (${examsCompleted.length})</h4>
+            <div style="max-height: 200px; overflow-y: auto;">
+                ${examsHTML}
+            </div>
+        </div>
+        
+        <!-- YÖNETİM BUTONLARI -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <button onclick="resetUserSandik('${user.id}')" class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;">
+                <i class="fas fa-trash-alt"></i> Sandığı Sıfırla
+            </button>
+            <button onclick="resetUserScore('${user.id}')" class="btn btn-warning" style="padding: 6px 14px; font-size: 12px;">
+                <i class="fas fa-undo"></i> Puanları Sıfırla
+            </button>
+            <button onclick="deleteUserFirestore('${user.id}')" class="btn btn-danger" style="padding: 6px 14px; font-size: 12px; background: #dc2626;">
+                <i class="fas fa-database"></i> Firestore'dan Sil
+            </button>
+        </div>
+    `;
+    openModal('userDetailModal');
+};
+
+// ===== KULLANICI PUANINI SIFIRLA =====
+window.resetUserScore = async (userId) => {
+    if (!confirm('Bu kullanıcının tüm puanlarını sıfırlamak istediğinize emin misiniz?')) return;
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { 
+            quizScore: 0,
+            averageScore: 0,
+            examsCompleted: [],
+            karmaStats: { total: 0, correct: 0, wrong: 0 }
+        });
+        alert('✅ Puanlar sıfırlandı!');
+        loadUsers();
+        closeModal('userDetailModal');
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+// ===== KULLANICIYI FIRESTORE'DAN SİL =====
+window.deleteUserFirestore = async (userId) => {
+    if (!confirm('🚨 Bu kullanıcıyı Firestore\'dan silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    if (!confirm('⚠️ SON UYARI: Tüm veriler silinecek! Devam?')) return;
+    
+    try {
+        await deleteDoc(doc(db, 'users', userId));
+        alert('✅ Kullanıcı silindi!');
+        loadUsers();
+        closeModal('userDetailModal');
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
 
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
