@@ -2746,6 +2746,8 @@ document.getElementById('goBulkUpload').onclick = () => {
     closeMenu();
 };
 
+
+
 async function loadBulkBooks() {
     try {
         const snapshot = await getDocs(collection(db, 'books'));
@@ -2773,6 +2775,7 @@ async function loadBulkBooks() {
     }
 }
 
+    
 // ===== BULK BOOK SELECT - ONCHANGE (Toplu Kelime Yükleme) =====
 const bulkBookSelect = document.getElementById('bulkExamBookSelect');
 if (bulkBookSelect) {
@@ -3419,7 +3422,7 @@ if (bulkExamLessonSelect) {
     };
 }
 
-// Ders seçilince sınavları yükle
+// ===== TOPLU KELİME YÜKLEME - KİTAP SEÇİLİNCE DERSLERİ YÜKLE (KELİME SAYISI İLE) =====
 const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
 if (bulkExamBookSelect) {
     bulkExamBookSelect.onchange = async () => {
@@ -3439,8 +3442,19 @@ if (bulkExamBookSelect) {
         lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
         lessonSelect.disabled = true;
         
+        // ===== DERSLERİ GETİR =====
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== TÜM KELİMELERİ AL (Kelime sayısı için) =====
+        const allWords = await getDocs(collection(db, 'words'));
+        const wordCounts = {};
+        allWords.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            if (lessonId) {
+                wordCounts[lessonId] = (wordCounts[lessonId] || 0) + 1;
+            }
+        });
         
         // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
         lessons.sort((a, b) => {
@@ -3460,10 +3474,33 @@ if (bulkExamBookSelect) {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        
         lessons.forEach(lesson => {
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = lesson.name;
+            const count = wordCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 10) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 30) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            // ✅ Kelime sayısını göster
+            option.textContent = `${lesson.name} ${emoji} (${count} kelime)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
         
