@@ -2507,6 +2507,18 @@ body.light-theme #profileScreen .info-row button:hover {
     }
 }
 
+
+    .question-text {
+    direction: ltr;
+    text-align: left;
+}
+
+.question-text .arabic-word {
+    direction: rtl;
+    unicode-bidi: embed;
+    display: inline-block;
+}
+
     
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -4500,8 +4512,15 @@ function showCurrentQuestion() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
-    // ===== ARAPÇA METNİ DÜZELT =====
-    const fixedQuestion = fixArabicText(question.question);
+    // ===== ARAPÇA KELİMELERİ ETİKETLE =====
+    let questionText = question.question;
+    // Tırnak içindeki Arapça metinlere class ekle
+    questionText = questionText.replace(/"([^"]*)"/g, function(match, p1) {
+        if (/[\u0600-\u06FF]/.test(p1)) {
+            return '<span class="arabic-word">"' + p1 + '"</span>';
+        }
+        return match;
+    });
     
     const container = document.getElementById('quizContent');
     container.innerHTML = `
@@ -4525,9 +4544,9 @@ function showCurrentQuestion() {
             </button>
         </div>
         <div class="quiz-card">
-           <div class="question-text" style="direction: ltr; text-align: left;"> 
+           <div class="question-text"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap;">${fixedQuestion}</span>
+                <span style="white-space: pre-wrap;">${questionText}</span>
             </div>
             <div class="options" id="optionsContainer">
                 ${question.options.map((opt, i) => `
@@ -4550,12 +4569,12 @@ function showCurrentQuestion() {
 function fixArabicText(text) {
     if (!text) return text;
     
-    // Tırnak içindeki Arapça metinleri bul ve RTL olarak işaretle
+    // Tırnak içindeki Arapça metinleri bul ve sadece onları RTL olarak işaretle
     let fixed = text.replace(/"([^"]*)"/g, function(match, p1) {
         // Arapça karakter içeriyorsa
         if (/[\u0600-\u06FF]/.test(p1)) {
-            // Arapça metni RTL olarak işaretle (‏ = RLM - Right-to-Left Mark)
-            return '"\u200F' + p1 + '\u200F"';
+            // Sadece Arapça metni RTL olarak işaretle, tırnaklar dışarıda kalsın
+            return '"‏' + p1 + '‏"';
         }
         return match;
     });
