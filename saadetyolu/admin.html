@@ -1072,12 +1072,12 @@
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- ✅ DOĞRU ID (Soru eklemesiz) -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="openBookModal()">
                 <i class="fas fa-book"></i> Kitap Ekle
             </button>
-            <!-- ✅ DOĞRU ID (Soru eklemesiz) -->
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="openLessonModal()">
                 <i class="fas fa-graduation-cap"></i> Ders Ekle
             </button>
         </div>
@@ -1129,16 +1129,16 @@
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- Kitap Ekle (aynı ID, aynı işlev) -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="openBookModal()">
                 <i class="fas fa-book"></i> Kitap Ekle
             </button>
-            <!-- Ders Ekle (aynı ID, aynı işlev) -->
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="openLessonModal()">
                 <i class="fas fa-graduation-cap"></i> Ders Ekle
             </button>
             <!-- Sınav Ekle (sadece burada var) -->
-            <button id="bulkExamAddExamBtn" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px;">
+            <button id="bulkExamAddExamBtn" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px;" onclick="openExamModal()">
                 <i class="fas fa-plus"></i> Sınav Ekle
             </button>
         </div>
@@ -1146,14 +1146,12 @@
     <div class="select-row" style="margin-bottom: 15px;">
         <div class="select-wrapper">
             <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <!-- ✅ Toplu Soru'ya özel ID -->
             <select id="bulkExamBookSelectSoru">
                 <option value="">-- Kitap Seçin --</option>
             </select>
         </div>
         <div class="select-wrapper">
             <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <!-- ✅ Toplu Soru'ya özel ID -->
             <select id="bulkExamLessonSelectSoru" disabled>
                 <option value="">-- Önce Kitap Seçin --</option>
             </select>
@@ -1197,7 +1195,6 @@
     </div>
     <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
 </div>
-
         
         
     </div>
@@ -5178,7 +5175,87 @@ function showCopySuccess(btn, originalText) {
         btn.style.background = '';
     }, 2500);
 }
+
+
+
+
+
+    // ===== KİTAP EKLE MODALI =====
+function openBookModal() {
+    console.log('📚 Kitap Ekle butonuna tıklandı!');
+    document.getElementById('bookModalTitle').innerHTML = 'Yeni Kitap Ekle';
+    document.getElementById('editBookId').value = '';
+    document.getElementById('bookName').value = '';
+    document.getElementById('bookDesc').value = '';
+    const bookCount = (typeof books !== 'undefined' && Array.isArray(books)) ? books.length : 0;
+    document.getElementById('bookOrder').value = bookCount + 1;
+    window.openModal('bookModal');
+}
+
+// ===== DERS EKLE MODALI =====
+function openLessonModal() {
+    console.log('📚 Ders Ekle butonuna tıklandı!');
     
+    // Önce Toplu Soru'daki kitap seçimini kontrol et
+    let bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    let selectedBookId = bookSelect?.value;
+    
+    // Eğer seçili değilse Toplu Kelime'deki select'i kontrol et
+    if (!selectedBookId) {
+        bookSelect = document.getElementById('bulkExamBookSelect');
+        selectedBookId = bookSelect?.value;
+    }
+    
+    if (!selectedBookId) {
+        alert('⚠️ Lütfen önce bir kitap seçin!');
+        return;
+    }
+    
+    document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
+    document.getElementById('editLessonId').value = '';
+    document.getElementById('lessonName').value = '';
+    document.getElementById('lessonDesc').value = '';
+    document.getElementById('lessonOrder').value = '';
+    document.getElementById('lessonBookSelectModal').value = selectedBookId;
+    window.openModal('lessonModal');
+}
+
+// ===== SINAV EKLE MODALI (Sadece Toplu Soru'da) =====
+function openExamModal() {
+    console.log('📝 Sınav Ekle butonuna tıklandı!');
+    
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    
+    if (!bookSelect?.value) {
+        alert('⚠️ Lütfen önce bir kitap seçin!');
+        return;
+    }
+    
+    if (!lessonSelect?.value) {
+        alert('⚠️ Lütfen önce bir ders seçin!');
+        return;
+    }
+    
+    document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
+    document.getElementById('editExamId').value = '';
+    document.getElementById('examTitle').value = '';
+    questions = [];
+    renderQuestions();
+    
+    // Kitap ve dersi seçili olarak ayarla
+    setTimeout(() => {
+        document.getElementById('examBookSelect').value = bookSelect.value;
+        const examBookSelect = document.getElementById('examBookSelect');
+        examBookSelect.dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+            document.getElementById('examLessonSelect').value = lessonSelect.value;
+        }, 300);
+    }, 100);
+    
+    window.openModal('examModal');
+}
 </script>
 </body>
 </html>
