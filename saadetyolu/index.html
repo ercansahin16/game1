@@ -2509,16 +2509,18 @@ body.light-theme #profileScreen .info-row button:hover {
 
 
 /* ===== SORU METNİ - ANA KISIM LTR ===== */
+/* ===== SORU METNİ - ANA KISIM LTR ===== */
 .question-text {
-    direction: ltr;
-    text-align: left;
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: normal !important;
 }
 
 /* ===== ARAPÇA KELİME - SADECE BU KISIM RTL ===== */
 .question-text .arabic-word {
-    direction: rtl;
-    unicode-bidi: embed;
-    display: inline-block;
+    direction: rtl !important;
+    unicode-bidi: embed !important;
+    display: inline-block !important;
     font-family: 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', 'Traditional Arabic', serif !important;
     font-size: 28px !important;
     font-weight: 600 !important;
@@ -2529,6 +2531,7 @@ body.light-theme #profileScreen .info-row button:hover {
 .option-text {
     direction: ltr !important;
     text-align: left !important;
+    unicode-bidi: normal !important;
 }
 
     
@@ -4524,16 +4527,16 @@ function showCurrentQuestion() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
-    // ===== ARAPÇA METNİ DÜZELT (LRM ile) =====
+    // ===== SORU METNİNİ DÜZENLE =====
     let questionText = question.question;
-    // Tırnak içindeki tüm metinleri LRM ile sar
-    questionText = questionText.replace(/"([^"]*)"/g, function(match, p1) {
-        // Arapça karakter içeriyorsa LRM ekle
-        if (/[\u0600-\u06FF]/.test(p1)) {
-            return '"\u200E' + p1 + '\u200E"';  // \u200E = LRM (Left-to-Right Mark)
-        }
-        return match;
-    });
+    
+    // \n'leri <br>'e çevir
+    questionText = questionText.replace(/\n/g, '<br>');
+    
+    // Arapça metinleri tespit et (tırnak içinde değilse)
+    // Yeni formatta Arapça kelime tırnak içinde değil, direkt yazılıyor
+    // Örneğin: "Aşağıdaki kelimelerden hangisinin Türkçe anlamı aşağıdaki gibidir?\nكُمْ"
+    // Burada كُمْ tırnak içinde değil, direkt yazılıyor
     
     // ===== TÜM METNİ LTR OLARAK AYARLA =====
     const container = document.getElementById('quizContent');
@@ -4558,9 +4561,9 @@ function showCurrentQuestion() {
             </button>
         </div>
         <div class="quiz-card">
-           <div class="question-text" style="direction: ltr; text-align: left; unicode-bidi: bidi-override;"> 
+           <div class="question-text" style="direction: ltr; text-align: left;"> 
                 <span style="background: #f59e0b20; padding: 4px 12px; border-radius: 20px; margin-right: 10px !important; margin-bottom: 8px !important; display: inline-block;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap;">${questionText}</span>
+                <span style="white-space: pre-wrap; direction: ltr; text-align: left;">${questionText}</span>
             </div>
             <div class="options" id="optionsContainer">
                 ${question.options.map((opt, i) => `
