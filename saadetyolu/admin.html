@@ -2193,6 +2193,7 @@ window.editExam = async (id) => {
 };
 
     // Sınav modalı - Kitap seçilince dersleri yükle
+// Sınav modalı - Kitap seçilince dersleri yükle (SIRALI)
 document.getElementById('examBookSelect').onchange = async function() {
     const bookId = this.value;
     const lessonSelect = document.getElementById('examLessonSelect');
@@ -2204,13 +2205,21 @@ document.getElementById('examBookSelect').onchange = async function() {
     }
     
     const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+    const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+    lessons.sort((a, b) => {
+        const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+        return numA - numB;
+    });
+    
     lessonSelect.disabled = false;
     lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
+    lessons.forEach(lesson => {
         const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
+        option.value = lesson.id;
+        option.textContent = lesson.name;
         lessonSelect.appendChild(option);
     });
 };
