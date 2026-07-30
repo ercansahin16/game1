@@ -5362,8 +5362,15 @@ document.getElementById('doLoginBtn').onclick = async () => {
 
 
 
+// ============================================================
+// TEST MODU - ONBOARDING (En Üste Ekle)
+// ============================================================
+// true: Her girişte rehber göster (TEST)
+// false: Sadece ilk girişte göster (NORMAL)
+const ONBOARDING_TEST_MODE = true; // ← Test bitince false yap!
+// ============================================================
 
-    onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         menuBtn.classList.remove('hidden');
@@ -5374,15 +5381,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
         themeIconBtn.classList.add('hidden');
         
         // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
-        // loadUserStats bunları dolduracak (Firestore'dan)
         document.getElementById('userNameDisplay').textContent = '';
         document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> Yükleniyor';
         
-        // userBadge'i gizle (loadUserStats sonunda gösterilecek)
         const userBadge = document.getElementById('userBadge');
         if (userBadge) userBadge.style.display = 'none';
         
-        // Giriş yapınca yarışma ekranlarını gizle (ana sayfada olsun)
         const karmaScreen = document.getElementById('karmaScreen');
         if (karmaScreen) karmaScreen.style.display = 'none';
         
@@ -5390,12 +5394,45 @@ document.getElementById('doLoginBtn').onclick = async () => {
         if (rankingScreen) rankingScreen.style.display = 'none';
         
         await loadBooks();
-        await loadUserStats();  // Burada header ve sidebar doldurulacak
+        await loadUserStats();
         await loadLessonsList();
         await loadUserExamHistory();
-        await checkAndShowOnboarding(user);
         
-        // ===== SEVİYEYİ YÜKLE (GÜÇLENDİRİLMİŞ) =====
+        // ===== YENİ KULLANICI REHBERİ (TEST MODLU) =====
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                
+                // TEST MODU: Her girişte göster
+                if (ONBOARDING_TEST_MODE) {
+                    console.log('🧪 TEST MODU: Rehber başlatılıyor...');
+                    // Önce varsa eski tooltip'i temizle
+                    document.querySelector('.onboarding-tooltip')?.remove();
+                    document.querySelector('.onboarding-overlay')?.remove();
+                    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+                        el.classList.remove('onboarding-highlight');
+                        el.style.boxShadow = '';
+                        el.style.zIndex = '';
+                    });
+                    await showOnboarding(userRef);
+                } 
+                // NORMAL MOD: Sadece ilk kez göster
+                else if (!data.onboardingCompleted) {
+                    console.log('🎉 Yeni kullanıcı! Rehber başlatılıyor...');
+                    await showOnboarding(userRef);
+                } else {
+                    console.log('👋 Rehber daha önce gösterilmiş.');
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ Rehber başlatma hatası:', error);
+        }
+        // ====================================================
+        
+        // ===== SEVİYEYİ YÜKLE =====
         try {
             const userRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userRef);
@@ -5408,12 +5445,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     mevcutSeviye = 1;
                     console.log('📌 Girişte seviye yok, 1 olarak ayarlandı');
                 }
-                // Puanı da yükle
                 if (data.quizScore !== undefined) {
                     quizScore = data.quizScore;
                     console.log('💰 Girişte puan yüklendi:', quizScore);
                 }
-                // Sandığı da yükle
                 if (data.quizSandik) {
                     quizSandik = data.quizSandik;
                     console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
@@ -5432,37 +5467,39 @@ document.getElementById('doLoginBtn').onclick = async () => {
         // ===== KULLANICI ÇIKIŞ YAPTIĞINDA =====
         console.log('👤 Kullanıcı çıkış yaptı, giriş ekranına yönlendiriliyor...');
         
+        // ===== REHBERİ TEMİZLE =====
+        document.querySelector('.onboarding-tooltip')?.remove();
+        document.querySelector('.onboarding-overlay')?.remove();
+        document.querySelectorAll('.onboarding-highlight').forEach(el => {
+            el.classList.remove('onboarding-highlight');
+            el.style.boxShadow = '';
+            el.style.zIndex = '';
+        });
+        // ===========================
+        
         currentUser = null;
         
-        // Menü butonunu gizle
         const menuBtn = document.getElementById('menuBtn');
         if (menuBtn) menuBtn.classList.add('hidden');
         
-        // Header'ı gizle
         const mainHeader = document.getElementById('mainHeader');
         if (mainHeader) mainHeader.style.display = 'none';
         
-        // Kullanıcı badge'ini gizle
         const userBadge = document.getElementById('userBadge');
         if (userBadge) userBadge.style.display = 'none';
         
-        // Çıkış butonunu gizle
         const logoutIcon = document.getElementById('logoutIconBtn');
         if (logoutIcon) logoutIcon.classList.add('hidden');
         
-        // Sidebar kullanıcı adını güncelle
         const sidebarUserName = document.getElementById('sidebarUserName');
         if (sidebarUserName) sidebarUserName.innerHTML = 'Misafir';
         
-        // Tema butonunu göster
         const themeIconBtn = document.getElementById('themeIconBtn');
         if (themeIconBtn) themeIconBtn.classList.remove('hidden');
         
-        // Giriş ekranını göster
         const loginScreen = document.getElementById('loginScreen');
         if (loginScreen) loginScreen.style.display = 'block';
         
-        // Tüm ekranları gizle
         const mainContent = document.getElementById('mainContent');
         if (mainContent) mainContent.style.display = 'none';
         
@@ -5484,7 +5521,6 @@ document.getElementById('doLoginBtn').onclick = async () => {
         const rankingScreen = document.getElementById('rankingScreen');
         if (rankingScreen) rankingScreen.style.display = 'none';
         
-        // Kitap ve ders seçeneklerini sıfırla
         const bookSelect = document.getElementById('bookSelect');
         if (bookSelect) {
             bookSelect.innerHTML = '<option value="">-- Kitap Seçin --</option>';
@@ -5496,14 +5532,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
             lessonSelect.disabled = true;
         }
         
-        // Kelimeleri sıfırla
         words = [];
         updateWordDisplay();
         
         console.log('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
     }
 });
-
 
 
 
@@ -10199,13 +10233,26 @@ function openProfileAfterExit() {
 
 
 
+// ============================================================
+// TEST MODU - ONBOARDING (En Üste Ekle)
+// ============================================================
+// true: Her girişte rehber göster (TEST)
+// false: Sadece ilk girişte göster (NORMAL)
 
-        // ============================================================
-// YENİ KULLANICI KARŞILAMA REHBERİ (ONBOARDING)
 // ============================================================
 
 async function checkAndShowOnboarding(user) {
-    if (!user) return;
+    if (!user) {
+        console.log('👤 Kullanıcı yok, rehber başlatılmıyor.');
+        return;
+    }
+
+    // ===== GİRİŞ EKRANI KONTROLÜ =====
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen && loginScreen.style.display !== 'none') {
+        console.log('🚫 Giriş ekranı açık, rehber başlatılmıyor.');
+        return;
+    }
 
     try {
         const userRef = doc(db, 'users', user.uid);
@@ -10213,6 +10260,26 @@ async function checkAndShowOnboarding(user) {
 
         if (userDoc.exists()) {
             const data = userDoc.data();
+            
+            // ===== TEST MODU KONTROLÜ =====
+            if (ONBOARDING_TEST_MODE) {
+                console.log('🧪 TEST MODU AKTİF! Rehber her girişte gösterilecek.');
+                
+                // Önce varsa eski tooltip'i temizle
+                document.querySelector('.onboarding-tooltip')?.remove();
+                document.querySelector('.onboarding-overlay')?.remove();
+                document.querySelectorAll('.onboarding-highlight').forEach(el => {
+                    el.classList.remove('onboarding-highlight');
+                    el.style.boxShadow = '';
+                    el.style.zIndex = '';
+                });
+                
+                await showOnboarding(userRef);
+                return;
+            }
+            // =================================
+            
+            // ===== NORMAL MOD =====
             // 'onboardingCompleted' alanı yoksa veya false ise rehberi göster
             if (!data.onboardingCompleted) {
                 console.log('🎉 Yeni kullanıcı! Karşılama rehberi başlatılıyor...');
@@ -10220,121 +10287,146 @@ async function checkAndShowOnboarding(user) {
             } else {
                 console.log('👋 Kullanıcı rehberi daha önce gösterilmiş.');
             }
+            // ======================
+            
+        } else {
+            console.warn('⚠️ Kullanıcı belgesi bulunamadı!');
         }
     } catch (error) {
-        console.error('Rehber kontrolü hatası:', error);
+        console.error('❌ Rehber kontrolü hatası:', error);
     }
 }
 
 
 
-    // ===== REHBERİ GÖSTER (TÜM ADIMLARLA) =====
+ // ============================================================
+// TEST MODU - ONBOARDING (En Üste Ekle)
+// ============================================================
+
+// ============================================================
+
 async function showOnboarding(userRef) {
-    // ===== 1. ADIM TANIMLARI =====
-    const steps = [
+    // ===== TEST MODU BİLGİSİ =====
+    if (ONBOARDING_TEST_MODE) {
+        console.log('🧪 TEST MODU: Rehber başlatılıyor...');
+    }
+    // ==============================
+    
+    // ===== STEPS TANIMLARI =====
+    window._onboardingSteps = [
         // 1. Hoş Geldin
         {
             target: '#homeLogo',
             title: '🕌 SaadetYolu\'na Hoş Geldin!',
             content: 'Arapça kelimeleri eğlenerek öğrenmek için doğru yerdesin. Hadi sana yolu gösterelim!',
-            position: 'bottom'
+            position: 'bottom',
+            action: null
         },
         // 2. Yarışma
         {
             target: '#goKarma',
             title: '🎯 1. ADIM: Yarışmaya Hazır mısın?',
             content: 'Burası oyunun kalbi! Diğer oyuncularla rekabet et, doğru cevaplarla puan topla ve sandıktaki kelimeleri kurtar!',
-            position: 'top'
+            position: 'top',
+            action: 'goKarmaGame'
         },
         // 3. Sıralama
         {
             target: '#goRanking',
             title: '🏆 2. ADIM: Liderlik Tablosu',
             content: 'Ne kadar çok puan toplarsan, liderlik tablosunda o kadar yükselirsin. İlk 35\'e girmeye çalış!',
-            position: 'top'
+            position: 'top',
+            action: 'goRanking'
         },
         // 4. Kelime Öğren
         {
             target: '.stats-card:nth-child(1)',
             title: '📚 3. ADIM: Kelime Öğren',
             content: 'Buradan kitap ve ders seçerek yeni kelimeler öğrenebilirsin. "Göster" butonuna tıkla, her kelime +0.01 puan!',
-            position: 'top'
+            position: 'top',
+            action: 'goWordsLearning'
         },
         // 5. Sınava Gir
         {
             target: '.stats-card:nth-child(2)',
             title: '📝 4. ADIM: Sınavlara Gir',
             content: 'Öğrendiklerini test et! Her doğru cevap sana puan kazandırır. 30 saniyen var, süre dolunca otomatik geçer.',
-            position: 'top'
+            position: 'top',
+            action: 'goExams'
         },
-        // 6. Yarışmaya Hazır mısın? (tekrar ama açıklama farklı)
+        // 6. Yarışmaya Hazır mısın? (tekrar)
         {
             target: '.stats-card:nth-child(3)',
             title: '⚡ 5. ADIM: Hemen Dene!',
             content: 'Bu kart, seni doğrudan yarışma ekranına götürür. Öğrendiklerini hemen test etmek için harika bir fırsat!',
-            position: 'top'
+            position: 'top',
+            action: 'goKarmaGame'
         },
-        // 7. 📚 Kelime Listem
+        // 7. Kelime Listem
         {
             target: '.stats-card:nth-child(4)',
             title: '📚 6. ADIM: Kelime Listem',
             content: 'Beğendiğin veya tekrar etmek istediğin kelimeleri buraya ekleyebilirsin. Tüm kelimelerin tek bir yerde!',
-            position: 'top'
+            position: 'top',
+            action: 'showMyWordsList'
         },
-        // 8. 📦 Sandıktaki Kelimeler
+        // 8. Sandıktaki Kelimeler
         {
             target: '.stats-card:nth-child(5)',
             title: '📦 7. ADIM: Sandıktaki Kelimeler',
             content: 'Yanlış cevapladığın veya bilemediğin kelimeler buraya düşer. Onları kurtarana kadar sandıkta kalırlar!',
-            position: 'top'
+            position: 'top',
+            action: 'showSandikWords'
         },
         // 9. Profil
         {
             target: '.user-info',
             title: '👤 8. ADIM: Profilini Keşfet',
             content: 'Buraya tıklayarak istatistiklerini görebilir, şifreni değiştirebilir ve sıralamadaki yerini kontrol edebilirsin.',
-            position: 'bottom'
+            position: 'bottom',
+            action: 'showProfile'
         },
         // 10. Ruhu Dinlet
         {
             target: '#ruhuDinletBtn',
             title: '🎵 9. ADIM: Ruhunu Dinlet!',
             content: 'Arka plan müziğini açarak daha keyifli bir öğrenme deneyimi yaşayabilirsin. Müzik seni motive eder!',
-            position: 'bottom'
+            position: 'bottom',
+            action: 'ruhuDinletToggle'
         },
         // 11. Yardım
         {
             target: '#helpGameBtn',
             title: '❓ 10. ADIM: Yardım Her Zaman Burada',
             content: 'Herhangi bir sorun yaşarsan, bu butona tıklayarak oyunun nasıl oynandığını tekrar okuyabilirsin.',
-            position: 'bottom'
+            position: 'bottom',
+            action: null
         },
         // 12. Tema Değiştir
         {
             target: '#themeIconBtn',
             title: '🌓 11. ADIM: Tema Değiştir',
             content: 'Koyu veya açık tema arasında geçiş yapabilirsin. Göz yorgunluğunu azaltmak için harika bir özellik!',
-            position: 'bottom'
+            position: 'bottom',
+            action: 'changeTheme'
         },
         // 13. Çıkış Yap
         {
             target: '#logoutIconBtn',
             title: '🚪 12. ADIM: Çıkış Yap',
             content: 'İşin bittiğinde buradan güvenle çıkış yapabilirsin. Tekrar görüşmek üzere! 👋',
-            position: 'bottom'
+            position: 'bottom',
+            action: null
         }
     ];
-
-    // ===== 2. REHBERİ BAŞLAT =====
+    
+    const steps = window._onboardingSteps;
     let currentStep = 0;
 
-    // ===== 3. ADIM GÖSTERME FONKSİYONU =====
     function showStep(index) {
         // Önceki tooltip ve overlay'i temizle
-        const oldTooltip = document.querySelector('.onboarding-tooltip');
-        if (oldTooltip) oldTooltip.remove();
-        const oldOverlay = document.querySelector('.onboarding-overlay');
-        if (oldOverlay) oldOverlay.remove();
+        document.querySelector('.onboarding-tooltip')?.remove();
+        document.querySelector('.onboarding-overlay')?.remove();
 
         // Eğer tüm adımlar bittiyse
         if (index >= steps.length) {
@@ -10345,10 +10437,17 @@ async function showOnboarding(userRef) {
                 el.style.zIndex = '';
             });
             
-            // Firestore'u güncelle
-            updateDoc(userRef, { onboardingCompleted: true })
-                .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
-                .catch(err => console.error('Firestore güncelleme hatası:', err));
+            // ===== TEST MODU KONTROLÜ =====
+            if (ONBOARDING_TEST_MODE) {
+                console.log('🧪 TEST MODU: Rehber tamamlandı! (Firestore güncellenmedi)');
+                console.log('💡 İpucu: Sayfayı yenileyerek rehberi tekrar başlatabilirsin.');
+            } else {
+                // Normal mod: Firestore'u güncelle
+                updateDoc(userRef, { onboardingCompleted: true })
+                    .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
+                    .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
+            }
+            // ============================================================
             return;
         }
 
@@ -10361,7 +10460,7 @@ async function showOnboarding(userRef) {
             return;
         }
 
-        // ===== OVERLAY (ARKA PLAN KARARTMASI) =====
+        // ===== OVERLAY =====
         const overlay = document.createElement('div');
         overlay.className = 'onboarding-overlay';
         overlay.style.cssText = `
@@ -10376,7 +10475,7 @@ async function showOnboarding(userRef) {
         `;
         document.body.appendChild(overlay);
 
-        // ===== TOOLTIP (YARDIM BULUTU) =====
+        // ===== TOOLTIP =====
         const tooltip = document.createElement('div');
         tooltip.className = 'onboarding-tooltip';
         
@@ -10404,7 +10503,7 @@ async function showOnboarding(userRef) {
                 </p>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 12px; opacity: 0.5;">${index + 1} / ${steps.length}</span>
-                    <button onclick="window.nextOnboardingStep(${index + 1})" style="
+                    <button onclick="window.handleOnboardingAction('${index}', ${index + 1})" style="
                         background: #f59e0b;
                         color: #121212;
                         border: none;
@@ -10416,13 +10515,13 @@ async function showOnboarding(userRef) {
                         font-size: 14px;
                         box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
                     ">
-                        ${index === steps.length - 1 ? '🚀 Başla!' : 'İleri →'}
+                        ${index === steps.length - 1 ? '🚀 Başla!' : '👆 Dene & İleri →'}
                     </button>
                 </div>
             </div>
         `;
 
-        // ===== TOOLTIP'i KONUMLANDIR =====
+        // ===== TOOLTIP KONUMU =====
         const rect = targetElement.getBoundingClientRect();
         let top, left;
 
@@ -10440,7 +10539,7 @@ async function showOnboarding(userRef) {
                 left = rect.left + rect.width / 2 - 170;
         }
 
-        // Tooltip'in ekran dışına çıkmasını engelle
+        // Ekran dışına çıkmasını engelle
         if (left < 15) left = 15;
         if (left + 340 > window.innerWidth - 15) left = window.innerWidth - 355;
         if (top < 15) top = 15;
@@ -10464,28 +10563,45 @@ async function showOnboarding(userRef) {
         targetElement.style.borderRadius = '8px';
         targetElement.style.transition = 'all 0.3s ease';
 
-        // ===== BİR SONRAKİ ADIM İÇİN GLOBAL FONKSİYON =====
+        // ===== GLOBAL FONKSİYON =====
         window.nextOnboardingStep = (nextIndex) => {
-            // Vurgulamayı temizle
             targetElement.classList.remove('onboarding-highlight');
             targetElement.style.boxShadow = '';
             targetElement.style.zIndex = '';
             
-            // Tooltip ve overlay'i kaldır
             document.querySelector('.onboarding-tooltip')?.remove();
             document.querySelector('.onboarding-overlay')?.remove();
             
-            // Sonraki adımı göster
             showStep(nextIndex);
         };
     }
 
-    // ===== 4. İLK ADIMI GÖSTER =====
-    // Biraz bekle ki sayfa tam yüklensin
+    // ===== İLK ADIMI GÖSTER =====
     setTimeout(() => {
         showStep(0);
     }, 800);
 }
+
+// ===== REHBER TIKLAMA İŞLEMLERİ =====
+window.handleOnboardingAction = function(index, nextIndex) {
+    const step = window._onboardingSteps ? window._onboardingSteps[index] : null;
+    
+    if (step && step.action) {
+        try {
+            const actionFn = window[step.action];
+            if (typeof actionFn === 'function') {
+                console.log(`🔄 "${step.action}" fonksiyonu çalıştırılıyor...`);
+                actionFn();
+            } else {
+                console.warn(`⚠️ "${step.action}" fonksiyonu bulunamadı!`);
+            }
+        } catch (error) {
+            console.error(`❌ "${step.action}" çalıştırma hatası:`, error);
+        }
+    }
+    
+    window.nextOnboardingStep(nextIndex);
+};
     
 </script>
 </body>
