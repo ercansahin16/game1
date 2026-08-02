@@ -10611,16 +10611,22 @@ function showStep(index) {
     targetElement.style.transition = 'all 0.3s ease';
 
     // ===== GLOBAL FONKSİYON =====
-    window.nextOnboardingStep = (nextIndex) => {
-        targetElement.classList.remove('onboarding-highlight');
-        targetElement.style.boxShadow = '';
-        targetElement.style.zIndex = '';
-        
-        document.querySelector('.onboarding-tooltip')?.remove();
-        document.querySelector('.onboarding-overlay')?.remove();
-        
+window.nextOnboardingStep = (nextIndex) => {
+    // Eski vurgulamaları temizle
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+        el.classList.remove('onboarding-highlight');
+        el.style.boxShadow = '';
+        el.style.zIndex = '';
+    });
+    
+    document.querySelector('.onboarding-tooltip')?.remove();
+    document.querySelector('.onboarding-overlay')?.remove();
+    
+    // Bir sonraki adımı göster (sayfanın yeniden render olması için küçük bir bekleme)
+    setTimeout(() => {
         showStep(nextIndex);
-    };
+    }, 300);
+};
 }
 
     // ===== İLK ADIMI GÖSTER =====
