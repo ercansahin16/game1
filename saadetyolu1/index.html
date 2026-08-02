@@ -10697,7 +10697,7 @@ function showStep(index) {
 
     // ===== MOBİL BOYUTLAR =====
     const tooltipPadding = isVerySmall ? '10px 12px' : (isMobile ? '14px 16px' : '20px 24px');
-    const tooltipMaxWidth = isVerySmall ? '220px' : (isMobile ? '280px' : '380px');
+    const tooltipMaxWidth = isVerySmall ? '240px' : (isMobile ? '300px' : '380px');
     const titleFontSize = isVerySmall ? '13px' : (isMobile ? '15px' : '18px');
     const contentFontSize = isVerySmall ? '11px' : (isMobile ? '12px' : '14px');
     const emojiSize = isVerySmall ? '18px' : (isMobile ? '22px' : '30px');
@@ -10744,6 +10744,60 @@ function showStep(index) {
     const shadowColor = isLightTheme ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.5)';
     const accentColor = '#f59e0b';
 
+    // ===== BULUT ELEMENTLERİ (üstteki yuvarlaklar) =====
+    const cloudHTML = `
+        <div style="
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            width: 28px;
+            height: 28px;
+            background: ${bgColor};
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px ${borderColor};
+            z-index: 1;
+        "></div>
+        <div style="
+            position: absolute;
+            top: -16px;
+            left: 42px;
+            width: 18px;
+            height: 18px;
+            background: ${bgColor};
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px ${borderColor};
+            z-index: 1;
+        "></div>
+        <div style="
+            position: absolute;
+            top: -6px;
+            left: 55px;
+            width: 12px;
+            height: 12px;
+            background: ${bgColor};
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px ${borderColor};
+            z-index: 1;
+        "></div>
+    `;
+
+    // ===== OK İŞARETİ =====
+    const arrowHTML = `
+        <div style="
+            position: absolute;
+            top: -8px;
+            left: 24px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid ${bgColor};
+            filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.08));
+            z-index: 2;
+        "></div>
+    `;
+
+    // ===== TOOLTIP İÇERİĞİ =====
     tooltip.innerHTML = `
         <div style="
             background: ${bgColor};
@@ -10755,43 +10809,12 @@ function showStep(index) {
             position: relative;
             z-index: 9999;
             animation: modalSlideUp 0.4s ease;
-            
-            /* ===== BULUT EFECT ===== */
-            &::before {
-                content: '';
-                position: absolute;
-                top: -12px;
-                left: 30px;
-                width: 30px;
-                height: 30px;
-                background: ${bgColor};
-                border-radius: 50%;
-                box-shadow: 0 0 0 1px ${borderColor};
-            }
-            &::after {
-                content: '';
-                position: absolute;
-                top: -18px;
-                left: 50px;
-                width: 20px;
-                height: 20px;
-                background: ${bgColor};
-                border-radius: 50%;
-                box-shadow: 0 0 0 1px ${borderColor};
-            }
         ">
-            <!-- ===== OK İŞARETİ (ÜST) ===== -->
-            <div style="
-                position: absolute;
-                top: -10px;
-                left: 20px;
-                width: 0;
-                height: 0;
-                border-left: 12px solid transparent;
-                border-right: 12px solid transparent;
-                border-bottom: 12px solid ${bgColor};
-                filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.1));
-            "></div>
+            <!-- BULUT EFEKTİ -->
+            ${cloudHTML}
+            
+            <!-- OK İŞARETİ -->
+            ${arrowHTML}
             
             <!-- BAŞLIK -->
             <div style="
@@ -10920,7 +10943,7 @@ function showStep(index) {
     }
 
     // Ekran dışına çıkmasını engelle
-    const maxWidthPx = isVerySmall ? 240 : (isMobile ? 300 : 400);
+    const maxWidthPx = isVerySmall ? 260 : (isMobile ? 320 : 400);
     if (left < (isVerySmall ? 5 : (isMobile ? 10 : 15))) left = isVerySmall ? 5 : (isMobile ? 10 : 15);
     if (left + maxWidthPx > window.innerWidth - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
         left = window.innerWidth - maxWidthPx - (isVerySmall ? 5 : (isMobile ? 10 : 15));
