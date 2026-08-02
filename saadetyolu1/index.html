@@ -10696,17 +10696,18 @@ function showStep(index) {
     const isLightTheme = document.body.classList.contains('light-theme');
 
     // ===== MOBİL BOYUTLAR =====
-    const tooltipPadding = isVerySmall ? '8px 8px' : (isMobile ? '10px 10px' : '15px 18px');
-    const tooltipMaxWidth = isVerySmall ? '200px' : (isMobile ? '250px' : '340px');
-    const titleFontSize = isVerySmall ? '12px' : (isMobile ? '14px' : '16px');
-    const contentFontSize = isVerySmall ? '10px' : (isMobile ? '12px' : '14px');
-    const emojiSize = isVerySmall ? '16px' : (isMobile ? '20px' : '28px');
+    const tooltipPadding = isVerySmall ? '10px 12px' : (isMobile ? '14px 16px' : '20px 24px');
+    const tooltipMaxWidth = isVerySmall ? '220px' : (isMobile ? '280px' : '380px');
+    const titleFontSize = isVerySmall ? '13px' : (isMobile ? '15px' : '18px');
+    const contentFontSize = isVerySmall ? '11px' : (isMobile ? '12px' : '14px');
+    const emojiSize = isVerySmall ? '18px' : (isMobile ? '22px' : '30px');
     const buttonFontSize = isVerySmall ? '8px' : (isMobile ? '9px' : '11px');
-    const buttonPadding = isVerySmall ? '3px 6px' : (isMobile ? '4px 10px' : '6px 14px');
+    const buttonPadding = isVerySmall ? '4px 8px' : (isMobile ? '5px 12px' : '7px 16px');
     const progressFontSize = isVerySmall ? '8px' : (isMobile ? '10px' : '12px');
-    const gapSize = isVerySmall ? '4px' : (isMobile ? '6px' : '8px');
+    const gapSize = isVerySmall ? '4px' : (isMobile ? '6px' : '10px');
     const marginBottom = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
-    const iconGap = isVerySmall ? '4px' : (isMobile ? '6px' : '8px');
+    const iconGap = isVerySmall ? '4px' : (isMobile ? '6px' : '10px');
+    const borderRadius = isVerySmall ? '14px' : (isMobile ? '18px' : '24px');
 
     // ===== OVERLAY =====
     const overlay = document.createElement('div');
@@ -10717,9 +10718,10 @@ function showStep(index) {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         z-index: 9998;
         pointer-events: none;
+        backdrop-filter: blur(2px);
     `;
     document.body.appendChild(overlay);
 
@@ -10735,28 +10737,89 @@ function showStep(index) {
     const firstEmoji = titleParts.length > 0 ? titleParts[0] : '📌';
     const titleText = titleParts.slice(1).join(' ') || step.title;
 
+    // ===== RENKLER =====
+    const bgColor = isLightTheme ? '#ffffff' : '#1e293b';
+    const textColor = isLightTheme ? '#0f172a' : '#f1f5f9';
+    const borderColor = isLightTheme ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)';
+    const shadowColor = isLightTheme ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.5)';
+    const accentColor = '#f59e0b';
+
     tooltip.innerHTML = `
         <div style="
-            background: ${isLightTheme ? '#ffffff' : '#1e293b'};
-            color: ${isLightTheme ? '#0f172a' : '#f1f5f9'};
-            border-radius: ${isVerySmall ? '8px' : (isMobile ? '10px' : '14px')};
+            background: ${bgColor};
+            color: ${textColor};
+            border-radius: ${borderRadius};
             padding: ${tooltipPadding};
             max-width: ${tooltipMaxWidth};
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            border: 1px solid ${isLightTheme ? '#e2e8f0' : '#334155'};
+            box-shadow: 0 20px 60px ${shadowColor}, 0 0 0 1px ${borderColor};
             position: relative;
             z-index: 9999;
-            animation: modalSlideUp 0.3s ease;
+            animation: modalSlideUp 0.4s ease;
+            
+            /* ===== BULUT EFECT ===== */
+            &::before {
+                content: '';
+                position: absolute;
+                top: -12px;
+                left: 30px;
+                width: 30px;
+                height: 30px;
+                background: ${bgColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${borderColor};
+            }
+            &::after {
+                content: '';
+                position: absolute;
+                top: -18px;
+                left: 50px;
+                width: 20px;
+                height: 20px;
+                background: ${bgColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${borderColor};
+            }
         ">
+            <!-- ===== OK İŞARETİ (ÜST) ===== -->
+            <div style="
+                position: absolute;
+                top: -10px;
+                left: 20px;
+                width: 0;
+                height: 0;
+                border-left: 12px solid transparent;
+                border-right: 12px solid transparent;
+                border-bottom: 12px solid ${bgColor};
+                filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.1));
+            "></div>
+            
             <!-- BAŞLIK -->
-            <div style="display: flex; align-items: center; gap: ${iconGap}; margin-bottom: ${marginBottom};">
-                <span style="font-size: ${emojiSize};">${firstEmoji}</span>
+            <div style="
+                display: flex; 
+                align-items: center; 
+                gap: ${iconGap}; 
+                margin-bottom: ${marginBottom};
+                padding-bottom: ${marginBottom};
+                border-bottom: 2px dashed ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
+            ">
+                <span style="
+                    font-size: ${emojiSize};
+                    background: rgba(245,158,11,0.12);
+                    padding: ${isVerySmall ? '4px' : '6px'};
+                    border-radius: 50%;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: ${isVerySmall ? '32px' : (isMobile ? '38px' : '46px')};
+                    height: ${isVerySmall ? '32px' : (isMobile ? '38px' : '46px')};
+                ">${firstEmoji}</span>
                 <h3 style="
                     margin: 0; 
                     font-size: ${titleFontSize}; 
                     font-weight: 700; 
-                    line-height: 1.2; 
+                    line-height: 1.3; 
                     flex: 1;
+                    color: ${accentColor};
                 ">${titleText}</h3>
             </div>
             
@@ -10764,53 +10827,70 @@ function showStep(index) {
             <p style="
                 margin: 0 0 ${marginBottom} 0; 
                 font-size: ${contentFontSize}; 
-                line-height: 1.5; 
+                line-height: 1.6; 
                 opacity: 0.9;
+                padding: 0 2px;
             ">
                 ${step.content}
             </p>
             
             <!-- BUTONLAR -->
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: ${gapSize}; flex-wrap: wrap;">
+            <div style="
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                gap: ${gapSize}; 
+                flex-wrap: wrap;
+                padding-top: ${marginBottom};
+                border-top: 1px solid ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
+            ">
                 <!-- REHBERİ KAPAT -->
                 <button id="skipOnboardingBtn" onclick="window.skipOnboarding()" style="
-                    background: transparent;
-                    color: ${isLightTheme ? '#64748b' : '#94a3b8'};
-                    border: 1px solid ${isLightTheme ? '#e2e8f0' : '#475569'};
+                    background: rgba(239,68,68,0.08);
+                    color: #ef4444;
+                    border: 1px solid rgba(239,68,68,0.2);
                     padding: ${buttonPadding};
                     border-radius: 30px;
                     font-size: ${buttonFontSize};
                     cursor: pointer;
                     transition: 0.3s;
                     font-weight: 500;
-                    opacity: 0.4;
+                    opacity: 0.5;
                     pointer-events: none;
                     display: flex;
                     align-items: center;
                     gap: 4px;
                     white-space: nowrap;
-                " onmouseover="this.style.background='rgba(239,68,68,0.1)'; this.style.color='#ef4444';" 
-                   onmouseout="this.style.background='transparent'; this.style.color='${isLightTheme ? '#64748b' : '#94a3b8'}';">
+                " onmouseover="this.style.background='rgba(239,68,68,0.15)';" 
+                   onmouseout="this.style.background='rgba(239,68,68,0.08)';">
                     <i class="fas fa-times-circle" style="font-size: ${isVerySmall ? '10px' : '12px'};"></i> 
                     <span id="skipCountdown">Kapat (${countdown}s)</span>
                 </button>
                 
                 <!-- İLERİ -->
                 <div style="display: flex; align-items: center; gap: ${isVerySmall ? '4px' : '8px'};">
-                    <span style="font-size: ${progressFontSize}; opacity: 0.5; white-space: nowrap;">${index + 1}/${steps.length}</span>
+                    <span style="
+                        font-size: ${progressFontSize}; 
+                        opacity: 0.4; 
+                        white-space: nowrap;
+                        background: rgba(245,158,11,0.08);
+                        padding: 2px 8px;
+                        border-radius: 20px;
+                    ">${index + 1}/${steps.length}</span>
                     <button onclick="window.handleOnboardingAction(${index}, ${index + 1})" style="
-                        background: #f59e0b;
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
                         color: #121212;
                         border: none;
-                        padding: ${isVerySmall ? '4px 10px' : (isMobile ? '5px 12px' : '8px 20px')};
+                        padding: ${isVerySmall ? '5px 12px' : (isMobile ? '6px 14px' : '8px 22px')};
                         border-radius: 30px;
-                        font-weight: 600;
+                        font-weight: 700;
                         cursor: pointer;
                         transition: 0.3s;
                         font-size: ${isVerySmall ? '9px' : (isMobile ? '10px' : '11px')};
-                        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+                        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
                         white-space: nowrap;
-                    ">
+                    " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 25px rgba(245, 158, 11, 0.5)';" 
+                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(245, 158, 11, 0.35)';">
                         ${index === steps.length - 1 ? '🚀 Başla!' : '👆 İleri'}
                     </button>
                 </div>
@@ -10818,12 +10898,12 @@ function showStep(index) {
         </div>
     `;
 
-    // ===== TOOLTIP KONUMU (MOBİL UYUMLU) =====
+    // ===== TOOLTIP KONUMU =====
     const rect = targetElement.getBoundingClientRect();
     let top, left;
 
-    const offsetX = isVerySmall ? 80 : (isMobile ? 120 : 150);
-    const offsetY = isVerySmall ? 6 : (isMobile ? 8 : 15);
+    const offsetX = isVerySmall ? 100 : (isMobile ? 130 : 160);
+    const offsetY = isVerySmall ? 6 : (isMobile ? 10 : 18);
 
     switch (step.position) {
         case 'bottom':
@@ -10831,7 +10911,7 @@ function showStep(index) {
             left = rect.left + rect.width / 2 - offsetX;
             break;
         case 'top':
-            top = rect.top - (isVerySmall ? 140 : (isMobile ? 160 : 200));
+            top = rect.top - (isVerySmall ? 160 : (isMobile ? 200 : 240));
             left = rect.left + rect.width / 2 - offsetX;
             break;
         default:
@@ -10840,14 +10920,14 @@ function showStep(index) {
     }
 
     // Ekran dışına çıkmasını engelle
-    const maxWidthPx = isVerySmall ? 220 : (isMobile ? 280 : 340);
+    const maxWidthPx = isVerySmall ? 240 : (isMobile ? 300 : 400);
     if (left < (isVerySmall ? 5 : (isMobile ? 10 : 15))) left = isVerySmall ? 5 : (isMobile ? 10 : 15);
     if (left + maxWidthPx > window.innerWidth - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
         left = window.innerWidth - maxWidthPx - (isVerySmall ? 5 : (isMobile ? 10 : 15));
     }
     if (top < (isVerySmall ? 5 : (isMobile ? 10 : 15))) top = isVerySmall ? 5 : (isMobile ? 10 : 15);
-    if (top + (isVerySmall ? 150 : (isMobile ? 180 : 220)) > window.innerHeight - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
-        top = window.innerHeight - (isVerySmall ? 150 : (isMobile ? 180 : 220)) - (isVerySmall ? 5 : (isMobile ? 10 : 15));
+    if (top + (isVerySmall ? 160 : (isMobile ? 200 : 240)) > window.innerHeight - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
+        top = window.innerHeight - (isVerySmall ? 160 : (isMobile ? 200 : 240)) - (isVerySmall ? 5 : (isMobile ? 10 : 15));
     }
 
     tooltip.style.cssText += `
@@ -10855,7 +10935,7 @@ function showStep(index) {
         top: ${top}px;
         left: ${left}px;
         z-index: 9999;
-        animation: modalSlideUp 0.3s ease;
+        animation: modalSlideUp 0.4s ease;
     `;
 
     document.body.appendChild(tooltip);
@@ -10864,8 +10944,8 @@ function showStep(index) {
     targetElement.classList.add('onboarding-highlight');
     targetElement.style.position = 'relative';
     targetElement.style.zIndex = '9999';
-    targetElement.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.3)';
-    targetElement.style.borderRadius = '6px';
+    targetElement.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 30px rgba(245, 158, 11, 0.3)';
+    targetElement.style.borderRadius = '8px';
     targetElement.style.transition = 'all 0.3s ease';
 
     // ===== GERİ SAYIM BAŞLAT =====
@@ -10882,12 +10962,15 @@ function showStep(index) {
                 countdownEl.textContent = 'Rehberi Kapat';
                 skipBtn.style.opacity = '1';
                 skipBtn.style.pointerEvents = 'auto';
-                skipBtn.style.color = '#ef4444';
-                skipBtn.style.borderColor = 'rgba(239,68,68,0.3)';
+                skipBtn.style.background = 'rgba(239,68,68,0.15)';
+                skipBtn.style.borderColor = 'rgba(239,68,68,0.4)';
             }
         }
     }, 1000);
 }
+
+
+    
 
     // ===== showStep'u GLOBAL YAP =====
     window.showStep = showStep;
