@@ -10650,228 +10650,244 @@ async function showOnboarding(userRef) {
     console.log(`📚 Rehber adım sayısı: ${steps.length}`);
     
     // ===== showStep FONKSİYONUNU TANIMLA =====
-    function showStep(index) {
-        console.log(`📌 showStep çağrıldı: ${index}`);
-        
-        // ===== STEPS KONTROLÜ =====
-        if (!steps) {
-            console.error('❌ steps tanımlı değil!');
-            return;
-        }
-        
-        // ===== ÖNCEKİ TÜM REHBER ELEMENTLERİNİ TEMİZLE =====
-        document.querySelector('.onboarding-tooltip')?.remove();
-        document.querySelector('.onboarding-overlay')?.remove();
-        document.querySelectorAll('.onboarding-highlight').forEach(el => {
-            el.classList.remove('onboarding-highlight');
-            el.style.boxShadow = '';
-            el.style.zIndex = '';
-        });
+function showStep(index) {
+    console.log(`📌 showStep çağrıldı: ${index}`);
+    
+    // ===== ÖNCEKİ TÜM REHBER ELEMENTLERİNİ TEMİZLE =====
+    document.querySelector('.onboarding-tooltip')?.remove();
+    document.querySelector('.onboarding-overlay')?.remove();
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+        el.classList.remove('onboarding-highlight');
+        el.style.boxShadow = '';
+        el.style.zIndex = '';
+    });
 
-        // Eğer tüm adımlar bittiyse
-        if (index >= steps.length) {
-            console.log('🎉 Tüm adımlar tamamlandı!');
-            if (ONBOARDING_TEST_MODE) {
-                console.log('🧪 TEST MODU: Rehber tamamlandı!');
-            } else {
-                if (currentUser) {
-                    updateDoc(userRef, { onboardingCompleted: true })
-                        .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
-                        .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
-                }
+    // Eğer tüm adımlar bittiyse
+    if (index >= steps.length) {
+        console.log('🎉 Tüm adımlar tamamlandı!');
+        if (ONBOARDING_TEST_MODE) {
+            console.log('🧪 TEST MODU: Rehber tamamlandı!');
+        } else {
+            if (currentUser) {
+                updateDoc(userRef, { onboardingCompleted: true })
+                    .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
+                    .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
             }
-            return;
         }
+        return;
+    }
 
-        const step = steps[index];
-        
-        // ===== STEP KONTROLÜ =====
-        if (!step) {
-            console.error(`❌ ${index}. adım bulunamadı!`);
-            return;
-        }
-        
-        const targetElement = document.querySelector(step.target);
+    const step = steps[index];
+    const targetElement = document.querySelector(step.target);
 
-        if (!targetElement) {
-            console.warn(`⚠️ Hedef element bulunamadı: ${step.target}, bir sonraki adıma geçiliyor.`);
-            setTimeout(() => {
-                showStep(index + 1);
-            }, 300);
-            return;
-        }
+    if (!targetElement) {
+        console.warn(`⚠️ Hedef element bulunamadı: ${step.target}, bir sonraki adıma geçiliyor.`);
+        setTimeout(() => {
+            showStep(index + 1);
+        }, 300);
+        return;
+    }
 
-        console.log(`🎯 Hedef element bulundu: ${step.target}`);
+    console.log(`🎯 Hedef element bulundu: ${step.target}`);
 
-        // ===== MOBİL KONTROLÜ =====
-        const isMobile = window.innerWidth <= 768;
-        const isLightTheme = document.body.classList.contains('light-theme');
+    // ===== MOBİL KONTROLÜ =====
+    const isMobile = window.innerWidth <= 768;
+    const isVerySmall = window.innerWidth <= 480;
+    const isLightTheme = document.body.classList.contains('light-theme');
 
-        // ===== OVERLAY =====
-        const overlay = document.createElement('div');
-        overlay.className = 'onboarding-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-            pointer-events: none;
-        `;
-        document.body.appendChild(overlay);
+    // ===== MOBİL BOYUTLAR =====
+    const tooltipPadding = isVerySmall ? '8px 8px' : (isMobile ? '10px 10px' : '15px 18px');
+    const tooltipMaxWidth = isVerySmall ? '200px' : (isMobile ? '250px' : '340px');
+    const titleFontSize = isVerySmall ? '12px' : (isMobile ? '14px' : '16px');
+    const contentFontSize = isVerySmall ? '10px' : (isMobile ? '12px' : '14px');
+    const emojiSize = isVerySmall ? '16px' : (isMobile ? '20px' : '28px');
+    const buttonFontSize = isVerySmall ? '8px' : (isMobile ? '9px' : '11px');
+    const buttonPadding = isVerySmall ? '3px 6px' : (isMobile ? '4px 10px' : '6px 14px');
+    const progressFontSize = isVerySmall ? '8px' : (isMobile ? '10px' : '12px');
+    const gapSize = isVerySmall ? '4px' : (isMobile ? '6px' : '8px');
+    const marginBottom = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
+    const iconGap = isVerySmall ? '4px' : (isMobile ? '6px' : '8px');
 
-        // ===== TOOLTIP OLUŞTUR =====
-       // ===== TOOLTIP OLUŞTUR =====
-const tooltip = document.createElement('div');
-tooltip.className = 'onboarding-tooltip';
+    // ===== OVERLAY =====
+    const overlay = document.createElement('div');
+    overlay.className = 'onboarding-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        pointer-events: none;
+    `;
+    document.body.appendChild(overlay);
 
-// ===== GERİ SAYIM DEĞİŞKENİ =====
-let countdown = 5;
+    // ===== TOOLTIP OLUŞTUR =====
+    const tooltip = document.createElement('div');
+    tooltip.className = 'onboarding-tooltip';
 
-tooltip.innerHTML = `
-    <div style="
-        background: ${isLightTheme ? '#ffffff' : '#1e293b'};
-        color: ${isLightTheme ? '#0f172a' : '#f1f5f9'};
-        border-radius: ${isMobile ? '12px' : '16px'};
-        padding: ${isMobile ? '10px 10px' : '15px 18px'};
-        max-width: ${isMobile ? '250px' : '340px'};
-        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        border: 1px solid ${isLightTheme ? '#e2e8f0' : '#334155'};
-        position: relative;
-        z-index: 9999;
-        animation: modalSlideUp 0.4s ease;
-    ">
-        <div style="display: flex; align-items: center; gap: ${isMobile ? '8px' : '12px'}; margin-bottom: ${isMobile ? '8px' : '12px'};">
-            <span style="font-size: ${isMobile ? '20px' : '28px'};">${step.title.split(' ')[0]}</span>
-            <h3 style="margin: 0; font-size: ${isMobile ? '14px' : '16px'}; font-weight: 700; line-height: 1.3; flex: 1;">${step.title}</h3>
-        </div>
-        <p style="margin: 0 0 ${isMobile ? '12px' : '16px'} 0; font-size: ${isMobile ? '12px' : '14px'}; line-height: 1.6; opacity: 0.9;">
-            ${step.content}
-        </p>
-        
-        <!-- ===== BUTONLAR (GERİ SAYIMLI) ===== -->
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <!-- REHBERİ KAPAT BUTONU -->
-            <button id="skipOnboardingBtn" onclick="window.skipOnboarding()" style="
-                background: transparent;
-                color: ${isLightTheme ? '#64748b' : '#94a3b8'};
-                border: 1px solid ${isLightTheme ? '#e2e8f0' : '#475569'};
-                padding: ${isMobile ? '4px 10px' : '6px 14px'};
-                border-radius: 30px;
-                font-size: ${isMobile ? '9px' : '11px'};
-                cursor: pointer;
-                transition: 0.3s;
-                font-weight: 500;
-                opacity: 0.4;
-                pointer-events: none;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            " onmouseover="this.style.background='rgba(239,68,68,0.1)'; this.style.color='#ef4444';" 
-               onmouseout="this.style.background='transparent'; this.style.color='${isLightTheme ? '#64748b' : '#94a3b8'}';">
-                <i class="fas fa-times-circle"></i> 
-                <span id="skipCountdown">Rehberi Kapat (${countdown}s)</span>
-            </button>
+    // ===== GERİ SAYIM DEĞİŞKENİ =====
+    let countdown = 5;
+
+    // Emoji'yi güvenli şekilde al
+    const titleParts = step.title.split(' ');
+    const firstEmoji = titleParts.length > 0 ? titleParts[0] : '📌';
+    const titleText = titleParts.slice(1).join(' ') || step.title;
+
+    tooltip.innerHTML = `
+        <div style="
+            background: ${isLightTheme ? '#ffffff' : '#1e293b'};
+            color: ${isLightTheme ? '#0f172a' : '#f1f5f9'};
+            border-radius: ${isVerySmall ? '8px' : (isMobile ? '10px' : '14px')};
+            padding: ${tooltipPadding};
+            max-width: ${tooltipMaxWidth};
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            border: 1px solid ${isLightTheme ? '#e2e8f0' : '#334155'};
+            position: relative;
+            z-index: 9999;
+            animation: modalSlideUp 0.3s ease;
+        ">
+            <!-- BAŞLIK -->
+            <div style="display: flex; align-items: center; gap: ${iconGap}; margin-bottom: ${marginBottom};">
+                <span style="font-size: ${emojiSize};">${firstEmoji}</span>
+                <h3 style="
+                    margin: 0; 
+                    font-size: ${titleFontSize}; 
+                    font-weight: 700; 
+                    line-height: 1.2; 
+                    flex: 1;
+                ">${titleText}</h3>
+            </div>
             
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: ${isMobile ? '10px' : '12px'}; opacity: 0.5;">${index + 1} / ${steps.length}</span>
-                <button onclick="window.handleOnboardingAction(${index}, ${index + 1})" style="
-                    background: #f59e0b;
-                    color: #121212;
-                    border: none;
-                    padding: ${isMobile ? '6px 14px' : '8px 20px'};
+            <!-- İÇERİK -->
+            <p style="
+                margin: 0 0 ${marginBottom} 0; 
+                font-size: ${contentFontSize}; 
+                line-height: 1.5; 
+                opacity: 0.9;
+            ">
+                ${step.content}
+            </p>
+            
+            <!-- BUTONLAR -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: ${gapSize}; flex-wrap: wrap;">
+                <!-- REHBERİ KAPAT -->
+                <button id="skipOnboardingBtn" onclick="window.skipOnboarding()" style="
+                    background: transparent;
+                    color: ${isLightTheme ? '#64748b' : '#94a3b8'};
+                    border: 1px solid ${isLightTheme ? '#e2e8f0' : '#475569'};
+                    padding: ${buttonPadding};
                     border-radius: 30px;
-                    font-weight: 600;
+                    font-size: ${buttonFontSize};
                     cursor: pointer;
                     transition: 0.3s;
-                    font-size: ${isMobile ? '10px' : '10px'};
-                    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
-                ">
-                    ${index === steps.length - 1 ? '🚀 Başla!' : '👆 İleri →'}
+                    font-weight: 500;
+                    opacity: 0.4;
+                    pointer-events: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    white-space: nowrap;
+                " onmouseover="this.style.background='rgba(239,68,68,0.1)'; this.style.color='#ef4444';" 
+                   onmouseout="this.style.background='transparent'; this.style.color='${isLightTheme ? '#64748b' : '#94a3b8'}';">
+                    <i class="fas fa-times-circle" style="font-size: ${isVerySmall ? '10px' : '12px'};"></i> 
+                    <span id="skipCountdown">Kapat (${countdown}s)</span>
                 </button>
+                
+                <!-- İLERİ -->
+                <div style="display: flex; align-items: center; gap: ${isVerySmall ? '4px' : '8px'};">
+                    <span style="font-size: ${progressFontSize}; opacity: 0.5; white-space: nowrap;">${index + 1}/${steps.length}</span>
+                    <button onclick="window.handleOnboardingAction(${index}, ${index + 1})" style="
+                        background: #f59e0b;
+                        color: #121212;
+                        border: none;
+                        padding: ${isVerySmall ? '4px 10px' : (isMobile ? '5px 12px' : '8px 20px')};
+                        border-radius: 30px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: 0.3s;
+                        font-size: ${isVerySmall ? '9px' : (isMobile ? '10px' : '11px')};
+                        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+                        white-space: nowrap;
+                    ">
+                        ${index === steps.length - 1 ? '🚀 Başla!' : '👆 İleri'}
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-`;
+    `;
 
-// ===== GERİ SAYIM BAŞLAT =====
-let countdownInterval = setInterval(() => {
-    countdown--;
-    const countdownEl = document.getElementById('skipCountdown');
-    const skipBtn = document.getElementById('skipOnboardingBtn');
-    
-    if (countdownEl && skipBtn) {
-        if (countdown > 0) {
-            countdownEl.textContent = `Rehberi Kapat (${countdown}s)`;
-        } else {
-            clearInterval(countdownInterval);
-            countdownEl.textContent = 'Rehberi Kapat';
-            skipBtn.style.opacity = '1';
-            skipBtn.style.pointerEvents = 'auto';
-            skipBtn.style.color = '#ef4444';
-            skipBtn.style.borderColor = 'rgba(239,68,68,0.3)';
-        }
+    // ===== TOOLTIP KONUMU (MOBİL UYUMLU) =====
+    const rect = targetElement.getBoundingClientRect();
+    let top, left;
+
+    const offsetX = isVerySmall ? 80 : (isMobile ? 120 : 150);
+    const offsetY = isVerySmall ? 6 : (isMobile ? 8 : 15);
+
+    switch (step.position) {
+        case 'bottom':
+            top = rect.bottom + offsetY;
+            left = rect.left + rect.width / 2 - offsetX;
+            break;
+        case 'top':
+            top = rect.top - (isVerySmall ? 140 : (isMobile ? 160 : 200));
+            left = rect.left + rect.width / 2 - offsetX;
+            break;
+        default:
+            top = rect.bottom + offsetY;
+            left = rect.left + rect.width / 2 - offsetX;
     }
-}, 1000);
 
-        // ===== TOOLTIP KONUMU =====
-        const rect = targetElement.getBoundingClientRect();
-        let top, left;
+    // Ekran dışına çıkmasını engelle
+    const maxWidthPx = isVerySmall ? 220 : (isMobile ? 280 : 340);
+    if (left < (isVerySmall ? 5 : (isMobile ? 10 : 15))) left = isVerySmall ? 5 : (isMobile ? 10 : 15);
+    if (left + maxWidthPx > window.innerWidth - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
+        left = window.innerWidth - maxWidthPx - (isVerySmall ? 5 : (isMobile ? 10 : 15));
+    }
+    if (top < (isVerySmall ? 5 : (isMobile ? 10 : 15))) top = isVerySmall ? 5 : (isMobile ? 10 : 15);
+    if (top + (isVerySmall ? 150 : (isMobile ? 180 : 220)) > window.innerHeight - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
+        top = window.innerHeight - (isVerySmall ? 150 : (isMobile ? 180 : 220)) - (isVerySmall ? 5 : (isMobile ? 10 : 15));
+    }
 
-        switch (step.position) {
-            case 'bottom':
-                top = rect.bottom + (isMobile ? 8 : 15);
-                left = rect.left + rect.width / 2 - (isMobile ? 140 : 170);
-                break;
-            case 'top':
-                top = rect.top - (isMobile ? 180 : 200);
-                left = rect.left + rect.width / 2 - (isMobile ? 140 : 170);
-                break;
-            default:
-                top = rect.bottom + (isMobile ? 8 : 15);
-                left = rect.left + rect.width / 2 - (isMobile ? 140 : 170);
-        }
+    tooltip.style.cssText += `
+        position: fixed;
+        top: ${top}px;
+        left: ${left}px;
+        z-index: 9999;
+        animation: modalSlideUp 0.3s ease;
+    `;
 
-        const maxWidth = isMobile ? 280 : 340;
-        if (left < (isMobile ? 10 : 15)) left = isMobile ? 10 : 15;
-        if (left + maxWidth > window.innerWidth - (isMobile ? 10 : 15)) {
-            left = window.innerWidth - maxWidth - (isMobile ? 10 : 15);
-        }
-        if (top < (isMobile ? 10 : 15)) top = isMobile ? 10 : 15;
-        if (top + (isMobile ? 200 : 220) > window.innerHeight - (isMobile ? 10 : 15)) {
-            top = window.innerHeight - (isMobile ? 200 : 220) - (isMobile ? 10 : 15);
-        }
+    document.body.appendChild(tooltip);
 
-        tooltip.style.cssText += `
-            position: fixed;
-            top: ${top}px;
-            left: ${left}px;
-            z-index: 9999;
-            animation: modalSlideUp 0.4s ease;
-        `;
+    // ===== HEDEF ELEMENTİ VURGULA =====
+    targetElement.classList.add('onboarding-highlight');
+    targetElement.style.position = 'relative';
+    targetElement.style.zIndex = '9999';
+    targetElement.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.3)';
+    targetElement.style.borderRadius = '6px';
+    targetElement.style.transition = 'all 0.3s ease';
 
-        document.body.appendChild(tooltip);
-
-        // ===== HEDEF ELEMENTİ VURGULA =====
-        targetElement.classList.add('onboarding-highlight');
-        targetElement.style.position = 'relative';
-        targetElement.style.zIndex = '9999';
-        targetElement.style.boxShadow = '0 0 0 4px #f59e0b, 0 0 30px rgba(245, 158, 11, 0.4)';
-        targetElement.style.borderRadius = '8px';
-        targetElement.style.transition = 'all 0.3s ease';
-
-        // ===== KAPAT BUTONUNU 5 SANİYE SONRA AKTİF ET =====
-        setTimeout(() => {
-            const skipBtn = document.getElementById('skipOnboardingBtn');
-            if (skipBtn) {
+    // ===== GERİ SAYIM BAŞLAT =====
+    let countdownInterval = setInterval(() => {
+        countdown--;
+        const countdownEl = document.getElementById('skipCountdown');
+        const skipBtn = document.getElementById('skipOnboardingBtn');
+        
+        if (countdownEl && skipBtn) {
+            if (countdown > 0) {
+                countdownEl.textContent = `Kapat (${countdown}s)`;
+            } else {
+                clearInterval(countdownInterval);
+                countdownEl.textContent = 'Rehberi Kapat';
                 skipBtn.style.opacity = '1';
                 skipBtn.style.pointerEvents = 'auto';
-                skipBtn.innerHTML = '<i class="fas fa-times-circle"></i> Rehberi Kapat';
+                skipBtn.style.color = '#ef4444';
+                skipBtn.style.borderColor = 'rgba(239,68,68,0.3)';
             }
-        }, 5000);
-    }
+        }
+    }, 1000);
+}
 
     // ===== showStep'u GLOBAL YAP =====
     window.showStep = showStep;
