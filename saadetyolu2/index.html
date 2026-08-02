@@ -2768,7 +2768,7 @@ body.light-theme #profileScreen .info-row button:hover {
         <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
-            <div class="sidebar-item" id="showDuaBtn"><i class="fas fa-pray"></i> Emeği Geçene Dua Et 🤲</div>
+            <div class="sidebar-item" id="showDuaBtn"><i class="fas fa-pray"></i> Emeği Geçenlere Dua Et 🤲</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
         </div>
@@ -2792,6 +2792,11 @@ body.light-theme #profileScreen .info-row button:hover {
         <!-- 3. Kullanıcı Bilgisi -->
         <div class="user-info" id="userBadge" style="display: none;" onclick="showProfile()">
             <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
+        </div>
+        
+        <!-- 3.5 Günlük Seri Rozeti -->
+        <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
+            🔥 <span id="gunlukSeriBadgeText">0</span>
         </div>
         
         <!-- 4. YARDIM BUTONU -->
@@ -3297,6 +3302,10 @@ body.light-theme #profileScreen .info-row button:hover {
                         <div id="seviyeProfile" style="font-size: 24px; color: #f59e0b; font-weight: 700;">1</div>
                         <div style="font-size: 10px; opacity: 0.7;">🏔️ Seviye</div>
                     </div>
+                    <div class="profile-stat-card" onclick="showStatInfo('streak')" style="text-align: center; padding: 14px 10px; background: rgba(255,255,255,0.03); border-radius: 12px; cursor: pointer; transition: 0.3s;">
+                        <div id="gunlukSeriProfile" style="font-size: 24px; color: #f59e0b; font-weight: 700;">0</div>
+                        <div style="font-size: 10px; opacity: 0.7;">🔥 Günlük Seri</div>
+                    </div>
                 </div>
                 
                 <!-- Sınav Geçmişi -->
@@ -3424,8 +3433,8 @@ body.light-theme #profileScreen .info-row button:hover {
         <div style="background: rgba(239,68,68,0.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 15px; border-left: 3px solid #ef4444;">
             <p style="margin: 0; font-size: 13px; color: #fca5a5;">
                 <i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>
-                <strong>Bu kelimeleri doğru cevaplayana kadar sandıkta kalırlar!</strong>
-                Her sandık <span style="color: #ef4444; font-weight: 700;">-1 puan</span> ceza getirir.
+                <strong>Bu kelimeleri 3 kez art arda doğru bilene kadar sandıkta kalırlar!</strong>
+                Aralıklı tekrar sistemi sayesinde her doğrudan sonra biraz daha geç karşına çıkarlar.
                 <span style="color: #f59e0b; font-weight: 500;">Kurtar, puanını artır! 🚀</span>
             </p>
         </div>
@@ -3662,6 +3671,15 @@ let quizCorrectCount = 0;        // Doğru sayısı
 let quizTotalQuestions = 0;      // Toplam soru sayısı
 let sandikAlmaSayaci = 0;        // Sandık sayacı (kaç kere sandıktan alındı)
 let sandikAktif = false;         // Sandık aktif mi? (sürekli sandıktan almamak için)
+
+// ========== ARALIKLI TEKRAR (SPACED REPETITION) ==========
+let sandikSoruSayaci = 0;        // Her soru cevaplanınca artan sayaç (SRS zamanlaması için)
+const SRS_ARALIKLARI = { 1: 3, 2: 6, 3: 12 };  // Kutu no -> kaç soru sonra tekrar "due" olur
+const SRS_MAX_KUTU = 3;          // Bu kutuda doğru cevaplanan kelime sandıktan mezun olur
+
+// ========== GÜNLÜK SERİ (STREAK) ==========
+let gunlukSeri = 0;              // Kullanıcının mevcut günlük serisi
+let enUzunSeri = 0;              // Kullanıcının en uzun serisi
 
 // Çift yönlü kelime getirme için (bir eski, bir yeni)
 let baslangicIndex = 0;          // Baştan başla (eski kelimeler)
@@ -4066,6 +4084,58 @@ showBtn.onclick = () => {
         currentWordIndex = (currentWordIndex + 1) % words.length;
         updateWordDisplay();
     };
+
+    // ===== 🔥 GÜNLÜK SERİ (STREAK) HESAPLAMA =====
+    // Kullanıcı her gün ilk giriş yaptığında çağrılır. Dünkü tarih varsa seri +1,
+    // bugün zaten sayıldıysa dokunmaz, aradan gün geçtiyse seri 1'e sıfırlanır.
+    async function updateGunlukSeri(userRef, data) {
+        try {
+            const bugun = new Date().toISOString().slice(0, 10);
+            const sonTarih = data.lastStreakDate || null;
+            let seri = data.gunlukSeri || 0;
+            let enUzun = data.enUzunSeri || 0;
+            
+            if (sonTarih === bugun) {
+                // Bugün zaten sayıldı, sadece değerleri yükle
+                gunlukSeri = seri;
+                enUzunSeri = enUzun;
+                updateStreakDisplay();
+                return;
+            }
+            
+            const dun = new Date();
+            dun.setDate(dun.getDate() - 1);
+            const dunStr = dun.toISOString().slice(0, 10);
+            
+            if (sonTarih === dunStr) {
+                seri += 1; // Seri devam ediyor
+            } else {
+                seri = 1; // Seri koptu, yeniden başlıyor
+            }
+            
+            if (seri > enUzun) enUzun = seri;
+            
+            await updateDoc(userRef, { gunlukSeri: seri, enUzunSeri: enUzun, lastStreakDate: bugun });
+            
+            gunlukSeri = seri;
+            enUzunSeri = enUzun;
+            updateStreakDisplay();
+            console.log('🔥 Günlük seri güncellendi:', gunlukSeri, '(en uzun:', enUzunSeri, ')');
+        } catch (error) {
+            console.log('⚠️ Günlük seri güncelleme hatası:', error);
+        }
+    }
+    
+    function updateStreakDisplay() {
+        const el = document.getElementById('gunlukSeriProfile');
+        if (el) el.textContent = gunlukSeri;
+        const badge = document.getElementById('gunlukSeriBadge');
+        if (badge) {
+            badge.style.display = gunlukSeri > 0 ? 'flex' : 'none';
+            const badgeText = document.getElementById('gunlukSeriBadgeText');
+            if (badgeText) badgeText.textContent = gunlukSeri;
+        }
+    }
 
     async function updateUserProgress() {
         if (!currentUser) return;
@@ -5568,6 +5638,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
                 }
                 
+                // ===== 🔥 GÜNLÜK SERİYİ KONTROL ET / GÜNCELLE =====
+                await updateGunlukSeri(userRef, data);
+                
                 // ===== 🤲 YENİ KULLANICI: DUA EKRANI + REHBER =====
                 // Daha önce görmemişse (yeni kayıt veya eski kullanıcı), 
                 // ana ekran tam yüklendikten sonra önce dua ekranı, 
@@ -6766,6 +6839,7 @@ window.startQuizWords = async () => {
         quizAnswered = false;
         sandikAlmaSayaci = 0;
         sandikAktif = false;
+        sandikSoruSayaci = 0;
         baslangicIndex = 0;
         bitisIndex = seviyeKelimeListesi.length - 1;
         siraSoldan = true;
@@ -6817,6 +6891,53 @@ window.startQuizWords = async () => {
 
 
     
+// ===== SRS: Sandıktan "sırası gelmiş" bir kelime seç =====
+// Kutusuna göre belirli bir soru aralığı geçmeden kelime tekrar sorulmaz.
+// Sırası gelen kelime yoksa (istisnai durum), sandıktaki tüm kelimeler havuza girer.
+function pickFromSandik() {
+    if (quizSandik.length === 0) return null;
+    const dueWords = quizSandik.filter(w => (w.dueAt || 0) <= sandikSoruSayaci);
+    const havuz = dueWords.length > 0 ? dueWords : quizSandik;
+    const randomIndex = Math.floor(Math.random() * havuz.length);
+    return havuz[randomIndex];
+}
+
+// ===== SRS: Sandığa yeni giren bir kelimeye başlangıç kutusu/zamanı ata =====
+function sandikaEkleSRS(word) {
+    return {
+        id: word.id,
+        arabic: word.arabic,
+        turkish: word.turkish,
+        box: 1,
+        dueAt: sandikSoruSayaci + SRS_ARALIKLARI[1]
+    };
+}
+
+// ===== SRS: Sandıktaki bir kelime doğru bilindiğinde kutusunu ilerlet =====
+// Kutu SRS_MAX_KUTU'yu geçerse kelime mezun olur (sandıktan kalıcı çıkar).
+// Aksi halde bir sonraki gösterim için daha ileri bir "due" zamanı belirlenir.
+function sandiktaIlerlet(wordId) {
+    const idx = quizSandik.findIndex(w => w.id === wordId);
+    if (idx === -1) return { mezunOldu: false };
+    const kelime = quizSandik[idx];
+    const yeniKutu = (kelime.box || 1) + 1;
+    if (yeniKutu > SRS_MAX_KUTU) {
+        quizSandik.splice(idx, 1);
+        return { mezunOldu: true };
+    }
+    kelime.box = yeniKutu;
+    kelime.dueAt = sandikSoruSayaci + (SRS_ARALIKLARI[yeniKutu] || 12);
+    return { mezunOldu: false };
+}
+
+// ===== SRS: Sandıktaki bir kelime yanlış bilindiğinde kutusunu sıfırla =====
+function sandiktaSifirla(wordId) {
+    const kelime = quizSandik.find(w => w.id === wordId);
+    if (!kelime) return;
+    kelime.box = 1;
+    kelime.dueAt = sandikSoruSayaci + SRS_ARALIKLARI[1];
+}
+
 // Sonraki kelimeyi yükle
 async function loadNextQuizWord() {
     console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
@@ -6833,10 +6954,9 @@ async function loadNextQuizWord() {
     // Normal kelimeler bitti mi?
     if (baslangicIndex > bitisIndex) {
         if (quizSandik.length > 0) {
-            const randomIndex = Math.floor(Math.random() * quizSandik.length);
-            word = quizSandik[randomIndex];
+            word = pickFromSandik();
             isFromSandik = true;
-            console.log('📦 Normal bitti, sandıktan alındı:', word.arabic);
+            console.log('📦 Normal bitti, sandıktan alındı (SRS):', word.arabic);
         } else {
             finishQuizWords();
             return;
@@ -6844,12 +6964,11 @@ async function loadNextQuizWord() {
     }
     // Her 10 kelimede bir sandıktan al
     else if (quizSandik.length > 0 && normalGosterilen > 0 && normalGosterilen % 9 === 0 && !sandikAktif) {
-        const randomIndex = Math.floor(Math.random() * quizSandik.length);
-        word = quizSandik[randomIndex];
+        word = pickFromSandik();
         isFromSandik = true;
         sandikAktif = true;
         sandikAlmaSayaci++;
-        console.log('📦 10 kelimede bir sandıktan alındı:', word.arabic);
+        console.log('📦 10 kelimede bir sandıktan alındı (SRS):', word.arabic);
     }
     
     // Normal kelime al
@@ -6892,7 +7011,7 @@ function displayQuizWord(word) {
     // Eğer sandıktan geliyorsa ve sandıkta yoksa, sandığa ekle (güvenlik)
     if (word.isFromSandik && !quizSandik.some(w => w.id === word.id)) {
         console.log('⚠️ Sandıktan gelen kelime sandıkta bulunamadı, ekleniyor:', word.arabic);
-        quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
+        quizSandik.push(sandikaEkleSRS(word));
         saveSandikToFirestore();
         updateSandikDisplay();
     }
@@ -6968,6 +7087,9 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
     const isCorrect = selectedDiv.dataset.isCorrect === 'true';
     const allOptions = document.querySelectorAll('.option-quiz');
     
+    // ===== SRS SAYACINI İLERLET (her cevaplanan soru bir "tık"tır) =====
+    sandikSoruSayaci++;
+    
     if (isCorrect) {
         // ===== PUAN EKLE (0.01) VE YUVARLA =====
         quizScore = Math.round((quizScore + 0.01) * 100) / 100;
@@ -6975,23 +7097,16 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         selectedDiv.classList.add('correct-highlight');
         showTempMessage('✅ Doğru! +0.01 puan', '#10b981');
         
-        // ===== SANDIKTAN KESİN DÜŞÜR (ID ile) =====
+        // ===== SANDIKTA İSE KUTUSUNU İLERLET (SRS) =====
         if (word.isFromSandik) {
-            console.log('📦 SANDIKTAN DÜŞÜRÜLÜYOR:', word.arabic, 'ID:', word.id);
-            const oncekiSayi = quizSandik.length;
-            quizSandik = quizSandik.filter(w => w.id !== word.id);
-            const sonrakiSayi = quizSandik.length;
-            console.log('📦 Sandık: ', oncekiSayi, '->', sonrakiSayi);
-            
-            if (oncekiSayi > sonrakiSayi) {
-                await saveSandikToFirestore();
-                updateSandikDisplay();
-                console.log('✅ Sandıktan çıkarıldı! Kalan:', quizSandik.length);
+            const { mezunOldu } = sandiktaIlerlet(word.id);
+            if (mezunOldu) {
+                console.log('🎓 Kelime SRS\'ten mezun oldu, sandıktan çıktı:', word.arabic);
             } else {
-                console.log('⚠️ Kelime sandıktan çıkarılamadı! ID kontrolü yap.');
-                console.log('⚠️ Aranan ID:', word.id);
-                console.log('⚠️ Sandıktaki ID\'ler:', quizSandik.map(w => w.id));
+                console.log('📦 Kutu ilerledi:', word.arabic);
             }
+            await saveSandikToFirestore();
+            updateSandikDisplay();
         }
     } else {
         // ===== PUAN DÜŞ (1 puan) VE YUVARLA =====
@@ -7005,16 +7120,19 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         });
         showTempMessage('❌ Yanlış! -1 puan', '#ef4444');  // ✅ -5 yerine -1
         
-        // ===== SANDIĞA EKLE (eğer sandıktan değilse) =====
+        // ===== SANDIĞA EKLE (eğer sandıktan değilse) YA DA KUTUSUNU SIFIRLA =====
         if (!word.isFromSandik) {
             const alreadyInSandik = quizSandik.some(w => w.id === word.id);
             if (!alreadyInSandik) {
-                quizSandik.push({ id: word.id, arabic: word.arabic, turkish: word.turkish });
-                await saveSandikToFirestore();
-                updateSandikDisplay();
+                quizSandik.push(sandikaEkleSRS(word));
                 console.log('📦 Sandığa eklendi:', word.arabic);
             }
+        } else {
+            sandiktaSifirla(word.id);
+            console.log('🔁 Kutu sıfırlandı, yakında tekrar sorulacak:', word.arabic);
         }
+        await saveSandikToFirestore();
+        updateSandikDisplay();
     }
     
     // ===== PUAN VE BAŞARI YÜZDESİNİ GÖSTER (2 HANELİ) =====
@@ -7060,8 +7178,9 @@ document.getElementById('bilmedimBtn').onclick = async () => {
     
     showTempMessage('💡 Doğru cevap gösterildi, puan değişmedi', '#f59e0b');
     
+    sandikSoruSayaci++;
     if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+        quizSandik.push(sandikaEkleSRS(currentQuizWord));
         await saveSandikToFirestore();
         document.getElementById('sandikCount').textContent = quizSandik.length;
         if (document.getElementById('sandikCountProfile')) {
@@ -7090,8 +7209,9 @@ document.getElementById('gecBtn').onclick = async () => {
     
     showTempMessage('⏩ Geçtiniz, puan değişmedi', '#6b7280');
     
+    sandikSoruSayaci++;
     if (!quizSandik.some(w => w.id === currentQuizWord.id)) {
-        quizSandik.push({ id: currentQuizWord.id, arabic: currentQuizWord.arabic, turkish: currentQuizWord.turkish });
+        quizSandik.push(sandikaEkleSRS(currentQuizWord));
         await saveSandikToFirestore();
         document.getElementById('sandikCount').textContent = quizSandik.length;
         if (document.getElementById('sandikCountProfile')) {
@@ -7904,6 +8024,7 @@ window.showStatInfo = function(type) {
     const sandik = document.getElementById('sandikCountProfile')?.textContent || '0';
     const karma = document.getElementById('karmaScoreProfile')?.textContent || '0';
     const level = document.getElementById('seviyeProfile')?.textContent || '1/7';
+    const streak = document.getElementById('gunlukSeriProfile')?.textContent || '0';
     
     // Her istatistik için detaylı bilgiler
     const statInfo = {
@@ -8010,7 +8131,7 @@ window.showStatInfo = function(type) {
                 </div>
                 <p>📦 Sandıkta <span class="highlight">${sandik}</span> kelime var.</p>
                 <p style="color: #f59e0b; font-weight: 500; font-size: 13px;">
-                    ⚠️ Bu kelimeleri <strong>doğru cevaplayana</strong> kadar sandıkta kalırlar!
+                    ⚠️ Bir kelimeyi <strong>3 kez art arda doğru</strong> bilmen gerekir; her doğruda bir süre sonra tekrar karşına çıkar, yanlış bilirsen baştan başlar!
                 </p>
                 <div style="background:rgba(16,185,129,0.06);border-radius:8px;padding:8px 12px;margin-top:8px;border-left:3px solid #10b981;">
                     <p style="margin:0;font-size:12px;">
@@ -8079,6 +8200,30 @@ window.showStatInfo = function(type) {
                 </div>
             `,
             tip: '🏔️ Her yeni seviye seni zirveye bir adım daha yaklaştırır!'
+        },
+        'streak': {
+            icon: '🔥',
+            iconClass: 'orange',
+            title: 'Günlük Seri',
+            subtitle: 'Kesintisiz giriş yaptığın gün sayısı',
+            description: `
+                <div style="background:rgba(245,158,11,0.08);border-radius:10px;padding:12px;margin-bottom:10px;">
+                    <p style="margin:0;"><strong>🔥 Ne Demek?</strong></p>
+                    <p style="margin:4px 0 0 0;font-size:13px;opacity:0.8;">
+                        Uygulamaya <span class="highlight">art arda her gün</span> girdiğinde serin 1 artar. 
+                        Bir gün ara verirsen seri <span class="highlight">baştan başlar</span>.
+                    </p>
+                </div>
+                <p>🔥 Şu anki serin: <span class="highlight">${streak} gün</span></p>
+                <div style="background:rgba(239,68,68,0.06);border-radius:8px;padding:8px 12px;margin-top:8px;border-left:3px solid #ef4444;">
+                    <p style="margin:0;font-size:12px;">
+                        <i class="fas fa-fire" style="color:#ef4444;"></i> 
+                        <strong>Unutma:</strong> Seriyi korumak için her gün en az bir kez giriş yap! 
+                        <span style="display:inline-block;animation:bounce 1s infinite;">🔥</span>
+                    </p>
+                </div>
+            `,
+            tip: '🔥 Küçük ama düzenli adımlar, büyük ilerleme demektir!'
         }
     };
     
@@ -9492,8 +9637,8 @@ if (examLessonSelect) {
                     <span id="duaCounterNumber">···</span> kez dua edildi
                 </div>
                 <h3>Rabbimin Adıyla...</h3>
-                <p>Bu sayfanın hazırlanmasında emeği geçen kardeşin için birkaç saniyeni ayırıp bir dua eder misin?</p>
-                <span class="dua-highlight">"Allah emeği geçenden razı olsun; bu ilmi, sadaka-i cariye eylesin..."</span>
+                <p>Bu sayfanın hazırlanmasında emeği geçen kardeşlerin için birkaç saniyeni ayırıp bir dua eder misin?</p>
+                <span class="dua-highlight">"Allah emeği geçenlerden razı olsun, bu ilmi sadaka-i cariye eylesin..."</span>
                 <p style="font-size: 12px; opacity: 0.7;">Duanı ettiysen aşağıdaki butona basıp devam edebilirsin.</p>
                 <button class="dua-btn" id="duaContinueBtn">Dua Ettim, Devam Et 🤲</button>
             </div>
