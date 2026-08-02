@@ -11117,12 +11117,10 @@ function showStep(index) {
     }, 800);
 }
 
-// ===== REHBER TIKLAMA İŞLEMLERİ =====
-// ===== REHBER TIKLAMA İŞLEMLERİ (GÜNCELLENMİŞ) =====
 window.handleOnboardingAction = function(index, nextIndex) {
-    const step = window._onboardingSteps ? window._onboardingSteps[index] : null;
+    const step = steps[index];
     
-    console.log('🔄 Adım çalıştırılıyor:', index, 'Action:', step?.action);
+    console.log(`🔄 Adım ${index} çalıştırılıyor, Action: ${step?.action || 'yok'}`);
     
     // Eski tooltip'i temizle
     document.querySelector('.onboarding-tooltip')?.remove();
@@ -11149,8 +11147,14 @@ window.handleOnboardingAction = function(index, nextIndex) {
     }
     
     // Son adım mı kontrol et
-    if (nextIndex >= window._onboardingSteps.length) {
+    if (nextIndex >= steps.length) {
         console.log('🎉 Rehber tamamlandı!');
+        
+        // ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+        if (typeof window.restoreOriginalTheme === 'function') {
+            window.restoreOriginalTheme();
+        }
+        
         document.querySelector('.onboarding-tooltip')?.remove();
         document.querySelector('.onboarding-overlay')?.remove();
         document.querySelectorAll('.onboarding-highlight').forEach(el => {
@@ -11159,7 +11163,6 @@ window.handleOnboardingAction = function(index, nextIndex) {
             el.style.zIndex = '';
         });
         if (!ONBOARDING_TEST_MODE && currentUser) {
-            const userRef = doc(db, 'users', currentUser.uid);
             updateDoc(userRef, { onboardingCompleted: true })
                 .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
                 .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
@@ -11167,8 +11170,18 @@ window.handleOnboardingAction = function(index, nextIndex) {
         return;
     }
     
-    // ===== BURASI ÖNEMLİ: Sonraki adımı göster =====
-    // Sayfanın yeniden render olması için daha uzun bekle
+    // ===== BURASI ÖNEMLİ: Tema adımından sonra eski haline döndür =====
+    // Eğer bir önceki adım tema adımıysa (index 14 ise) ve şimdi 15. adıma geçiyorsak
+    if (index === 14) {  // Tema adımının index'i
+        console.log('🌓 Tema adımı geçildi, eski haline döndürülüyor...');
+        setTimeout(() => {
+            if (typeof window.restoreOriginalTheme === 'function') {
+                window.restoreOriginalTheme();
+            }
+        }, 300);
+    }
+    
+    // ===== Sonraki adımı göster =====
     console.log(`⏳ ${nextIndex}. adım için bekleniyor...`);
     setTimeout(() => {
         if (typeof showStep === 'function') {
@@ -11177,15 +11190,20 @@ window.handleOnboardingAction = function(index, nextIndex) {
         } else {
             console.error('❌ showStep fonksiyonu bulunamadı!');
         }
-    }, 800); // 800ms bekle (sayfa render olsun)
+    }, 600);
 };
-
 
 
 
  // ===== REHBERİ TAMAMEN KAPAT =====
 window.skipOnboarding = function() {
-    // Tüm rehber elementlerini temizle
+    console.log('👋 Rehber kapatılıyor...');
+    
+    // ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+    if (typeof window.restoreOriginalTheme === 'function') {
+        window.restoreOriginalTheme();
+    }
+    
     document.querySelector('.onboarding-tooltip')?.remove();
     document.querySelector('.onboarding-overlay')?.remove();
     document.querySelectorAll('.onboarding-highlight').forEach(el => {
@@ -11194,13 +11212,10 @@ window.skipOnboarding = function() {
         el.style.zIndex = '';
     });
     
- // ===== TEST MODU KONTROLÜ =====
     if (ONBOARDING_TEST_MODE) {
         console.log('🧪 TEST MODU: Rehber kullanıcı tarafından kapatıldı.');
     } else {
-        // Normal mod: Firestore'u güncelle
         if (currentUser) {
-            const userRef = doc(db, 'users', currentUser.uid);
             updateDoc(userRef, { onboardingCompleted: true })
                 .then(() => console.log('✅ Rehber kullanıcı tarafından kapatıldı.'))
                 .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
