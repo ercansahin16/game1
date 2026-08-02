@@ -7280,7 +7280,15 @@ async function finishQuizWords() {
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
-    // Kullanıcı verilerini güncelle (seviyeyi kaydet)
+    // ===== SEVİYE İLERLEMESİNİ HEMEN UYGULA (buton beklemeden) =====
+    // Böylece oyuncu "Sonraki Seviye" butonuna basmadan çıksa bile ilerleme ve +2 puan kaybolmaz.
+    const tamamlananSeviye = mevcutSeviye;
+    const sonSeviyeMi = mevcutSeviye >= toplamSeviye;
+    if (!sonSeviyeMi) {
+        mevcutSeviye++;
+    }
+    
+    // Kullanıcı verilerini güncelle (seviyeyi ANINDA kaydet)
     if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { 
@@ -7292,56 +7300,56 @@ async function finishQuizWords() {
     }
     
     // Seviye kontrolü
-    if (mevcutSeviye < toplamSeviye) {
+    if (!sonSeviyeMi) {
         container.innerHTML = `
-            <div class="result-card">
-                <h2>🎉 Seviye ${mevcutSeviye} Tamamlandı!</h2>
-                <div class="score">${quizScore.toFixed(2)} Puan</div>
-                <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
-                        <div>Doğru</div>
+            <div style="text-align:center; padding: 20px 12px; max-width: 420px; margin: 0 auto;">
+                <h2 style="font-size: clamp(18px, 5vw, 22px); margin: 0 0 6px 0;">🎉 Seviye ${tamamlananSeviye} Tamamlandı!</h2>
+                <div style="font-size: clamp(32px, 9vw, 48px); font-weight: bold; color: #f59e0b; margin: 8px 0;">${quizScore.toFixed(2)} Puan</div>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0;">
+                    <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #10b981;">✅ ${quizCorrectCount}</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Doğru</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
-                        <div>Başarı</div>
+                    <div style="background: rgba(245,158,11,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #f59e0b;">📊 ${finalPercent}%</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Başarı</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #3b82f6;">🏆 ${mevcutSeviye}/${toplamSeviye}</div>
-                        <div>Seviye</div>
+                    <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #3b82f6;">🏆 ${tamamlananSeviye}/${toplamSeviye}</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Seviye</div>
                     </div>
                 </div>
-                <p style="color: #10b981; font-size: 14px;">📦 Ahsente,Sandıktaki bütün kelimeleri öğrendin...</p>
-                <p style="color: #f59e0b; font-size: 13px;">➜ Sonraki seviyeye geçmek için butona tıkla! <strong>+2 puan</strong></p>
-                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="sonrakiSeviye()">➜ Sonraki Seviye (${mevcutSeviye + 1}/${toplamSeviye})</button>
-                    <button class="btn btn-nav" onclick="goHome()">Bahçeye çık</button>
+                <p style="color: #10b981; font-size: 13px; margin: 6px 0;">📦 Ahsente, sandıktaki bütün kelimeleri öğrendin...</p>
+                <p style="color: #f59e0b; font-size: 13px; margin: 6px 0;">🎉 Bu seviyeyi tamamladığın için <strong>+2 puan</strong> kazandın!</p>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px;">
+                    <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="sonrakiSeviye()">➜ Sonraki Seviye (${mevcutSeviye}/${toplamSeviye})</button>
+                    <button class="btn btn-nav" style="width: 100%; padding: 12px; font-size: 14px;" onclick="goHome()">Bahçeye çık</button>
                 </div>
             </div>
         `;
     } else {
         // Tüm seviyeler bitti
         container.innerHTML = `
-            <div class="result-card">
-                <h2>🏆 TEBRİKLER!</h2>
-                <div style="font-size: 48px; margin: 5px 0;">🎊</div>
-                <div class="score">${quizScore.toFixed(2)} Puan</div>
-                <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #10b981;">✅ ${quizCorrectCount}</div>
-                        <div>Doğru</div>
+            <div style="text-align:center; padding: 20px 12px; max-width: 420px; margin: 0 auto;">
+                <h2 style="font-size: clamp(18px, 5vw, 22px); margin: 0 0 6px 0;">🏆 TEBRİKLER!</h2>
+                <div style="font-size: clamp(32px, 8vw, 40px); margin: 4px 0;">🎊</div>
+                <div style="font-size: clamp(32px, 9vw, 48px); font-weight: bold; color: #f59e0b; margin: 8px 0;">${quizScore.toFixed(2)} Puan</div>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0;">
+                    <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #10b981;">✅ ${quizCorrectCount}</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Doğru</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #f59e0b;">📊 ${finalPercent}%</div>
-                        <div>Başarı</div>
+                    <div style="background: rgba(245,158,11,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #f59e0b;">📊 ${finalPercent}%</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Başarı</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 28px; color: #f59e0b;">🏆 ${toplamSeviye}/${toplamSeviye}</div>
-                        <div>Tüm Seviyeler</div>
+                    <div style="background: rgba(245,158,11,0.08); border-radius: 10px; padding: 10px 4px;">
+                        <div style="font-size: clamp(18px, 5vw, 22px); color: #f59e0b;">🏆 ${toplamSeviye}/${toplamSeviye}</div>
+                        <div style="font-size: 11px; opacity: 0.75;">Tüm Seviyeler</div>
                     </div>
                 </div>
-                <p style="color: #10b981; font-size: 16px;">🌟 Tüm kelimeler öğrenildi!</p>
-                <button class="btn btn-primary" onclick="goHome()" style="margin-top: 20px;">Bahçeye çık</button>
+                <p style="color: #10b981; font-size: 15px; margin: 6px 0;">🌟 Tüm kelimeler öğrenildi!</p>
+                <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px; margin-top: 16px;" onclick="goHome()">Bahçeye çık</button>
             </div>
         `;
     }
@@ -7349,29 +7357,13 @@ async function finishQuizWords() {
 
     // Sonraki seviyeye geç
 window.sonrakiSeviye = function() {
-    if (mevcutSeviye < toplamSeviye) {
-        mevcutSeviye++;
-        console.log(`🎉 Seviye ${mevcutSeviye} başlıyor!`);
-        console.log(`📌 Yeni seviye: ${mevcutSeviye}/${toplamSeviye}`);
-        
-        // Seviyeyi Firestore'a kaydet
-        if (currentUser) {
-            const userRef = doc(db, 'users', currentUser.uid);
-            updateDoc(userRef, { 
-                mevcutSeviye: mevcutSeviye
-            }).then(() => {
-                console.log('✅ Seviye Firestore\'a kaydedildi:', mevcutSeviye);
-            }).catch(err => console.error('❌ Seviye kaydetme hatası:', err));
-        }
-        
-        showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor!`, '#10b981');
-        setTimeout(() => {
-            startQuizWords();
-        }, 1000);
-    } else {
-        console.log('⚠️ Son seviyedeyiz, daha ileri seviye yok!');
-        showTempMessage('🏆 Tüm seviyeler tamamlandı!', '#f59e0b');
-    }
+    // NOT: mevcutSeviye ve Firestore kaydı artık finishQuizWords() içinde,
+    // seviye biter bitmez yapılıyor. Bu fonksiyon sadece ekranı bir sonraki
+    // seviyenin sorularına geçirir.
+    showTempMessage(`🎉 Seviye ${mevcutSeviye} başlıyor!`, '#10b981');
+    setTimeout(() => {
+        startQuizWords();
+    }, 1000);
 };
 
 // Sandıktan devam et
