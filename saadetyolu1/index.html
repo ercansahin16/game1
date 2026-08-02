@@ -9417,80 +9417,273 @@ if (examLessonSelect) {
         };
     }
     
-    // ============================================================
-    // 12. YARDIM BUTONU (Header - Help Game)
-    // ============================================================
-    const helpGameBtn = document.getElementById('helpGameBtn');
-    if (helpGameBtn) {
-        helpGameBtn.addEventListener('click', function() {
-            const modal = document.createElement('div');
-            modal.className = 'help-modal';
-            modal.style.cssText = `
-                position: fixed; top:0; left:0; right:0; bottom:0;
-                background: rgba(0,0,0,0.85);
-                display: flex; align-items: center; justify-content: center;
-                z-index: 1001;
-                backdrop-filter: blur(4px);
-                animation: modalFadeIn 0.3s ease;
-            `;
-            modal.innerHTML = `
-                <div class="help-modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: #1a1a1a; border-radius: 20px; padding: 28px; width: 92%; border: 1px solid rgba(245,158,11,0.1);">
-                    <div class="help-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
-                        <h3 style="color: #f59e0b; font-size: 20px; margin: 0; display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-mosque" style="color: #f59e0b;"></i> SaadetYolu - Nasıl Oynanır?
-                        </h3>
-                        <button class="help-modal-close" style="background: none; border: none; color: #6b7280; font-size: 24px; cursor: pointer; transition: 0.3s;">&times;</button>
+// ============================================================
+// 12. YARDIM BUTONU (Header - Help Game) - REHBER BUTONLU
+// ============================================================
+const helpGameBtn = document.getElementById('helpGameBtn');
+if (helpGameBtn) {
+    helpGameBtn.addEventListener('click', function() {
+        // Eğer rehber zaten açıksa kapat, yeniden başlat
+        const existingTooltip = document.querySelector('.onboarding-tooltip');
+        if (existingTooltip) {
+            document.querySelector('.onboarding-tooltip')?.remove();
+            document.querySelector('.onboarding-overlay')?.remove();
+            document.querySelectorAll('.onboarding-highlight').forEach(el => {
+                el.classList.remove('onboarding-highlight');
+                el.style.boxShadow = '';
+                el.style.zIndex = '';
+            });
+            setTimeout(() => {
+                if (typeof window.restartOnboarding === 'function') {
+                    window.restartOnboarding();
+                }
+            }, 500);
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'help-modal';
+        modal.style.cssText = `
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1001;
+            backdrop-filter: blur(4px);
+            animation: modalFadeIn 0.3s ease;
+        `;
+        
+        const isLightTheme = document.body.classList.contains('light-theme');
+        const textColor = isLightTheme ? '#1e1b4b' : '#d1d5db';
+        const bgColor = isLightTheme ? '#ffffff' : '#1a1a1a';
+        
+        modal.innerHTML = `
+            <div class="help-modal-content" style="
+                max-width: 520px; 
+                max-height: 90vh; 
+                overflow-y: auto; 
+                background: ${bgColor}; 
+                border-radius: 20px; 
+                padding: 28px; 
+                width: 92%; 
+                border: 1px solid rgba(245,158,11,0.15);
+                color: ${textColor};
+                box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            ">
+                <!-- HEADER -->
+                <div class="help-modal-header" style="
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center; 
+                    margin-bottom: 18px; 
+                    border-bottom: 1px solid rgba(255,255,255,0.06); 
+                    padding-bottom: 14px;
+                ">
+                    <h3 style="
+                        color: #f59e0b; 
+                        font-size: 20px; 
+                        margin: 0; 
+                        display: flex; 
+                        align-items: center; 
+                        gap: 10px;
+                    ">
+                        <i class="fas fa-mosque" style="color: #f59e0b;"></i> 
+                        SaadetYolu - Nasil Oynanir?
+                    </h3>
+                    <button class="help-modal-close" style="
+                        background: none; 
+                        border: none; 
+                        color: #6b7280; 
+                        font-size: 24px; 
+                        cursor: pointer; 
+                        transition: 0.3s;
+                    " onmouseover="this.style.color='#f59e0b'; this.style.transform='rotate(90deg)';" 
+                       onmouseout="this.style.color='#6b7280'; this.style.transform='rotate(0)';">&times;</button>
+                </div>
+                
+                <!-- BODY -->
+                <div class="help-modal-body" style="line-height: 1.7; font-size: 14px; color: ${textColor};">
+                    
+                    <!-- HOS GELDIN -->
+                    <div style="
+                        background: rgba(245,158,11,0.06); 
+                        border-radius: 12px; 
+                        padding: 14px; 
+                        margin-bottom: 16px; 
+                        text-align: center; 
+                        border: 1px solid rgba(245,158,11,0.1);
+                    ">
+                        <span style="font-size: 28px;">🕌</span>
+                        <p style="margin: 4px 0 0 0; font-size: 15px; color: #f59e0b; font-weight: 600;">SaadetYolu'na Hos Geldin!</p>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.7;">Arapca kelimeleri ogrenerek puan topla ve zirveye ulas!</p>
                     </div>
-                    <div class="help-modal-body" style="line-height: 1.7; font-size: 14px; color: #d1d5db;">
-                        <div style="background: rgba(245,158,11,0.06); border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center; border: 1px solid rgba(245,158,11,0.1);">
-                            <span style="font-size: 28px;">🕌</span>
-                            <p style="margin: 4px 0 0 0; font-size: 15px; color: #f59e0b; font-weight: 600;">SaadetYolu'na Hoş Geldin!</p>
-                        </div>
-                        <div style="background: rgba(59,130,246,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #3b82f6;">
-                            <p style="margin: 0; font-weight: 600; color: #60a5fa;">📚 1. Kelime Öğren</p>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;"><strong>Kitap ve Ders</strong> seçerek kelimeleri öğren. <span style="color: #f59e0b;">"Göster"</span> butonuna tıkla, <span style="color: #10b981;">+0.01 puan</span> kazan!</p>
-                        </div>
-                        <div style="background: rgba(139,92,246,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
-                            <p style="margin: 0; font-weight: 600; color: #a78bfa;">📝 2. Sınavlar</p>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">Öğrendiklerini test et! Her soru <span style="color: #f59e0b;">+0.01 puan</span>. <span style="color: #10b981;">30 saniyen</span> var.</p>
-                        </div>
-                        <div style="background: rgba(236,72,153,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #ec4899;">
-                            <p style="margin: 0; font-weight: 600; color: #f472b6;">🎲 3. Yarışma</p>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
-                                <span style="color: #10b981;">✅ Doğru:</span> +0.01 puan<br>
-                                <span style="color: #ef4444;">❌ Yanlış:</span> -1 puan, kelime sandığa gider<br>
-                                <span style="color: #f59e0b;">💡 Bilemedim / ⏩ Geç:</span> 0 puan, kelime sandığa gider
+                    
+                    <!-- 1. KELIME OGREN -->
+                    <div style="
+                        background: rgba(59,130,246,0.06); 
+                        border-radius: 10px; 
+                        padding: 12px; 
+                        margin-bottom: 10px; 
+                        border-left: 3px solid #3b82f6;
+                    ">
+                        <p style="margin: 0; font-weight: 600; color: #60a5fa;">📚 1. Kelime Ogren</p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                            <strong>Kitap ve Ders</strong> secerek kelimeleri ogren.
+                            <span style="color: #f59e0b;">"Goster"</span> butonuna tikla, 
+                            <span style="color: #10b981;">+0.01 puan</span> kazan!
+                        </p>
+                    </div>
+                    
+                    <!-- 2. SINAVLAR -->
+                    <div style="
+                        background: rgba(139,92,246,0.06); 
+                        border-radius: 10px; 
+                        padding: 12px; 
+                        margin-bottom: 10px; 
+                        border-left: 3px solid #8b5cf6;
+                    ">
+                        <p style="margin: 0; font-weight: 600; color: #a78bfa;">📝 2. Sinavlar</p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                            Ogrendiklerini test et! Her soru <span style="color: #f59e0b;">+0.01 puan</span>.
+                            <span style="color: #10b981;">30 saniyen</span> var.
+                        </p>
+                    </div>
+                    
+                    <!-- 3. YARISMA -->
+                    <div style="
+                        background: rgba(236,72,153,0.06); 
+                        border-radius: 10px; 
+                        padding: 12px; 
+                        margin-bottom: 10px; 
+                        border-left: 3px solid #ec4899;
+                    ">
+                        <p style="margin: 0; font-weight: 600; color: #f472b6;">🎲 3. Yarisma</p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                            <span style="color: #10b981;">✅ Dogru:</span> +0.01 puan, kelime sandiktan cikar<br>
+                            <span style="color: #ef4444;">❌ Yanlis:</span> -1 puan, kelime sandiga gider<br>
+                            <span style="color: #f59e0b;">💡 Bilemedim / ⏩ Gec:</span> 0 puan, kelime sandiga gider
+                        </p>
+                    </div>
+                    
+                    <!-- 4. SEVIYE & SANDIK -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                        <div style="
+                            background: rgba(16,185,129,0.06); 
+                            border-radius: 10px; 
+                            padding: 12px; 
+                            border-left: 3px solid #10b981;
+                        ">
+                            <p style="margin: 0; font-weight: 600; color: #34d399;">🏆 Seviye</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                Her Ders = 1 seviye<br>
+                                <span style="color: #f59e0b;">Her seviye +2 puan!</span>
                             </p>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
-                            <div style="background: rgba(16,185,129,0.06); border-radius: 10px; padding: 12px; border-left: 3px solid #10b981;">
-                                <p style="margin: 0; font-weight: 600; color: #34d399;">🏆 Seviye</p>
-                                <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">Her Dersteki kelime Sayısı = 1 seviye<br><span style="color: #f59e0b;">Her seviye +2 puan!</span></p>
-                            </div>
-                            <div style="background: rgba(251,146,60,0.06); border-radius: 10px; padding: 12px; border-left: 3px solid #fb923c;">
-                                <p style="margin: 0; font-weight: 600; color: #fb923c;">📦 Sandık</p>
-                                <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">Yanlış/Geç/Bilemedim → Sandığa gider<br><span style="color: #ef4444;">Her sandık -1 puan ceza!</span></p>
-                            </div>
+                        <div style="
+                            background: rgba(251,146,60,0.06); 
+                            border-radius: 10px; 
+                            padding: 12px; 
+                            border-left: 3px solid #fb923c;
+                        ">
+                            <p style="margin: 0; font-weight: 600; color: #fb923c;">📦 Sandik</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
+                                Yanlis/Gec/Bilemedim → Sandiga gider<br>
+                                <span style="color: #ef4444;">Her sandik -1 puan ceza!</span>
+                            </p>
                         </div>
-                        <div style="background: rgba(245,158,11,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #f59e0b;">
-                            <p style="margin: 0; font-weight: 600; color: #f59e0b;">🏆 5. Sıralama</p>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">En çok puan toplayan oyuncular <span style="color: #f59e0b;">İlkler</span> listesinde gösterilir.</p>
+                    </div>
+                    
+                    <!-- 5. SIRALAMA -->
+                    <div style="
+                        background: rgba(245,158,11,0.06); 
+                        border-radius: 10px; 
+                        padding: 12px; 
+                        margin-bottom: 10px; 
+                        border-left: 3px solid #f59e0b;
+                    ">
+                        <p style="margin: 0; font-weight: 600; color: #f59e0b;">🏆 5. Siralama</p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                            En cok puan toplayan oyuncular <span style="color: #f59e0b;">"Ilkler"</span> listesinde gosterilir.
+                        </p>
+                    </div>
+                    
+                    <!-- PUAN OZETI -->
+                    <div style="
+                        background: rgba(255,255,255,0.03); 
+                        border-radius: 10px; 
+                        padding: 12px; 
+                        margin-top: 12px; 
+                        text-align: center; 
+                        border: 1px solid rgba(255,255,255,0.05);
+                    ">
+                        <p style="margin: 0; font-size: 12px; font-weight: 600; color: #f59e0b;">📊 PUAN SISTEMI OZETI</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; font-size: 11px; opacity: 0.8;">
+                            <span>📚 Kelime: <strong style="color: #10b981;">+0.01</strong></span>
+                            <span>📝 Sinav: <strong style="color: #10b981;">+0.01</strong></span>
+                            <span>🎲 Dogru: <strong style="color: #10b981;">+0.01</strong></span>
+                            <span>🎲 Yanlis: <strong style="color: #ef4444;">-1</strong></span>
+                            <span>🏆 Seviye: <strong style="color: #f59e0b;">+2</strong></span>
+                            <span>📦 Sandik: <strong style="color: #ef4444;">-1</strong></span>
                         </div>
-                        <button class="btn btn-primary" style="width:100%; margin-top: 16px; padding: 12px; font-size: 15px; border-radius: 12px; background: #f59e0b; color: #121212; border: none; cursor: pointer; font-weight: 600;" onclick="this.closest('.help-modal').remove()">
-                            <i class="fas fa-check"></i> Anladım, Başlıyorum! 🚀
+                    </div>
+                    
+                    <!-- BUTONLAR -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+                        
+                        <!-- REHBERI BASLAT -->
+                        <button onclick="this.closest('.help-modal').remove(); setTimeout(() => { if (typeof window.restartOnboarding === 'function') window.restartOnboarding(); }, 300);" style="
+                            width: 100%; 
+                            padding: 14px; 
+                            font-size: 16px; 
+                            border-radius: 12px; 
+                            background: linear-gradient(135deg, #f59e0b, #d97706);
+                            color: #121212; 
+                            border: none; 
+                            cursor: pointer; 
+                            font-weight: 700;
+                            transition: 0.3s;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 12px;
+                            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+                        " onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 6px 30px rgba(245, 158, 11, 0.6)';" 
+                           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(245, 158, 11, 0.4)';">
+                            <i class="fas fa-play" style="font-size: 18px;"></i> 
+                            Rehberi Baslat 🚀
+                        </button>
+                        
+                        <!-- KAPAT -->
+                        <button onclick="this.closest('.help-modal').remove()" style="
+                            width: 100%; 
+                            padding: 10px; 
+                            font-size: 13px; 
+                            border-radius: 12px; 
+                            background: rgba(255,255,255,0.05); 
+                            color: #9ca3af; 
+                            border: 1px solid rgba(255,255,255,0.08); 
+                            cursor: pointer; 
+                            font-weight: 500;
+                            transition: 0.3s;
+                        " onmouseover="this.style.background='rgba(255,255,255,0.1)';" 
+                           onmouseout="this.style.background='rgba(255,255,255,0.05)';">
+                            <i class="fas fa-times"></i> Kapat
                         </button>
                     </div>
                 </div>
-            `;
-            document.body.appendChild(modal);
-            modal.querySelector('.help-modal-close').onclick = function() {
-                modal.remove();
-            };
-            modal.onclick = function(e) {
-                if (e.target === modal) modal.remove();
-            };
-        });
-    }
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Kapatma işlemleri
+        modal.querySelector('.help-modal-close').onclick = function() {
+            modal.remove();
+        };
+        modal.onclick = function(e) {
+            if (e.target === modal) modal.remove();
+        };
+    });
+}
     
     // ============================================================
     // 13. RUHU DİNLET BUTONU
