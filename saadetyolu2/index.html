@@ -10034,20 +10034,19 @@ window.confirmExitKarma = function() {
     
     // Sandıkta kelime var mı?
     const sandikSayisi = parseInt(sandik) || 0;
+
+    // Kalan kelime sayısı (seviyeyi bitirmeye ne kadar yakın olduğunu göster)
+    const kalanKelime = document.getElementById('seviyeKelimeSayisi')?.textContent
+        || (typeof quizWordsAll !== 'undefined' ? quizWordsAll.length : '?');
+
+    // Seviye bitmeden çıkarsan kaçıracağın bonus + devam eden sandık cezası
+    const bonusKaybi = 2;
+    const toplamOlasiKayip = Math.round((bonusKaybi + sandikSayisi) * 100) / 100;
+
     const sandikUyarisi = sandikSayisi > 0 ? `
-        <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid rgba(239,68,68,0.3);">
-            <p style="margin: 0; font-size: 13px; color: #ef4444; font-weight: 600;">
-                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
-                ⚠️ ÖNEMLİ UYARI!
-            </p>
-            <p style="margin: 6px 0 0 0; font-size: 12px; opacity: 0.9; color: #fca5a5;">
-                Sandıktaki <strong>${sandikSayisi} kelimeyi</strong> kurtarmalısın! 
-                Kurtarmazsan <strong style="color: #ef4444;">-${sandikSayisi} puan</strong> ceza alırsın 
-                ve <strong style="color: #f59e0b;">sıralamadan düşebilirsin</strong>! 😔
-            </p>
-        </div>
+        <li>Sandıktaki <strong>${sandikSayisi} kelimeyi</strong> kurtarmazsan <strong style="color:#ef4444;">-${sandikSayisi} puan</strong> ceza devam eder ve <strong style="color:#f59e0b;">sıralamadan düşebilirsin</strong> 😔</li>
     ` : '';
-    
+
     Swal.fire({
         title: '⚠️ Dikkat!',
         html: `
@@ -10060,16 +10059,29 @@ window.confirmExitKarma = function() {
                     <p style="margin: 0; font-size: 13px; opacity: 0.8;">
                         📊 Mevcut Durumun:
                     </p>
-                    <div style="display: flex; justify-content: space-around; margin-top: 8px; font-size: 13px;">
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 13px;">
                         <span>🏆 ${score}</span>
                         <span>📊 ${percent}%</span>
                         <span>📦 ${sandik}</span>
+                        <span>📝 ${kalanKelime} kelime kaldı</span>
                     </div>
                 </div>
-                ${sandikUyarisi}
+                <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 12px; margin: 10px 0; border: 1px solid rgba(239,68,68,0.3);">
+                    <p style="margin: 0; font-size: 13px; color: #ef4444; font-weight: 700;">
+                        <i class="fas fa-minus-circle" style="margin-right: 6px;"></i>
+                        Şimdi çıkarsan kaybedeceklerin:
+                    </p>
+                    <ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 12.5px; color: #fca5a5; line-height: 1.7;">
+                        <li>Seviye tamamlama bonusunu kaçırırsın: <strong style="color:#ef4444;">-${bonusKaybi} puan</strong></li>
+                        ${sandikUyarisi}
+                    </ul>
+                    <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid rgba(239,68,68,0.25); font-size: 13px; color: #ef4444; font-weight: 700;">
+                        Toplam olası kayıp: -${toplamOlasiKayip} puan
+                    </p>
+                </div>
                 <p style="font-size: 13px; color: #10b981; margin-top: 10px;">
                     <i class="fas fa-lightbulb"></i>
-                    <strong>İpucu:</strong> Seviyeyi tamamla, <strong>+2 puan</strong> bonus kazan!
+                    <strong>İpucu:</strong> Sadece <strong>${kalanKelime} kelime</strong> kaldı! Bitirirsen <strong>+${bonusKaybi} puan</strong> bonus kazanırsın.
                 </p>
             </div>
         `,
@@ -10676,20 +10688,19 @@ window.confirmExitKarmaFromProfile = function() {
     
     // Sandıkta kelime var mı?
     const sandikSayisi = parseInt(sandik) || 0;
+
+    // Kalan kelime sayısı (seviyeyi bitirmeye ne kadar yakın olduğunu göster)
+    const kalanKelime = document.getElementById('seviyeKelimeSayisi')?.textContent
+        || (typeof quizWordsAll !== 'undefined' ? quizWordsAll.length : '?');
+
+    // Seviye bitmeden çıkarsan kaçıracağın bonus + devam eden sandık cezası
+    const bonusKaybi = 2;
+    const toplamOlasiKayip = Math.round((bonusKaybi + sandikSayisi) * 100) / 100;
+
     const sandikUyarisi = sandikSayisi > 0 ? `
-        <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid rgba(239,68,68,0.3);">
-            <p style="margin: 0; font-size: 13px; color: #ef4444; font-weight: 600;">
-                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
-                ⚠️ ÖNEMLİ UYARI!
-            </p>
-            <p style="margin: 6px 0 0 0; font-size: 12px; opacity: 0.9; color: #fca5a5;">
-                Sandıktaki <strong>${sandikSayisi} kelimeyi</strong> kurtarmalısın! 
-                Kurtarmazsan <strong style="color: #ef4444;">-${sandikSayisi} puan</strong> ceza alırsın 
-                ve <strong style="color: #f59e0b;">sıralamadan düşebilirsin</strong>! 😔
-            </p>
-        </div>
+        <li>Sandıktaki <strong>${sandikSayisi} kelimeyi</strong> kurtarmazsan <strong style="color:#ef4444;">-${sandikSayisi} puan</strong> ceza devam eder ve <strong style="color:#f59e0b;">sıralamadan düşebilirsin</strong> 😔</li>
     ` : '';
-    
+
     Swal.fire({
         title: '⚠️ Dikkat!',
         html: `
@@ -10702,16 +10713,29 @@ window.confirmExitKarmaFromProfile = function() {
                     <p style="margin: 0; font-size: 13px; opacity: 0.8;">
                         📊 Mevcut Durumun:
                     </p>
-                    <div style="display: flex; justify-content: space-around; margin-top: 8px; font-size: 13px;">
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 13px;">
                         <span>🏆 ${score}</span>
                         <span>📊 ${percent}%</span>
                         <span>📦 ${sandik}</span>
+                        <span>📝 ${kalanKelime} kelime kaldı</span>
                     </div>
                 </div>
-                ${sandikUyarisi}
+                <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 12px; margin: 10px 0; border: 1px solid rgba(239,68,68,0.3);">
+                    <p style="margin: 0; font-size: 13px; color: #ef4444; font-weight: 700;">
+                        <i class="fas fa-minus-circle" style="margin-right: 6px;"></i>
+                        Şimdi çıkarsan kaybedeceklerin:
+                    </p>
+                    <ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 12.5px; color: #fca5a5; line-height: 1.7;">
+                        <li>Seviye tamamlama bonusunu kaçırırsın: <strong style="color:#ef4444;">-${bonusKaybi} puan</strong></li>
+                        ${sandikUyarisi}
+                    </ul>
+                    <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid rgba(239,68,68,0.25); font-size: 13px; color: #ef4444; font-weight: 700;">
+                        Toplam olası kayıp: -${toplamOlasiKayip} puan
+                    </p>
+                </div>
                 <p style="font-size: 13px; color: #10b981; margin-top: 10px;">
                     <i class="fas fa-lightbulb"></i>
-                    <strong>İpucu:</strong> Seviyeyi tamamla, <strong>+2 puan</strong> bonus kazan!
+                    <strong>İpucu:</strong> Sadece <strong>${kalanKelime} kelime</strong> kaldı! Bitirirsen <strong>+${bonusKaybi} puan</strong> bonus kazanırsın.
                 </p>
             </div>
         `,
