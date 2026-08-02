@@ -3450,7 +3450,7 @@ body.light-theme #profileScreen .info-row button:hover {
         
         <!-- Butonlar - SADECE KURTARMAYA GİT -->
         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-            <button class="btn btn-primary" onclick="goKarmaGameFromSandik()" style="flex: 1; padding: 12px;">
+            <button class="btn btn-primary" id="kurtarmayaGitBtn" onclick="goKarmaGameFromSandik()" style="flex: 1; padding: 12px;">
                 <i class="fas fa-rocket"></i> Kurtarmaya Git
             </button>
         </div>
@@ -8458,8 +8458,8 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
                 <div style="background: rgba(236,72,153,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #ec4899;">
                     <p style="margin: 0; font-weight: 600; color: #f472b6;">🎲 3. Yarışma</p>
                     <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
-                        <span style="color: #10b981;">✅ Doğru:</span> +0.01 puan, kelime sandıktan çıkar<br>
-                        <span style="color: #ef4444;">❌ Yanlış:</span> -1 puan, kelime sandığa gider<br>
+                        <span style="color: #10b981;">✅ Doğru:</span> +0.01 puan, kelime bir üst kutuya geçer<br>
+                        <span style="color: #ef4444;">❌ Yanlış:</span> -1 puan, kelime sandığa gider (veya kutusu sıfırlanır)<br>
                         <span style="color: #f59e0b;">💡 Bilemedim / ⏩ Geç:</span> 0 puan, kelime sandığa gider
                     </p>
                 </div>
@@ -8476,7 +8476,8 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
                     <div style="background: rgba(251,146,60,0.06); border-radius: 10px; padding: 12px; border-left: 3px solid #fb923c;">
                         <p style="margin: 0; font-weight: 600; color: #fb923c;">📦 Sandık</p>
                         <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.8;">
-                            Yanlış/Geç/Bilemedim → Sandığa gider<br>
+                            Bir kelimeyi kurtarmak için <strong>3 kez art arda doğru</strong> bilmen gerekir. 
+                            Her doğrudan sonra biraz daha geç karşına çıkar; yanlış bilirsen baştan başlar.
                             <span style="color: #ef4444;">Her sandık -1 puan ceza!</span>
                         </p>
                     </div>
@@ -8488,6 +8489,16 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
                     <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
                         En çok puan toplayan oyuncular <span style="color: #f59e0b;">İlkler</span> listesinde gösterilir.
                         Kendi sıralamanı ve puanını her zaman görebilirsin!
+                    </p>
+                </div>
+                
+                <!-- 6. GÜNLÜK SERİ -->
+                <div style="background: rgba(239,68,68,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #ef4444;">
+                    <p style="margin: 0; font-weight: 600; color: #f87171;">🔥 6. Günlük Seri</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                        Uygulamaya <strong>art arda her gün</strong> girdiğinde serin 1 artar. 
+                        Bir gün ara verirsen seri <span style="color: #ef4444;">baştan başlar</span>.
+                        Serini header'daki <span style="color: #f59e0b;">🔥 rozetten</span> ve profilinden takip edebilirsin!
                     </p>
                 </div>
                 
@@ -10557,8 +10568,13 @@ async function loadSandikWordsList() {
                     <p style="font-size: 13px; opacity: 0.6;">Harika gidiyorsun! 💪</p>
                 </div>
             `;
+            const btn = document.getElementById('kurtarmayaGitBtn');
+            if (btn) btn.innerHTML = '<i class="fas fa-rocket"></i> Hadi Yarışmaya Katılalım!';
             return;
         }
+        
+        const btn = document.getElementById('kurtarmayaGitBtn');
+        if (btn) btn.innerHTML = '<i class="fas fa-rocket"></i> Kurtarmaya Git';
         
         // ===== KELİMELERİ LİSTELE =====
         // Kelimelerin ders bilgilerini al
