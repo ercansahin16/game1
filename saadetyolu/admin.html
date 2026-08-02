@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - SaadetYolu</title>
+
+    <!-- SweetAlert2 (deleteLesson fonksiyonu bunu kullanıyor, önceden eksikti) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 
      /* Açık tema içinsfvs kKKelime ve soru metinleri - LACİVERT */
@@ -779,6 +782,16 @@
                     <div id="statUsers">0</div>
                     <div><i class="fas fa-users"></i> Kullanıcı</div>
                 </div>
+                <!-- Toplam Sandık (tüm kullanıcılar) -->
+                <div class="stats-card" id="statSandikCard" style="cursor: pointer;" onclick="showSection('users'); loadUsers();">
+                    <div id="statSandikTotal">0</div>
+                    <div><i class="fas fa-box"></i> Toplam Sandık</div>
+                </div>
+                <!-- Ortalama Kullanıcı Puanı -->
+                <div class="stats-card" id="statAvgScoreCard" style="cursor: pointer;" onclick="showSection('users'); loadUsers();">
+                    <div id="statAvgUserScore">0.00</div>
+                    <div><i class="fas fa-star"></i> Ort. Kullanıcı Puanı</div>
+                </div>
                 <!-- Toplu Kelime Yükleme -->
                 <div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
                     <div style="font-size: 28px; color: #10b981;">📤</div>
@@ -790,6 +803,18 @@
                     <div style="font-size: 28px; color: #3b82f6;">📝</div>
                     <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
                     <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
+                </div>
+                <!-- Yedekleme -->
+                <div class="stats-card" id="statBackupCard" style="cursor: pointer; border-color: rgba(168,85,247,0.3);" onclick="backupAllData()">
+                    <div style="font-size: 28px; color: #a855f7;">💾</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Hızlı Yedekle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">Tüm verileri JSON indir</div>
+                </div>
+                <!-- En Çok Yanlış Yapılan Kelimeler -->
+                <div class="stats-card" id="statHardWordsCard" style="cursor: pointer; border-color: rgba(239,68,68,0.3);" onclick="showHardWordsReport()">
+                    <div style="font-size: 28px; color: #ef4444;">⚠️</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Zor Kelimeler Raporu</div>
+                    <div style="font-size: 11px; opacity: 0.7;">En çok sandığa düşenler</div>
                 </div>
             </div>
         </div>
@@ -828,7 +853,20 @@
                 </div>
                 <button id="addWordBtn" class="btn btn-success" disabled><i class="fas fa-plus"></i> Yeni Kelime</button>
             </div>
-            <div class="select-row">
+
+            <!-- ===== TÜM KELİMELERDE ARAMA (kitap/ders seçmeden, tüm veritabanında) ===== -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="position: relative; flex: 1; min-width: 220px;">
+                    <input type="text" id="globalWordSearch" placeholder="🔍 Tüm kelimelerde ara (Arapça veya Türkçe)..." style="width: 100%; padding: 12px 40px 12px 14px;">
+                    <i class="fas fa-times" id="clearWordSearchBtn" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.5; display: none;"></i>
+                </div>
+                <button id="findDuplicateWordsBtn" class="btn btn-warning" style="padding: 10px 16px; font-size: 13px; white-space: nowrap;">
+                    <i class="fas fa-clone"></i> Tekrarları Bul
+                </button>
+            </div>
+            <div class="items-list" id="globalWordSearchResults" style="margin-bottom: 15px;"></div>
+
+            <div id="wordFilterSelectRow" class="select-row">
                 <div class="select-wrapper">
                     <label><i class="fas fa-book"></i> Kitap Seçin</label>
                     <select id="wordBookSelect"><option value="">-- Kitap Seçin --</option></select>
@@ -899,6 +937,21 @@
                     <div style="font-size: 12px; opacity: 0.7;">Toplam Sınav</div>
                 </div>
             </div>
+
+            <!-- Arama ve Sıralama -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="position: relative; flex: 1; min-width: 220px;">
+                    <input type="text" id="userSearchInput" placeholder="🔍 İsim veya e-posta ile ara..." style="width: 100%; padding: 12px 40px 12px 14px;">
+                    <i class="fas fa-times" id="clearUserSearchBtn" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.5; display: none;"></i>
+                </div>
+                <select id="userSortSelect" style="max-width: 220px; margin: 0;">
+                    <option value="name">İsme Göre (A-Z)</option>
+                    <option value="active">Son Aktifliğe Göre</option>
+                    <option value="words">Kelime Sayısına Göre</option>
+                    <option value="level">Seviyeye Göre</option>
+                    <option value="sandik">Sandık Sayısına Göre</option>
+                </select>
+            </div>
             
             <div class="items-list" id="usersList"></div>
         </div>
@@ -907,6 +960,32 @@
         <div id="dataManagementSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-database"></i> Veri Yönetimi</h2>
+            </div>
+
+            <!-- YEDEKLEME -->
+            <div style="background: rgba(168,85,247,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(168,85,247,0.25);">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">💾</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #a855f7; margin: 0 0 5px 0;">Tüm Verileri Yedekle</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0;">Kitaplar, dersler, kelimeler, sınavlar ve kullanıcı verilerinin tamamını tek bir JSON dosyası olarak indirir.</p>
+                    </div>
+                    <button id="backupAllDataBtn" class="btn" style="background:#a855f7; color:white; padding: 8px 16px;" onclick="backupAllData()">
+                        <i class="fas fa-download"></i> Yedeği İndir
+                    </button>
+                </div>
+            </div>
+
+            <!-- GERİ YÜKLEME -->
+            <div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(59,130,246,0.25);">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">📤</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #3b82f6; margin: 0 0 5px 0;">Yedekten Geri Yükle</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 10px 0;">Daha önce indirdiğiniz bir yedek dosyasını (.json) yükleyip geri yükleyin. Aynı ID'li kayıtlar güncellenir.</p>
+                        <input type="file" id="restoreBackupInput" accept="application/json" onchange="restoreFromBackupFile(this)" style="max-width: 320px; padding: 8px; font-size: 12px;">
+                    </div>
+                </div>
             </div>
             
             <!-- Tüm Kullanıcıların Sandığını Sıfırla -->
@@ -1304,7 +1383,8 @@
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
     }
-    
+    window.closeMenu = closeMenu; // inline onclick="...closeMenu()" için gerekli
+
     function toggleMenu() { 
         sidebar.classList.toggle('open'); 
         overlay.classList.toggle('active'); 
@@ -1555,6 +1635,9 @@
         document.getElementById('dataManagementSection').classList.remove('hidden');
     }
 }
+// window'a bağla: HTML içindeki inline onclick="showSection(...)" çağrıları (örn. logo, dashboard kartları)
+// modül scope'u dışından erişebilsin diye gerekli (önceden logo tıklaması bu yüzden çalışmıyordu).
+window.showSection = showSection;
 
 // ===== MODAL FONKSİYONLARI (GLOBAL) =====
 window.openModal = function(id) {
@@ -2001,6 +2084,210 @@ document.getElementById('wordBookSelect').onchange = async () => {
         closeMenu();
     };
 
+    // ===== TÜM KELİMELERDE GLOBAL ARAMA (kitap/ders seçmeden, tüm veritabanında) =====
+    let globalWordSearchTimeout = null;
+    document.getElementById('globalWordSearch').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        document.getElementById('clearWordSearchBtn').style.display = val ? 'block' : 'none';
+        clearTimeout(globalWordSearchTimeout);
+        globalWordSearchTimeout = setTimeout(() => runGlobalWordSearch(val), 300);
+    });
+    document.getElementById('clearWordSearchBtn').addEventListener('click', () => {
+        document.getElementById('globalWordSearch').value = '';
+        document.getElementById('clearWordSearchBtn').style.display = 'none';
+        document.getElementById('globalWordSearchResults').innerHTML = '';
+    });
+
+    async function runGlobalWordSearch(term) {
+        const container = document.getElementById('globalWordSearchResults');
+        if (!term) { container.innerHTML = ''; return; }
+        container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">⏳ Aranıyor...</div>';
+
+        try {
+            const [wordsSnap, lessonsSnap, booksSnap] = await Promise.all([
+                getDocs(collection(db, 'words')),
+                getDocs(collection(db, 'lessons')),
+                getDocs(collection(db, 'books'))
+            ]);
+            const lessonMap = {};
+            lessonsSnap.docs.forEach(d => lessonMap[d.id] = d.data());
+            const bookMap = {};
+            booksSnap.docs.forEach(d => bookMap[d.id] = d.data().name);
+
+            const lower = term.toLocaleLowerCase('tr');
+            const matches = wordsSnap.docs.filter(d => {
+                const w = d.data();
+                return (w.arabic || '').toLocaleLowerCase('tr').includes(lower) ||
+                       (w.turkish || '').toLocaleLowerCase('tr').includes(lower);
+            });
+
+            if (matches.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">Sonuç bulunamadı.</div>';
+                return;
+            }
+
+            container.innerHTML = `<div style="font-size:12px; opacity:0.6; margin-bottom:8px;">${matches.length} sonuç bulundu</div>`;
+            matches.forEach(d => {
+                const w = d.data();
+                const lesson = lessonMap[w.lessonId];
+                const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
+                const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
+                const div = document.createElement('div'); div.className = 'item';
+                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${d.id}')"><i class="fas fa-trash"></i></button></div>`;
+                container.appendChild(div);
+            });
+        } catch (error) {
+            console.error('Arama hatası:', error);
+            container.innerHTML = '<div style="text-align:center; padding:15px; color:#ef4444;">❌ Arama sırasında hata oluştu.</div>';
+        }
+    }
+
+    window.deleteWordFromSearch = async (id) => {
+        if (!confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) return;
+        await deleteDoc(doc(db, 'words', id));
+        updateStats();
+        const term = document.getElementById('globalWordSearch').value.trim();
+        if (term) runGlobalWordSearch(term); else document.getElementById('findDuplicateWordsBtn').click();
+        if (currentWordLessonId) {
+            document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
+        }
+    };
+
+    // ===== TEKRARLANAN KELİME BULUCU =====
+    document.getElementById('findDuplicateWordsBtn').addEventListener('click', async () => {
+        const container = document.getElementById('globalWordSearchResults');
+        document.getElementById('globalWordSearch').value = '';
+        document.getElementById('clearWordSearchBtn').style.display = 'none';
+        container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">⏳ Tekrarlar taranıyor...</div>';
+
+        try {
+            const [wordsSnap, lessonsSnap, booksSnap] = await Promise.all([
+                getDocs(collection(db, 'words')),
+                getDocs(collection(db, 'lessons')),
+                getDocs(collection(db, 'books'))
+            ]);
+            const lessonMap = {};
+            lessonsSnap.docs.forEach(d => lessonMap[d.id] = d.data());
+            const bookMap = {};
+            booksSnap.docs.forEach(d => bookMap[d.id] = d.data().name);
+
+            const groups = {};
+            wordsSnap.docs.forEach(d => {
+                const w = d.data();
+                const key = (w.arabic || '').trim();
+                if (!key) return;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push({ id: d.id, ...w });
+            });
+
+            const duplicateGroups = Object.entries(groups).filter(([k, arr]) => arr.length > 1);
+
+            if (duplicateGroups.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:15px; color:#10b981;">✅ Tekrarlanan kelime bulunamadı!</div>';
+                return;
+            }
+
+            container.innerHTML = `<div style="font-size:12px; opacity:0.7; margin-bottom:10px; color:#f59e0b;"><i class="fas fa-exclamation-triangle"></i> ${duplicateGroups.length} tekrarlanan kelime grubu bulundu</div>`;
+            duplicateGroups.forEach(([arabic, items]) => {
+                const group = document.createElement('div');
+                group.style.cssText = 'background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 10px; margin-bottom: 8px;';
+                const itemsHTML = items.map(it => {
+                    const lesson = lessonMap[it.lessonId];
+                    const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
+                    const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:13px;">${it.turkish} <span style="opacity:0.6;">— 📚 ${bookName} / ${lessonName}</span></span>
+                        <button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${it.id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                }).join('');
+                group.innerHTML = `<strong class="arabic-word" style="font-size:20px !important;">${arabic}</strong> <span style="font-size:12px; opacity:0.6;">(${items.length} kez)</span>${itemsHTML}`;
+                container.appendChild(group);
+            });
+        } catch (error) {
+            console.error('Tekrar bulma hatası:', error);
+            container.innerHTML = '<div style="text-align:center; padding:15px; color:#ef4444;">❌ Hata oluştu.</div>';
+        }
+    });
+
+    // ===== ZOR KELİMELER RAPORU (tüm kullanıcıların sandığına en çok düşen kelimeler) =====
+    window.showHardWordsReport = async () => {
+        closeMenu();
+        Swal.fire({
+            title: '⏳ Rapor hazırlanıyor...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading(),
+            customClass: { popup: 'compact-swal' }
+        });
+
+        try {
+            const usersSnap = await getDocs(collection(db, 'users'));
+            const tally = {};
+            usersSnap.docs.forEach(d => {
+                const sandik = d.data().quizSandik || [];
+                sandik.forEach(w => {
+                    const key = (w.arabic || '').trim();
+                    if (!key) return;
+                    if (!tally[key]) tally[key] = { arabic: w.arabic, turkish: w.turkish, count: 0 };
+                    tally[key].count++;
+                });
+            });
+
+            const sorted = Object.values(tally).sort((a, b) => b.count - a.count).slice(0, 20);
+
+            if (sorted.length === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Harika!',
+                    text: 'Şu anda hiçbir kullanıcının sandığında kelime yok.',
+                    confirmButtonColor: '#10b981',
+                    width: '380px',
+                    customClass: { popup: 'compact-swal' }
+                });
+                return;
+            }
+
+            const rowsHTML = sorted.map((w, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span style="text-align:left; font-size:14px;">
+                        <strong style="opacity:0.5; margin-right:6px;">${i + 1}.</strong>
+                        <span class="arabic-word" style="font-size:18px !important;">${w.arabic}</span>
+                        <span style="opacity:0.7;">— ${w.turkish}</span>
+                    </span>
+                    <span style="background: rgba(239,68,68,0.15); color:#ef4444; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap;">
+                        ${w.count} kullanıcı sandığında
+                    </span>
+                </div>
+            `).join('');
+
+            Swal.fire({
+                title: '⚠️ En Çok Zorlanılan Kelimeler',
+                html: `
+                    <div style="text-align:left; max-height: 55vh; overflow-y: auto; padding-right: 4px;">
+                        <p style="font-size:12px; opacity:0.7; margin-bottom:10px;">Bu kelimeler en çok kullanıcının sandığına düştü (en çok yanlış cevaplananlar).</p>
+                        ${rowsHTML}
+                    </div>
+                `,
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Kapat',
+                width: '520px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+        } catch (error) {
+            console.error('Zor kelimeler raporu hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Rapor hazırlanırken bir hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
+    };
+
     window.editWord = async (id) => {
         const snap = await getDoc(doc(db, 'words', id));
         if (snap.exists()) {
@@ -2333,11 +2620,13 @@ async function loadExamBookSelect() {
     
     // ========== KULLANICILAR ==========
 // ========== KULLANICILAR ==========
+window.adminUsersCache = [];
+
 window.loadUsers = async function() {
     try {
         const snapshot = await getDocs(collection(db, 'users'));
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('usersList');
+        window.adminUsersCache = users;
         
         // ===== İSTATİSTİKLER =====
         document.getElementById('userTotalCount').textContent = users.length;
@@ -2357,58 +2646,8 @@ window.loadUsers = async function() {
         document.getElementById('userTotalExams').textContent = totalExams;
         
         document.getElementById('statUsers').innerHTML = users.length;
-        
-        if (users.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        users.forEach(user => {
-            const div = document.createElement('div'); 
-            div.className = 'item';
-            
-            // Kullanıcı seviyesi ve rozet
-            const level = user.mevcutSeviye || 1;
-            const levelBadge = getLevelBadge(level);
-            
-            // Son aktiflik
-            const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
-            
-            // Sandık sayısı
-            const sandikCount = user.quizSandik?.length || 0;
-            
-            // Sınav sayısı
-            const examCount = user.examsCompleted?.length || 0;
-            
-            div.innerHTML = `
-                <div class="item-info">
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
-                        ${levelBadge}
-                        <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
-                            <i class="fas fa-layer-group"></i> ${level}
-                        </span>
-                    </div>
-                    <small>
-                        ${user.email || 'Email yok'} 
-                        | 📖 ${user.totalWordsViewed || 0} kelime 
-                        | 📝 ${examCount} sınav 
-                        | 📦 ${sandikCount} sandık
-                        | 🟢 ${lastActive}
-                    </small>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+
+        renderUsersList(users);
         
     } catch (error) {
         console.error('Kullanıcılar yüklenirken hata:', error);
@@ -2418,6 +2657,111 @@ window.loadUsers = async function() {
         }
     }
 };
+
+// ===== KULLANICI LİSTESİNİ ÇİZ (arama/sıralama sonrası tekrar kullanılabilir) =====
+function renderUsersList(users) {
+    const container = document.getElementById('usersList');
+    if (!container) return;
+
+    if (users.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Sonuç bulunamadı.</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    users.forEach(user => {
+        const div = document.createElement('div'); 
+        div.className = 'item';
+        
+        // Kullanıcı seviyesi ve rozet
+        const level = user.mevcutSeviye || 1;
+        const levelBadge = getLevelBadge(level);
+        
+        // Son aktiflik
+        const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
+        
+        // Sandık sayısı
+        const sandikCount = user.quizSandik?.length || 0;
+        
+        // Sınav sayısı
+        const examCount = user.examsCompleted?.length || 0;
+        
+        div.innerHTML = `
+            <div class="item-info">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
+                    ${levelBadge}
+                    <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
+                        <i class="fas fa-layer-group"></i> ${level}
+                    </span>
+                </div>
+                <small>
+                    ${user.email || 'Email yok'} 
+                    | 📖 ${user.totalWordsViewed || 0} kelime 
+                    | 📝 ${examCount} sınav 
+                    | 📦 ${sandikCount} sandık
+                    | 🟢 ${lastActive}
+                </small>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ===== KULLANICI ARAMA + SIRALAMA =====
+function applyUserSearchAndSort() {
+    const term = (document.getElementById('userSearchInput')?.value || '').trim().toLocaleLowerCase('tr');
+    const sortBy = document.getElementById('userSortSelect')?.value || 'name';
+
+    let list = window.adminUsersCache.slice();
+
+    if (term) {
+        list = list.filter(u => {
+            const name = (u.name || '').toLocaleLowerCase('tr');
+            const email = (u.email || '').toLocaleLowerCase('tr');
+            return name.includes(term) || email.includes(term);
+        });
+    }
+
+    list.sort((a, b) => {
+        switch (sortBy) {
+            case 'active':
+                return new Date(b.lastActive || 0) - new Date(a.lastActive || 0);
+            case 'words':
+                return (b.totalWordsViewed || 0) - (a.totalWordsViewed || 0);
+            case 'level':
+                return (b.mevcutSeviye || 1) - (a.mevcutSeviye || 1);
+            case 'sandik':
+                return (b.quizSandik?.length || 0) - (a.quizSandik?.length || 0);
+            case 'name':
+            default:
+                const nameA = (a.name || a.email || '').toLocaleLowerCase('tr');
+                const nameB = (b.name || b.email || '').toLocaleLowerCase('tr');
+                return nameA.localeCompare(nameB, 'tr');
+        }
+    });
+
+    renderUsersList(list);
+}
+
+document.getElementById('userSearchInput')?.addEventListener('input', (e) => {
+    document.getElementById('clearUserSearchBtn').style.display = e.target.value ? 'block' : 'none';
+    applyUserSearchAndSort();
+});
+document.getElementById('clearUserSearchBtn')?.addEventListener('click', () => {
+    document.getElementById('userSearchInput').value = '';
+    document.getElementById('clearUserSearchBtn').style.display = 'none';
+    applyUserSearchAndSort();
+});
+document.getElementById('userSortSelect')?.addEventListener('change', applyUserSearchAndSort);
 
 // ===== SEVİYE ROZETİ =====
 function getLevelBadge(level) {
@@ -2678,17 +3022,196 @@ window.deleteUserFirestore = async (userId) => {
     }
 };
 
+    // ===== TÜM VERİLERİ YEDEKLE (JSON İNDİR) =====
+    window.backupAllData = async function() {
+        try {
+            Swal.fire({
+                title: '⏳ Yedek hazırlanıyor...',
+                text: 'Tüm veriler indiriliyor, lütfen bekleyin...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading(),
+                customClass: { popup: 'compact-swal' }
+            });
+
+            const collections = ['books', 'lessons', 'words', 'exams', 'users'];
+            const backup = { exportedAt: new Date().toISOString(), data: {} };
+
+            for (const colName of collections) {
+                const snap = await getDocs(collection(db, colName));
+                backup.data[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            }
+
+            const json = JSON.stringify(backup, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `saadetyolu-yedek-${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Yedek indirildi!',
+                html: `<div style="text-align:center; font-size:13px;">
+                    📚 ${backup.data.books.length} kitap · 🎓 ${backup.data.lessons.length} ders<br>
+                    📝 ${backup.data.words.length} kelime · 📋 ${backup.data.exams.length} sınav<br>
+                    👥 ${backup.data.users.length} kullanıcı
+                </div>`,
+                confirmButtonColor: '#10b981',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+        } catch (error) {
+            console.error('Yedekleme hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Yedekleme sırasında hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
+    };
+
+    // ===== YEDEKTEN GERİ YÜKLE =====
+    window.restoreFromBackupFile = async function(fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const confirmResult = await Swal.fire({
+            title: '⚠️ Yedekten Geri Yükle',
+            html: `<div style="text-align:left; font-size:13px;">
+                Bu işlem yedek dosyasındaki <strong>tüm kayıtları</strong> mevcut verilerin üzerine yazacak
+                (aynı ID'ye sahip kayıtlar güncellenir, olmayanlar eklenir).<br><br>
+                <strong style="color:#ef4444;">Bu işlem geri alınamaz!</strong> Devam etmeden önce mevcut verileri de yedeklemenizi öneririz.
+            </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Evet, Geri Yükle',
+            cancelButtonText: 'İptal',
+            width: '450px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+
+        if (!confirmResult.isConfirmed) { fileInput.value = ''; return; }
+
+        try {
+            const text = await file.text();
+            const backup = JSON.parse(text);
+            if (!backup.data) throw new Error('Geçersiz yedek dosyası formatı.');
+
+            Swal.fire({
+                title: '⏳ Geri yükleniyor...',
+                text: 'Lütfen bu işlem bitene kadar sayfayı kapatmayın.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading(),
+                customClass: { popup: 'compact-swal' }
+            });
+
+            let totalRestored = 0;
+            for (const colName of Object.keys(backup.data)) {
+                const items = backup.data[colName];
+                if (!Array.isArray(items)) continue;
+
+                // Firestore batch limiti 500 - güvenli olması için 450'lik gruplar
+                for (let i = 0; i < items.length; i += 450) {
+                    const chunk = items.slice(i, i + 450);
+                    const batch = writeBatch(db);
+                    chunk.forEach(item => {
+                        const { id, ...rest } = item;
+                        if (!id) return;
+                        batch.set(doc(db, colName, id), rest);
+                    });
+                    await batch.commit();
+                    totalRestored += chunk.length;
+                }
+            }
+
+            fileInput.value = '';
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Geri Yükleme Tamamlandı!',
+                text: `${totalRestored} kayıt geri yüklendi.`,
+                confirmButtonColor: '#10b981',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+
+            // Ekranları yenile
+            loadBooks();
+            loadLessonBooks();
+            loadWordBooks();
+            loadExams();
+            loadUsers();
+            updateStats();
+        } catch (error) {
+            console.error('Geri yükleme hatası:', error);
+            fileInput.value = '';
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Geri yükleme sırasında hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
+    };
+
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
         const lessons = await getDocs(collection(db, 'lessons'));
         const words = await getDocs(collection(db, 'words'));
         const exams = await getDocs(collection(db, 'exams'));
-        const users = await getDocs(collection(db, 'users'));
+        const usersSnap = await getDocs(collection(db, 'users'));
         document.getElementById('statBooks').innerHTML = books.size;
         document.getElementById('statLessons').innerHTML = lessons.size;
         document.getElementById('statWords').innerHTML = words.size;
         document.getElementById('statExams').innerHTML = exams.size;
-        document.getElementById('statUsers').innerHTML = users.size;
+        document.getElementById('statUsers').innerHTML = usersSnap.size;
+
+        // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
+        let sandikToplam = 0;
+        let puanToplam = 0;
+        usersSnap.docs.forEach(d => {
+            const u = d.data();
+            const sandikCount = u.quizSandik?.length || 0;
+            sandikToplam += sandikCount;
+
+            const quizScore = u.quizScore || 0;
+            const mevcutSeviye = u.mevcutSeviye || 1;
+            const totalWordsViewed = u.totalWordsViewed || 0;
+            const examsCompleted = u.examsCompleted || [];
+            let ortalamaPuan = 0;
+            if (examsCompleted.length > 0) {
+                let total = 0;
+                for (const e of examsCompleted) total += (e.score || 0);
+                ortalamaPuan = total / examsCompleted.length;
+            }
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const kelimePuani = totalWordsViewed * 0.01;
+            const toplamPuan = quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCount;
+            puanToplam += toplamPuan;
+        });
+        const statSandikEl = document.getElementById('statSandikTotal');
+        if (statSandikEl) statSandikEl.textContent = sandikToplam;
+        const statAvgEl = document.getElementById('statAvgUserScore');
+        if (statAvgEl) statAvgEl.textContent = usersSnap.size > 0 ? (puanToplam / usersSnap.size).toFixed(2) : '0.00';
     }
 
     // Toplu Kelime Yükleme Kartı
