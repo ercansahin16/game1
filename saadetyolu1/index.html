@@ -10518,32 +10518,70 @@ function showStep(index) {
     document.body.appendChild(overlay);
 
     // ===== TOOLTIP OLUŞTURMA (MOBİL UYUMLU) =====
-    const tooltip = document.createElement('div');
-    tooltip.className = 'onboarding-tooltip';
-    
-    const isLightTheme = document.body.classList.contains('light-theme');
-    
-    tooltip.innerHTML = `
-        <div style="
-            background: ${isLightTheme ? '#ffffff' : '#1e293b'};
-            color: ${isLightTheme ? '#0f172a' : '#f1f5f9'};
-            border-radius: ${isMobile ? '12px' : '16px'};
-            padding: ${isMobile ? '10px 10px' : '15px 18px'};
-            max-width: ${isMobile ? '250px' : '340px'};
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            border: 1px solid ${isLightTheme ? '#e2e8f0' : '#334155'};
-            position: relative;
-            z-index: 9999;
-            animation: modalSlideUp 0.4s ease;
-        ">
-            <div style="display: flex; align-items: center; gap: ${isMobile ? '8px' : '12px'}; margin-bottom: ${isMobile ? '8px' : '12px'};">
-                <span style="font-size: ${isMobile ? '20px' : '28px'};">${step.title.split(' ')[0]}</span>
-                <h3 style="margin: 0; font-size: ${isMobile ? '14px' : '16px'}; font-weight: 700; line-height: 1.3;">${step.title}</h3>
+// ===== TOOLTIP OLUŞTURMA (GÜNCELLENMİŞ) =====
+const tooltip = document.createElement('div');
+tooltip.className = 'onboarding-tooltip';
+
+const isLightTheme = document.body.classList.contains('light-theme');
+
+tooltip.innerHTML = `
+    <div style="
+        background: ${isLightTheme ? '#ffffff' : '#1e293b'};
+        color: ${isLightTheme ? '#0f172a' : '#f1f5f9'};
+        border-radius: ${isMobile ? '12px' : '16px'};
+        padding: ${isMobile ? '10px 10px' : '15px 18px'};
+        max-width: ${isMobile ? '250px' : '340px'};
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        border: 1px solid ${isLightTheme ? '#e2e8f0' : '#334155'};
+        position: relative;
+        z-index: 9999;
+        animation: modalSlideUp 0.4s ease;
+    ">
+        <div style="display: flex; align-items: center; gap: ${isMobile ? '8px' : '12px'}; margin-bottom: ${isMobile ? '8px' : '12px'};">
+            <span style="font-size: ${isMobile ? '20px' : '28px'};">${step.title.split(' ')[0]}</span>
+            <h3 style="margin: 0; font-size: ${isMobile ? '14px' : '16px'}; font-weight: 700; line-height: 1.3; flex: 1;">${step.title}</h3>
+        </div>
+        <p style="margin: 0 0 ${isMobile ? '12px' : '16px'} 0; font-size: ${isMobile ? '12px' : '14px'}; line-height: 1.6; opacity: 0.9;">
+            ${step.content}
+        </p>
+        
+        <!-- ===== BUTONLAR ===== -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px;">
+                <!-- Atla Butonu (Tüm Rehberi Kapat) -->
+                <button onclick="window.skipOnboarding()" style="
+                    background: transparent;
+                    color: ${isLightTheme ? '#64748b' : '#94a3b8'};
+                    border: 1px solid ${isLightTheme ? '#e2e8f0' : '#475569'};
+                    padding: ${isMobile ? '4px 10px' : '6px 14px'};
+                    border-radius: 30px;
+                    font-size: ${isMobile ? '9px' : '11px'};
+                    cursor: pointer;
+                    transition: 0.3s;
+                    font-weight: 500;
+                " onmouseover="this.style.background='rgba(239,68,68,0.1)'; this.style.color='#ef4444';" 
+                   onmouseout="this.style.background='transparent'; this.style.color='${isLightTheme ? '#64748b' : '#94a3b8'}';">
+                    <i class="fas fa-times-circle"></i> Rehberi Kapat
+                </button>
+                
+                <!-- Geç Butonu (Sadece bu adımı geç) -->
+                <button onclick="window.skipThisStep(${index + 1})" style="
+                    background: transparent;
+                    color: ${isLightTheme ? '#64748b' : '#94a3b8'};
+                    border: 1px solid ${isLightTheme ? '#e2e8f0' : '#475569'};
+                    padding: ${isMobile ? '4px 10px' : '6px 14px'};
+                    border-radius: 30px;
+                    font-size: ${isMobile ? '9px' : '11px'};
+                    cursor: pointer;
+                    transition: 0.3s;
+                    font-weight: 500;
+                " onmouseover="this.style.background='rgba(59,130,246,0.1)'; this.style.color='#3b82f6';" 
+                   onmouseout="this.style.background='transparent'; this.style.color='${isLightTheme ? '#64748b' : '#94a3b8'}';">
+                    <i class="fas fa-forward"></i> Geç
+                </button>
             </div>
-            <p style="margin: 0 0 ${isMobile ? '12px' : '16px'} 0; font-size: ${isMobile ? '12px' : '14px'}; line-height: 1.6; opacity: 0.9;">
-                ${step.content}
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: ${isMobile ? '10px' : '12px'}; opacity: 0.5;">${index + 1} / ${steps.length}</span>
                 <button onclick="window.handleOnboardingAction('${index}', ${index + 1})" style="
                     background: #f59e0b;
@@ -10561,7 +10599,8 @@ function showStep(index) {
                 </button>
             </div>
         </div>
-    `;
+    </div>
+`;
 
     // ===== TOOLTIP KONUMU (MOBİL UYUMLU) =====
     const rect = targetElement.getBoundingClientRect();
@@ -10655,7 +10694,57 @@ window.handleOnboardingAction = function(index, nextIndex) {
     
     window.nextOnboardingStep(nextIndex);
 };
+
+
+
+
+    // ===== REHBERİ TAMAMEN KAPAT =====
+window.skipOnboarding = function() {
+    // Tüm rehber elementlerini temizle
+    document.querySelector('.onboarding-tooltip')?.remove();
+    document.querySelector('.onboarding-overlay')?.remove();
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+        el.classList.remove('onboarding-highlight');
+        el.style.boxShadow = '';
+        el.style.zIndex = '';
+    });
     
+    // ===== TEST MODU KONTROLÜ =====
+    if (ONBOARDING_TEST_MODE) {
+        console.log('🧪 TEST MODU: Rehber kullanıcı tarafından kapatıldı.');
+        console.log('💡 İpucu: Sayfayı yenileyerek rehberi tekrar başlatabilirsin.');
+    } else {
+        // Normal mod: Firestore'u güncelle (bir daha gösterme)
+        if (currentUser) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            updateDoc(userRef, { onboardingCompleted: true })
+                .then(() => console.log('✅ Rehber kullanıcı tarafından kapatıldı, Firestore güncellendi.'))
+                .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
+        }
+    }
+    
+    // Rehberin durduğu yere geri dön (opsiyonel)
+    console.log('👋 Rehber kapatıldı. İyi eğlenceler!');
+};
+
+// ===== SADECE MEVCUT ADIMI GEÇ =====
+window.skipThisStep = function(nextIndex) {
+    console.log(`⏩ ${nextIndex - 1}. adım geçildi, ${nextIndex}. adıma geçiliyor...`);
+    
+    // Eski tooltip'i temizle
+    document.querySelector('.onboarding-tooltip')?.remove();
+    document.querySelector('.onboarding-overlay')?.remove();
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+        el.classList.remove('onboarding-highlight');
+        el.style.boxShadow = '';
+        el.style.zIndex = '';
+    });
+    
+    // Bir sonraki adıma geç (showStep fonksiyonunu çağır)
+    setTimeout(() => {
+        showStep(nextIndex);
+    }, 300);
+};
 </script>
 </body>
 </html>
