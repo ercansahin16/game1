@@ -11069,65 +11069,7 @@ function showStep(index) {
     // ===== showStep'u GLOBAL YAP =====
     window.showStep = showStep;
 
-    // ===== handleOnboardingAction'u GLOBAL YAP =====
-    window.handleOnboardingAction = function(index, nextIndex) {
-        console.log(`🔄 handleOnboardingAction çağrıldı: ${index} -> ${nextIndex}`);
-        
-        const step = steps[index];
-        
-        // Eski tooltip'i temizle
-        document.querySelector('.onboarding-tooltip')?.remove();
-        document.querySelector('.onboarding-overlay')?.remove();
-        document.querySelectorAll('.onboarding-highlight').forEach(el => {
-            el.classList.remove('onboarding-highlight');
-            el.style.boxShadow = '';
-            el.style.zIndex = '';
-        });
-        
-        // Eğer action varsa çalıştır
-        if (step && step.action) {
-            try {
-                const actionFn = window[step.action];
-                if (typeof actionFn === 'function') {
-                    console.log(`🔄 "${step.action}" fonksiyonu çalıştırılıyor...`);
-                    actionFn();
-                } else {
-                    console.warn(`⚠️ "${step.action}" fonksiyonu bulunamadı!`);
-                }
-            } catch (error) {
-                console.error(`❌ "${step.action}" çalıştırma hatası:`, error);
-            }
-        }
-        
-        // Son adım mı kontrol et
-        if (nextIndex >= steps.length) {
-            console.log('🎉 Rehber tamamlandı!');
-            document.querySelector('.onboarding-tooltip')?.remove();
-            document.querySelector('.onboarding-overlay')?.remove();
-            document.querySelectorAll('.onboarding-highlight').forEach(el => {
-                el.classList.remove('onboarding-highlight');
-                el.style.boxShadow = '';
-                el.style.zIndex = '';
-            });
-            if (!ONBOARDING_TEST_MODE && currentUser) {
-                updateDoc(userRef, { onboardingCompleted: true })
-                    .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
-                    .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
-            }
-            return;
-        }
-        
-        // ===== Sonraki adımı göster =====
-        console.log(`⏳ ${nextIndex}. adım için bekleniyor...`);
-        setTimeout(() => {
-            if (typeof showStep === 'function') {
-                console.log(`👉 ${nextIndex}. adım gösteriliyor...`);
-                showStep(nextIndex);
-            } else {
-                console.error('❌ showStep fonksiyonu bulunamadı!');
-            }
-        }, 800);
-    };
+  
 
     // ===== skipOnboarding'u GLOBAL YAP =====
     window.skipOnboarding = function() {
@@ -11366,6 +11308,9 @@ window.nextOnboardingStep = function(nextIndex) {
     // ============================================================
 // ONBOARDING ADIMLARI - GLOBAL TANIM
 // ============================================================
+// ============================================================
+// ONBOARDING ADIMLARI - GLOBAL TANIM (GÜNCELLENMİŞ)
+// ============================================================
 window._onboardingSteps = [
     // 1. HOS GELDIN
     {
@@ -11475,13 +11420,13 @@ window._onboardingSteps = [
         action: 'showProfile'
     },
     
-    // 13. RUHU DINLET
+    // 13. RUHU DINLET - SADECE GÖSTER, ÇALIŞTIRMA!
     {
         target: '#ruhuDinletBtn',
         title: '🎵 8. ADIM: Ruhunu Dinlet!',
-        content: 'Arka plan muzigini acarak daha keyifli bir ogrenme deneyimi yasayabilirsin.',
+        content: 'Arka plan muzigini acarak daha keyifli bir ogrenme deneyimi yasayabilirsin. Muzik seni motive eder!',
         position: 'bottom',
-        action: 'ruhuDinletToggle'
+        action: null  // ← ÇALIŞTIRMA!
     },
     
     // 14. YARDIM
@@ -11493,13 +11438,13 @@ window._onboardingSteps = [
         action: null
     },
     
-    // 15. TEMA DEGISTIR
+    // 15. TEMA DEGISTIR - GEÇİCİ OLARAK DEĞİŞTİR
     {
         target: '#themeIconBtn',
         title: '🌓 10. ADIM: Tema Degistir',
-        content: 'Koyu veya acik tema arasinda gecis yapabilirsin. Goz yorgunlugunu azaltmak icin harika bir ozellik!',
+        content: 'Koyu veya acik tema arasinda gecis yapabilirsin. Rehber bitince eski haline donecek!',
         position: 'bottom',
-        action: 'changeTheme'
+        action: 'changeThemeTemp'  // ← GEÇİCİ TEMA DEĞİŞTİR
     },
     
     // 16. CIKIS YAP
@@ -11511,6 +11456,59 @@ window._onboardingSteps = [
         action: null
     }
 ];
+
+
+
+    // ===== GEÇİCİ TEMA DEĞİŞTİRME (REHBER İÇİN) =====
+let originalTheme = null;
+
+window.changeThemeTemp = function() {
+    // Mevcut temayı kaydet
+    const isLight = document.body.classList.contains('light-theme');
+    originalTheme = isLight ? 'light' : 'dark';
+    
+    // Tema değiştir (zıt temaya geç)
+    const themeIconBtn = document.getElementById('themeIconBtn');
+    const themeBtnSidebar = document.getElementById('themeBtnSidebar');
+    
+    if (isLight) {
+        // Light → Dark
+        document.body.classList.remove('light-theme');
+        if (themeIconBtn) themeIconBtn.innerHTML = '<i class="fas fa-moon"></i>';
+        if (themeBtnSidebar) themeBtnSidebar.innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
+    } else {
+        // Dark → Light
+        document.body.classList.add('light-theme');
+        if (themeIconBtn) themeIconBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeBtnSidebar) themeBtnSidebar.innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
+    }
+    
+    console.log('🌓 Tema geçici olarak değiştirildi, orijinal:', originalTheme);
+};
+
+// ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+window.restoreOriginalTheme = function() {
+    if (originalTheme === null) return;
+    
+    const themeIconBtn = document.getElementById('themeIconBtn');
+    const themeBtnSidebar = document.getElementById('themeBtnSidebar');
+    
+    if (originalTheme === 'light') {
+        document.body.classList.add('light-theme');
+        if (themeIconBtn) themeIconBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeBtnSidebar) themeBtnSidebar.innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
+    } else {
+        document.body.classList.remove('light-theme');
+        if (themeIconBtn) themeIconBtn.innerHTML = '<i class="fas fa-moon"></i>';
+        if (themeBtnSidebar) themeBtnSidebar.innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
+    }
+    
+    console.log('🌓 Tema eski haline döndürüldü:', originalTheme);
+    originalTheme = null;
+};
+
+
+    
 
 console.log('✅ Onboarding adimlari tanimlandi, toplam:', window._onboardingSteps.length);
 
