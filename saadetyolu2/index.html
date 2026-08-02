@@ -1100,6 +1100,95 @@ html, body {
         .tour-btn-prev:hover { background: rgba(255,255,255,0.15); }
 
         /* ============================================================
+           🤲 DUA EKRANI (YENİ KULLANICI KARŞILAMA)
+           ============================================================ */
+        .dua-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000001;
+            background: rgba(0,0,0,0.82);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: tourFadeIn 0.4s ease;
+        }
+        .dua-card {
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(160deg, #1a1a1a, #221a0f);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 22px;
+            padding: 30px 26px 26px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            color: #e5e7eb;
+        }
+        body.light-theme .dua-card {
+            background: linear-gradient(160deg, #ffffff, #fff8ec);
+            color: #1e1b4b;
+            border-color: rgba(245,158,11,0.35);
+        }
+        .dua-card-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+            animation: duaFloat 2.4s ease-in-out infinite;
+        }
+        @keyframes duaFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .dua-card h3 {
+            font-size: 18px;
+            color: #f59e0b;
+            margin-bottom: 12px;
+        }
+        .dua-card p {
+            font-size: 14px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        .dua-card .dua-highlight {
+            display: block;
+            margin: 14px 0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.15);
+            font-size: 13px;
+            font-style: italic;
+            color: #f59e0b;
+        }
+        .dua-card-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .dua-card-close:hover { color: #ef4444; }
+        .dua-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #121212;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .dua-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(245,158,11,0.35); }
+
+        /* ============================================================
            SIRALAMA BÖLÜMÜ - MODERN & COMPACT TASARIM
            ============================================================ */
         .leaderboard-list {
@@ -5458,11 +5547,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
                 }
                 
-                // ===== 🧭 YENİ KULLANICI TURU =====
-                // Daha önce turu görmemişse (yeni kayıt veya eski kullanıcı), 
-                // ana ekran tam yüklendikten sonra rehberi başlat
-                if (!data.tourCompleted && typeof window.startAppTour === 'function') {
-                    setTimeout(() => window.startAppTour(), 900);
+                // ===== 🤲 YENİ KULLANICI: DUA EKRANI + REHBER =====
+                // Daha önce görmemişse (yeni kayıt veya eski kullanıcı), 
+                // ana ekran tam yüklendikten sonra önce dua ekranı, 
+                // ardından (buton tıklanınca) rehber gösterilir
+                if (!data.tourCompleted && typeof window.showDuaScreen === 'function') {
+                    setTimeout(() => window.showDuaScreen(), 900);
                 }
             }
         } catch (error) {
@@ -9356,7 +9446,47 @@ if (examLessonSelect) {
     }
 
     // ============================================================
-    // 18. 🧭 SİTE REHBERİ (ONBOARDING TOUR)
+    // 18a. 🤲 DUA EKRANI (Rehberden önce gösterilir)
+    // ============================================================
+    window.showDuaScreen = function() {
+        // Ana ekranda değilsek eve dön
+        const mainContentEl = document.getElementById('mainContent');
+        if (mainContentEl && mainContentEl.style.display === 'none' && typeof goHome === 'function') {
+            goHome();
+        }
+        // Zaten açıksa tekrar açma
+        if (document.querySelector('.dua-overlay')) return;
+
+        window.scrollTo(0, 0);
+
+        const overlay = document.createElement('div');
+        overlay.className = 'dua-overlay';
+        overlay.innerHTML = `
+            <div class="dua-card">
+                <button class="dua-card-close" id="duaCloseBtn">&times;</button>
+                <div class="dua-card-icon">🤲</div>
+                <h3>Rabbimin Adıyla...</h3>
+                <p>Bu sayfanın hazırlanmasında emeği geçen kardeşlerin için birkaç saniyeni ayırıp bir dua eder misin?</p>
+                <span class="dua-highlight">"Allah emeği geçenlerden razı olsun, bu ilmi sadaka-i cariye eylesin..."</span>
+                <p style="font-size: 12px; opacity: 0.7;">Duanı ettiysen aşağıdaki butona basıp devam edebilirsin.</p>
+                <button class="dua-btn" id="duaContinueBtn">Dua Ettim, Devam Et 🤲</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const proceed = () => {
+            overlay.remove();
+            if (typeof window.startAppTour === 'function') {
+                window.startAppTour();
+            }
+        };
+
+        document.getElementById('duaContinueBtn').onclick = proceed;
+        document.getElementById('duaCloseBtn').onclick = proceed;
+    };
+
+    // ============================================================
+    // 18b. 🧭 SİTE REHBERİ (ONBOARDING TOUR)
     // ============================================================
     const TOUR_STEPS = [
         {
