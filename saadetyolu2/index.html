@@ -3676,6 +3676,7 @@ let sandikAktif = false;         // Sandık aktif mi? (sürekli sandıktan almam
 let sandikSoruSayaci = 0;        // Her soru cevaplanınca artan sayaç (SRS zamanlaması için)
 const SRS_ARALIKLARI = { 1: 3, 2: 6, 3: 12 };  // Kutu no -> kaç soru sonra tekrar "due" olur
 const SRS_MAX_KUTU = 3;          // Bu kutuda doğru cevaplanan kelime sandıktan mezun olur
+let toplamGosterilenSoru = 0;    // Kaynağı fark etmeksizin (normal veya sandık) gösterilen HER soruyu sayar
 
 // ========== GÜNLÜK SERİ (STREAK) ==========
 let gunlukSeri = 0;              // Kullanıcının mevcut günlük serisi
@@ -6840,6 +6841,7 @@ window.startQuizWords = async () => {
         sandikAlmaSayaci = 0;
         sandikAktif = false;
         sandikSoruSayaci = 0;
+        toplamGosterilenSoru = 0;
         baslangicIndex = 0;
         bitisIndex = seviyeKelimeListesi.length - 1;
         siraSoldan = true;
@@ -6999,6 +7001,9 @@ async function loadNextQuizWord() {
     // ===== BURASI ÖNEMLİ: isFromSandik değerini KORU =====
     currentQuizWord = { ...word, isFromSandik: isFromSandik };
     
+    // ===== HER GÖSTERİLEN SORUYU SAY (kaynağı fark etmeksizin) =====
+    toplamGosterilenSoru++;
+    
     // ===== TOPLAM SORUYU GÜNCELLE =====
     const toplamSoru = quizWordsAll.length + quizSandik.length;
     document.getElementById('karmaTotal').textContent = toplamSoru;
@@ -7028,12 +7033,13 @@ function displayQuizWord(word) {
     }
     
     // ===== DOĞRU SORU NUMARASI =====
-    const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    const sandikGosterilen = sandikAlmaSayaci;
-    const soruNo = normalGosterilen + sandikGosterilen;
-    const toplamSoru = quizWordsAll.length + quizSandik.length;
+    // toplamGosterilenSoru: kaynağı fark etmeksizin (normal veya sandık) her gösterilen soruyu sayar,
+    // bu yüzden normal kelimeler bitip sadece sandıktan soru gelmeye başlasa bile ilerleme donmaz.
+    const soruNo = toplamGosterilenSoru;
+    let toplamSoru = quizWordsAll.length + quizSandik.length;
+    if (toplamSoru < soruNo) toplamSoru = soruNo; // SRS nedeniyle bir kelime birden çok kez sorulabilir
     
-    console.log('📊 Soru No:', soruNo, '| Normal:', normalGosterilen, '| Sandık Gösterilen:', sandikGosterilen, '| Toplam:', toplamSoru);
+    console.log('📊 Soru No:', soruNo, '| Toplam:', toplamSoru);
     
     document.getElementById('karmaCurrent').textContent = Math.min(soruNo, toplamSoru);
     document.getElementById('karmaTotal').textContent = toplamSoru;
