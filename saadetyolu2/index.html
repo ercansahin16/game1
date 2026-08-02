@@ -9559,6 +9559,7 @@ if (examLessonSelect) {
         if (target) {
             const r = target.getBoundingClientRect();
             const pad = 8;
+            tourOverlayEl.style.background = 'transparent';
             tourSpotlightEl.style.display = 'block';
             tourSpotlightEl.style.top = (r.top - pad) + 'px';
             tourSpotlightEl.style.left = (r.left - pad) + 'px';
@@ -9566,7 +9567,11 @@ if (examLessonSelect) {
             tourSpotlightEl.style.height = (r.height + pad * 2) + 'px';
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
+            // Hedefsiz (merkez) adımlarda spotlight'ın box-shadow'u devreye girmediği
+            // için karartmayı doğrudan overlay üstünden veriyoruz
             tourSpotlightEl.style.display = 'none';
+            tourOverlayEl.style.background = 'rgba(0,0,0,0.78)';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         const dots = TOUR_STEPS.map((_, i) => `<span class="tour-dot ${i === tourCurrentStep ? 'active' : ''}"></span>`).join('');
@@ -9616,6 +9621,9 @@ if (examLessonSelect) {
             tourResizeHandler = null;
         }
 
+        // Tur boyunca aşağı kaymış olabilecek sayfayı başa döndür
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         if (markCompleted && currentUser) {
             setDoc(doc(db, 'users', currentUser.uid), { tourCompleted: true }, { merge: true })
                 .catch(err => console.log('⚠️ Tur durumu kaydedilemedi:', err));
@@ -9637,6 +9645,8 @@ if (examLessonSelect) {
 
         // Zaten açıksa tekrar açma
         if (tourOverlayEl) return;
+
+        window.scrollTo(0, 0);
 
         tourCurrentStep = 0;
         tourOverlayEl = document.createElement('div');
