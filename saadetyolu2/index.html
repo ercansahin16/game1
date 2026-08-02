@@ -1139,6 +1139,26 @@ html, body {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-6px); }
         }
+        .dua-counter {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #f59e0b;
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.25);
+            padding: 5px 14px;
+            border-radius: 30px;
+            margin: 0 auto 14px;
+        }
+        .dua-counter i {
+            animation: duaHeartBeat 1.2s ease-in-out infinite;
+        }
+        @keyframes duaHeartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+        }
         .dua-card h3 {
             font-size: 18px;
             color: #f59e0b;
@@ -2748,6 +2768,7 @@ body.light-theme #profileScreen .info-row button:hover {
         <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
+            <div class="sidebar-item" id="showDuaBtn"><i class="fas fa-pray"></i> Emeği Geçenlere Dua Et 🤲</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
         </div>
@@ -3438,7 +3459,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -9448,7 +9469,8 @@ if (examLessonSelect) {
     // ============================================================
     // 18a. 🤲 DUA EKRANI (Rehberden önce gösterilir)
     // ============================================================
-    window.showDuaScreen = function() {
+    window.showDuaScreen = function(startTourAfter) {
+        if (startTourAfter === undefined) startTourAfter = true;
         // Ana ekranda değilsek eve dön
         const mainContentEl = document.getElementById('mainContent');
         if (mainContentEl && mainContentEl.style.display === 'none' && typeof goHome === 'function') {
@@ -9465,6 +9487,10 @@ if (examLessonSelect) {
             <div class="dua-card">
                 <button class="dua-card-close" id="duaCloseBtn">&times;</button>
                 <div class="dua-card-icon">🤲</div>
+                <div class="dua-counter" id="duaCounterBadge">
+                    <i class="fas fa-heart" style="color:#ef4444;"></i>
+                    <span id="duaCounterNumber">···</span> kez dua edildi
+                </div>
                 <h3>Rabbimin Adıyla...</h3>
                 <p>Bu sayfanın hazırlanmasında emeği geçen kardeşlerin için birkaç saniyeni ayırıp bir dua eder misin?</p>
                 <span class="dua-highlight">"Allah emeği geçenlerden razı olsun, bu ilmi sadaka-i cariye eylesin..."</span>
@@ -9474,15 +9500,35 @@ if (examLessonSelect) {
         `;
         document.body.appendChild(overlay);
 
-        const proceed = () => {
+        // ===== 🤲 DUA SAYACI: mevcut toplamı Firestore'dan çek =====
+        const duaRef = doc(db, 'appStats', 'duaSayaci');
+        const numberEl = document.getElementById('duaCounterNumber');
+        getDoc(duaRef).then(snap => {
+            const mevcut = (snap.exists() && snap.data().count) ? snap.data().count : 0;
+            if (numberEl) numberEl.textContent = mevcut.toLocaleString('tr-TR');
+        }).catch(err => {
+            console.log('⚠️ Dua sayacı okunamadı:', err);
+            if (numberEl) numberEl.textContent = '—';
+        });
+
+        const proceed = (duaEtti) => {
+            if (duaEtti) {
+                // Sayaç Firestore'da +1 artırılır (belge yoksa otomatik oluşur)
+                setDoc(duaRef, { count: increment(1) }, { merge: true })
+                    .catch(err => console.log('⚠️ Dua sayacı güncellenemedi:', err));
+                if (numberEl) {
+                    const guncelSayi = parseInt((numberEl.textContent || '0').replace(/\D/g, '')) || 0;
+                    numberEl.textContent = (guncelSayi + 1).toLocaleString('tr-TR');
+                }
+            }
             overlay.remove();
-            if (typeof window.startAppTour === 'function') {
+            if (startTourAfter && typeof window.startAppTour === 'function') {
                 window.startAppTour();
             }
         };
 
-        document.getElementById('duaContinueBtn').onclick = proceed;
-        document.getElementById('duaCloseBtn').onclick = proceed;
+        document.getElementById('duaContinueBtn').onclick = () => proceed(true);
+        document.getElementById('duaCloseBtn').onclick = () => proceed(false);
     };
 
     // ============================================================
@@ -9734,6 +9780,18 @@ if (examLessonSelect) {
             if (sidebarEl) sidebarEl.classList.remove('open');
             if (overlayEl) overlayEl.classList.remove('active');
             setTimeout(() => window.startAppTour(), 250);
+        };
+    }
+
+    const showDuaBtn = document.getElementById('showDuaBtn');
+    if (showDuaBtn) {
+        showDuaBtn.onclick = () => {
+            const sidebarEl = document.getElementById('sidebar');
+            const overlayEl = document.getElementById('overlay');
+            if (sidebarEl) sidebarEl.classList.remove('open');
+            if (overlayEl) overlayEl.classList.remove('active');
+            // Sidebar'dan manuel açılışta rehberi tekrar başlatma, sadece dua ekranını göster
+            setTimeout(() => window.showDuaScreen(false), 250);
         };
     }
     
