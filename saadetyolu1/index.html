@@ -10644,9 +10644,6 @@ async function checkAndShowOnboarding(user) {
 
 
 
- // ============================================================
-// TEST MODU - ONBOARDING (En Üste Ekle)
-// ============================================================
 async function showOnboarding(userRef) {
     // ===== TEST MODU BİLGİSİ =====
     if (ONBOARDING_TEST_MODE) {
@@ -10661,420 +10658,495 @@ async function showOnboarding(userRef) {
         console.error('❌ Rehber adımları bulunamadı!');
         return;
     }
-
-       window._currentSteps = steps;
+    
     console.log(`📚 Rehber adım sayısı: ${steps.length}`);
     
     // ===== showStep FONKSİYONUNU TANIMLA =====
-function showStep(index) {
-    console.log(`📌 showStep çağrıldı: ${index}`);
-    
-    // ===== ÖNCEKİ TÜM REHBER ELEMENTLERİNİ TEMİZLE =====
-    document.querySelector('.onboarding-tooltip')?.remove();
-    document.querySelector('.onboarding-overlay')?.remove();
-    document.querySelectorAll('.onboarding-highlight').forEach(el => {
-        el.classList.remove('onboarding-highlight');
-        el.style.boxShadow = '';
-        el.style.zIndex = '';
-    });
-
-    // Eğer tüm adımlar bittiyse
-    if (index >= steps.length) {
-        console.log('🎉 Tüm adımlar tamamlandı!');
-        if (ONBOARDING_TEST_MODE) {
-            console.log('🧪 TEST MODU: Rehber tamamlandı!');
-        } else {
-            if (currentUser) {
-                updateDoc(userRef, { onboardingCompleted: true })
-                    .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
-                    .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
-            }
+    function showStep(index) {
+        console.log(`📌 showStep çağrıldı: ${index}`);
+        
+        // ===== STEPS KONTROLÜ =====
+        if (!steps) {
+            console.error('❌ steps tanımlı değil!');
+            return;
         }
-        return;
-    }
+        
+        // ===== ÖNCEKİ TÜM REHBER ELEMENTLERİNİ TEMİZLE =====
+        document.querySelector('.onboarding-tooltip')?.remove();
+        document.querySelector('.onboarding-overlay')?.remove();
+        document.querySelectorAll('.onboarding-highlight').forEach(el => {
+            el.classList.remove('onboarding-highlight');
+            el.style.boxShadow = '';
+            el.style.zIndex = '';
+        });
 
-    const step = steps[index];
-    const targetElement = document.querySelector(step.target);
-
-    if (!targetElement) {
-        console.warn(`⚠️ Hedef element bulunamadı: ${step.target}, bir sonraki adıma geçiliyor.`);
-        setTimeout(() => {
-            showStep(index + 1);
-        }, 300);
-        return;
-    }
-
-    console.log(`🎯 Hedef element bulundu: ${step.target}`);
-
-    // ===== MOBİL KONTROLÜ =====
-    const isMobile = window.innerWidth <= 768;
-    const isVerySmall = window.innerWidth <= 480;
-    const isLightTheme = document.body.classList.contains('light-theme');
-
-    // ===== MOBİL BOYUTLAR =====
-    const tooltipPadding = isVerySmall ? '14px 16px' : (isMobile ? '18px 22px' : '24px 30px');
-    const tooltipMaxWidth = isVerySmall ? '260px' : (isMobile ? '320px' : '400px');
-    const titleFontSize = isVerySmall ? '14px' : (isMobile ? '16px' : '20px');
-    const contentFontSize = isVerySmall ? '11px' : (isMobile ? '13px' : '15px');
-    const emojiSize = isVerySmall ? '20px' : (isMobile ? '26px' : '34px');
-    const buttonFontSize = isVerySmall ? '9px' : (isMobile ? '10px' : '12px');
-    const buttonPadding = isVerySmall ? '5px 10px' : (isMobile ? '6px 14px' : '8px 20px');
-    const progressFontSize = isVerySmall ? '9px' : (isMobile ? '11px' : '13px');
-    const gapSize = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
-    const marginBottom = isVerySmall ? '8px' : (isMobile ? '10px' : '14px');
-    const iconGap = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
-
-    // ===== OVERLAY =====
-    const overlay = document.createElement('div');
-    overlay.className = 'onboarding-overlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.35);
-        z-index: 9998;
-        pointer-events: none;
-        backdrop-filter: blur(2px);
-    `;
-    document.body.appendChild(overlay);
-
-    // ===== TOOLTIP OLUŞTUR =====
-    const tooltip = document.createElement('div');
-    tooltip.className = 'onboarding-tooltip';
-
-    // ===== GERİ SAYIM DEĞİŞKENİ =====
-    let countdown = 5;
-
-    // Emoji'yi güvenli şekilde al
-    const titleParts = step.title.split(' ');
-    const firstEmoji = titleParts.length > 0 ? titleParts[0] : '📌';
-    const titleText = titleParts.slice(1).join(' ') || step.title;
-
-    // ===== RENKLER (BULUT TEMA) =====
-    const bgColor = isLightTheme ? '#f8fafc' : '#1e293b';
-    const textColor = isLightTheme ? '#0f172a' : '#f1f5f9';
-    const borderColor = isLightTheme ? 'rgba(255,255,255,0.8)' : 'rgba(148,163,184,0.15)';
-    const shadowColor = isLightTheme ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.5)';
-    const accentColor = '#f59e0b';
-    const cloudColor = isLightTheme ? '#ffffff' : '#2d3748';
-    const cloudBorder = isLightTheme ? 'rgba(255,255,255,0.9)' : 'rgba(148,163,184,0.2)';
-
-    // ===== BULUT ELEMENTLERİ =====
-    const cloudHTML = `
-        <!-- Büyük bulut -->
-        <div style="
-            position: absolute;
-            top: -14px;
-            left: 16px;
-            width: 36px;
-            height: 36px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-        <div style="
-            position: absolute;
-            top: -22px;
-            left: 40px;
-            width: 26px;
-            height: 26px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-        <div style="
-            position: absolute;
-            top: -10px;
-            left: 58px;
-            width: 18px;
-            height: 18px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-        <div style="
-            position: absolute;
-            top: -8px;
-            left: 72px;
-            width: 12px;
-            height: 12px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-        <!-- Sağ taraftaki küçük bulut -->
-        <div style="
-            position: absolute;
-            top: -10px;
-            right: 24px;
-            width: 16px;
-            height: 16px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-        <div style="
-            position: absolute;
-            top: -6px;
-            right: 14px;
-            width: 10px;
-            height: 10px;
-            background: ${cloudColor};
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
-            z-index: 1;
-        "></div>
-    `;
-
-    // ===== OK İŞARETİ =====
-    const arrowHTML = `
-        <div style="
-            position: absolute;
-            bottom: -10px;
-            left: 30px;
-            width: 0;
-            height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 12px solid ${cloudColor};
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06));
-            z-index: 2;
-        "></div>
-    `;
-
-    // ===== TOOLTIP İÇERİĞİ =====
-    tooltip.innerHTML = `
-        <div style="
-            background: ${bgColor};
-            color: ${textColor};
-            border-radius: 28px;
-            padding: ${tooltipPadding};
-            max-width: ${tooltipMaxWidth};
-            box-shadow: 0 20px 60px ${shadowColor}, 0 0 0 1px ${borderColor}, 0 8px 40px rgba(0,0,0,0.05);
-            position: relative;
-            z-index: 9999;
-            animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            
-            /* ===== BULUT GÖLGESİ ===== */
-            &::before {
-                content: '';
-                position: absolute;
-                inset: -2px;
-                border-radius: 30px;
-                background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent, rgba(255,255,255,0.1));
-                z-index: -1;
-                filter: blur(4px);
+        // Eğer tüm adımlar bittiyse
+        if (index >= steps.length) {
+            console.log('🎉 Tüm adımlar tamamlandı!');
+            if (ONBOARDING_TEST_MODE) {
+                console.log('🧪 TEST MODU: Rehber tamamlandı!');
+            } else {
+                if (currentUser) {
+                    updateDoc(userRef, { onboardingCompleted: true })
+                        .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
+                        .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
+                }
             }
-        ">
-            <!-- BULUT EFEKTİ -->
-            ${cloudHTML}
-            
-            <!-- OK İŞARETİ -->
-            ${arrowHTML}
-            
-            <!-- BAŞLIK -->
+            return;
+        }
+
+        const step = steps[index];
+        
+        // ===== STEP KONTROLÜ =====
+        if (!step) {
+            console.error(`❌ ${index}. adım bulunamadı!`);
+            return;
+        }
+        
+        const targetElement = document.querySelector(step.target);
+
+        if (!targetElement) {
+            console.warn(`⚠️ Hedef element bulunamadı: ${step.target}, bir sonraki adıma geçiliyor.`);
+            setTimeout(() => {
+                showStep(index + 1);
+            }, 300);
+            return;
+        }
+
+        console.log(`🎯 Hedef element bulundu: ${step.target}`);
+
+        // ===== MOBİL KONTROLÜ =====
+        const isMobile = window.innerWidth <= 768;
+        const isVerySmall = window.innerWidth <= 480;
+        const isLightTheme = document.body.classList.contains('light-theme');
+
+        // ===== MOBİL BOYUTLAR =====
+        const tooltipPadding = isVerySmall ? '14px 16px' : (isMobile ? '18px 22px' : '24px 30px');
+        const tooltipMaxWidth = isVerySmall ? '260px' : (isMobile ? '320px' : '400px');
+        const titleFontSize = isVerySmall ? '14px' : (isMobile ? '16px' : '20px');
+        const contentFontSize = isVerySmall ? '11px' : (isMobile ? '13px' : '15px');
+        const emojiSize = isVerySmall ? '20px' : (isMobile ? '26px' : '34px');
+        const buttonFontSize = isVerySmall ? '9px' : (isMobile ? '10px' : '12px');
+        const buttonPadding = isVerySmall ? '5px 10px' : (isMobile ? '6px 14px' : '8px 20px');
+        const progressFontSize = isVerySmall ? '9px' : (isMobile ? '11px' : '13px');
+        const gapSize = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
+        const marginBottom = isVerySmall ? '8px' : (isMobile ? '10px' : '14px');
+        const iconGap = isVerySmall ? '6px' : (isMobile ? '8px' : '12px');
+
+        // ===== OVERLAY =====
+        const overlay = document.createElement('div');
+        overlay.className = 'onboarding-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 9998;
+            pointer-events: none;
+            backdrop-filter: blur(2px);
+        `;
+        document.body.appendChild(overlay);
+
+        // ===== TOOLTIP OLUŞTUR =====
+        const tooltip = document.createElement('div');
+        tooltip.className = 'onboarding-tooltip';
+
+        // ===== GERİ SAYIM DEĞİŞKENİ =====
+        let countdown = 5;
+
+        // Emoji'yi güvenli şekilde al
+        const titleParts = step.title.split(' ');
+        const firstEmoji = titleParts.length > 0 ? titleParts[0] : '📌';
+        const titleText = titleParts.slice(1).join(' ') || step.title;
+
+        // ===== RENKLER =====
+        const bgColor = isLightTheme ? '#f8fafc' : '#1e293b';
+        const textColor = isLightTheme ? '#0f172a' : '#f1f5f9';
+        const borderColor = isLightTheme ? 'rgba(255,255,255,0.8)' : 'rgba(148,163,184,0.15)';
+        const shadowColor = isLightTheme ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.5)';
+        const accentColor = '#f59e0b';
+        const cloudColor = isLightTheme ? '#ffffff' : '#2d3748';
+        const cloudBorder = isLightTheme ? 'rgba(255,255,255,0.9)' : 'rgba(148,163,184,0.2)';
+
+        // ===== BULUT ELEMENTLERİ =====
+        const cloudHTML = `
             <div style="
-                display: flex; 
-                align-items: center; 
-                gap: ${iconGap}; 
-                margin-bottom: ${marginBottom};
-                padding-bottom: ${marginBottom};
-                border-bottom: 2px dashed ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
-                position: relative;
-                z-index: 3;
-            ">
-                <span style="
-                    font-size: ${emojiSize};
-                    background: rgba(245,158,11,0.12);
-                    padding: ${isVerySmall ? '6px' : '8px'};
-                    border-radius: 50%;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: ${isVerySmall ? '36px' : (isMobile ? '44px' : '54px')};
-                    height: ${isVerySmall ? '36px' : (isMobile ? '44px' : '54px')};
-                    box-shadow: 0 4px 12px rgba(245,158,11,0.15);
-                ">${firstEmoji}</span>
-                <h3 style="
-                    margin: 0; 
-                    font-size: ${titleFontSize}; 
-                    font-weight: 700; 
-                    line-height: 1.3; 
-                    flex: 1;
-                    color: ${accentColor};
-                ">${titleText}</h3>
-            </div>
-            
-            <!-- İÇERİK -->
-            <p style="
-                margin: 0 0 ${marginBottom} 0; 
-                font-size: ${contentFontSize}; 
-                line-height: 1.7; 
-                opacity: 0.9;
-                padding: 0 4px;
-                position: relative;
-                z-index: 3;
-            ">
-                ${step.content}
-            </p>
-            
-            <!-- BUTONLAR -->
+                position: absolute;
+                top: -14px;
+                left: 16px;
+                width: 36px;
+                height: 36px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
             <div style="
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
-                gap: ${gapSize}; 
-                flex-wrap: wrap;
-                padding-top: ${marginBottom};
-                border-top: 1px solid ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
+                position: absolute;
+                top: -22px;
+                left: 40px;
+                width: 26px;
+                height: 26px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
+            <div style="
+                position: absolute;
+                top: -10px;
+                left: 58px;
+                width: 18px;
+                height: 18px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
+            <div style="
+                position: absolute;
+                top: -8px;
+                left: 72px;
+                width: 12px;
+                height: 12px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
+            <div style="
+                position: absolute;
+                top: -10px;
+                right: 24px;
+                width: 16px;
+                height: 16px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
+            <div style="
+                position: absolute;
+                top: -6px;
+                right: 14px;
+                width: 10px;
+                height: 10px;
+                background: ${cloudColor};
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px ${cloudBorder}, 0 4px 20px rgba(0,0,0,0.06);
+                z-index: 1;
+            "></div>
+        `;
+
+        // ===== OK İŞARETİ =====
+        const arrowHTML = `
+            <div style="
+                position: absolute;
+                bottom: -10px;
+                left: 30px;
+                width: 0;
+                height: 0;
+                border-left: 12px solid transparent;
+                border-right: 12px solid transparent;
+                border-top: 12px solid ${cloudColor};
+                filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06));
+                z-index: 2;
+            "></div>
+        `;
+
+        // ===== TOOLTIP İÇERİĞİ =====
+        tooltip.innerHTML = `
+            <div style="
+                background: ${bgColor};
+                color: ${textColor};
+                border-radius: 28px;
+                padding: ${tooltipPadding};
+                max-width: ${tooltipMaxWidth};
+                box-shadow: 0 20px 60px ${shadowColor}, 0 0 0 1px ${borderColor}, 0 8px 40px rgba(0,0,0,0.05);
                 position: relative;
-                z-index: 3;
+                z-index: 9999;
+                animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             ">
-                <!-- REHBERİ KAPAT -->
-                <button id="skipOnboardingBtn" onclick="window.skipOnboarding()" style="
-                    background: rgba(239,68,68,0.06);
-                    color: #ef4444;
-                    border: 1px solid rgba(239,68,68,0.15);
-                    padding: ${buttonPadding};
-                    border-radius: 30px;
-                    font-size: ${buttonFontSize};
-                    cursor: pointer;
-                    transition: 0.3s;
-                    font-weight: 500;
-                    opacity: 0.5;
-                    pointer-events: none;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    white-space: nowrap;
-                    backdrop-filter: blur(4px);
-                " onmouseover="this.style.background='rgba(239,68,68,0.12)';" 
-                   onmouseout="this.style.background='rgba(239,68,68,0.06)';">
-                    <i class="fas fa-times-circle" style="font-size: ${isVerySmall ? '10px' : '12px'};"></i> 
-                    <span id="skipCountdown">Kapat (${countdown}s)</span>
-                </button>
+                ${cloudHTML}
+                ${arrowHTML}
                 
-                <!-- İLERİ -->
-                <div style="display: flex; align-items: center; gap: ${isVerySmall ? '6px' : '10px'};">
+                <div style="
+                    display: flex; 
+                    align-items: center; 
+                    gap: ${iconGap}; 
+                    margin-bottom: ${marginBottom};
+                    padding-bottom: ${marginBottom};
+                    border-bottom: 2px dashed ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
+                    position: relative;
+                    z-index: 3;
+                ">
                     <span style="
-                        font-size: ${progressFontSize}; 
-                        opacity: 0.4; 
-                        white-space: nowrap;
-                        background: rgba(245,158,11,0.06);
-                        padding: 3px 10px;
-                        border-radius: 20px;
-                        font-weight: 500;
-                    ">${index + 1}/${steps.length}</span>
-                    <button onclick="window.handleOnboardingAction(${index}, ${index + 1})" style="
-                        background: linear-gradient(135deg, #f59e0b, #d97706);
-                        color: #121212;
-                        border: none;
-                        padding: ${isVerySmall ? '6px 14px' : (isMobile ? '7px 16px' : '9px 24px')};
+                        font-size: ${emojiSize};
+                        background: rgba(245,158,11,0.12);
+                        padding: ${isVerySmall ? '6px' : '8px'};
+                        border-radius: 50%;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: ${isVerySmall ? '36px' : (isMobile ? '44px' : '54px')};
+                        height: ${isVerySmall ? '36px' : (isMobile ? '44px' : '54px')};
+                        box-shadow: 0 4px 12px rgba(245,158,11,0.15);
+                    ">${firstEmoji}</span>
+                    <h3 style="
+                        margin: 0; 
+                        font-size: ${titleFontSize}; 
+                        font-weight: 700; 
+                        line-height: 1.3; 
+                        flex: 1;
+                        color: ${accentColor};
+                    ">${titleText}</h3>
+                </div>
+                
+                <p style="
+                    margin: 0 0 ${marginBottom} 0; 
+                    font-size: ${contentFontSize}; 
+                    line-height: 1.7; 
+                    opacity: 0.9;
+                    padding: 0 4px;
+                    position: relative;
+                    z-index: 3;
+                ">
+                    ${step.content}
+                </p>
+                
+                <div style="
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center; 
+                    gap: ${gapSize}; 
+                    flex-wrap: wrap;
+                    padding-top: ${marginBottom};
+                    border-top: 1px solid ${isLightTheme ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'};
+                    position: relative;
+                    z-index: 3;
+                ">
+                    <button id="skipOnboardingBtn" onclick="window.skipOnboarding()" style="
+                        background: rgba(239,68,68,0.06);
+                        color: #ef4444;
+                        border: 1px solid rgba(239,68,68,0.15);
+                        padding: ${buttonPadding};
                         border-radius: 30px;
-                        font-weight: 700;
+                        font-size: ${buttonFontSize};
                         cursor: pointer;
                         transition: 0.3s;
-                        font-size: ${isVerySmall ? '10px' : (isMobile ? '11px' : '12px')};
-                        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35);
+                        font-weight: 500;
+                        opacity: 0.5;
+                        pointer-events: none;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
                         white-space: nowrap;
-                    " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(245, 158, 11, 0.5)';" 
-                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(245, 158, 11, 0.35)';">
-                        ${index === steps.length - 1 ? '🚀 Başla!' : '👆 İleri →'}
+                        backdrop-filter: blur(4px);
+                    " onmouseover="this.style.background='rgba(239,68,68,0.12)';" 
+                       onmouseout="this.style.background='rgba(239,68,68,0.06)';">
+                        <i class="fas fa-times-circle" style="font-size: ${isVerySmall ? '10px' : '12px'};"></i> 
+                        <span id="skipCountdown">Kapat (${countdown}s)</span>
                     </button>
+                    
+                    <div style="display: flex; align-items: center; gap: ${isVerySmall ? '6px' : '10px'};">
+                        <span style="
+                            font-size: ${progressFontSize}; 
+                            opacity: 0.4; 
+                            white-space: nowrap;
+                            background: rgba(245,158,11,0.06);
+                            padding: 3px 10px;
+                            border-radius: 20px;
+                            font-weight: 500;
+                        ">${index + 1}/${steps.length}</span>
+                        <button onclick="window.handleOnboardingAction(${index}, ${index + 1})" style="
+                            background: linear-gradient(135deg, #f59e0b, #d97706);
+                            color: #121212;
+                            border: none;
+                            padding: ${isVerySmall ? '6px 14px' : (isMobile ? '7px 16px' : '9px 24px')};
+                            border-radius: 30px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            transition: 0.3s;
+                            font-size: ${isVerySmall ? '10px' : (isMobile ? '11px' : '12px')};
+                            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35);
+                            white-space: nowrap;
+                        " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(245, 158, 11, 0.5)';" 
+                           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(245, 158, 11, 0.35)';">
+                            ${index === steps.length - 1 ? '🚀 Başla!' : '👆 İleri →'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
-    // ===== TOOLTIP KONUMU =====
-    const rect = targetElement.getBoundingClientRect();
-    let top, left;
+        // ===== TOOLTIP KONUMU =====
+        const rect = targetElement.getBoundingClientRect();
+        let top, left;
 
-    const offsetX = isVerySmall ? 110 : (isMobile ? 140 : 180);
-    const offsetY = isVerySmall ? 8 : (isMobile ? 12 : 20);
+        const offsetX = isVerySmall ? 110 : (isMobile ? 140 : 180);
+        const offsetY = isVerySmall ? 8 : (isMobile ? 12 : 20);
 
-    switch (step.position) {
-        case 'bottom':
-            top = rect.bottom + offsetY;
-            left = rect.left + rect.width / 2 - offsetX;
-            break;
-        case 'top':
-            top = rect.top - (isVerySmall ? 180 : (isMobile ? 220 : 270));
-            left = rect.left + rect.width / 2 - offsetX;
-            break;
-        default:
-            top = rect.bottom + offsetY;
-            left = rect.left + rect.width / 2 - offsetX;
-    }
-
-    // Ekran dışına çıkmasını engelle
-    const maxWidthPx = isVerySmall ? 280 : (isMobile ? 340 : 420);
-    if (left < (isVerySmall ? 5 : (isMobile ? 10 : 15))) left = isVerySmall ? 5 : (isMobile ? 10 : 15);
-    if (left + maxWidthPx > window.innerWidth - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
-        left = window.innerWidth - maxWidthPx - (isVerySmall ? 5 : (isMobile ? 10 : 15));
-    }
-    if (top < (isVerySmall ? 5 : (isMobile ? 10 : 15))) top = isVerySmall ? 5 : (isMobile ? 10 : 15);
-    if (top + (isVerySmall ? 180 : (isMobile ? 220 : 270)) > window.innerHeight - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
-        top = window.innerHeight - (isVerySmall ? 180 : (isMobile ? 220 : 270)) - (isVerySmall ? 5 : (isMobile ? 10 : 15));
-    }
-
-    tooltip.style.cssText += `
-        position: fixed;
-        top: ${top}px;
-        left: ${left}px;
-        z-index: 9999;
-        animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    `;
-
-    document.body.appendChild(tooltip);
-
-    // ===== HEDEF ELEMENTİ VURGULA =====
-    targetElement.classList.add('onboarding-highlight');
-    targetElement.style.position = 'relative';
-    targetElement.style.zIndex = '9999';
-    targetElement.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 30px rgba(245, 158, 11, 0.25)';
-    targetElement.style.borderRadius = '8px';
-    targetElement.style.transition = 'all 0.3s ease';
-
-    // ===== GERİ SAYIM BAŞLAT =====
-    let countdownInterval = setInterval(() => {
-        countdown--;
-        const countdownEl = document.getElementById('skipCountdown');
-        const skipBtn = document.getElementById('skipOnboardingBtn');
-        
-        if (countdownEl && skipBtn) {
-            if (countdown > 0) {
-                countdownEl.textContent = `Kapat (${countdown}s)`;
-            } else {
-                clearInterval(countdownInterval);
-                countdownEl.textContent = 'Rehberi Kapat';
-                skipBtn.style.opacity = '1';
-                skipBtn.style.pointerEvents = 'auto';
-                skipBtn.style.background = 'rgba(239,68,68,0.12)';
-                skipBtn.style.borderColor = 'rgba(239,68,68,0.3)';
-            }
+        switch (step.position) {
+            case 'bottom':
+                top = rect.bottom + offsetY;
+                left = rect.left + rect.width / 2 - offsetX;
+                break;
+            case 'top':
+                top = rect.top - (isVerySmall ? 180 : (isMobile ? 220 : 270));
+                left = rect.left + rect.width / 2 - offsetX;
+                break;
+            default:
+                top = rect.bottom + offsetY;
+                left = rect.left + rect.width / 2 - offsetX;
         }
-    }, 1000);
-}
 
+        // Ekran dışına çıkmasını engelle
+        const maxWidthPx = isVerySmall ? 280 : (isMobile ? 340 : 420);
+        if (left < (isVerySmall ? 5 : (isMobile ? 10 : 15))) left = isVerySmall ? 5 : (isMobile ? 10 : 15);
+        if (left + maxWidthPx > window.innerWidth - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
+            left = window.innerWidth - maxWidthPx - (isVerySmall ? 5 : (isMobile ? 10 : 15));
+        }
+        if (top < (isVerySmall ? 5 : (isMobile ? 10 : 15))) top = isVerySmall ? 5 : (isMobile ? 10 : 15);
+        if (top + (isVerySmall ? 180 : (isMobile ? 220 : 270)) > window.innerHeight - (isVerySmall ? 5 : (isMobile ? 10 : 15))) {
+            top = window.innerHeight - (isVerySmall ? 180 : (isMobile ? 220 : 270)) - (isVerySmall ? 5 : (isMobile ? 10 : 15));
+        }
 
-    
+        tooltip.style.cssText += `
+            position: fixed;
+            top: ${top}px;
+            left: ${left}px;
+            z-index: 9999;
+            animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        `;
+
+        document.body.appendChild(tooltip);
+
+        // ===== HEDEF ELEMENTİ VURGULA =====
+        targetElement.classList.add('onboarding-highlight');
+        targetElement.style.position = 'relative';
+        targetElement.style.zIndex = '9999';
+        targetElement.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 30px rgba(245, 158, 11, 0.25)';
+        targetElement.style.borderRadius = '8px';
+        targetElement.style.transition = 'all 0.3s ease';
+
+        // ===== GERİ SAYIM BAŞLAT =====
+        let countdownInterval = setInterval(() => {
+            countdown--;
+            const countdownEl = document.getElementById('skipCountdown');
+            const skipBtn = document.getElementById('skipOnboardingBtn');
+            
+            if (countdownEl && skipBtn) {
+                if (countdown > 0) {
+                    countdownEl.textContent = `Kapat (${countdown}s)`;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownEl.textContent = 'Rehberi Kapat';
+                    skipBtn.style.opacity = '1';
+                    skipBtn.style.pointerEvents = 'auto';
+                    skipBtn.style.background = 'rgba(239,68,68,0.12)';
+                    skipBtn.style.borderColor = 'rgba(239,68,68,0.3)';
+                }
+            }
+        }, 1000);
+    }
 
     // ===== showStep'u GLOBAL YAP =====
     window.showStep = showStep;
 
-  
+    // ===== handleOnboardingAction'u GLOBAL YAP (steps'i doğrudan kullan) =====
+    window.handleOnboardingAction = function(index, nextIndex) {
+        // ===== STEPS'İ DOĞRUDAN WINDOW'DAN AL =====
+        const currentSteps = window._onboardingSteps;
+        
+        if (!currentSteps) {
+            console.error('❌ steps bulunamadı!');
+            return;
+        }
+        
+        const step = currentSteps[index];
+        
+        console.log(`🔄 Adım ${index} çalıştırılıyor, Action: ${step?.action || 'yok'}`);
+        
+        // Eski tooltip'i temizle
+        document.querySelector('.onboarding-tooltip')?.remove();
+        document.querySelector('.onboarding-overlay')?.remove();
+        document.querySelectorAll('.onboarding-highlight').forEach(el => {
+            el.classList.remove('onboarding-highlight');
+            el.style.boxShadow = '';
+            el.style.zIndex = '';
+        });
+        
+        // Eğer action varsa çalıştır
+        if (step && step.action) {
+            try {
+                const actionFn = window[step.action];
+                if (typeof actionFn === 'function') {
+                    console.log(`🔄 "${step.action}" fonksiyonu çalıştırılıyor...`);
+                    actionFn();
+                } else {
+                    console.warn(`⚠️ "${step.action}" fonksiyonu bulunamadı!`);
+                }
+            } catch (error) {
+                console.error(`❌ "${step.action}" çalıştırma hatası:`, error);
+            }
+        }
+        
+        // Son adım mı kontrol et
+        if (nextIndex >= currentSteps.length) {
+            console.log('🎉 Rehber tamamlandı!');
+            
+            // ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+            if (typeof window.restoreOriginalTheme === 'function') {
+                window.restoreOriginalTheme();
+            }
+            
+            document.querySelector('.onboarding-tooltip')?.remove();
+            document.querySelector('.onboarding-overlay')?.remove();
+            document.querySelectorAll('.onboarding-highlight').forEach(el => {
+                el.classList.remove('onboarding-highlight');
+                el.style.boxShadow = '';
+                el.style.zIndex = '';
+            });
+            if (!ONBOARDING_TEST_MODE && currentUser) {
+                updateDoc(userRef, { onboardingCompleted: true })
+                    .then(() => console.log('✅ Rehber tamamlandı, Firestore güncellendi.'))
+                    .catch(err => console.error('❌ Firestore güncelleme hatası:', err));
+            }
+            return;
+        }
+        
+        // ===== BURASI ÖNEMLİ: Tema adımından sonra eski haline döndür =====
+        if (index === 14) {
+            console.log('🌓 Tema adımı geçildi, eski haline döndürülüyor...');
+            setTimeout(() => {
+                if (typeof window.restoreOriginalTheme === 'function') {
+                    window.restoreOriginalTheme();
+                }
+            }, 300);
+        }
+        
+        // ===== Sonraki adımı göster =====
+        console.log(`⏳ ${nextIndex}. adım için bekleniyor...`);
+        setTimeout(() => {
+            if (typeof showStep === 'function') {
+                console.log(`👉 ${nextIndex}. adım gösteriliyor...`);
+                showStep(nextIndex);
+            } else {
+                console.error('❌ showStep fonksiyonu bulunamadı!');
+            }
+        }, 600);
+    };
 
     // ===== skipOnboarding'u GLOBAL YAP =====
     window.skipOnboarding = function() {
         console.log('👋 Rehber kapatılıyor...');
+        
+        // ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+        if (typeof window.restoreOriginalTheme === 'function') {
+            window.restoreOriginalTheme();
+        }
         
         document.querySelector('.onboarding-tooltip')?.remove();
         document.querySelector('.onboarding-overlay')?.remove();
@@ -11106,6 +11178,11 @@ function showStep(index) {
             el.style.boxShadow = '';
             el.style.zIndex = '';
         });
+        
+        // ===== TEMAYI ESKİ HALİNE DÖNDÜR =====
+        if (typeof window.restoreOriginalTheme === 'function') {
+            window.restoreOriginalTheme();
+        }
         
         setTimeout(() => {
             showStep(0);
