@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - SaadetYolu</title>
+
+    <!-- SweetAlert2 (deleteLesson fonksiyonu bunu kullanıyor, önceden eksikti) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 
-     /* Açık tema içinsfvs kelime ve soru mmetinleri - LACİVERT */
+     /* Açık tema içinsfvs kKKelime ve soru metinleri - LACİVERT */
     
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -232,6 +235,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            justify-content: center;
         }
         .btn-primary { background: #f59e0b; color: #121212; }
         .btn-primary:hover { background: #d97706; }
@@ -349,7 +353,7 @@
             padding: 80px 20px 20px;
         }
         .sidebar.open { left: 0; }
-        .sidebar-item { padding: 12px 20px; margin: 5px 0; border-radius: 10px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 12px; }
+        .sidebar-item { padding: 1px 20px; margin: 5px 0; border-radius: 10px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 1px; }
         .sidebar-item:hover { background: #f59e0b; color: #0d0d0d; }
         .overlay {
             position: fixed;
@@ -596,7 +600,7 @@
             .sidebar { width: 260px; padding: 70px 15px 20px; }
             .sidebar h3 { font-size: 16px; }
             .sidebar small { font-size: 11px; }
-            .sidebar-item { padding: 10px 16px; font-size: 13px; gap: 10px; }
+            .sidebar-item { padding: 1px 16px; font-size: 13px; gap: 1px; }
             .sidebar-item i { font-size: 14px; }
             .input-wrapper input { padding: 10px; padding-right: 40px; font-size: 13px; }
             .toggle-password { right: 10px; font-size: 14px; }
@@ -695,8 +699,7 @@
 </head>
 <body>
 
-
-    <!-- İnternet Bağlantısı Uyarısı -->
+<!-- İnternet Bağlantısı Uyarısı -->
 <div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 12px 20px; text-align: center; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
     <i class="fas fa-wifi"></i> 
     <span id="offlineMessage">İnternet bağlantınız kesildi! Lütfen bağlantınızı kontrol edin. Veriler otomatik olarak senkronize olacaktır.</span>
@@ -779,19 +782,40 @@
                     <div id="statUsers">0</div>
                     <div><i class="fas fa-users"></i> Kullanıcı</div>
                 </div>
+                <!-- Toplam Sandık (tüm kullanıcılar) -->
+                <div class="stats-card" id="statSandikCard" style="cursor: pointer;" onclick="showSection('users'); loadUsers();">
+                    <div id="statSandikTotal">0</div>
+                    <div><i class="fas fa-box"></i> Toplam Sandık</div>
+                </div>
+                <!-- Ortalama Kullanıcı Puanı -->
+                <div class="stats-card" id="statAvgScoreCard" style="cursor: pointer;" onclick="showSection('users'); loadUsers();">
+                    <div id="statAvgUserScore">0.00</div>
+                    <div><i class="fas fa-star"></i> Ort. Kullanıcı Puanı</div>
+                </div>
                 <!-- Toplu Kelime Yükleme -->
-<div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
-    <div style="font-size: 28px; color: #10b981;">📤</div>
-    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Kelime Yükle</div>
-    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu kelime ekle</div>
-</div>
-
-<!-- Toplu Soru Yükleme -->
-<div class="stats-card" id="statBulkExamUploadCard" style="cursor: pointer; border-color: rgba(59,130,246,0.3);">
-    <div style="font-size: 28px; color: #3b82f6;">📝</div>
-    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
-    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
-</div>
+                <div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
+                    <div style="font-size: 28px; color: #10b981;">📤</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Kelime Yükle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu kelime ekle</div>
+                </div>
+                <!-- Toplu Soru Yükleme -->
+                <div class="stats-card" id="statBulkExamUploadCard" style="cursor: pointer; border-color: rgba(59,130,246,0.3);">
+                    <div style="font-size: 28px; color: #3b82f6;">📝</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
+                </div>
+                <!-- Yedekleme -->
+                <div class="stats-card" id="statBackupCard" style="cursor: pointer; border-color: rgba(168,85,247,0.3);" onclick="backupAllData()">
+                    <div style="font-size: 28px; color: #a855f7;">💾</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Hızlı Yedekle</div>
+                    <div style="font-size: 11px; opacity: 0.7;">Tüm verileri JSON indir</div>
+                </div>
+                <!-- En Çok Yanlış Yapılan Kelimeler -->
+                <div class="stats-card" id="statHardWordsCard" style="cursor: pointer; border-color: rgba(239,68,68,0.3);" onclick="showHardWordsReport()">
+                    <div style="font-size: 28px; color: #ef4444;">⚠️</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Zor Kelimeler Raporu</div>
+                    <div style="font-size: 11px; opacity: 0.7;">En çok sandığa düşenler</div>
+                </div>
             </div>
         </div>
 
@@ -829,7 +853,20 @@
                 </div>
                 <button id="addWordBtn" class="btn btn-success" disabled><i class="fas fa-plus"></i> Yeni Kelime</button>
             </div>
-            <div class="select-row">
+
+            <!-- ===== TÜM KELİMELERDE ARAMA (kitap/ders seçmeden, tüm veritabanında) ===== -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="position: relative; flex: 1; min-width: 220px;">
+                    <input type="text" id="globalWordSearch" placeholder="🔍 Tüm kelimelerde ara (Arapça veya Türkçe)..." style="width: 100%; padding: 12px 40px 12px 14px;">
+                    <i class="fas fa-times" id="clearWordSearchBtn" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.5; display: none;"></i>
+                </div>
+                <button id="findDuplicateWordsBtn" class="btn btn-warning" style="padding: 10px 16px; font-size: 13px; white-space: nowrap;">
+                    <i class="fas fa-clone"></i> Tekrarları Bul
+                </button>
+            </div>
+            <div class="items-list" id="globalWordSearchResults" style="margin-bottom: 15px;"></div>
+
+            <div id="wordFilterSelectRow" class="select-row">
                 <div class="select-wrapper">
                     <label><i class="fas fa-book"></i> Kitap Seçin</label>
                     <select id="wordBookSelect"><option value="">-- Kitap Seçin --</option></select>
@@ -868,10 +905,54 @@
             <div class="items-list" id="examsList"></div>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- KULLANICILAR BÖLÜMÜ (GÜNCELLENMİŞ) -->
+        <!-- ============================================================ -->
         <div id="usersSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-users"></i> Kullanıcılar</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="refreshUsersBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadUsers()">
+                        <i class="fas fa-sync"></i> Yenile
+                    </button>
+                </div>
             </div>
+            
+            <!-- Kullanıcı İstatistikleri -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f59e0b;" id="userTotalCount">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Toplam Kullanıcı</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #10b981;" id="userActiveCount">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Aktif (Son 7 Gün)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #3b82f6;" id="userAvgWords">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Ort. Kelime</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f59e0b;" id="userTotalExams">0</div>
+                    <div style="font-size: 12px; opacity: 0.7;">Toplam Sınav</div>
+                </div>
+            </div>
+
+            <!-- Arama ve Sıralama -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="position: relative; flex: 1; min-width: 220px;">
+                    <input type="text" id="userSearchInput" placeholder="🔍 İsim veya e-posta ile ara..." style="width: 100%; padding: 12px 40px 12px 14px;">
+                    <i class="fas fa-times" id="clearUserSearchBtn" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.5; display: none;"></i>
+                </div>
+                <select id="userSortSelect" style="max-width: 220px; margin: 0;">
+                    <option value="name">İsme Göre (A-Z)</option>
+                    <option value="active">Son Aktifliğe Göre</option>
+                    <option value="words">Kelime Sayısına Göre</option>
+                    <option value="level">Seviyeye Göre</option>
+                    <option value="sandik">Sandık Sayısına Göre</option>
+                </select>
+            </div>
+            
             <div class="items-list" id="usersList"></div>
         </div>
 
@@ -879,6 +960,32 @@
         <div id="dataManagementSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-database"></i> Veri Yönetimi</h2>
+            </div>
+
+            <!-- YEDEKLEME -->
+            <div style="background: rgba(168,85,247,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(168,85,247,0.25);">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">💾</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #a855f7; margin: 0 0 5px 0;">Tüm Verileri Yedekle</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0;">Kitaplar, dersler, kelimeler, sınavlar ve kullanıcı verilerinin tamamını tek bir JSON dosyası olarak indirir.</p>
+                    </div>
+                    <button id="backupAllDataBtn" class="btn" style="background:#a855f7; color:white; padding: 8px 16px;" onclick="backupAllData()">
+                        <i class="fas fa-download"></i> Yedeği İndir
+                    </button>
+                </div>
+            </div>
+
+            <!-- GERİ YÜKLEME -->
+            <div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(59,130,246,0.25);">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px;">📤</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #3b82f6; margin: 0 0 5px 0;">Yedekten Geri Yükle</h4>
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 10px 0;">Daha önce indirdiğiniz bir yedek dosyasını (.json) yükleyip geri yükleyin. Aynı ID'li kayıtlar güncellenir.</p>
+                        <input type="file" id="restoreBackupInput" accept="application/json" onchange="restoreFromBackupFile(this)" style="max-width: 320px; padding: 8px; font-size: 12px;">
+                    </div>
+                </div>
             </div>
             
             <!-- Tüm Kullanıcıların Sandığını Sıfırla -->
@@ -926,78 +1033,78 @@
                 <div id="resetAllDataResult" style="margin-top: 10px; display: none; padding: 10px; border-radius: 8px;"></div>
             </div>
 
-<!-- Kullanıcı Silme - İki Adımlı Yönlendirme -->
-<hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 25px 0 20px 0;">
+            <!-- Kullanıcı Silme - İki Adımlı Yönlendirme -->
+            <hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 25px 0 20px 0;">
 
-<div style="background: rgba(239,68,68,0.08); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(239,68,68,0.3);">
-    <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
-        <div style="font-size: 32px; margin-top: 4px;">🗑️</div>
-        <div style="flex: 1;">
-            <h4 style="color: #ef4444; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                Kullanıcı Silme
-                <span style="font-size: 11px; background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 400;">2 Adım</span>
-            </h4>
-            
-            <!-- KULLANICI SEÇİMİ - BAŞTA -->
-            <div style="margin-bottom: 14px; padding: 10px 14px; background: rgba(255,255,255,0.06); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                <span style="font-size: 13px; font-weight: 600;"><i class="fas fa-user" style="color: #f59e0b;"></i> Kullanıcı Seç:</span>
-                <select id="adminUserDeleteSelect" style="flex: 1; min-width: 200px; padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; cursor: pointer;">
-                    <option value="">-- Kullanıcı Seçin --</option>
-                </select>
-                <span style="font-size: 11px; opacity: 0.5; display: flex; align-items: center; gap: 4px;">
-                    <i class="fas fa-arrow-up" style="color: #f59e0b;"></i> Önce seçin
-                </span>
-            </div>
-            
-            <p style="font-size: 13px; opacity: 0.8; margin: 0 0 12px 0; padding-left: 4px;">
-                <i class="fas fa-arrow-right" style="color: #f59e0b;"></i>
-                Bir kullanıcıyı tamamen silmek için <strong>önce Firestore'dan, sonra Authentication'dan</strong> silmeniz gerekir.
-            </p>
-            
-            <!-- ADIM 1: FIRESTORE'DAN SİL -->
-            <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #10b981;">
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">1. ADIM</span>
-                    <span style="font-size: 13px; font-weight: 500;">Firestore'dan Sil</span>
-                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının tüm verilerini (puan, sınav geçmişi, sandık) siler</span>
-                    <button onclick="adminFirestoreDelete()" style="background: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.3s; white-space: nowrap;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                        <i class="fas fa-database"></i> Firestore'dan Sil
-                    </button>
+            <div style="background: rgba(239,68,68,0.08); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(239,68,68,0.3);">
+                <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 32px; margin-top: 4px;">🗑️</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #ef4444; margin: 0 0 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            Kullanıcı Silme
+                            <span style="font-size: 11px; background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 400;">2 Adım</span>
+                        </h4>
+                        
+                        <!-- KULLANICI SEÇİMİ - BAŞTA -->
+                        <div style="margin-bottom: 14px; padding: 10px 14px; background: rgba(255,255,255,0.06); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span style="font-size: 13px; font-weight: 600;"><i class="fas fa-user" style="color: #f59e0b;"></i> Kullanıcı Seç:</span>
+                            <select id="adminUserDeleteSelect" style="flex: 1; min-width: 200px; padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); font-size: 13px; cursor: pointer;">
+                                <option value="">-- Kullanıcı Seçin --</option>
+                            </select>
+                            <span style="font-size: 11px; opacity: 0.5; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-arrow-up" style="color: #f59e0b;"></i> Önce seçin
+                            </span>
+                        </div>
+                        
+                        <p style="font-size: 13px; opacity: 0.8; margin: 0 0 12px 0; padding-left: 4px;">
+                            <i class="fas fa-arrow-right" style="color: #f59e0b;"></i>
+                            Bir kullanıcıyı tamamen silmek için <strong>önce Firestore'dan, sonra Authentication'dan</strong> silmeniz gerekir.
+                        </p>
+                        
+                        <!-- ADIM 1: FIRESTORE'DAN SİL -->
+                        <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 14px; margin-bottom: 12px; border-left: 3px solid #10b981;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">1. ADIM</span>
+                                <span style="font-size: 13px; font-weight: 500;">Firestore'dan Sil</span>
+                                <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının tüm verilerini (puan, sınav geçmişi, sandık) siler</span>
+                                <button onclick="adminFirestoreDelete()" style="background: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.3s; white-space: nowrap;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                    <i class="fas fa-database"></i> Firestore'dan Sil
+                                </button>
+                            </div>
+                            <div id="firestoreDeleteResult" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+                        </div>
+                        
+                        <!-- ADIM 2: AUTHENTICATION'DAN SİL -->
+                        <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 14px; border-left: 3px solid #3b82f6;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <span style="background: #3b82f6; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">2. ADIM</span>
+                                <span style="font-size: 13px; font-weight: 500;">Authentication'dan Sil</span>
+                                <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının giriş bilgilerini (email, şifre) siler</span>
+                                <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
+                                   target="_blank" 
+                                   style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: 0.3s; white-space: nowrap;"
+                                   onmouseover="this.style.background='#2563eb'"
+                                   onmouseout="this.style.background='#3b82f6'">
+                                    <i class="fas fa-external-link-alt"></i> Firebase Console
+                                </a>
+                            </div>
+                            <div style="margin-top: 6px; font-size: 11px; opacity: 0.6;">
+                                <i class="fas fa-info-circle"></i> 
+                                Authentication → Users → Kullanıcıyı bulun → <strong>Delete</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- BİLGİ NOTU -->
+                        <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 12px; opacity: 0.8;">
+                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                            <strong>Önemli:</strong> Her iki adımı da tamamlamazsanız kullanıcı tamamen silinmez. 
+                            Önce <strong>Firestore</strong>'dan, sonra <strong>Authentication</strong>'dan silin.
+                        </div>
+                    </div>
                 </div>
-                <div id="firestoreDeleteResult" style="margin-top: 8px; font-size: 12px; display: none;"></div>
             </div>
-            
-            <!-- ADIM 2: AUTHENTICATION'DAN SİL -->
-            <div style="background: rgba(59,130,246,0.08); border-radius: 10px; padding: 14px; border-left: 3px solid #3b82f6;">
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span style="background: #3b82f6; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">2. ADIM</span>
-                    <span style="font-size: 13px; font-weight: 500;">Authentication'dan Sil</span>
-                    <span style="font-size: 12px; opacity: 0.7; flex: 1;">Kullanıcının giriş bilgilerini (email, şifre) siler</span>
-                    <a href="https://console.firebase.google.com/u/1/project/duapro-a7d7e/authentication/users" 
-                       target="_blank" 
-                       style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: 0.3s; white-space: nowrap;"
-                       onmouseover="this.style.background='#2563eb'"
-                       onmouseout="this.style.background='#3b82f6'">
-                        <i class="fas fa-external-link-alt"></i> Firebase Console
-                    </a>
-                </div>
-                <div style="margin-top: 6px; font-size: 11px; opacity: 0.6;">
-                    <i class="fas fa-info-circle"></i> 
-                    Authentication → Users → Kullanıcıyı bulun → <strong>Delete</strong>
-                </div>
-            </div>
-            
-            <!-- BİLGİ NOTU -->
-            <div style="margin-top: 14px; padding: 10px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 12px; opacity: 0.8;">
-                <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
-                <strong>Önemli:</strong> Her iki adımı da tamamlamazsanız kullanıcı tamamen silinmez. 
-                Önce <strong>Firestore</strong>'dan, sonra <strong>Authentication</strong>'dan silin.
-            </div>
-        </div>
-    </div>
-</div>
 
-<hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 20px 0 25px 0;">
+            <hr style="border: none; border-top: 2px solid rgba(239,68,68,0.2); margin: 20px 0 25px 0;">
 
             <!-- Tek Kullanıcı Sandık Sıfırlama -->
             <div style="background: rgba(59,130,246,0.1); border-radius: 16px; padding: 20px; margin-bottom: 15px;">
@@ -1040,17 +1147,17 @@
             </div>
         </div>
 
-
 <!-- Toplu Kelime Yükleme -->
 <div id="bulkUploadSection" class="section-card hidden">
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Kelime Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- ✅ ID'ler SORU YÜKLEME İLE AYNI -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="openBookModal()">
                 <i class="fas fa-book"></i> Kitap Ekle
             </button>
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="openLessonModal()">
                 <i class="fas fa-graduation-cap"></i> Ders Ekle
             </button>
         </div>
@@ -1058,15 +1165,20 @@
     <div class="select-row">
         <div class="select-wrapper">
             <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <!-- ✅ SELECT ID'LERİ DE AYNI YAPALIM (isteğe bağlı) -->
-            <select id="bulkExamBookSelect"><option value="">-- Kitap Seçin --</option></select>
+            <select id="bulkExamBookSelect">
+                <option value="">-- Kitap Seçin --</option>
+            </select>
         </div>
         <div class="select-wrapper">
             <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled><option value="">-- Önce Kitap Seçin --</option></select>
+            <select id="bulkExamLessonSelect" disabled>
+                <option value="">-- Önce Kitap Seçin --</option>
+            </select>
         </div>
         <div class="action-buttons">
-            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir"><i class="fas fa-download"></i></button>
+            <button id="downloadWordsBtn" class="btn btn-info icon-btn" title="Bu dersteki kelimeleri indir">
+                <i class="fas fa-download"></i>
+            </button>
         </div>
     </div>
     <div style="margin: 20px 0;">
@@ -1082,36 +1194,45 @@
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
     </div>
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle</button>
-        <button id="bulkClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+        <button id="bulkUploadBtn" class="btn btn-success">
+            <i class="fas fa-cloud-upload-alt"></i> Kelimeleri Yükle
+        </button>
+        <button id="bulkClearBtn" class="btn btn-secondary">
+            <i class="fas fa-eraser"></i> Temizle
+        </button>
     </div>
     <div id="bulkResult" style="margin-top: 20px; display: none;"></div>
 </div>
+
 <!-- Toplu Soru Yükleme -->
 <div id="bulkExamUploadSection" class="section-card hidden">
     <div class="section-header">
         <h2><i class="fas fa-upload"></i> Toplu Soru Yükleme</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- ✅ KİTAP EKLE -->
-            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddBookBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="openBookModal()">
                 <i class="fas fa-book"></i> Kitap Ekle
             </button>
-            <!-- ✅ DERS EKLE -->
-            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;">
+            <!-- ✅ onclick eklendi -->
+            <button id="bulkExamAddLessonBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="openLessonModal()">
                 <i class="fas fa-graduation-cap"></i> Ders Ekle
+            </button>
+            <!-- Sınav Ekle (sadece burada var) -->
+            <button id="bulkExamAddExamBtn" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px;" onclick="openExamModal()">
+                <i class="fas fa-plus"></i> Sınav Ekle
             </button>
         </div>
     </div>
     <div class="select-row" style="margin-bottom: 15px;">
         <div class="select-wrapper">
             <label><i class="fas fa-book"></i> Kitap Seçin</label>
-            <select id="bulkExamBookSelect">
+            <select id="bulkExamBookSelectSoru">
                 <option value="">-- Kitap Seçin --</option>
             </select>
         </div>
         <div class="select-wrapper">
             <label><i class="fas fa-graduation-cap"></i> Ders Seçin</label>
-            <select id="bulkExamLessonSelect" disabled>
+            <select id="bulkExamLessonSelectSoru" disabled>
                 <option value="">-- Önce Kitap Seçin --</option>
             </select>
         </div>
@@ -1145,13 +1266,16 @@
 ]' style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: white; font-family: monospace;"></textarea>
     </div>
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button id="bulkExamUploadBtn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Soruları Yükle</button>
-        <button id="bulkExamClearBtn" class="btn btn-secondary"><i class="fas fa-eraser"></i> Temizle</button>
+        <button id="bulkExamUploadBtn" class="btn btn-success">
+            <i class="fas fa-cloud-upload-alt"></i> Soruları Yükle
+        </button>
+        <button id="bulkExamClearBtn" class="btn btn-secondary">
+            <i class="fas fa-eraser"></i> Temizle
+        </button>
     </div>
     <div id="bulkExamResult" style="margin-top: 20px; display: none;"></div>
 </div>
-
-
+        
         
     </div>
 </div>
@@ -1208,16 +1332,17 @@
                 </select>
             </div>
         </div>
-        <input type="text" id="examTitle" placeholder="Sınav Adı (örn: Test 1)">
+        <input type="text" id="examTitle" placeholder="Sınav Adı (örn: Ders-1/Sınav-2)">
         <div id="questionsContainer"></div>
-        <button id="addQuestionBtn" class="btn btn-success" style="margin: 10px 0;"><i class="fas fa-plus"></i> Soru Ekle</button>
+         <button id="addQuestionBtn" class="btn btn-success" style="margin: 10px 0;"><i class="fas fa-plus"></i> Soru Ekle</button>
         <input type="hidden" id="editExamId">
         <div style="display: flex; gap: 10px; margin-top: 20px;"><button class="btn btn-danger" onclick="closeModal('examModal')">İptal</button><button id="saveExamBtn" class="btn btn-success">Kaydet</button></div>
     </div>
 </div>
 
+<!-- Kullanıcı Detay Modalı (Güncellenmiş) -->
 <div id="userDetailModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
             <h3 id="userDetailTitle">Kullanıcı Detayı</h3>
             <button class="modal-close" onclick="closeModal('userDetailModal')">&times;</button>
@@ -1258,7 +1383,8 @@
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
     }
-    
+    window.closeMenu = closeMenu; // inline onclick="...closeMenu()" için gerekli
+
     function toggleMenu() { 
         sidebar.classList.toggle('open'); 
         overlay.classList.toggle('active'); 
@@ -1509,6 +1635,9 @@
         document.getElementById('dataManagementSection').classList.remove('hidden');
     }
 }
+// window'a bağla: HTML içindeki inline onclick="showSection(...)" çağrıları (örn. logo, dashboard kartları)
+// modül scope'u dışından erişebilsin diye gerekli (önceden logo tıklaması bu yüzden çalışmıyordu).
+window.showSection = showSection;
 
 // ===== MODAL FONKSİYONLARI (GLOBAL) =====
 window.openModal = function(id) {
@@ -1690,15 +1819,88 @@ if (addBookBtn) {
         }
     };
     
-    window.deleteLesson = async (id) => {
-        if (confirm('Bu dersi silmek istediğinize emin misiniz?')) {
-            const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
-            for (const word of wordsSnap.docs) await deleteDoc(doc(db, 'words', word.id));
-            await deleteDoc(doc(db, 'lessons', id));
-            document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
-            updateStats();
+   // ============================================================
+// DERS SİLME - LOADER EKLİ
+// ============================================================
+window.deleteLesson = async (id) => {
+    // Kullanıcıya onay soralım
+    const confirmResult = await Swal.fire({
+        title: '⚠️ Dersi Sil',
+        text: 'Bu dersi ve içindeki tüm kelimeleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'İptal',
+        width: '420px',
+        padding: '1.5rem',
+        customClass: { popup: 'compact-swal' }
+    });
+    
+    if (!confirmResult.isConfirmed) return;
+    
+    // Loading göster
+    Swal.fire({
+        title: '⏳ Siliniyor...',
+        text: 'Ders ve kelimeler siliniyor, lütfen bekleyin...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: { popup: 'compact-swal' }
+    });
+    
+    try {
+        // 1. Bu derse ait kelimeleri sil
+        const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
+        let wordCount = 0;
+        
+        for (const word of wordsSnap.docs) {
+            await deleteDoc(doc(db, 'words', word.id));
+            wordCount++;
         }
-    };
+        
+        // 2. Dersi sil
+        await deleteDoc(doc(db, 'lessons', id));
+        
+        // 3. Başarılı mesajı
+        Swal.fire({
+            icon: 'success',
+            title: '✅ Silindi!',
+            html: `
+                <div style="text-align: center; padding: 5px 0;">
+                    <p>📚 Ders başarıyla silindi.</p>
+                    <p style="font-size: 13px; opacity: 0.7;">${wordCount} kelime silindi.</p>
+                </div>
+            `,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+        
+        // 4. Listeyi yenile
+        document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
+        updateStats();
+        
+    } catch (error) {
+        console.error('Ders silme hatası:', error);
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Hata!',
+            text: 'Ders silinirken bir hata oluştu: ' + error.message,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Tamam',
+            width: '380px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+    }
+};
 
     document.getElementById('addLessonBtn').onclick = () => {
         if (!currentLessonBookId) { alert('Lütfen önce bir kitap seçin!'); return; }
@@ -1752,25 +1954,98 @@ if (addBookBtn) {
         });
     }
 
-    document.getElementById('wordBookSelect').onchange = async () => {
-        currentWordBookId = document.getElementById('wordBookSelect').value;
-        const lessonSelect = document.getElementById('wordLessonSelect');
-        if (!currentWordBookId) {
+document.getElementById('wordBookSelect').onchange = async () => {
+    currentWordBookId = document.getElementById('wordBookSelect').value;
+    const lessonSelect = document.getElementById('wordLessonSelect');
+    const addBtn = document.getElementById('addWordBtn');
+    
+    if (!currentWordBookId) {
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+        addBtn.disabled = true;
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+        updateWordCountDisplay(0);
+        return;
+    }
+    
+    // ===== YÜKLENİYOR =====
+    lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+    lessonSelect.disabled = true;
+    
+    try {
+        // ===== 1. DERSLERİ GETİR =====
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', currentWordBookId), orderBy('order', 'asc')));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== 2. TÜM KELİMELERİ AL (Kelime sayısı için) =====
+        const allWords = await getDocs(collection(db, 'words'));
+        const wordCounts = {};
+        allWords.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            if (lessonId) {
+                wordCounts[lessonId] = (wordCounts[lessonId] || 0) + 1;
+            }
+        });
+        
+        // ===== 3. SAYISAL SIRALA =====
+        lessons.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        if (lessons.length === 0) {
             lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            document.getElementById('addWordBtn').disabled = true;
+            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+            addBtn.disabled = true;
+            document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
+            updateWordCountDisplay(0);
             return;
         }
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', currentWordBookId), orderBy('order', 'asc')));
+        
+        // ===== 4. DERSLERİ LİSTELE (Kelime sayısı ile) =====
         lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
+        lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        
+        lessons.forEach(lesson => {
             const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = doc.data().name;
+            option.value = lesson.id;
+            const count = wordCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 10) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 30) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            // ✅ Kelime sayısını göster
+            option.textContent = `${lesson.name} ${emoji} (${count} kelime)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
-    };
+        
+        document.getElementById('wordsList').innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
+        updateWordCountDisplay(0);
+        addBtn.disabled = true;
+        
+    } catch (error) {
+        console.error('Dersler yüklenirken hata:', error);
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+    }
+};
 
    document.getElementById('wordLessonSelect').onchange = async () => {
     currentWordLessonId = document.getElementById('wordLessonSelect').value;
@@ -1807,6 +2082,210 @@ if (addBookBtn) {
         if (!currentWordLessonId) { alert('Lütfen bir ders seçin!'); return; }
         if (confirm('Bu dersi silmek istediğinize emin misiniz?')) deleteLesson(currentWordLessonId);
         closeMenu();
+    };
+
+    // ===== TÜM KELİMELERDE GLOBAL ARAMA (kitap/ders seçmeden, tüm veritabanında) =====
+    let globalWordSearchTimeout = null;
+    document.getElementById('globalWordSearch').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        document.getElementById('clearWordSearchBtn').style.display = val ? 'block' : 'none';
+        clearTimeout(globalWordSearchTimeout);
+        globalWordSearchTimeout = setTimeout(() => runGlobalWordSearch(val), 300);
+    });
+    document.getElementById('clearWordSearchBtn').addEventListener('click', () => {
+        document.getElementById('globalWordSearch').value = '';
+        document.getElementById('clearWordSearchBtn').style.display = 'none';
+        document.getElementById('globalWordSearchResults').innerHTML = '';
+    });
+
+    async function runGlobalWordSearch(term) {
+        const container = document.getElementById('globalWordSearchResults');
+        if (!term) { container.innerHTML = ''; return; }
+        container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">⏳ Aranıyor...</div>';
+
+        try {
+            const [wordsSnap, lessonsSnap, booksSnap] = await Promise.all([
+                getDocs(collection(db, 'words')),
+                getDocs(collection(db, 'lessons')),
+                getDocs(collection(db, 'books'))
+            ]);
+            const lessonMap = {};
+            lessonsSnap.docs.forEach(d => lessonMap[d.id] = d.data());
+            const bookMap = {};
+            booksSnap.docs.forEach(d => bookMap[d.id] = d.data().name);
+
+            const lower = term.toLocaleLowerCase('tr');
+            const matches = wordsSnap.docs.filter(d => {
+                const w = d.data();
+                return (w.arabic || '').toLocaleLowerCase('tr').includes(lower) ||
+                       (w.turkish || '').toLocaleLowerCase('tr').includes(lower);
+            });
+
+            if (matches.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">Sonuç bulunamadı.</div>';
+                return;
+            }
+
+            container.innerHTML = `<div style="font-size:12px; opacity:0.6; margin-bottom:8px;">${matches.length} sonuç bulundu</div>`;
+            matches.forEach(d => {
+                const w = d.data();
+                const lesson = lessonMap[w.lessonId];
+                const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
+                const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
+                const div = document.createElement('div'); div.className = 'item';
+                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${d.id}')"><i class="fas fa-trash"></i></button></div>`;
+                container.appendChild(div);
+            });
+        } catch (error) {
+            console.error('Arama hatası:', error);
+            container.innerHTML = '<div style="text-align:center; padding:15px; color:#ef4444;">❌ Arama sırasında hata oluştu.</div>';
+        }
+    }
+
+    window.deleteWordFromSearch = async (id) => {
+        if (!confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) return;
+        await deleteDoc(doc(db, 'words', id));
+        updateStats();
+        const term = document.getElementById('globalWordSearch').value.trim();
+        if (term) runGlobalWordSearch(term); else document.getElementById('findDuplicateWordsBtn').click();
+        if (currentWordLessonId) {
+            document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
+        }
+    };
+
+    // ===== TEKRARLANAN KELİME BULUCU =====
+    document.getElementById('findDuplicateWordsBtn').addEventListener('click', async () => {
+        const container = document.getElementById('globalWordSearchResults');
+        document.getElementById('globalWordSearch').value = '';
+        document.getElementById('clearWordSearchBtn').style.display = 'none';
+        container.innerHTML = '<div style="text-align:center; padding:15px; opacity:0.6;">⏳ Tekrarlar taranıyor...</div>';
+
+        try {
+            const [wordsSnap, lessonsSnap, booksSnap] = await Promise.all([
+                getDocs(collection(db, 'words')),
+                getDocs(collection(db, 'lessons')),
+                getDocs(collection(db, 'books'))
+            ]);
+            const lessonMap = {};
+            lessonsSnap.docs.forEach(d => lessonMap[d.id] = d.data());
+            const bookMap = {};
+            booksSnap.docs.forEach(d => bookMap[d.id] = d.data().name);
+
+            const groups = {};
+            wordsSnap.docs.forEach(d => {
+                const w = d.data();
+                const key = (w.arabic || '').trim();
+                if (!key) return;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push({ id: d.id, ...w });
+            });
+
+            const duplicateGroups = Object.entries(groups).filter(([k, arr]) => arr.length > 1);
+
+            if (duplicateGroups.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:15px; color:#10b981;">✅ Tekrarlanan kelime bulunamadı!</div>';
+                return;
+            }
+
+            container.innerHTML = `<div style="font-size:12px; opacity:0.7; margin-bottom:10px; color:#f59e0b;"><i class="fas fa-exclamation-triangle"></i> ${duplicateGroups.length} tekrarlanan kelime grubu bulundu</div>`;
+            duplicateGroups.forEach(([arabic, items]) => {
+                const group = document.createElement('div');
+                group.style.cssText = 'background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 10px; margin-bottom: 8px;';
+                const itemsHTML = items.map(it => {
+                    const lesson = lessonMap[it.lessonId];
+                    const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
+                    const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:13px;">${it.turkish} <span style="opacity:0.6;">— 📚 ${bookName} / ${lessonName}</span></span>
+                        <button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${it.id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                }).join('');
+                group.innerHTML = `<strong class="arabic-word" style="font-size:20px !important;">${arabic}</strong> <span style="font-size:12px; opacity:0.6;">(${items.length} kez)</span>${itemsHTML}`;
+                container.appendChild(group);
+            });
+        } catch (error) {
+            console.error('Tekrar bulma hatası:', error);
+            container.innerHTML = '<div style="text-align:center; padding:15px; color:#ef4444;">❌ Hata oluştu.</div>';
+        }
+    });
+
+    // ===== ZOR KELİMELER RAPORU (tüm kullanıcıların sandığına en çok düşen kelimeler) =====
+    window.showHardWordsReport = async () => {
+        closeMenu();
+        Swal.fire({
+            title: '⏳ Rapor hazırlanıyor...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading(),
+            customClass: { popup: 'compact-swal' }
+        });
+
+        try {
+            const usersSnap = await getDocs(collection(db, 'users'));
+            const tally = {};
+            usersSnap.docs.forEach(d => {
+                const sandik = d.data().quizSandik || [];
+                sandik.forEach(w => {
+                    const key = (w.arabic || '').trim();
+                    if (!key) return;
+                    if (!tally[key]) tally[key] = { arabic: w.arabic, turkish: w.turkish, count: 0 };
+                    tally[key].count++;
+                });
+            });
+
+            const sorted = Object.values(tally).sort((a, b) => b.count - a.count).slice(0, 20);
+
+            if (sorted.length === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Harika!',
+                    text: 'Şu anda hiçbir kullanıcının sandığında kelime yok.',
+                    confirmButtonColor: '#10b981',
+                    width: '380px',
+                    customClass: { popup: 'compact-swal' }
+                });
+                return;
+            }
+
+            const rowsHTML = sorted.map((w, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span style="text-align:left; font-size:14px;">
+                        <strong style="opacity:0.5; margin-right:6px;">${i + 1}.</strong>
+                        <span class="arabic-word" style="font-size:18px !important;">${w.arabic}</span>
+                        <span style="opacity:0.7;">— ${w.turkish}</span>
+                    </span>
+                    <span style="background: rgba(239,68,68,0.15); color:#ef4444; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap;">
+                        ${w.count} kullanıcı sandığında
+                    </span>
+                </div>
+            `).join('');
+
+            Swal.fire({
+                title: '⚠️ En Çok Zorlanılan Kelimeler',
+                html: `
+                    <div style="text-align:left; max-height: 55vh; overflow-y: auto; padding-right: 4px;">
+                        <p style="font-size:12px; opacity:0.7; margin-bottom:10px;">Bu kelimeler en çok kullanıcının sandığına düştü (en çok yanlış cevaplananlar).</p>
+                        ${rowsHTML}
+                    </div>
+                `,
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Kapat',
+                width: '520px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+        } catch (error) {
+            console.error('Zor kelimeler raporu hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Rapor hazırlanırken bir hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
     };
 
     window.editWord = async (id) => {
@@ -2002,6 +2481,7 @@ window.editExam = async (id) => {
 };
 
     // Sınav modalı - Kitap seçilince dersleri yükle
+// Sınav modalı - Kitap seçilince dersleri yükle (SAYISAL SIRALI)
 document.getElementById('examBookSelect').onchange = async function() {
     const bookId = this.value;
     const lessonSelect = document.getElementById('examLessonSelect');
@@ -2012,16 +2492,32 @@ document.getElementById('examBookSelect').onchange = async function() {
         return;
     }
     
-    const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-    lessonSelect.disabled = false;
-    lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.name;
-        lessonSelect.appendChild(option);
-    });
+    try {
+        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
+        lessons.sort((a, b) => {
+            // Ders-1, Ders-2, Ders-3... gibi isimlerden sayıyı çıkar
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        
+        lessonSelect.disabled = false;
+        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+        lessons.forEach(lesson => {
+            const option = document.createElement('option');
+            option.value = lesson.id;
+            option.textContent = lesson.name;
+            lessonSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Dersler yüklenirken hata:', error);
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+    }
 };
 
     // Sınav modalı için kitapları yükle
@@ -2040,7 +2536,12 @@ async function loadExamBookSelect() {
     });
 }
     
-   document.getElementById('saveExamBtn').onclick = async () => {
+   
+
+
+
+
+    document.getElementById('saveExamBtn').onclick = async () => {
     const id = document.getElementById('editExamId').value;
     const title = document.getElementById('examTitle').value;
     const bookId = document.getElementById('examBookSelect').value;
@@ -2061,12 +2562,8 @@ async function loadExamBookSelect() {
         return;
     }
     
-    if (questions.length === 0) {
-        alert('Lütfen en az bir soru ekleyin!');
-        return;
-    }
+   
     
-    // Soruları kontrol et
     for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (!q.question) {
@@ -2088,110 +2585,592 @@ async function loadExamBookSelect() {
     const data = { 
         title, 
         questions, 
-        bookId,      // YENİ
-        lessonId,    // YENİ
+        bookId,
+        lessonId,
         createdAt: new Date().toISOString() 
     };
     
-    if (id) {
-        await updateDoc(doc(db, 'exams', id), data);
-    } else {
-        await setDoc(doc(collection(db, 'exams')), data);
-    }
-    
-    closeModal('examModal');
-    loadExams();
-    updateStats();
-};
-    // ========== KULLANICILAR ==========
-    async function loadUsers() {
-        const snapshot = await getDocs(collection(db, 'users'));
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const container = document.getElementById('usersList');
-        document.getElementById('statUsers').innerHTML = users.length;
-        
-        if (users.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz kullanıcı yok.</div>';
-            return;
+    try {
+        if (id) {
+            await updateDoc(doc(db, 'exams', id), data);
+        } else {
+            await setDoc(doc(collection(db, 'exams')), data);
         }
         
-        container.innerHTML = '';
-        users.forEach(user => {
-            const div = document.createElement('div'); 
-            div.className = 'item';
-            div.onclick = () => showUserDetail(user);
-            div.innerHTML = `
-                <div class="item-info">
-                    <strong><i class="fas fa-user"></i> ${user.name || user.email.split('@')[0]}</strong>
-                    <small>${user.email} | Kayıt: ${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '?'}</small>
+        closeModal('examModal');
+        
+        // ===== DROPDOWN'LARI YENİLE =====
+        const lessonSelectSoru = document.getElementById('bulkExamLessonSelectSoru');
+        if (lessonSelectSoru) {
+            lessonSelectSoru.dispatchEvent(new Event('change'));
+        }
+        
+        loadExams();
+        updateStats();
+        
+        alert('✅ Sınav başarıyla kaydedildi!');
+        
+    } catch (error) {
+        console.error('Sınav kaydedilirken hata:', error);
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+
+    
+    // ========== KULLANICILAR ==========
+// ========== KULLANICILAR ==========
+window.adminUsersCache = [];
+
+window.loadUsers = async function() {
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        window.adminUsersCache = users;
+        
+        // ===== İSTATİSTİKLER =====
+        document.getElementById('userTotalCount').textContent = users.length;
+        
+        // Aktif kullanıcılar (son 7 gün)
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const activeUsers = users.filter(u => u.lastActive && new Date(u.lastActive) > sevenDaysAgo);
+        document.getElementById('userActiveCount').textContent = activeUsers.length;
+        
+        // Ortalama kelime
+        const totalWords = users.reduce((sum, u) => sum + (u.totalWordsViewed || 0), 0);
+        document.getElementById('userAvgWords').textContent = users.length > 0 ? Math.round(totalWords / users.length) : 0;
+        
+        // Toplam sınav
+        const totalExams = users.reduce((sum, u) => sum + (u.examsCompleted?.length || 0), 0);
+        document.getElementById('userTotalExams').textContent = totalExams;
+        
+        document.getElementById('statUsers').innerHTML = users.length;
+
+        renderUsersList(users);
+        
+    } catch (error) {
+        console.error('Kullanıcılar yüklenirken hata:', error);
+        const container = document.getElementById('usersList');
+        if (container) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color: #ef4444;">❌ Kullanıcılar yüklenirken hata oluştu!</div>';
+        }
+    }
+};
+
+// ===== KULLANICI LİSTESİNİ ÇİZ (arama/sıralama sonrası tekrar kullanılabilir) =====
+function renderUsersList(users) {
+    const container = document.getElementById('usersList');
+    if (!container) return;
+
+    if (users.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Sonuç bulunamadı.</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    users.forEach(user => {
+        const div = document.createElement('div'); 
+        div.className = 'item';
+        
+        // Kullanıcı seviyesi ve rozet
+        const level = user.mevcutSeviye || 1;
+        const levelBadge = getLevelBadge(level);
+        
+        // Son aktiflik
+        const lastActive = user.lastActive ? timeAgo(new Date(user.lastActive)) : 'Hiç';
+        
+        // Sandık sayısı
+        const sandikCount = user.quizSandik?.length || 0;
+        
+        // Sınav sayısı
+        const examCount = user.examsCompleted?.length || 0;
+        
+        div.innerHTML = `
+            <div class="item-info">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <strong><i class="fas fa-user"></i> ${user.name || user.email?.split('@')[0] || 'İsimsiz'}</strong>
+                    ${levelBadge}
+                    <span style="font-size: 11px; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 12px; color: #3b82f6;">
+                        <i class="fas fa-layer-group"></i> ${level}
+                    </span>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})"><i class="fas fa-eye"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
+                <small>
+                    ${user.email || 'Email yok'} 
+                    | 📖 ${user.totalWordsViewed || 0} kelime 
+                    | 📝 ${examCount} sınav 
+                    | 📦 ${sandikCount} sandık
+                    | 🟢 ${lastActive}
+                </small>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); resetUserSandik('${user.id}')" title="Sandığı Sıfırla">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ===== KULLANICI ARAMA + SIRALAMA =====
+function applyUserSearchAndSort() {
+    const term = (document.getElementById('userSearchInput')?.value || '').trim().toLocaleLowerCase('tr');
+    const sortBy = document.getElementById('userSortSelect')?.value || 'name';
+
+    let list = window.adminUsersCache.slice();
+
+    if (term) {
+        list = list.filter(u => {
+            const name = (u.name || '').toLocaleLowerCase('tr');
+            const email = (u.email || '').toLocaleLowerCase('tr');
+            return name.includes(term) || email.includes(term);
         });
     }
 
-    window.showUserDetail = async (user) => {
-        const userRef = doc(db, 'users', user.id);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data();
-        
-        const examsCompleted = userData?.examsCompleted || [];
-        const totalWords = userData?.totalWordsViewed || 0;
-        const avgScore = userData?.averageScore || 0;
-        
-        let examsHTML = '';
-        if (examsCompleted.length === 0) {
-            examsHTML = '<div style="text-align:center; padding:20px;">Henüz sınav çözülmemiş.</div>';
-        } else {
-            examsHTML = examsCompleted.slice().reverse().map(exam => `
-                <div class="user-exam-item">
-                    <div style="display: flex; justify-content: space-between;">
-                        <strong>${exam.title}</strong>
-                        <span style="color: ${exam.score >= 70 ? '#10b981' : exam.score >= 50 ? '#f59e0b' : '#ef4444'}">${Math.round(exam.score)} / 100</span>
-                    </div>
-                    <div style="font-size: 12px; margin-top: 5px;">
-                        📅 ${new Date(exam.date).toLocaleDateString('tr-TR')} | 
-                        ✅ Doğru: ${exam.correct} / ${exam.total}
-                    </div>
-                </div>
-            `).join('');
+    list.sort((a, b) => {
+        switch (sortBy) {
+            case 'active':
+                return new Date(b.lastActive || 0) - new Date(a.lastActive || 0);
+            case 'words':
+                return (b.totalWordsViewed || 0) - (a.totalWordsViewed || 0);
+            case 'level':
+                return (b.mevcutSeviye || 1) - (a.mevcutSeviye || 1);
+            case 'sandik':
+                return (b.quizSandik?.length || 0) - (a.quizSandik?.length || 0);
+            case 'name':
+            default:
+                const nameA = (a.name || a.email || '').toLocaleLowerCase('tr');
+                const nameB = (b.name || b.email || '').toLocaleLowerCase('tr');
+                return nameA.localeCompare(nameB, 'tr');
         }
-        
-        document.getElementById('userDetailTitle').innerHTML = `<i class="fas fa-user"></i> ${user.name || user.email.split('@')[0]} - Detaylar`;
-        document.getElementById('userDetailContent').innerHTML = `
+    });
+
+    renderUsersList(list);
+}
+
+document.getElementById('userSearchInput')?.addEventListener('input', (e) => {
+    document.getElementById('clearUserSearchBtn').style.display = e.target.value ? 'block' : 'none';
+    applyUserSearchAndSort();
+});
+document.getElementById('clearUserSearchBtn')?.addEventListener('click', () => {
+    document.getElementById('userSearchInput').value = '';
+    document.getElementById('clearUserSearchBtn').style.display = 'none';
+    applyUserSearchAndSort();
+});
+document.getElementById('userSortSelect')?.addEventListener('change', applyUserSearchAndSort);
+
+// ===== SEVİYE ROZETİ =====
+function getLevelBadge(level) {
+    if (level >= 10) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 2px 10px; border-radius: 12px;">👑 USTA</span>';
+    if (level >= 7) return '<span style="font-size: 11px; background: linear-gradient(135deg, #10b981, #3b82f6); color: white; padding: 2px 10px; border-radius: 12px;">⭐ İLERİ</span>';
+    if (level >= 4) return '<span style="font-size: 11px; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 10px; border-radius: 12px;">📈 ORTA</span>';
+    return '<span style="font-size: 11px; background: #6b7280; color: white; padding: 2px 10px; border-radius: 12px;">🌱 BAŞLANGIÇ</span>';
+}
+
+// ===== ZAMAN FARKI =====
+function timeAgo(date) {
+    if (!date || isNaN(date.getTime())) return 'Hiç';
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Az önce';
+    if (diffMins < 60) return `${diffMins} dk önce`;
+    if (diffHours < 24) return `${diffHours} sa önce`;
+    if (diffDays < 7) return `${diffDays} g önce`;
+    return date.toLocaleDateString('tr-TR');
+}
+
+// ===== TEK KULLANICI SANDIĞINI SIFIRLA =====
+window.resetUserSandik = async function(userId) {
+    if (!userId) {
+        alert('❌ Kullanıcı ID bulunamadı!');
+        return;
+    }
+    if (!confirm('Bu kullanıcının sandığını sıfırlamak istediğinize emin misiniz?')) return;
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { quizSandik: [] });
+        alert('✅ Sandık sıfırlandı!');
+        loadUsers();
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+
+
+
+
+
+   window.showUserDetail = async (user) => {
+    const userRef = doc(db, 'users', user.id);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data();
+    
+    if (!userData) {
+        document.getElementById('userDetailContent').innerHTML = '<p>Kullanıcı bulunamadı.</p>';
+        openModal('userDetailModal');
+        return;
+    }
+    
+    const examsCompleted = userData.examsCompleted || [];
+    const totalWords = userData.totalWordsViewed || 0;
+    const avgScore = userData.averageScore || 0;
+    const quizScore = userData.quizScore || 0;
+    const sandik = userData.quizSandik || [];
+    const level = userData.mevcutSeviye || 1;
+    const myWords = userData.myWords || [];
+    
+    // ===== SON SINAV PERFORMANSI =====
+    let lastExamHTML = '';
+    if (examsCompleted.length > 0) {
+        const lastExam = examsCompleted[examsCompleted.length - 1];
+        lastExamHTML = `
             <div class="user-detail-row">
-                <span class="user-detail-label">E-posta:</span>
-                <span>${user.email}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">Kayıt Tarihi:</span>
-                <span>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">Son Aktiflik:</span>
-                <span>${user.lastActive ? new Date(user.lastActive).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📖 Öğrenilen Kelime:</span>
-                <span>${totalWords}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📝 Tamamlanan Sınav:</span>
-                <span>${examsCompleted.length}</span>
-            </div>
-            <div class="user-detail-row">
-                <span class="user-detail-label">📊 Ortalama Puan:</span>
-                <span>${Math.round(avgScore)} / 100</span>
-            </div>
-            <div style="margin-top: 20px;">
-                <h4 style="color: #f59e0b; margin-bottom: 10px;"><i class="fas fa-chart-line"></i> Sınav Geçmişi</h4>
-                ${examsHTML}
+                <span class="user-detail-label">Son Sınav:</span>
+                <span>${lastExam.title} - ${Math.round(lastExam.score)}/100 (${lastExam.correct}/${lastExam.total})</span>
             </div>
         `;
-        openModal('userDetailModal');
+    }
+    
+    // ===== SINAV GEÇMİŞİ =====
+    let examsHTML = '';
+    if (examsCompleted.length === 0) {
+        examsHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Henüz sınav çözülmemiş.</div>';
+    } else {
+        examsHTML = examsCompleted.slice().reverse().map(exam => `
+            <div class="user-exam-item">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>${exam.title}</strong>
+                    <span style="color: ${exam.score >= 70 ? '#10b981' : exam.score >= 50 ? '#f59e0b' : '#ef4444'}">${Math.round(exam.score)} / 100</span>
+                </div>
+                <div style="font-size: 12px; margin-top: 5px;">
+                    📅 ${new Date(exam.date).toLocaleDateString('tr-TR')} | 
+                    ✅ Doğru: ${exam.correct} / ${exam.total}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // ===== KELİME LİSTESİ (Son 10) =====
+    let wordsHTML = '';
+    if (myWords.length === 0) {
+        wordsHTML = '<div style="text-align:center; padding:10px; opacity:0.6;">Henüz kelime eklenmemiş.</div>';
+    } else {
+        const recentWords = myWords.slice(-10).reverse();
+        wordsHTML = recentWords.map(w => `
+            <span style="display: inline-block; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 13px;">
+                ${w.arabic} - ${w.turkish}
+            </span>
+        `).join('');
+    }
+    
+    // ===== SANDIK KELİMELERİ (Son 5) =====
+    let sandikHTML = '';
+    if (sandik.length === 0) {
+        sandikHTML = '<div style="text-align:center; padding:10px; opacity:0.6;">Sandık boş.</div>';
+    } else {
+        const recentSandik = sandik.slice(-5).reverse();
+        sandikHTML = recentSandik.map(w => `
+            <span style="display: inline-block; background: rgba(245,158,11,0.1); padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 13px; border: 1px solid rgba(245,158,11,0.2);">
+                ${w.arabic} - ${w.turkish}
+            </span>
+        `).join('');
+    }
+    
+    // ===== KARMA İSTATİSTİKLERİ =====
+    const karmaStats = userData.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
+    
+    document.getElementById('userDetailTitle').innerHTML = `
+        <i class="fas fa-user"></i> ${userData.name || user.email.split('@')[0]} 
+        <span style="font-size: 12px; background: #f59e0b; color: #121212; padding: 2px 12px; border-radius: 20px;">Seviye ${level}</span>
+    `;
+    
+    document.getElementById('userDetailContent').innerHTML = `
+        <!-- PROFİL BİLGİLERİ -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">E-posta</div>
+                <div style="font-weight: bold;">${userData.email || 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Kayıt Tarihi</div>
+                <div style="font-weight: bold;">${userData.createdAt ? new Date(userData.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Son Aktiflik</div>
+                <div style="font-weight: bold;">${userData.lastActive ? new Date(userData.lastActive).toLocaleString('tr-TR') : 'Belirtilmemiş'}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                <div style="font-size: 12px; opacity: 0.6;">Seviye</div>
+                <div style="font-weight: bold; color: #f59e0b;">${level} ${getLevelBadge(level)}</div>
+            </div>
+        </div>
+        
+        <!-- İSTATİSTİKLER -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div style="background: rgba(16,185,129,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #10b981;">${totalWords}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📖 Kelime</div>
+            </div>
+            <div style="background: rgba(59,130,246,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${examsCompleted.length}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📝 Sınav</div>
+            </div>
+            <div style="background: rgba(245,158,11,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #f59e0b;">${Math.round(avgScore)}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📊 Ort. Puan</div>
+            </div>
+            <div style="background: rgba(239,68,68,0.1); padding: 12px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #ef4444;">${sandik.length}</div>
+                <div style="font-size: 11px; opacity: 0.7;">📦 Sandık</div>
+            </div>
+        </div>
+        
+        <!-- KARMA İSTATİSTİKLERİ -->
+        <div style="background: rgba(16,185,129,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(16,185,129,0.1);">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #f59e0b;">🎯 Karma İstatistikleri</div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div><span style="opacity:0.6;">Toplam:</span> <strong>${karmaStats.total}</strong></div>
+                <div><span style="color:#10b981;">✅ Doğru:</span> <strong>${karmaStats.correct}</strong></div>
+                <div><span style="color:#ef4444;">❌ Yanlış:</span> <strong>${karmaStats.wrong}</strong></div>
+                <div><span style="color:#3b82f6;">🎯 Başarı:</span> <strong>${karmaAccuracy}%</strong></div>
+            </div>
+        </div>
+        
+        ${lastExamHTML}
+        
+        <!-- SON EKLENEN KELİMELER -->
+        <div style="margin-top: 15px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 14px;"><i class="fas fa-plus-circle"></i> Son Eklenen Kelimeler</h4>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; min-height: 40px;">
+                ${wordsHTML}
+            </div>
+        </div>
+        
+        <!-- SANDIK KELİMELERİ -->
+        <div style="margin-top: 15px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 14px;"><i class="fas fa-box"></i> Sandıktaki Kelimeler (Son 5)</h4>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; min-height: 40px;">
+                ${sandikHTML}
+            </div>
+        </div>
+        
+        <!-- SINAV GEÇMİŞİ -->
+        <div style="margin-top: 20px;">
+            <h4 style="color: #f59e0b; margin-bottom: 10px; font-size: 14px;"><i class="fas fa-chart-line"></i> Sınav Geçmişi (${examsCompleted.length})</h4>
+            <div style="max-height: 200px; overflow-y: auto;">
+                ${examsHTML}
+            </div>
+        </div>
+        
+        <!-- YÖNETİM BUTONLARI -->
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <button onclick="resetUserSandik('${user.id}')" class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;">
+                <i class="fas fa-trash-alt"></i> Sandığı Sıfırla
+            </button>
+            <button onclick="resetUserScore('${user.id}')" class="btn btn-warning" style="padding: 6px 14px; font-size: 12px;">
+                <i class="fas fa-undo"></i> Puanları Sıfırla
+            </button>
+            <button onclick="deleteUserFirestore('${user.id}')" class="btn btn-danger" style="padding: 6px 14px; font-size: 12px; background: #dc2626;">
+                <i class="fas fa-database"></i> Firestore'dan Sil
+            </button>
+        </div>
+    `;
+    openModal('userDetailModal');
+};
+
+// ===== KULLANICI PUANINI SIFIRLA =====
+window.resetUserScore = async (userId) => {
+    if (!confirm('Bu kullanıcının tüm puanlarını sıfırlamak istediğinize emin misiniz?')) return;
+    
+    try {
+        await updateDoc(doc(db, 'users', userId), { 
+            quizScore: 0,
+            averageScore: 0,
+            examsCompleted: [],
+            karmaStats: { total: 0, correct: 0, wrong: 0 }
+        });
+        alert('✅ Puanlar sıfırlandı!');
+        loadUsers();
+        closeModal('userDetailModal');
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+// ===== KULLANICIYI FIRESTORE'DAN SİL =====
+window.deleteUserFirestore = async (userId) => {
+    if (!confirm('🚨 Bu kullanıcıyı Firestore\'dan silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    if (!confirm('⚠️ SON UYARI: Tüm veriler silinecek! Devam?')) return;
+    
+    try {
+        await deleteDoc(doc(db, 'users', userId));
+        alert('✅ Kullanıcı silindi!');
+        loadUsers();
+        closeModal('userDetailModal');
+    } catch (error) {
+        alert('❌ Hata: ' + error.message);
+    }
+};
+
+    // ===== TÜM VERİLERİ YEDEKLE (JSON İNDİR) =====
+    window.backupAllData = async function() {
+        try {
+            Swal.fire({
+                title: '⏳ Yedek hazırlanıyor...',
+                text: 'Tüm veriler indiriliyor, lütfen bekleyin...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading(),
+                customClass: { popup: 'compact-swal' }
+            });
+
+            const collections = ['books', 'lessons', 'words', 'exams', 'users'];
+            const backup = { exportedAt: new Date().toISOString(), data: {} };
+
+            for (const colName of collections) {
+                const snap = await getDocs(collection(db, colName));
+                backup.data[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            }
+
+            const json = JSON.stringify(backup, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `saadetyolu-yedek-${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Yedek indirildi!',
+                html: `<div style="text-align:center; font-size:13px;">
+                    📚 ${backup.data.books.length} kitap · 🎓 ${backup.data.lessons.length} ders<br>
+                    📝 ${backup.data.words.length} kelime · 📋 ${backup.data.exams.length} sınav<br>
+                    👥 ${backup.data.users.length} kullanıcı
+                </div>`,
+                confirmButtonColor: '#10b981',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+        } catch (error) {
+            console.error('Yedekleme hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Yedekleme sırasında hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
+    };
+
+    // ===== YEDEKTEN GERİ YÜKLE =====
+    window.restoreFromBackupFile = async function(fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const confirmResult = await Swal.fire({
+            title: '⚠️ Yedekten Geri Yükle',
+            html: `<div style="text-align:left; font-size:13px;">
+                Bu işlem yedek dosyasındaki <strong>tüm kayıtları</strong> mevcut verilerin üzerine yazacak
+                (aynı ID'ye sahip kayıtlar güncellenir, olmayanlar eklenir).<br><br>
+                <strong style="color:#ef4444;">Bu işlem geri alınamaz!</strong> Devam etmeden önce mevcut verileri de yedeklemenizi öneririz.
+            </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Evet, Geri Yükle',
+            cancelButtonText: 'İptal',
+            width: '450px',
+            padding: '1.5rem',
+            customClass: { popup: 'compact-swal' }
+        });
+
+        if (!confirmResult.isConfirmed) { fileInput.value = ''; return; }
+
+        try {
+            const text = await file.text();
+            const backup = JSON.parse(text);
+            if (!backup.data) throw new Error('Geçersiz yedek dosyası formatı.');
+
+            Swal.fire({
+                title: '⏳ Geri yükleniyor...',
+                text: 'Lütfen bu işlem bitene kadar sayfayı kapatmayın.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading(),
+                customClass: { popup: 'compact-swal' }
+            });
+
+            let totalRestored = 0;
+            for (const colName of Object.keys(backup.data)) {
+                const items = backup.data[colName];
+                if (!Array.isArray(items)) continue;
+
+                // Firestore batch limiti 500 - güvenli olması için 450'lik gruplar
+                for (let i = 0; i < items.length; i += 450) {
+                    const chunk = items.slice(i, i + 450);
+                    const batch = writeBatch(db);
+                    chunk.forEach(item => {
+                        const { id, ...rest } = item;
+                        if (!id) return;
+                        batch.set(doc(db, colName, id), rest);
+                    });
+                    await batch.commit();
+                    totalRestored += chunk.length;
+                }
+            }
+
+            fileInput.value = '';
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Geri Yükleme Tamamlandı!',
+                text: `${totalRestored} kayıt geri yüklendi.`,
+                confirmButtonColor: '#10b981',
+                width: '380px',
+                padding: '1.5rem',
+                customClass: { popup: 'compact-swal' }
+            });
+
+            // Ekranları yenile
+            loadBooks();
+            loadLessonBooks();
+            loadWordBooks();
+            loadExams();
+            loadUsers();
+            updateStats();
+        } catch (error) {
+            console.error('Geri yükleme hatası:', error);
+            fileInput.value = '';
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Hata!',
+                text: 'Geri yükleme sırasında hata oluştu: ' + error.message,
+                confirmButtonColor: '#ef4444',
+                width: '380px',
+                customClass: { popup: 'compact-swal' }
+            });
+        }
     };
 
     async function updateStats() {
@@ -2199,12 +3178,40 @@ async function loadExamBookSelect() {
         const lessons = await getDocs(collection(db, 'lessons'));
         const words = await getDocs(collection(db, 'words'));
         const exams = await getDocs(collection(db, 'exams'));
-        const users = await getDocs(collection(db, 'users'));
+        const usersSnap = await getDocs(collection(db, 'users'));
         document.getElementById('statBooks').innerHTML = books.size;
         document.getElementById('statLessons').innerHTML = lessons.size;
         document.getElementById('statWords').innerHTML = words.size;
         document.getElementById('statExams').innerHTML = exams.size;
-        document.getElementById('statUsers').innerHTML = users.size;
+        document.getElementById('statUsers').innerHTML = usersSnap.size;
+
+        // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
+        let sandikToplam = 0;
+        let puanToplam = 0;
+        usersSnap.docs.forEach(d => {
+            const u = d.data();
+            const sandikCount = u.quizSandik?.length || 0;
+            sandikToplam += sandikCount;
+
+            const quizScore = u.quizScore || 0;
+            const mevcutSeviye = u.mevcutSeviye || 1;
+            const totalWordsViewed = u.totalWordsViewed || 0;
+            const examsCompleted = u.examsCompleted || [];
+            let ortalamaPuan = 0;
+            if (examsCompleted.length > 0) {
+                let total = 0;
+                for (const e of examsCompleted) total += (e.score || 0);
+                ortalamaPuan = total / examsCompleted.length;
+            }
+            const seviyePuani = (mevcutSeviye - 1) * 2;
+            const kelimePuani = totalWordsViewed * 0.01;
+            const toplamPuan = quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCount;
+            puanToplam += toplamPuan;
+        });
+        const statSandikEl = document.getElementById('statSandikTotal');
+        if (statSandikEl) statSandikEl.textContent = sandikToplam;
+        const statAvgEl = document.getElementById('statAvgUserScore');
+        if (statAvgEl) statAvgEl.textContent = usersSnap.size > 0 ? (puanToplam / usersSnap.size).toFixed(2) : '0.00';
     }
 
     // Toplu Kelime Yükleme Kartı
@@ -2311,6 +3318,8 @@ document.getElementById('goBulkUpload').onclick = () => {
     closeMenu();
 };
 
+
+
 async function loadBulkBooks() {
     try {
         const snapshot = await getDocs(collection(db, 'books'));
@@ -2338,12 +3347,13 @@ async function loadBulkBooks() {
     }
 }
 
-// ===== BULK BOOK SELECT - ONCHANGE =====
-const bulkBookSelect = document.getElementById('bulkBookSelect');
+    
+// ===== BULK BOOK SELECT - ONCHANGE (Toplu Kelime Yükleme) =====
+const bulkBookSelect = document.getElementById('bulkExamBookSelect');
 if (bulkBookSelect) {
     bulkBookSelect.onchange = async () => {
         const bookId = bulkBookSelect.value;
-        const lessonSelect = document.getElementById('bulkLessonSelect');
+        const lessonSelect = document.getElementById('bulkExamLessonSelect');
         
         if (!bookId) {
             if (lessonSelect) {
@@ -2359,8 +3369,19 @@ if (bulkBookSelect) {
                 lessonSelect.disabled = true;
             }
             
+            // ===== DERSLERİ GETİR =====
             const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
             const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // ===== TÜM KELİMELERİ AL (Kelime sayısı için) =====
+            const allWords = await getDocs(collection(db, 'words'));
+            const wordCounts = {};
+            allWords.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                if (lessonId) {
+                    wordCounts[lessonId] = (wordCounts[lessonId] || 0) + 1;
+                }
+            });
             
             // ===== SAYISAL SIRALA =====
             lessons.sort((a, b) => {
@@ -2380,10 +3401,33 @@ if (bulkBookSelect) {
             if (lessonSelect) {
                 lessonSelect.disabled = false;
                 lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+                
                 lessons.forEach(lesson => {
                     const option = document.createElement('option');
                     option.value = lesson.id;
-                    option.textContent = lesson.name;
+                    const count = wordCounts[lesson.id] || 0;
+                    
+                    // ===== EMOJİ VE RENK =====
+                    let emoji = '📝';
+                    let renk = '';
+                    
+                    if (count === 0) {
+                        emoji = '📭';
+                        renk = 'color: #6b7280;';
+                    } else if (count <= 10) {
+                        emoji = '📗';
+                        renk = 'color: #10b981;';
+                    } else if (count <= 30) {
+                        emoji = '📘';
+                        renk = 'color: #3b82f6;';
+                    } else {
+                        emoji = '📚';
+                        renk = 'color: #f59e0b;';
+                    }
+                    
+                    // ✅ Kelime sayısını göster
+                    option.textContent = `${lesson.name} ${emoji} (${count} kelime)`;
+                    option.style.cssText = renk;
                     lessonSelect.appendChild(option);
                 });
             }
@@ -2398,17 +3442,44 @@ if (bulkBookSelect) {
     };
 }
 
+
+
+
 document.getElementById('bulkUploadBtn').onclick = async () => {
     const btn = document.getElementById('bulkUploadBtn');
     const originalText = btn.innerHTML;
+    
+    // ===== KONTROLLER =====
+    const bookSelect = document.getElementById('bulkExamBookSelect');
+    const lessonSelect = document.getElementById('bulkExamLessonSelect');
+    const jsonInput = document.getElementById('bulkJsonInput');
+    const resultDiv = document.getElementById('bulkResult');
+    
+    // KİTAP KONTROLÜ
+    if (!bookSelect || !bookSelect.value) {
+        alert('⚠️ Lütfen önce bir KİTAP seçin!');
+        return;
+    }
+    
+    // DERS KONTROLÜ
+    if (!lessonSelect || !lessonSelect.value) {
+        alert('⚠️ Lütfen önce bir DERS seçin!');
+        return;
+    }
+    
+    // JSON KONTROLÜ
+    if (!jsonInput || !jsonInput.value.trim()) {
+        alert('⚠️ Lütfen JSON verisi girin!');
+        return;
+    }
     
     // Loader ekle
     btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
     btn.disabled = true;
     
-    const lessonId = document.getElementById('bulkLessonSelect').value;
-    const jsonInput = document.getElementById('bulkJsonInput').value;
-    const resultDiv = document.getElementById('bulkResult');
+    const lessonId = lessonSelect.value;
+    const jsonData = jsonInput.value;
+    const currentBookId = bookSelect.value; // Seçili kitabı hatırla
     
     if (!resultDiv) {
         console.error('resultDiv bulunamadı!');
@@ -2417,41 +3488,76 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         return;
     }
     
-    if (!lessonId) {
-        alert('Lütfen bir ders seçin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
-    if (!jsonInput.trim()) {
-        alert('Lütfen JSON verisi girin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
     try {
-        const words = JSON.parse(jsonInput);
+        // ===== JSON PARSE =====
+        let words;
+        try {
+            words = JSON.parse(jsonData);
+        } catch (parseError) {
+            const errorMsg = parseError.message;
+            let userFriendlyMsg = '❌ JSON formatı geçersiz! ';
+            
+            if (errorMsg.includes('Unexpected token')) {
+                userFriendlyMsg += `
+                    <br><br>
+                    <div style="background: rgba(239,68,68,0.1); padding: 10px; border-radius: 8px; font-size: 13px;">
+                        <strong>📌 Sorun:</strong> JSON'da geçersiz karakter veya eksik tırnak var.<br>
+                        <strong>💡 Çözüm:</strong><br>
+                        • Tüm metinler <strong>çift tırnak</strong> içinde olmalı (" )<br>
+                        • Arapça metinler <strong>çift tırnak</strong> içinde olmalı<br>
+                        • Her kelime için <strong>virgül</strong> kullanın<br>
+                        • Son elemandan sonra <strong>virgül</strong> olmamalı
+                    </div>
+                    <br>
+                    <div style="background: rgba(245,158,11,0.1); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+                        <strong>✅ Doğru Örnek:</strong><br>
+                        <code style="font-size: 11px; color: #10b981;">
+                        [
+                          {"arabic": "كِتَاب", "turkish": "kitap"},
+                          {"arabic": "قَلَم", "turkish": "kalem"}
+                        ]
+                        </code>
+                    </div>
+                `;
+            } else if (errorMsg.includes('Unexpected end')) {
+                userFriendlyMsg += 'JSON eksik veya yarım kalmış. Lütfen tüm süslü parantezleri ve köşeli parantezleri kontrol edin.';
+            } else if (errorMsg.includes('Expected')) {
+                userFriendlyMsg += 'Eksik virgül veya süslü parantez olabilir. Lütfen formatı kontrol edin.';
+            } else {
+                userFriendlyMsg += parseError.message;
+            }
+            
+            throw new Error(userFriendlyMsg);
+        }
         
         if (!Array.isArray(words)) {
-            throw new Error('Veri bir dizi olmalıdır');
+            throw new Error('Veri bir dizi olmalıdır. Örnek: [ { "arabic": "...", "turkish": "..." } ]');
+        }
+        
+        if (words.length === 0) {
+            throw new Error('Hiç kelime bulunamadı!');
         }
         
         let successCount = 0;
         let errorCount = 0;
+        const errors = [];
         
-        for (const word of words) {
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
             if (word.arabic && word.turkish) {
                 await setDoc(doc(collection(db, 'words')), {
-                    arabic: word.arabic,
-                    turkish: word.turkish,
+                    arabic: word.arabic.trim(),
+                    turkish: word.turkish.trim(),
                     lessonId: lessonId,
                     createdAt: new Date().toISOString()
                 });
                 successCount++;
             } else {
                 errorCount++;
+                const missing = [];
+                if (!word.arabic) missing.push('arabic');
+                if (!word.turkish) missing.push('turkish');
+                errors.push(`${i+1}. kelime (${missing.join(', ')} eksik)`);
             }
         }
         
@@ -2462,11 +3568,25 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         resultDiv.style.padding = '15px';
         resultDiv.innerHTML = `
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <strong>Yükleme Tamamlandı!</strong><br>
-            ✅ Başarılı: ${successCount} kelime<br>
-            ❌ Hatalı: ${errorCount} kelime
+            <strong>✅ Yükleme Tamamlandı!</strong><br>
+            📚 Başarılı: ${successCount} kelime<br>
+            ${errorCount > 0 ? `❌ Hatalı: ${errorCount} kelime (${errors.join(', ')})` : ''}
         `;
         
+        // ===== TEXTAREA'YI TEMİZLE =====
+        if (jsonInput) {
+            jsonInput.value = '';
+        }
+        
+        // ===== DROPDOWN'LARI YENİLE (KELİME SAYILARINI GÜNCELLE) =====
+        // Seçili kitabı koru
+        if (bookSelect) {
+            bookSelect.value = currentBookId;
+            // Kitap seçimini tetikle -> dersleri yeniden yükle
+            bookSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Kelime listesini güncelle
         if (currentWordLessonId === lessonId) {
             document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
         }
@@ -2481,15 +3601,18 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
         resultDiv.style.padding = '15px';
         resultDiv.innerHTML = `
             <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-            <strong>Hata!</strong><br>
+            <strong>❌ Hata!</strong><br>
             ${error.message}
         `;
     } finally {
-        // Loader kaldır
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 };
+
+
+
+    
 
 document.getElementById('bulkClearBtn').onclick = () => {
     document.getElementById('bulkJsonInput').value = '';
@@ -2499,7 +3622,7 @@ document.getElementById('bulkClearBtn').onclick = () => {
 
     // Mevcut kelimeleri indir
 document.getElementById('downloadWordsBtn').onclick = async () => {
-    const lessonId = document.getElementById('bulkLessonSelect').value;
+    const lessonId = document.getElementById('bulkExamLessonSelect').value;
     
     if (!lessonId) {
         alert('Lütfen önce bir ders seçin!');
@@ -2559,18 +3682,7 @@ document.getElementById('downloadWordsBtn').onclick = async () => {
 
 
 
-async function loadBulkExams() {
-    const snapshot = await getDocs(collection(db, 'exams'));
-    const select = document.getElementById('bulkExamSelect');
-    select.innerHTML = '<option value="">-- Sınav Seçin --</option>';
-    snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const option = document.createElement('option');
-        option.value = doc.id;
-        option.textContent = data.title;
-        select.appendChild(option);
-    });
-}
+
 
 // Soruları indir
 document.getElementById('downloadQuestionsBtn').onclick = async () => {
@@ -2627,92 +3739,154 @@ document.getElementById('downloadQuestionsBtn').onclick = async () => {
     }, 3000);
 };
 
-// Soruları yükle
-document.getElementById('bulkExamUploadBtn').onclick = async () => {
-    const btn = document.getElementById('bulkExamUploadBtn');
-    const originalText = btn.innerHTML;
-    
-    // Loader ekle
-    btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
-    btn.disabled = true;
-    
-    const examId = document.getElementById('bulkExamSelect').value;
-    const jsonInput = document.getElementById('bulkExamJsonInput').value;
-    const resultDiv = document.getElementById('bulkExamResult');
-    
-    if (!examId) {
-        alert('Lütfen bir sınav seçin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
-    if (!jsonInput.trim()) {
-        alert('Lütfen JSON verisi girin!');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-    }
-    
-    try {
-        const questions = JSON.parse(jsonInput);
+// ===== TOPLU SORU YÜKLEME - KİTAP SEÇİLİNCE DERSLERİ YÜKLE =====
+const bulkExamBookSelectSoru = document.getElementById('bulkExamBookSelectSoru');
+if (bulkExamBookSelectSoru) {
+    bulkExamBookSelectSoru.onchange = async function() {
+        const bookId = this.value;
+        const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+        const examSelect = document.getElementById('bulkExamSelect');
         
-        if (!Array.isArray(questions)) {
-            throw new Error('Veri bir dizi olmalıdır');
+        console.log('📚 Kitap seçildi:', bookId);
+        
+        if (!bookId) {
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            }
+            if (examSelect) {
+                examSelect.disabled = true;
+                examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            }
+            return;
         }
         
-        for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
-            if (!q.question) throw new Error(`${i + 1}. sorunun metni eksik!`);
-            if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
-                throw new Error(`${i + 1}. sorunun 4 şıkkı olmalı!`);
-            }
-            for (let j = 0; j < 4; j++) {
-                if (!q.options[j]) throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
-            }
-            if (q.correct === undefined || q.correct === null || q.correct < 0 || q.correct > 3) {
-                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz!`);
-            }
+        if (lessonSelect) {
+            lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+            lessonSelect.disabled = true;
         }
         
-        const examRef = doc(db, 'exams', examId);
-        await updateDoc(examRef, {
-            questions: questions,
-            updatedAt: new Date().toISOString()
-        });
+        try {
+            // ===== DERSLERİ GETİR =====
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            console.log('📖 Dersler bulundu:', lessons.length);
+            
+            // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+            const allExams = await getDocs(collection(db, 'exams'));
+            const examCounts = {};
+            allExams.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                if (lessonId) {
+                    examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                }
+            });
+            
+            // ===== SAYISAL SIRALA =====
+            lessons.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            if (lessons.length === 0) {
+                if (lessonSelect) {
+                    lessonSelect.disabled = true;
+                    lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
+                }
+                if (examSelect) {
+                    examSelect.disabled = true;
+                    examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+                }
+                return;
+            }
+            
+            if (lessonSelect) {
+                lessonSelect.disabled = false;
+                lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
+                
+                lessons.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    const count = examCounts[lesson.id] || 0;
+                    
+                    // ✅ Sınav sayısını göster (renk kaldırıldı)
+                    option.textContent = `${lesson.name} (${count} sınav)`;
+                    lessonSelect.appendChild(option);
+                });
+            }
+            
+            if (examSelect) {
+                examSelect.disabled = true;
+                examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            }
+            
+        } catch (error) {
+            console.error('Dersler yüklenirken hata:', error);
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+            }
+        }
+    };
+}
+
+// ===== TOPLU SORU YÜKLEME - DERS SEÇİLİNCE SINAVLARI YÜKLE =====
+// ===== TOPLU SORU YÜKLEME - DERS SEÇİLİNCE SINAVLARI YÜKLE =====
+const bulkExamLessonSelectSoru = document.getElementById('bulkExamLessonSelectSoru');
+if (bulkExamLessonSelectSoru) {
+    bulkExamLessonSelectSoru.onchange = async function() {
+        const lessonId = this.value;
+        const examSelect = document.getElementById('bulkExamSelect');
         
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
-        resultDiv.style.border = '1px solid #10b981';
-        resultDiv.style.borderRadius = '10px';
-        resultDiv.style.padding = '15px';
-        resultDiv.innerHTML = `
-            <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <strong>Yükleme Tamamlandı!</strong><br>
-            ✅ ${questions.length} soru başarıyla yüklendi!
-        `;
+        if (!lessonId) {
+            if (examSelect) {
+                examSelect.disabled = true;
+                examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+            }
+            return;
+        }
         
-        loadExams();
-        updateStats();
-        
-    } catch (error) {
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
-        resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.style.borderRadius = '10px';
-        resultDiv.style.padding = '15px';
-        resultDiv.innerHTML = `
-            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-            <strong>Hata!</strong><br>
-            ${error.message}
-        `;
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-};
+        try {
+            const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+            const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            exams.sort((a, b) => a.title.localeCompare(b.title));
+            
+            if (examSelect) {
+                if (exams.length === 0) {
+                    examSelect.disabled = true;
+                    examSelect.innerHTML = '<option value="">-- Bu derste sınav yok --</option>';
+                    return;
+                }
+                
+                examSelect.disabled = false;
+                examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
+                exams.forEach(exam => {
+                    const option = document.createElement('option');
+                    option.value = exam.id;
+                    const questionCount = (exam.questions || []).length;
+                    option.textContent = `${exam.title} (${questionCount} soru)`;
+                    examSelect.appendChild(option);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Sınavlar yüklenirken hata:', error);
+            if (examSelect) {
+                examSelect.disabled = true;
+                examSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+            }
+        }
+    };
+}
+
+
+    
 
 // Temizle butonu
+// ===== TOPLU SORU YÜKLEME - TEMİZLE =====
 document.getElementById('bulkExamClearBtn').onclick = () => {
     document.getElementById('bulkExamJsonInput').value = '';
     document.getElementById('bulkExamResult').style.display = 'none';
@@ -2768,132 +3942,59 @@ async function loadExamBooks() {
     });
 }
 
-// Kitap seçilince dersleri yükle
-const examBookSelect = document.getElementById('examBookSelect');
-if (examBookSelect) {
-    examBookSelect.onchange = async () => {
-        const bookId = examBookSelect.value;
-        const lessonSelect = document.getElementById('examLessonSelect');
-        if (!bookId) {
-            lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            return;
-        }
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        snapshot.docs.forEach(doc => {
-            lessonSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-        });
-    };
-}
 
 
 
 
-    // Toplu Soru Yükleme - Kitapları yükle
+
+// Toplu Soru Yükleme - Kitapları yükle
+// ===== TOPLU SORU YÜKLEME - KİTAPLARI YÜKLE =====
 async function loadBulkExamBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
-    const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // ===== ALFABETİK SIRALA =====
-    books.sort((a, b) => a.name.localeCompare(b.name));
-    
-    const select = document.getElementById('bulkExamBookSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
-    books.forEach(book => {
-        select.innerHTML += `<option value="${book.id}">${book.name}</option>`;
-    });
-}
-
-// Kitap seçilince dersleri yükle
-const bulkExamLessonSelect = document.getElementById('bulkExamLessonSelect');
-if (bulkExamLessonSelect) {
-    bulkExamLessonSelect.onchange = async () => {
-        const lessonId = bulkExamLessonSelect.value;
-        const examSelect = document.getElementById('bulkExamSelect');
+    try {
+        const snapshot = await getDocs(collection(db, 'books'));
+        const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        if (!lessonId) {
-            examSelect.disabled = true;
-            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
-            return;
-        }
+        books.sort((a, b) => a.name.localeCompare(b.name));
         
-        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
-        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // ===== ALFABETİK SIRALA =====
-        exams.sort((a, b) => a.title.localeCompare(b.title));
-        
-        examSelect.disabled = false;
-        examSelect.innerHTML = '<option value="">-- Sınav Seçin --</option>';
-        exams.forEach(exam => {
-            examSelect.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
-        });
-    };
-}
-
-// Ders seçilince sınavları yükle
-const bulkExamBookSelect = document.getElementById('bulkExamBookSelect');
-if (bulkExamBookSelect) {
-    bulkExamBookSelect.onchange = async () => {
-        const bookId = bulkExamBookSelect.value;
-        const lessonSelect = document.getElementById('bulkExamLessonSelect');
-        const examSelect = document.getElementById('bulkExamSelect');
-        
-        if (!bookId) {
-            lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
-            examSelect.disabled = true;
-            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
-            return;
-        }
-        
-        // ===== YÜKLENİYOR GÖSTER =====
-        lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
-        lessonSelect.disabled = true;
-        
-        const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-        const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
-        lessons.sort((a, b) => {
-            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
-            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
-            return numA - numB;
+        // ===== TÜM DERSLERİ AL (Ders sayısı için) =====
+        const allLessons = await getDocs(collection(db, 'lessons'));
+        const lessonCounts = {};
+        allLessons.docs.forEach(doc => {
+            const bookId = doc.data().bookId;
+            if (bookId) {
+                lessonCounts[bookId] = (lessonCounts[bookId] || 0) + 1;
+            }
         });
         
-        // ===== DERS KONTROLÜ =====
-        if (lessons.length === 0) {
-            lessonSelect.disabled = true;
-            lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
-            examSelect.disabled = true;
-            examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
+        const select = document.getElementById('bulkExamBookSelectSoru');
+        if (!select) {
+            console.warn('⚠️ bulkExamBookSelectSoru elementi bulunamadı!');
             return;
         }
         
-        lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        lessons.forEach(lesson => {
+        select.innerHTML = '<option value="">-- Kitap Seçin --</option>';
+        books.forEach(book => {
             const option = document.createElement('option');
-            option.value = lesson.id;
-            option.textContent = lesson.name;
-            lessonSelect.appendChild(option);
+            option.value = book.id;
+            const count = lessonCounts[book.id] || 0;
+            option.textContent = `${book.name} (${count} ders)`;
+            select.appendChild(option);
         });
         
-        examSelect.disabled = true;
-        examSelect.innerHTML = '<option value="">-- Önce Ders Seçin --</option>';
-    };
+    } catch (error) {
+        console.error('loadBulkExamBooks hatası:', error);
+    }
 }
+
+
 
     // BUNU EKLE
+// ===== TOPLU SORU YÜKLEME - MENÜDEN AÇ =====
 document.getElementById('goBulkExamUpload').onclick = () => {
     showSection('bulkExamUpload');
     loadBulkExamBooks();
     closeMenu();
 };
-
 
 
 
@@ -2926,7 +4027,7 @@ async function loadAdminExamBooks() {
         select.appendChild(option);
     });
 
-    // ===== ONCHANGE OLAYINI BURADA TANIMLA =====
+    // ===== KİTAP SEÇİLİNCE DERSLERİ YÜKLE (Sınav sayısı ile) =====
     select.onchange = async () => {
         const bookId = select.value;
         const lessonSelect = document.getElementById('adminExamLessonSelect');
@@ -2943,9 +4044,21 @@ async function loadAdminExamBooks() {
         lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
         lessonSelect.disabled = true;
         
+        // ===== DERSLERİ GETİR =====
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
+        // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+        const allExams = await getDocs(collection(db, 'exams'));
+        const examCounts = {};
+        allExams.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            if (lessonId) {
+                examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+            }
+        });
+        
+        // ===== SAYISAL SIRALA =====
         lessons.sort((a, b) => {
             const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
             const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
@@ -2962,10 +4075,33 @@ async function loadAdminExamBooks() {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        
         lessons.forEach(lesson => {
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = lesson.name;
+            const count = examCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 3) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 6) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            // ✅ Sınav sayısını göster
+            option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
         
@@ -3031,7 +4167,7 @@ function displayAdminExams(exams) {
 
 
     
-// Kitap seçilince dersleri yükle
+// Kitap seçilince dersleri yükle (Sınav sayısı ile)
 const adminExamBookSelect = document.getElementById('adminExamBookSelect');
 if (adminExamBookSelect) {
     adminExamBookSelect.onchange = async () => {
@@ -3055,6 +4191,16 @@ if (adminExamBookSelect) {
         const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
         const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
+        // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+        const allExams = await getDocs(collection(db, 'exams'));
+        const examCounts = {};
+        allExams.docs.forEach(doc => {
+            const lessonId = doc.data().lessonId;
+            if (lessonId) {
+                examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+            }
+        });
+        
         // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
         lessons.sort((a, b) => {
             const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
@@ -3073,10 +4219,33 @@ if (adminExamBookSelect) {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+        
         lessons.forEach(lesson => {
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = lesson.name;
+            const count = examCounts[lesson.id] || 0;
+            
+            // ===== EMOJİ VE RENK =====
+            let emoji = '📝';
+            let renk = '';
+            
+            if (count === 0) {
+                emoji = '📭';
+                renk = 'color: #6b7280;';
+            } else if (count <= 3) {
+                emoji = '📗';
+                renk = 'color: #10b981;';
+            } else if (count <= 6) {
+                emoji = '📘';
+                renk = 'color: #3b82f6;';
+            } else {
+                emoji = '📚';
+                renk = 'color: #f59e0b;';
+            }
+            
+            // ✅ Sınav sayısını göster
+            option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
+            option.style.cssText = renk;
             lessonSelect.appendChild(option);
         });
         
@@ -3798,75 +4967,176 @@ document.getElementById('bulkExamAddBookBtn')?.addEventListener('click', () => {
     document.getElementById('editBookId').value = '';
     document.getElementById('bookName').value = '';
     document.getElementById('bookDesc').value = '';
-    document.getElementById('bookOrder').value = (books || []).length + 1;
-    window.openModal('bookModal');  // ← window.openModal KULLAN
+    const bookCount = (typeof books !== 'undefined' && Array.isArray(books)) ? books.length : 0;
+    document.getElementById('bookOrder').value = bookCount + 1;
+    window.openModal('bookModal');
 });
 
-// ===== TOPLU SORU YÜKLEME - DERS EKLE =====
-document.getElementById('bulkExamAddLessonBtn')?.addEventListener('click', () => {
-    const bookId = document.getElementById('bulkExamBookSelect').value;
-    if (!bookId) {
-        alert('⚠️ Lütfen önce bir kitap seçin!');
+
+
+
+
+
+
+    // ===== TOPLU SORU YÜKLEME - SORULARI YÜKLE =====
+document.getElementById('bulkExamUploadBtn').onclick = async () => {
+    const btn = document.getElementById('bulkExamUploadBtn');
+    const originalText = btn.innerHTML;
+    
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    const examSelect = document.getElementById('bulkExamSelect');
+    const jsonInput = document.getElementById('bulkExamJsonInput');
+    const resultDiv = document.getElementById('bulkExamResult');
+    
+    if (!bookSelect || !bookSelect.value) {
+        alert('⚠️ Lütfen önce bir KİTAP seçin!');
         return;
     }
-    document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
-    document.getElementById('editLessonId').value = '';
-    document.getElementById('lessonName').value = '';
-    document.getElementById('lessonDesc').value = '';
-    document.getElementById('lessonOrder').value = '';
-    document.getElementById('lessonBookSelectModal').value = bookId;
-    window.openModal('lessonModal');  // ← window.openModal KULLAN
-});
+    
+    if (!lessonSelect || !lessonSelect.value) {
+        alert('⚠️ Lütfen önce bir DERS seçin!');
+        return;
+    }
+    
+    if (!examSelect || !examSelect.value) {
+        alert('⚠️ Lütfen önce bir SINAV seçin!');
+        return;
+    }
+    
+    if (!jsonInput || !jsonInput.value.trim()) {
+        alert('⚠️ Lütfen JSON verisi girin!');
+        return;
+    }
+    
+    btn.innerHTML = '<div class="loader"></div> Yükleniyor...';
+    btn.disabled = true;
+    
+    const examId = examSelect.value;
+    const jsonData = jsonInput.value;
+    
+    if (!resultDiv) {
+        console.error('resultDiv bulunamadı!');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+    }
+    
+    try {
+        const questions = JSON.parse(jsonData);
+        
+        if (!Array.isArray(questions)) {
+            throw new Error('Veri bir dizi olmalıdır');
+        }
+        
+        if (questions.length === 0) {
+            throw new Error('Hiç soru bulunamadı!');
+        }
+        
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (!q.question) {
+                throw new Error(`${i + 1}. sorunun metni eksik!`);
+            }
+            if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+                throw new Error(`${i + 1}. sorunun 4 şıkkı olmalı!`);
+            }
+            for (let j = 0; j < 4; j++) {
+                if (!q.options[j]) {
+                    throw new Error(`${i + 1}. sorunun ${String.fromCharCode(65 + j)} şıkkı boş!`);
+                }
+            }
+            if (q.correct === undefined || q.correct === null || q.correct < 0 || q.correct > 3) {
+                throw new Error(`${i + 1}. sorunun doğru şıkkı geçersiz!`);
+            }
+        }
+        
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, {
+            questions: questions,
+            updatedAt: new Date().toISOString()
+        });
+        
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+        resultDiv.style.border = '1px solid #10b981';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <strong>✅ Yükleme Tamamlandı!</strong><br>
+            📝 ${questions.length} soru başarıyla yüklendi!
+        `;
+        
+        if (jsonInput) {
+            jsonInput.value = '';
+        }
+        
+        loadExams();
+        updateStats();
+        
+        // Sınav listesini yenile
+        if (lessonSelect) {
+            lessonSelect.dispatchEvent(new Event('change'));
+        }
+        
+    } catch (error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        resultDiv.style.border = '1px solid #ef4444';
+        resultDiv.style.borderRadius = '10px';
+        resultDiv.style.padding = '15px';
+        resultDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <strong>❌ Hata!</strong><br>
+            ${error.message}
+        `;
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+    
+
+
 
     // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
-document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
-    const exampleJson = `[
-  {"arabic": "كِتَاب", "turkish": "kitap"},
-  {"arabic": "قَلَم", "turkish": "kalem"},
-  {"arabic": "مَسْجِد", "turkish": "cami"},
-  {"arabic": "مَدْرَسَة", "turkish": "okul"}
-]`;
-    
-    navigator.clipboard.writeText(exampleJson).then(() => {
-        const btn = document.getElementById('copyBulkJsonBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
-        btn.style.borderColor = '#10b981';
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.borderColor = '';
-        }, 2000);
-    }).catch(() => {
-        // Fallback: textarea'ya yaz ve seç
-        const textarea = document.getElementById('bulkJsonInput');
-        textarea.value = exampleJson;
-        textarea.select();
-        document.execCommand('copy');
-        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
-    });
-});
-
 // ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
 document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
-    const exampleJson = `[
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 0
   },
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 1
   },
   {
-    "question": "Aşağıdaki Arapça kelime grubunun anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
     "options": ["Kitap", "Kalem", "Cami", "Okul"],
     "correct": 2
   }
-]`;
+]
+
+📌 NOTLAR:
+• "question" içinde \\n ile alt satıra geçebilirsin
+• "options" 4 şık içermeli (A, B, C, D)
+• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+
+Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
     
-    navigator.clipboard.writeText(exampleJson).then(() => {
+    navigator.clipboard.writeText(promptAndExample).then(() => {
         const btn = document.getElementById('copyBulkExamJsonBtn');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
@@ -3874,10 +5144,78 @@ document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => 
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.style.borderColor = '';
-        }, 2000);
+        }, 3000);
     }).catch(() => {
+        // Fallback
         const textarea = document.getElementById('bulkExamJsonInput');
-        textarea.value = exampleJson;
+        textarea.value = `[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  }
+]`;
+        textarea.select();
+        document.execCommand('copy');
+        showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
+    });
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+Her soru için "question", "options" (4 şık) ve "correct" (0-3 arası doğru şık indeksi) alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]
+
+📌 NOTLAR:
+• "question" içinde \\n ile alt satıra geçebilirsin
+• "options" 4 şık içermeli (A, B, C, D)
+• "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+
+Şimdi bu formatı kullanarak soruları JSON'a çevir.`;
+    
+    navigator.clipboard.writeText(promptAndExample).then(() => {
+        const btn = document.getElementById('copyBulkExamJsonBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = '';
+        }, 3000);
+    }).catch(() => {
+        // Fallback
+        const textarea = document.getElementById('bulkExamJsonInput');
+        textarea.value = `[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  }
+]`;
         textarea.select();
         document.execCommand('copy');
         showTempMessage('✅ Örnek JSON kopyalandı!', '#10b981');
@@ -3990,75 +5328,113 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ===== 2. ADMIN EXAM BOOK SELECT =====
-    const adminExamBookSelect = document.getElementById('adminExamBookSelect');
-    if (adminExamBookSelect) {
-        adminExamBookSelect.onchange = async () => {
-            const bookId = adminExamBookSelect.value;
-            const lessonSelect = document.getElementById('adminExamLessonSelect');
-            const container = document.getElementById('examsList');
+// ===== 2. ADMIN EXAM BOOK SELECT =====
+const adminExamBookSelect = document.getElementById('adminExamBookSelect');
+if (adminExamBookSelect) {
+    adminExamBookSelect.onchange = async () => {
+        const bookId = adminExamBookSelect.value;
+        const lessonSelect = document.getElementById('adminExamLessonSelect');
+        const container = document.getElementById('examsList');
+        
+        if (!bookId) {
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+            }
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+            }
+            document.getElementById('statExams').innerHTML = '0';
+            return;
+        }
+        
+        if (lessonSelect) {
+            lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
+            lessonSelect.disabled = true;
+        }
+        
+        try {
+            // ===== DERSLERİ GETİR =====
+            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            if (!bookId) {
+            // ===== TÜM SINAVLARI AL (Sınav sayısı için) =====
+            const allExams = await getDocs(collection(db, 'exams'));
+            const examCounts = {};
+            allExams.docs.forEach(doc => {
+                const lessonId = doc.data().lessonId;
+                if (lessonId) {
+                    examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                }
+            });
+            
+            // ===== SAYISAL SIRALA =====
+            lessons.sort((a, b) => {
+                const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            if (lessons.length === 0) {
                 if (lessonSelect) {
                     lessonSelect.disabled = true;
-                    lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
+                    lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
                 }
                 if (container) {
-                    container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
+                    container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
                 }
                 document.getElementById('statExams').innerHTML = '0';
                 return;
             }
             
             if (lessonSelect) {
-                lessonSelect.innerHTML = '<option value="">⏳ Yükleniyor...</option>';
-                lessonSelect.disabled = true;
+                lessonSelect.disabled = false;
+                lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
+                
+                lessons.forEach(lesson => {
+                    const option = document.createElement('option');
+                    option.value = lesson.id;
+                    const count = examCounts[lesson.id] || 0;
+                    
+                    // ===== EMOJİ VE RENK =====
+                    let emoji = '📝';
+                    let renk = '';
+                    
+                    if (count === 0) {
+                        emoji = '📭';
+                        renk = 'color: #6b7280;';
+                    } else if (count <= 3) {
+                        emoji = '📗';
+                        renk = 'color: #10b981;';
+                    } else if (count <= 6) {
+                        emoji = '📘';
+                        renk = 'color: #3b82f6;';
+                    } else {
+                        emoji = '📚';
+                        renk = 'color: #f59e0b;';
+                    }
+                    
+                    // ✅ Sınav sayısını göster
+                    option.textContent = `${lesson.name} ${emoji} (${count} sınav)`;
+                    option.style.cssText = renk;
+                    lessonSelect.appendChild(option);
+                });
             }
             
-            try {
-                const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
-                const lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // ===== SAYISAL SIRALA =====
-                lessons.sort((a, b) => {
-                    const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
-                    const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
-                    return numA - numB;
-                });
-                
-                if (lessons.length === 0) {
-                    if (lessonSelect) {
-                        lessonSelect.disabled = true;
-                        lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
-                    }
-                    if (container) {
-                        container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
-                    }
-                    document.getElementById('statExams').innerHTML = '0';
-                    return;
-                }
-                
-                if (lessonSelect) {
-                    lessonSelect.disabled = false;
-                    lessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
-                    lessons.forEach(lesson => {
-                        const option = document.createElement('option');
-                        option.value = lesson.id;
-                        option.textContent = lesson.name;
-                        lessonSelect.appendChild(option);
-                    });
-                }
-                
-                if (container) {
-                    container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
-                }
-                document.getElementById('statExams').innerHTML = '0';
-                
-            } catch (error) {
-                console.error('Dersler yüklenirken hata:', error);
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
             }
-        };
-    }
+            document.getElementById('statExams').innerHTML = '0';
+            
+        } catch (error) {
+            console.error('Dersler yüklenirken hata:', error);
+            if (lessonSelect) {
+                lessonSelect.disabled = true;
+                lessonSelect.innerHTML = '<option value="">-- Hata oluştu --</option>';
+            }
+        }
+    };
+}
     
     // ===== 3. ADMIN EXAM LESSON SELECT =====
     const adminExamLessonSelect = document.getElementById('adminExamLessonSelect');
@@ -4113,6 +5489,254 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Admin DOMContentLoaded tamamlandı!');
 });
+
+
+
+
+
+
+
+
+
+
+
+    // ===== TOPLU KELİME YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+Aşağıdaki Arapça kelimeleri JSON formatında hazırlar mısın?
+Her kelime için "arabic" ve "turkish" alanları olsun.
+Sadece JSON çıktısı ver, başka bir şey yazma.
+
+📌 ÖRNEK JSON FORMATI:
+[
+  {"arabic": "كِتَاب", "turkish": "kitap"},
+  {"arabic": "قَلَم", "turkish": "kalem"},
+  {"arabic": "مَسْجِد", "turkish": "cami"},
+  {"arabic": "مَدْرَسَة", "turkish": "okul"},
+  {"arabic": "طَالِب", "turkish": "öğrenci"},
+  {"arabic": "مُعَلِّم", "turkish": "öğretmen"}
+]
+
+📌 NOTLAR:
+• Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+• Son elemandan sonra virgül OLMAMALI
+• Arapça metinler doğru yazılmalı
+
+Şimdi bu formatı kullanarak kelimeleri JSON'a çevir.`;
+    
+    copyToClipboard(promptAndExample, 'copyBulkJsonBtn');
+});
+
+// ===== TOPLU SORU YÜKLEME - ÖRNEK JSON'U KOPYALA =====
+document.getElementById('copyBulkExamJsonBtn')?.addEventListener('click', () => {
+    const promptAndExample = `📌 YAPAY ZEKAYA GÖNDERİLECEK PROMPT:
+
+Aşağıdaki Arapça kelimeler için 4 şıklı test soruları hazırlar mısın?
+
+⚠️ ÇOK ÖNEMLİ KURALLAR (KESİNLİKLE UYGULA):
+1. Arapça kelime "question" içinde TIRNAK KULLANMA! Sadece metnin sonuna \\n ile yaz.
+2. Örnek: "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب"
+3. Arapça kelimeyi "..." içine alma! (örnek: "كِتَاب" YAPMA, sadece كِتَاب yaz)
+4. "options" 4 şık içermeli (A, B, C, D)
+5. "correct" 0-3 arası (0=A, 1=B, 2=C, 3=D)
+6. Tüm metinler ÇİFT TIRNAK içinde olmalı (" ")
+7. Son elemandan sonra virgül OLMAMALI
+
+📌 KESİNLİKLE UYGULANACAK FORMAT (Arapça tırnak içinde DEĞİL):
+[
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nكِتَاب",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 0
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nقَلَم",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 1
+  },
+  {
+    "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nمَسْجِد",
+    "options": ["Kitap", "Kalem", "Cami", "Okul"],
+    "correct": 2
+  }
+]
+
+❌ YANLIŞ ÖRNEK (SAKIN YAPMA):
+{
+  "question": "Aşağıdaki kelimelerden hangisi \"رَحْمٰن\" kelimesinin Türkçe karşılığıdır?",  // ❌ TIRNAK İÇİNDE!
+  "options": ["Bağışlayan", "Merhamet sahibi", "Esirgeyen", "Ayıpları örten"],
+  "correct": 0
+}
+
+✅ DOĞRU ÖRNEK:
+{
+  "question": "Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\\nرَحْمٰن",
+  "options": ["Bağışlayan", "Merhamet sahibi", "Esirgeyen", "Ayıpları örten"],
+  "correct": 0
+}
+
+Şimdi bu formatı KESİNLİKLE uygulayarak soruları JSON'a çevir. Arapça kelimeleri TIRNAK İÇİNE ALMA!`;
+    
+    copyToClipboard(promptAndExample, 'copyBulkExamJsonBtn');
+});
+
+// ===== EVRENSEL KOPYALAMA FONKSİYONU =====
+function copyToClipboard(text, btnId) {
+    const btn = document.getElementById(btnId);
+    const originalText = btn.innerHTML;
+    
+    // Yöntem 1: navigator.clipboard (modern tarayıcılar)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopySuccess(btn, originalText);
+        }).catch(() => {
+            // Yöntem 2: Fallback - textarea oluştur
+            fallbackCopy(text, btn, originalText);
+        });
+    } else {
+        // Yöntem 2: Fallback - textarea oluştur
+        fallbackCopy(text, btn, originalText);
+    }
+}
+
+function fallbackCopy(text, btn, originalText) {
+    // Geçici textarea oluştur
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    
+    try {
+        const success = document.execCommand('copy');
+        if (success) {
+            showCopySuccess(btn, originalText);
+        } else {
+            btn.innerHTML = '<i class="fas fa-times" style="color: #ef4444;"></i> Kopyalanamadı!';
+            btn.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.borderColor = '';
+            }, 2000);
+            // Metni textarea'ya göster
+            const targetTextarea = document.getElementById('bulkJsonInput') || document.getElementById('bulkExamJsonInput');
+            if (targetTextarea) {
+                targetTextarea.value = text;
+                targetTextarea.select();
+                alert('✅ Metin textarea\'ya eklendi! Lütfen manuel olarak kopyalayın (Ctrl+C).');
+            }
+        }
+    } catch (err) {
+        console.error('Kopyalama hatası:', err);
+        btn.innerHTML = '<i class="fas fa-times" style="color: #ef4444;"></i> Hata!';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function showCopySuccess(btn, originalText) {
+    btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i> Kopyalandı!';
+    btn.style.borderColor = '#10b981';
+    btn.style.background = 'rgba(16, 185, 129, 0.1)';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.borderColor = '';
+        btn.style.background = '';
+    }, 2500);
+}
+
+
+
+
+
+
+
+
+// ===== KİTAP EKLE MODALI (GLOBAL) =====
+window.openBookModal = function() {
+    console.log('📚 Kitap Ekle butonuna tıklandı!');
+    document.getElementById('bookModalTitle').innerHTML = 'Yeni Kitap Ekle';
+    document.getElementById('editBookId').value = '';
+    document.getElementById('bookName').value = '';
+    document.getElementById('bookDesc').value = '';
+    const bookCount = (typeof books !== 'undefined' && Array.isArray(books)) ? books.length : 0;
+    document.getElementById('bookOrder').value = bookCount + 1;
+    window.openModal('bookModal');
+};
+
+// ===== DERS EKLE MODALI (GLOBAL) =====
+window.openLessonModal = function() {
+    console.log('📚 Ders Ekle butonuna tıklandı!');
+    
+    // ✅ KİTAP KONTROLÜNÜ KALDIRIYORUZ - Modal içinde zaten seçim yapılabiliyor
+    
+    document.getElementById('lessonModalTitle').innerHTML = 'Yeni Ders Ekle';
+    document.getElementById('editLessonId').value = '';
+    document.getElementById('lessonName').value = '';
+    document.getElementById('lessonDesc').value = '';
+    document.getElementById('lessonOrder').value = '';
+    
+    // ✅ Eğer Toplu Kelime veya Toplu Soru'da kitap seçiliyse otomatik doldur
+    let bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    let selectedBookId = bookSelect?.value;
+    
+    if (!selectedBookId) {
+        bookSelect = document.getElementById('bulkExamBookSelect');
+        selectedBookId = bookSelect?.value;
+    }
+    
+    // Seçili kitap varsa otomatik doldur, yoksa boş bırak
+    document.getElementById('lessonBookSelectModal').value = selectedBookId || '';
+    
+    window.openModal('lessonModal');
+};
+
+// ===== SINAV EKLE MODALI (GLOBAL) =====
+// ===== SINAV EKLE MODALI (GLOBAL) =====
+window.openExamModal = function() {
+    console.log('📝 Sınav Ekle butonuna tıklandı!');
+    
+    // ✅ UYARIYI KALDIRIYORUZ - Modal içinde zaten seçim yapılabiliyor
+    
+    document.getElementById('examModalTitle').innerHTML = 'Yeni Sınav Ekle';
+    document.getElementById('editExamId').value = '';
+    document.getElementById('examTitle').value = '';
+    questions = [];
+    renderQuestions();
+    
+    // ✅ KİTAPLARI YÜKLE
+    loadExamBookSelect();
+    
+    // ✅ Eğer Toplu Soru Yükleme'de kitap ve ders seçiliyse otomatik doldur
+    const bookSelect = document.getElementById('bulkExamBookSelectSoru');
+    const lessonSelect = document.getElementById('bulkExamLessonSelectSoru');
+    
+    if (bookSelect?.value) {
+        setTimeout(() => {
+            document.getElementById('examBookSelect').value = bookSelect.value;
+            const examBookSelect = document.getElementById('examBookSelect');
+            examBookSelect.dispatchEvent(new Event('change'));
+            
+            if (lessonSelect?.value) {
+                setTimeout(() => {
+                    document.getElementById('examLessonSelect').value = lessonSelect.value;
+                }, 300);
+            }
+        }, 100);
+    }
+    
+    window.openModal('examModal');
+};
+
+
     
 </script>
 </body>
