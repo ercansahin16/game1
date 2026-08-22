@@ -275,6 +275,11 @@ html, body {
             gap: 6px;
         }
         .logout-icon:hover { background: #ef4444; color: white; }
+        
+        /* ===== MOBİL "DAHA FAZLA" AÇILIR PANELİ (Müzik / Yardım / Günlük Seri) ===== */
+        .header-more-btn { display: none; }
+        .header-extras { display: contents; }
+        
         .theme-icon-btn {
             background: rgba(255,255,255,0.05);
             border: none;
@@ -1382,6 +1387,67 @@ html, body {
             .user-info { padding: 5px 10px; font-size: 11px; }
             .logout-icon { padding: 5px 8px; font-size: 11px; }
             .logout-icon .logout-text { display: none; }
+            
+            /* ===== MOBİL: Müzik/Yardım/Seri "<" ikonuyla açılır panelde ===== */
+            .header { position: relative; }
+            .header-more-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: none;
+                background: rgba(255,255,255,0.08);
+                color: #f59e0b;
+                font-size: 12px;
+                cursor: pointer;
+                transition: transform 0.25s ease;
+                flex-shrink: 0;
+            }
+            .header-more-btn.open { transform: rotate(-180deg); }
+            
+            .header-extras {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-top: 10px;
+                background: #1e1e1e;
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px;
+                padding: 12px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                min-width: 170px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+                z-index: 600;
+            }
+            .header-extras.open { display: flex; }
+            .header-extras .ruhu-dinlet-btn,
+            .header-extras #gunlukSeriBadge,
+            .header-extras .help-game-btn {
+                width: 100% !important;
+                justify-content: flex-start !important;
+            }
+            .header-extras .help-game-btn span,
+            .header-extras .ruhu-dinlet-btn {
+                font-size: 13px;
+            }
+            .header-extras .ruhu-dinlet-btn {
+                border-radius: 10px !important;
+                height: 38px !important;
+                padding: 0 12px;
+            }
+            .header-extras .ruhu-dinlet-label {
+                display: inline !important;
+                margin-left: 8px;
+            }
+            body.light-theme .header-extras {
+                background: #ffffff;
+                border-color: rgba(0,0,0,0.08);
+            }
             .select-area { flex-direction: column; gap: 8px; margin-bottom: 15px; }
             .select-box { min-width: 100%; }
             .select-box label { font-size: 11px; margin-bottom: 4px; }
@@ -2314,6 +2380,8 @@ body.light-theme #karmaScreen .option-quiz {
     display: none;
 }
 
+.ruhu-dinlet-label { display: none; }
+
 /* Animasyon */
 @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
@@ -2459,6 +2527,9 @@ body.light-theme #karmaScreen .option-quiz {
     }
     .help-game-btn span {
         display: none; /* Sadece ikon göster */
+    }
+    .header-extras .help-game-btn span {
+        display: inline !important; /* Panel içinde metin görünsün */
     }
 }
 
@@ -2794,26 +2865,33 @@ body.light-theme #profileScreen .info-row button:hover {
         <!-- 1. Tema Butonu -->
         <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
         
-        <!-- 2. MÜZİK BUTONU (Ruhu Dinlet) -->
-        <button id="ruhuDinletBtn" class="ruhu-dinlet-btn" title="Ruhu Dinlet - Arka plan müziğini aç/kapat">
-            <i class="fas fa-music"></i>
-            <span id="ruhuDinletBadge"></span>
-        </button>
+        <!-- Mobilde gizlenip "<" ile açılan grup: Müzik, Günlük Seri, Yardım -->
+        <div class="header-extras" id="headerExtras">
+            <!-- 2. MÜZİK BUTONU (Ruhu Dinlet) -->
+            <button id="ruhuDinletBtn" class="ruhu-dinlet-btn" title="Ruhu Dinlet - Arka plan müziğini aç/kapat">
+                <i class="fas fa-music"></i>
+                <span class="ruhu-dinlet-label">Müzik</span>
+                <span id="ruhuDinletBadge"></span>
+            </button>
+            
+            <!-- 3.5 Günlük Seri Rozeti -->
+            <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
+                🔥 <span id="gunlukSeriBadgeText">0</span>
+            </div>
+            
+            <!-- 4. YARDIM BUTONU -->
+            <button id="helpGameBtn" class="help-game-btn" title="Oyun Nasıl Oynanır?">
+                <i class="fas fa-question-circle"></i> <span>Yardım</span>
+            </button>
+        </div>
         
         <!-- 3. Kullanıcı Bilgisi -->
         <div class="user-info" id="userBadge" style="display: none;" onclick="showProfile()">
             <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
         </div>
         
-        <!-- 3.5 Günlük Seri Rozeti -->
-        <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
-            🔥 <span id="gunlukSeriBadgeText">0</span>
-        </div>
-        
-        <!-- 4. YARDIM BUTONU -->
-        <button id="helpGameBtn" class="help-game-btn" title="Oyun Nasıl Oynanır?">
-            <i class="fas fa-question-circle"></i> <span>Yardım</span>
-        </button>
+        <!-- Mobilde: Müzik/Yardım/Seri'yi açıp kapatan buton -->
+        <button class="header-more-btn" id="headerMoreBtn" title="Diğer"><i class="fas fa-chevron-left"></i></button>
         
         <!-- 5. Çıkış Butonu -->
         <div class="logout-icon hidden" id="logoutIconBtn">
@@ -3728,6 +3806,23 @@ let siraSoldan = true;           // true: soldan (eski), false: sağdan (yeni)
     
     menuBtn.onclick = toggleMenu;
     overlay.onclick = closeMenu;
+    
+    // ===== MOBİL HEADER: "<" ile Müzik/Yardım/Seri panelini aç-kapa =====
+    const headerMoreBtn = document.getElementById('headerMoreBtn');
+    const headerExtras = document.getElementById('headerExtras');
+    if (headerMoreBtn && headerExtras) {
+        headerMoreBtn.onclick = function(e) {
+            e.stopPropagation();
+            headerMoreBtn.classList.toggle('open');
+            headerExtras.classList.toggle('open');
+        };
+        document.addEventListener('click', function(e) {
+            if (!headerExtras.classList.contains('open')) return;
+            if (headerExtras.contains(e.target) || headerMoreBtn.contains(e.target)) return;
+            headerMoreBtn.classList.remove('open');
+            headerExtras.classList.remove('open');
+        });
+    }
 
 window.goHome = () => {
     // Ana sayfayı göster
