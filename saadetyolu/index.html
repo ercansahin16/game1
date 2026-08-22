@@ -275,6 +275,11 @@ html, body {
             gap: 6px;
         }
         .logout-icon:hover { background: #ef4444; color: white; }
+        
+        /* ===== MOBİL "DAHA FAZLA" AÇILIR PANELİ (Müzik / Yardım / Günlük Seri) ===== */
+        .header-more-btn { display: none; }
+        .header-extras { display: contents; }
+        
         .theme-icon-btn {
             background: rgba(255,255,255,0.05);
             border: none;
@@ -1380,7 +1385,82 @@ html, body {
             .header-right { gap: 6px; }
             .theme-icon-btn { width: 32px; height: 32px; font-size: 14px; }
             .user-info { padding: 5px 10px; font-size: 11px; }
-            .logout-icon { padding: 5px 8px; font-size: 11px; }
+            .logout-icon {
+                width: 38px;
+                height: 38px;
+                padding: 0 !important;
+                font-size: 16px;
+                border-radius: 50%;
+                justify-content: center;
+            }
+            .logout-icon .logout-text { display: none; }
+            
+            /* ===== MOBİL: Müzik/Yardım/Seri "<" ikonuyla açılır panelde ===== */
+            .header { position: relative; }
+            .header-more-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                border: 1px solid rgba(245,158,11,0.3);
+                background: rgba(245,158,11,0.15);
+                color: #f59e0b;
+                font-size: 15px;
+                cursor: pointer;
+                transition: transform 0.25s ease, background 0.25s ease;
+                flex-shrink: 0;
+            }
+            .header-more-btn:active { background: rgba(245,158,11,0.3); }
+            .header-more-btn.open { transform: rotate(-180deg); }
+            
+            .header-extras {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-top: 10px;
+                background: #1e1e1e;
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px;
+                padding: 12px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                min-width: 170px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+                z-index: 600;
+            }
+            .header-extras.open { display: flex; }
+            .header-extras .ruhu-dinlet-btn,
+            .header-extras #gunlukSeriBadge,
+            .header-extras .help-game-btn {
+                width: 100% !important;
+                justify-content: flex-start !important;
+            }
+            .header-extras .help-game-btn span,
+            .header-extras .ruhu-dinlet-btn {
+                font-size: 13px;
+            }
+            .header-extras .ruhu-dinlet-btn {
+                border-radius: 10px !important;
+                height: 38px !important;
+                padding: 0 12px;
+            }
+            .header-extras .ruhu-dinlet-label {
+                display: inline !important;
+                margin-left: 8px;
+                color: #ffffff;
+                font-weight: 600;
+            }
+            body.light-theme .header-extras .ruhu-dinlet-label {
+                color: #7a4a00;
+            }
+            body.light-theme .header-extras {
+                background: #ffffff;
+                border-color: rgba(0,0,0,0.08);
+            }
             .select-area { flex-direction: column; gap: 8px; margin-bottom: 15px; }
             .select-box { min-width: 100%; }
             .select-box label { font-size: 11px; margin-bottom: 4px; }
@@ -1412,9 +1492,19 @@ html, body {
             .button-group .btn { flex: 1; justify-content: center; padding: 8px 5px; font-size: 15px; white-space: nowrap; height: 50px; }
             
             .login-card { padding: 20px; margin: 30px auto; width: 95%; }
-            .exams-grid { grid-template-columns: 1fr; gap: 12px; }
-            .exam-card { padding: 14px; }
-            .exam-title { font-size: 16px; }
+            .exams-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .exam-card { padding: 10px; }
+            .exam-title { font-size: 13px; margin-bottom: 6px; }
+            .exam-info { font-size: 11px; }
+            
+            /* ===== SINAVLAR EKRANI - MOBİLDE KART KESİLMESİNİ ÖNLE =====
+               .words-area için global max-height:100vh + overflow-y:auto kuralı,
+               4'ten fazla sınav olduğunda son kartın yarım görünmesine ve
+               sayfa kaydırmasıyla çakışmasına sebep oluyordu. */
+            #examsScreen .words-area {
+                max-height: none !important;
+                overflow-y: visible !important;
+            }
             
             .quiz-header { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
             .quiz-info { gap: 12px; font-size: 11px; flex-wrap: wrap; }
@@ -2303,6 +2393,8 @@ body.light-theme #karmaScreen .option-quiz {
     display: none;
 }
 
+.ruhu-dinlet-label { display: none; }
+
 /* Animasyon */
 @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
@@ -2448,6 +2540,9 @@ body.light-theme #karmaScreen .option-quiz {
     }
     .help-game-btn span {
         display: none; /* Sadece ikon göster */
+    }
+    .header-extras .help-game-btn span {
+        display: inline !important; /* Panel içinde metin görünsün */
     }
 }
 
@@ -2783,30 +2878,37 @@ body.light-theme #profileScreen .info-row button:hover {
         <!-- 1. Tema Butonu -->
         <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
         
-        <!-- 2. MÜZİK BUTONU (Ruhu Dinlet) -->
-        <button id="ruhuDinletBtn" class="ruhu-dinlet-btn" title="Ruhu Dinlet - Arka plan müziğini aç/kapat">
-            <i class="fas fa-music"></i>
-            <span id="ruhuDinletBadge"></span>
-        </button>
+        <!-- Mobilde gizlenip "<" ile açılan grup: Müzik, Günlük Seri, Yardım -->
+        <div class="header-extras" id="headerExtras">
+            <!-- 2. MÜZİK BUTONU (Ruhu Dinlet) -->
+            <button id="ruhuDinletBtn" class="ruhu-dinlet-btn" title="Ruhu Dinlet - Arka plan müziğini aç/kapat">
+                <i class="fas fa-music"></i>
+                <span class="ruhu-dinlet-label">Müzik</span>
+                <span id="ruhuDinletBadge"></span>
+            </button>
+            
+            <!-- 3.5 Günlük Seri Rozeti -->
+            <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
+                🔥 <span id="gunlukSeriBadgeText">0</span>
+            </div>
+            
+            <!-- 4. YARDIM BUTONU -->
+            <button id="helpGameBtn" class="help-game-btn" title="Oyun Nasıl Oynanır?">
+                <i class="fas fa-question-circle"></i> <span>Yardım</span>
+            </button>
+        </div>
         
         <!-- 3. Kullanıcı Bilgisi -->
         <div class="user-info" id="userBadge" style="display: none;" onclick="showProfile()">
             <i class="fas fa-user"></i> <span id="userNameDisplay"></span>
         </div>
         
-        <!-- 3.5 Günlük Seri Rozeti -->
-        <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
-            🔥 <span id="gunlukSeriBadgeText">0</span>
-        </div>
-        
-        <!-- 4. YARDIM BUTONU -->
-        <button id="helpGameBtn" class="help-game-btn" title="Oyun Nasıl Oynanır?">
-            <i class="fas fa-question-circle"></i> <span>Yardım</span>
-        </button>
+        <!-- Mobilde: Müzik/Yardım/Seri'yi açıp kapatan buton -->
+        <button class="header-more-btn" id="headerMoreBtn" title="Diğer"><i class="fas fa-chevron-left"></i></button>
         
         <!-- 5. Çıkış Butonu -->
         <div class="logout-icon hidden" id="logoutIconBtn">
-            <i class="fas fa-sign-out-alt"></i> Çıkış
+            <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Çıkış</span>
         </div>
     </div>
 </div>
@@ -2978,7 +3080,7 @@ body.light-theme #profileScreen .info-row button:hover {
 </div>
                 <div id="wordCard" class="word-card" style="position: relative;">
     <div style="position: absolute; top: 10px; right: 10px;">
-        <button id="zoomBtn" class="zoom-icon" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
+        <button id="zoomBtn" class="zoom-icon" style="display: none; background: none; border: none; cursor: pointer; font-size: 20px; color: #f59e0b;">
             <i class="fas fa-search-plus"></i>
         </button>
     </div>
@@ -3717,6 +3819,23 @@ let siraSoldan = true;           // true: soldan (eski), false: sağdan (yeni)
     
     menuBtn.onclick = toggleMenu;
     overlay.onclick = closeMenu;
+    
+    // ===== MOBİL HEADER: "<" ile Müzik/Yardım/Seri panelini aç-kapa =====
+    const headerMoreBtn = document.getElementById('headerMoreBtn');
+    const headerExtras = document.getElementById('headerExtras');
+    if (headerMoreBtn && headerExtras) {
+        headerMoreBtn.onclick = function(e) {
+            e.stopPropagation();
+            headerMoreBtn.classList.toggle('open');
+            headerExtras.classList.toggle('open');
+        };
+        document.addEventListener('click', function(e) {
+            if (!headerExtras.classList.contains('open')) return;
+            if (headerExtras.contains(e.target) || headerMoreBtn.contains(e.target)) return;
+            headerMoreBtn.classList.remove('open');
+            headerExtras.classList.remove('open');
+        });
+    }
 
 window.goHome = () => {
     // Ana sayfayı göster
@@ -9186,9 +9305,12 @@ if (examBookSelect) {
             // ===== 2. TÜM SINAVLARI TEK SEFERDE AL =====
             const allExams = await getDocs(collection(db, 'exams'));
             const examCounts = {};
+            const questionCounts = {};
             allExams.docs.forEach(doc => {
                 const lessonId = doc.data().lessonId;
                 examCounts[lessonId] = (examCounts[lessonId] || 0) + 1;
+                const qCount = doc.data().questions?.length || 0;
+                questionCounts[lessonId] = (questionCounts[lessonId] || 0) + qCount;
             });
             
             // ===== 3. SAYISAL SIRALA =====
@@ -9226,28 +9348,12 @@ if (examBookSelect) {
                     const option = document.createElement('option');
                     option.value = ders.id;
                     const count = examCounts[ders.id] || 0;
+                    const qCount = questionCounts[ders.id] || 0;
                     
-                    // ===== EMOJİ VE RENK =====
-                    let emoji = '📝';
-                    let renk = '';
-                    
-                    if (count === 0) {
-                        emoji = '📭';
-                        renk = 'color: #6b7280;'; // gri
-                    } else if (count <= 3) {
-                        emoji = '📗';
-                        renk = 'color: #10b981;'; // yeşil
-                    } else if (count <= 6) {
-                        emoji = '📘';
-                        renk = 'color: #3b82f6;'; // mavi
-                    } else {
-                        emoji = '📚';
-                        renk = 'color: #f59e0b;'; // altın
-                    }
-                    
-                    // ===== SEÇENEK OLUŞTUR =====
-                    option.textContent = `${ders.name} ${emoji} (${count} sınav)`;
-                    option.style.cssText = renk;
+                    // ===== SEÇENEK OLUŞTUR (renklendirme kaldırıldı, soru sayısı eklendi) =====
+                    option.textContent = qCount > 0
+                        ? `${ders.name} (${count} sınav, ${qCount} soru)`
+                        : `${ders.name} (${count} sınav)`;
                     examLessonSelect.appendChild(option);
                 });
             }
