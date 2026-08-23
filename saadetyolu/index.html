@@ -332,6 +332,35 @@ html, body {
         .stats-card div:last-child { font-size: 12px; opacity: 0.7; }
         body.light-theme .stats-card { background: rgba(0,0,0,0.06); }
         body.light-theme .stats-card:hover { background: rgba(0,0,0,0.12); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        /* ===== KİLİTLİ KART (Önce kelime öğrenilmeli) ===== */
+        .stats-card.locked-card {
+            position: relative;
+            opacity: 0.55;
+        }
+        .stats-card.locked-card:hover {
+            transform: none;
+            background: rgba(255,255,255,0.05);
+            box-shadow: none;
+        }
+        body.light-theme .stats-card.locked-card:hover {
+            background: rgba(0,0,0,0.06);
+        }
+        .stats-card.locked-card:hover div:first-child { transform: none; }
+        .stats-card .lock-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
 
         /* Dropdown Alanları */
         .select-area { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
@@ -3570,7 +3599,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -3790,6 +3819,154 @@ let bitisIndex = 0;              // Sondan başla (yeni kelimeler)
 let siraSoldan = true;           // true: soldan (eski), false: sağdan (yeni)
 
 
+// ============================================================
+// ✅ YENİ: SIRALI DERS ZİNCİRİ (MERDİVEN) SİSTEMİ
+// Kelime Öğren (%80) -> Sınav açılır -> Sınav (%80) geçilir ->
+//   -> Bir sonraki dersin kelimeleri açılır + Yarışmada o dersin seviyesi açılır
+// ============================================================
+const WORD_LEARN_UNLOCK_PERCENT = 80;   // Dersin sınavının açılması için kelime öğrenme yüzdesi
+const EXAM_PASS_PERCENT = 80;           // Bir sonraki ders / yarışma seviyesinin açılması için sınav başarı yüzdesi
+
+let globalLessonSequenceCache = null;   // [{id, name, bookId, bookName}, ...] -> tüm kitaplardaki dersler, sıralı
+
+// Tüm kitap + dersleri tek bir global sıraya diz (kitap adına, sonra ders numarasına göre)
+async function getGlobalLessonSequence(forceRefresh) {
+    if (globalLessonSequenceCache && !forceRefresh) return globalLessonSequenceCache;
+
+    const booksSnap = await getDocs(collection(db, 'books'));
+    let allBooks = booksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allBooks.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'tr'));
+
+    const sequence = [];
+    for (const book of allBooks) {
+        const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', book.id)));
+        let bookLessons = lessonsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        bookLessons.sort((a, b) => {
+            const numA = parseInt((a.name || '').replace(/\D/g, '')) || 0;
+            const numB = parseInt((b.name || '').replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+        bookLessons.forEach(lesson => {
+            sequence.push({ id: lesson.id, name: lesson.name, bookId: book.id, bookName: book.name });
+        });
+    }
+    globalLessonSequenceCache = sequence;
+    return sequence;
+}
+
+function getLessonPositionInSequence(sequence, lessonId) {
+    return sequence.findIndex(l => l.id === lessonId); // 0-based, bulunamazsa -1
+}
+
+// Kullanıcının %80+ ile geçtiği derslerin id listesi
+async function getPassedLessonIds() {
+    if (!currentUser) return [];
+    try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        return userDoc.exists() ? (userDoc.data().passedLessonIds || []) : [];
+    } catch (e) {
+        console.log('getPassedLessonIds hata:', e.message);
+        return [];
+    }
+}
+
+// Bir dersin KELİME ÖĞRENME ekranı açık mı? (Bir önceki dersin kelimelerinin %80'i öğrenilmiş mi?)
+// ✅ DÜZELTME: Artık bir önceki dersin SINAVININ geçilmesi şart değil.
+// Önceki ders kelimelerinin %WORD_LEARN_UNLOCK_PERCENT'i öğrenilir öğrenilmez
+// bir sonraki dersin kelimeleri otomatik açılır (sınav sonucu beklenmez).
+async function isLessonWordsUnlocked(lessonId) {
+    const sequence = await getGlobalLessonSequence();
+    const pos = getLessonPositionInSequence(sequence, lessonId);
+    if (pos <= 0) return true; // İlk ders (veya sırada bulunamayan) her zaman açık
+    const prevLessonId = sequence[pos - 1].id;
+    const prevPercent = await getLessonWordViewPercent(prevLessonId);
+    return prevPercent >= WORD_LEARN_UNLOCK_PERCENT;
+}
+
+// Bir dersteki kelimelerin yüzde kaçı görüntülenmiş (Göster'e basılmış)?
+async function getLessonWordViewPercent(lessonId) {
+    try {
+        const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+        const totalWords = wordsSnap.size;
+        if (totalWords === 0 || !currentUser) return 0;
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const viewedMap = userDoc.exists() ? (userDoc.data().viewedWordsByLesson || {}) : {};
+        const viewedIds = viewedMap[lessonId] || [];
+        return Math.min(100, Math.round((viewedIds.length / totalWords) * 100));
+    } catch (e) {
+        console.log('getLessonWordViewPercent hata:', e.message);
+        return 0;
+    }
+}
+
+// Bir dersin SINAVI açık mı? (O dersin kelimelerinin %80'i öğrenilmiş mi?)
+async function isLessonExamUnlocked(lessonId) {
+    const percent = await getLessonWordViewPercent(lessonId);
+    return percent >= WORD_LEARN_UNLOCK_PERCENT;
+}
+
+// Bir ders %80+ ile geçilmiş mi (sınav geçmişine bakarak)?
+async function isLessonPassed(lessonId) {
+    const passed = await getPassedLessonIds();
+    return passed.includes(lessonId);
+}
+
+// Kullanıcının o an "Göster" butonuna bastığı kelimeyi, ilgili derse özel görüntülenen kelimeler listesine ekle
+async function markWordAsViewedForLesson(lessonId, wordId) {
+    if (!currentUser || !lessonId || !wordId) return;
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        // ✅ DÜZELTME: önce oku-sonra-yaz yerine atomik arrayUnion kullanılıyor.
+        // Kullanıcı "Göster"e hızlı art arda basınca eski yöntemde araya giren
+        // yazmalar birbirini eziyor ve kelimeler kayboluyordu. arrayUnion bu
+        // riski tamamen ortadan kaldırır (Firestore tarafında atomik çalışır).
+        await updateDoc(userRef, {
+            [`viewedWordsByLesson.${lessonId}`]: arrayUnion(wordId)
+        });
+    } catch (e) {
+        console.log('markWordAsViewedForLesson hata:', e.message);
+    }
+}
+
+// Bir sınav %80+ ile geçildiğinde: dersi "geçildi" olarak işaretle,
+// yarışmadaki mevcutSeviye'yi buna göre ilerlet ve kullanıcıya bildir.
+async function markLessonPassedIfNeeded(lessonId, percent) {
+    if (!currentUser || !lessonId) return;
+    if (percent < EXAM_PASS_PERCENT) return;
+
+    try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        const data = userDoc.exists() ? userDoc.data() : {};
+        const passed = data.passedLessonIds || [];
+        const alreadyPassed = passed.includes(lessonId);
+        if (!alreadyPassed) passed.push(lessonId);
+
+        // ===== Yarışma seviyesini, geçilen ders sayısına göre yeniden hesapla =====
+        const sequence = await getGlobalLessonSequence();
+        const toplamSeviyeYeni = Math.max(1, sequence.length);
+        let yeniMevcutSeviye = 1;
+        for (let i = 0; i < sequence.length; i++) {
+            if (passed.includes(sequence[i].id)) {
+                yeniMevcutSeviye = Math.min(i + 2, toplamSeviyeYeni); // bu dersi geçtiyse bir sonraki seviye açılır
+            }
+        }
+
+        const eskiSeviye = data.mevcutSeviye || 1;
+        await updateDoc(userRef, {
+            passedLessonIds: passed,
+            mevcutSeviye: yeniMevcutSeviye,
+            toplamSeviye: toplamSeviyeYeni
+        });
+
+        if (!alreadyPassed && yeniMevcutSeviye > eskiSeviye) {
+            showTinyWarning(`🎉 Tebrikler! Yarışmada ${yeniMevcutSeviye}. seviye açıldı!`);
+        }
+    } catch (e) {
+        console.log('markLessonPassedIfNeeded hata:', e.message);
+    }
+}
+
 
     const bookSelect = document.getElementById('bookSelect');
     const lessonSelect = document.getElementById('lessonSelect');
@@ -3895,6 +4072,14 @@ window.goHome = () => {
         animateLogo(); // ANİMASYON EKLENDİ
     }
     
+    // ✅ DÜZELTME: ekran her açıldığında ortadaki yazı güncellensin.
+    // Önceden updateWordDisplay() hiç çağrılmadığı için HTML'deki statik
+    // "---" metni kalıyor, "ÖNCE KİTAP SEÇİNİZ." / "ŞİMDİ DE DERS SEÇİNİZ.."
+    // mesajları hiç görünmüyordu.
+    if (typeof updateWordDisplay === 'function') {
+        updateWordDisplay();
+    }
+    
     closeMenu();
 };
 
@@ -3922,7 +4107,10 @@ if (zoomBtn) {
 
 
 
- window.goExams = async () => {
+ window.goExams = async (skipLockCheck) => {
+    // ===== KİLİT KONTROLÜ: artık her dersin sınavı kendi %80 şartına göre kilitli/açık =====
+    // (bkz. examLessonSelect dropdown'undaki 🔒 işaretleme ve isLessonExamUnlocked)
+    
     // Timer'ı durdur
     stopTimer();
     examCompleted = false;
@@ -4073,12 +4261,31 @@ bookSelect.onchange = async () => {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        lessons.forEach(lesson => {
+        
+        // ✅ DÜZELTME: kilit durumları artık PARALEL (Promise.all) çekiliyor,
+        // böylece dersler tek tek gecikmeli değil hepsi birden listeleniyor.
+        const unlockedStatuses = await Promise.all(
+            lessons.map(lesson => isLessonWordsUnlocked(lesson.id))
+        );
+        
+        lessons.forEach((lesson, i) => {
+            const unlocked = unlockedStatuses[i];
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = lesson.name;
+            // 🔒 kilit simgesi artık metnin SONUNDA (sağ tarafta)
+            option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
+            if (!unlocked) {
+                option.disabled = true;
+                option.dataset.locked = 'true';
+            }
             lessonSelect.appendChild(option);
         });
+        
+        // ✅ DÜZELTME: kitap seçilip dersler başarıyla yüklendiğinde ortadaki
+        // mesaj hiç güncellenmiyordu, eski "ÖNCE KİTAP SEÇİNİZ." yazısı donuk
+        // kalıyordu. Artık "ŞİMDİ DE DERS SEÇİNİZ.." doğru şekilde gösterilecek.
+        words = [];
+        updateWordDisplay();
         
     } catch (error) {
         closeLoadingAlert();
@@ -4123,6 +4330,14 @@ function sortLessonsByName(lessons) {
             updateWordDisplay();
             return;
         }
+        const unlocked = await isLessonWordsUnlocked(lessonId);
+        if (!unlocked) {
+            showTinyWarning('🔒 Bu ders kilitli. Önce bir önceki dersin sınavını %80 ile geçmelisin.');
+            lessonSelect.value = '';
+            words = [];
+            updateWordDisplay();
+            return;
+        }
         const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
         words = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         currentWordIndex = 0;
@@ -4132,7 +4347,15 @@ function sortLessonsByName(lessons) {
 // Mevcut updateWordDisplay fonksiyonunu değiştir
 async function updateWordDisplay() {
     if (words.length === 0) {
-        arabicWord.textContent = 'Yükleniyor';
+        const bookVal = document.getElementById('bookSelect')?.value;
+        const lessonVal = document.getElementById('lessonSelect')?.value;
+        if (!bookVal) {
+            arabicWord.textContent = 'ÖNCE KİTAP SEÇİNİZ.';
+        } else if (!lessonVal) {
+            arabicWord.textContent = 'ŞİMDİ DE DERS SEÇİNİZ..';
+        } else {
+            arabicWord.textContent = 'Yükleniyor';
+        }
         turkishWord.textContent = '';
         currentIndexSpan.textContent = '0';
         totalWordsSpan.textContent = '0';
@@ -4175,8 +4398,37 @@ async function updateWordDisplay() {
 
     
 
+// ✅ YENİ: Ders dropdown'ındaki kilit durumlarını canlı yeniler.
+// Kullanıcı kelime öğrenirken bir dersin %80'ini tamamlayınca, ekrandan
+// çıkıp tekrar girmesine gerek kalmadan bir sonraki dersin kilidi
+// dropdown'da anında açık görünür.
+async function refreshLessonSelectLockState() {
+    const lessonSelect = document.getElementById('lessonSelect');
+    if (!lessonSelect || !Array.isArray(lessons) || lessons.length === 0) return;
+    const currentValue = lessonSelect.value;
+    const unlockedStatuses = await Promise.all(lessons.map(lesson => isLessonWordsUnlocked(lesson.id)));
+    Array.from(lessonSelect.options).forEach(option => {
+        if (!option.value) return; // "-- Ders Seçin --" gibi placeholder
+        const idx = lessons.findIndex(l => l.id === option.value);
+        if (idx === -1) return;
+        const unlocked = unlockedStatuses[idx];
+        const lesson = lessons[idx];
+        option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
+        option.disabled = !unlocked;
+        if (unlocked) {
+            delete option.dataset.locked;
+        } else {
+            option.dataset.locked = 'true';
+        }
+    });
+    lessonSelect.value = currentValue;
+}
+
 // ===== showBtn onclick - TEK TANIM =====
-showBtn.onclick = () => {
+// ✅ YENİ: Aynı ders için kutlama mesajının tekrar tekrar çıkmaması için takip seti
+const celebratedExamUnlocks = new Set();
+
+showBtn.onclick = async () => {
     if (words.length === 0) return;
     const word = words[currentWordIndex];
     turkishWord.textContent = word.turkish;
@@ -4192,6 +4444,24 @@ showBtn.onclick = () => {
     addWordLearningPoint();
     
     updateUserProgress();
+
+    // ===== YENİ: Bu kelimeyi, dersin %80 ilerlemesi için işaretle =====
+    const activeLessonId = document.getElementById('lessonSelect')?.value;
+    if (activeLessonId && word.id) {
+        await markWordAsViewedForLesson(activeLessonId, word.id);
+        // ✅ YENİ: %80'e ulaşıldıysa bir sonraki dersin kilidi anında açılsın
+        refreshLessonSelectLockState();
+        
+        // ✅ YENİ: Bu dersin sınavı yeni açıldıysa oyuncuyu sınava yönlendiren
+        // eğlenceli bir bildirim göster (oyuncu "bitti" deyip çıkmasın).
+        if (!celebratedExamUnlocks.has(activeLessonId)) {
+            const p = await getLessonWordViewPercent(activeLessonId);
+            if (p >= WORD_LEARN_UNLOCK_PERCENT) {
+                celebratedExamUnlocks.add(activeLessonId);
+                showTinyWarning('Bu dersin sınavı açıldı! Hemen dene ve puan topla 🚀', 'fa-unlock');
+            }
+        }
+    }
 };
 
     prevBtn.onclick = () => {
@@ -4268,6 +4538,66 @@ showBtn.onclick = () => {
 
 
 
+
+// ===== SINAVLAR / YARIŞMA KİLİDİ =====
+// ✅ YENİ: Genel "5 kelime gördün mü" kilidi kaldırıldı. Artık kilitleme tamamen
+// derse özel: her dersin sınavı kendi %80 kelime öğrenme şartına, her yarışma
+// seviyesi de kendi dersinin sınavının %80 geçilmesine bağlı (bkz. isLessonExamUnlocked,
+// markLessonPassedIfNeeded). Bu yüzden ana sayfadaki kartlar artık hep açık görünür;
+// asıl kilit, içeri girildiğinde ders/sınav seçim ekranlarında uygulanır.
+function isExamsUnlocked() {
+    return true;
+}
+
+function updateExamLockUI() {
+    [document.getElementById('statExamsCard'), document.getElementById('goKarma')].forEach(card => {
+        if (!card) return;
+        card.classList.remove('locked-card');
+        const lockBadge = card.querySelector('.lock-badge');
+        if (lockBadge) lockBadge.remove();
+        card.removeAttribute('title');
+    });
+}
+
+// ===== ÇOK KÜÇÜK, KENDİLİĞİNDEN KAPANAN UYARI =====
+function showTinyWarning(message, icon = 'fa-lock') {
+    let el = document.getElementById('tinyWarningToast');
+    if (el) el.remove();
+    
+    el = document.createElement('div');
+    el.id = 'tinyWarningToast';
+    el.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    el.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #1e1e1e;
+        color: #f59e0b;
+        border: 1px solid rgba(245,158,11,0.4);
+        padding: 10px 18px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        white-space: nowrap;
+    `;
+    document.body.appendChild(el);
+    
+    requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => el.remove(), 300);
+    }, 2200);
+}
 
 async function loadUserStats() {
 
@@ -4393,6 +4723,9 @@ async function loadUserStats() {
             // ===== İSTATİSTİK KARTLARI =====
             const totalWordsLearned = document.getElementById('totalWordsLearned');
             if (totalWordsLearned) totalWordsLearned.textContent = totalWordsViewed;
+            
+            // ===== SINAVLAR / YARIŞMA KİLİDİ =====
+            updateExamLockUI(totalWordsViewed);
             
             const totalExamsCompleted = document.getElementById('totalExamsCompleted');
             if (totalExamsCompleted) totalExamsCompleted.textContent = examsCompleted.length;
@@ -5059,6 +5392,31 @@ async function completeExam() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
+    // ===== YENİ: Sonuç yüzdesine göre yönlendirici, motive edici mesaj =====
+    // Oyuncu "sınav bitti" deyip çıkmasın; her sonuç onu bir sonraki adıma sevk etsin.
+    const examPercent = totalQuestions > 0 ? Math.round((correct / totalQuestions) * 100) : 0;
+    const examPassed = examPercent >= EXAM_PASS_PERCENT;
+    
+    let resultTitle, resultSubtitle, resultCtaHTML;
+    if (examPassed) {
+        resultTitle = '🎉 Tebrikler, Sınavı Geçtin!';
+        resultSubtitle = `🚀 Yarışmada bir sonraki seviyen açıldı! Hemen gidip yeni kelimelerle mücadele et.`;
+        resultCtaHTML = `
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin: 6px 0 20px 0;">
+                <button class="btn btn-primary" onclick="goKarmaGame()" style="flex:1; min-width:150px; background:#f59e0b;"><i class="fas fa-dice"></i> Yarışmaya Katıl 🎲</button>
+                <button class="btn btn-primary" onclick="goWordsLearning()" style="flex:1; min-width:150px; background:#3b82f6;"><i class="fas fa-book"></i> Sonraki Derse Geç 📚</button>
+            </div>
+        `;
+    } else if (examPercent >= 50) {
+        resultTitle = '💪 Az Kaldı, Pes Etme!';
+        resultSubtitle = `%${examPercent} yaptın, %${EXAM_PASS_PERCENT}'e ulaşırsan yarışmada yeni seviye açılır. Tekrar dene, başarabilirsin! 🔥`;
+        resultCtaHTML = '';
+    } else {
+        resultTitle = '🌱 Sınav Bitti, Öğrenmeye Devam!';
+        resultSubtitle = `Kelimeleri biraz daha tekrar et, sonra tekrar dene. Her deneme seni zirveye yaklaştırıyor! ✨`;
+        resultCtaHTML = '';
+    }
+    
     // ===== ÖNCE SONUCU GÖSTER (FIREBASE BEKLEMEDEN) =====
     let resultHTML = `
         <div class="result-card">
@@ -5070,11 +5428,15 @@ async function completeExam() {
                 </div>
             </div>
             
-            <h2>🏆 Sınav Tamamlandı!</h2>
+            <h2>${resultTitle}</h2>
             <div class="score">${roundedScore} Puan</div>
-            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
+            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 8px; color: #f59e0b;">
                 ${correct}/${totalQuestions} doğru
             </div>
+            <div style="font-size: 13px; margin-bottom: 16px; color: #d1d5db; opacity: 0.9; max-width: 420px; margin-left: auto; margin-right: auto;">
+                ${resultSubtitle}
+            </div>
+            ${resultCtaHTML}
             
             <!-- ===== PUAN ÖZETİ (YÜKLENİYOR) ===== -->
             <div id="examResultSummary" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
@@ -5098,7 +5460,7 @@ async function completeExam() {
                     <div>Boş</div>
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="goExams()"><i class="fas fa-redo"></i> Tekrar Dene</button>
+            <button class="btn btn-primary" onclick="goExams(true)"><i class="fas fa-redo"></i> Tekrar Dene</button>
         </div>
         <div class="all-questions-container">
             <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
@@ -5147,6 +5509,11 @@ async function completeExam() {
     // ===== Sınav sonucunu KAYDET (Arka planda) =====
     try {
         await saveExamResult(currentExam.title, score, correct, totalQuestions);
+
+        // ===== %80+ ise dersi geçildi olarak işaretle (yarışma seviyesi açılır) =====
+        if (currentExam.lessonId) {
+            await markLessonPassedIfNeeded(currentExam.lessonId, examPercent);
+        }
     } catch (error) {
         console.error('Kayıt hatası:', error);
     }
@@ -6425,7 +6792,10 @@ window.addEventListener('offline', function() {
 
 
 // Karma Kelime sayfasına git
-window.goKarmaGame = () => {
+window.goKarmaGame = async (skipLockCheck) => {
+    // ===== KİLİT KONTROLÜ: seviye ilerlemesi artık sadece sınav geçişiyle olur =====
+    // (bkz. markLessonPassedIfNeeded -> mevcutSeviye). 1. seviye herkese açık başlangıç seviyesidir.
+    
     // ANA SAYFA STAT KARTLARINI GİZLE
     const mainContent = document.getElementById('mainContent');
     if (mainContent) {
@@ -6830,23 +7200,12 @@ window.loadRanking = async function() {
 
 
 // ============================================================
-// DERS LİSTESİNİ TARİHE GÖRE SIRALA (YARIŞMA İÇİN)
+// DERS LİSTESİ (YARIŞMA İÇİN) - artık kitap adı + ders numarasına göre
+// sıralanan TEK global zincirle (getGlobalLessonSequence) aynı sırayı kullanır,
+// böylece kelime öğrenme / sınav / yarışma kilitleri hep aynı numaralandırmayı görür.
 // ============================================================
-async function getDersListesi() {
-    const snapshot = await getDocs(collection(db, 'lessons'));
-    const dersler = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    }));
-    
-    // Tarihe göre sırala (önce eklenen önce gelir)
-    dersler.sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0);
-        const dateB = new Date(b.createdAt || 0);
-        return dateA - dateB;
-    });
-    
-    return dersler;
+async function getDersListesi(forceRefresh) {
+    return await getGlobalLessonSequence(forceRefresh);
 }
 
 
@@ -7399,30 +7758,36 @@ async function finishQuizWords() {
     const percent = toplamSoru > 0 ? Math.round((quizCorrectCount / toplamSoru) * 100) : 0;
     const finalPercent = percent > 100 ? 100 : percent;
     
-    // ===== SEVİYE İLERLEMESİNİ HEMEN UYGULA (buton beklemeden) =====
-    // Böylece oyuncu "Sonraki Seviye" butonuna basmadan çıksa bile ilerleme ve +2 puan kaybolmaz.
+    // ===== YENİ: Bu turu bitirmek ARTIK seviye açmıyor. =====
+    // Seviye ilerlemesi sadece ilgili dersin sınavı %80+ ile geçildiğinde,
+    // markLessonPassedIfNeeded() tarafından uygulanıyor. Burada sadece puan/sandık kaydediliyor.
     const tamamlananSeviye = mevcutSeviye;
+    const currentLessonId = seviyeKelimeListesi[0]?.lessonId || null;
+    const seviyeDersiGecildiMi = currentLessonId ? await isLessonPassed(currentLessonId) : false;
     const sonSeviyeMi = mevcutSeviye >= toplamSeviye;
-    if (!sonSeviyeMi) {
-        mevcutSeviye++;
-    }
+    const birSonrakiSeviyeAcik = !sonSeviyeMi && seviyeDersiGecildiMi;
     
-    // Kullanıcı verilerini güncelle (seviyeyi ANINDA kaydet)
+    // Kullanıcı verilerini güncelle (sadece puan/sandık; seviye burada değişmez)
     if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { 
             quizSandik: quizSandik, 
-            quizScore: quizScore,
-            mevcutSeviye: mevcutSeviye
+            quizScore: quizScore
         });
-        console.log('✅ Seviye kaydedildi:', mevcutSeviye);
+        console.log('✅ Tur sonucu kaydedildi (seviye değişmedi):', mevcutSeviye);
     }
     
     // Seviye kontrolü
     if (!sonSeviyeMi) {
+        const altButonHTML = birSonrakiSeviyeAcik
+            ? `<button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="sonrakiSeviye()">➜ Sonraki Seviye (${mevcutSeviye + 1}/${toplamSeviye})</button>`
+            : `<button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="goExams()">📝 Sonraki Seviyeyi Açmak İçin Sınava Gir</button>`;
+        const kilitNotuHTML = birSonrakiSeviyeAcik
+            ? ''
+            : `<p style="color: #3b82f6; font-size: 13px; margin: 6px 0;">🔒 Bir sonraki seviyeyi açmak için bu dersin sınavını <strong>%${EXAM_PASS_PERCENT}</strong> ile geçmelisin.</p>`;
         container.innerHTML = `
             <div style="text-align:center; padding: 20px 12px; max-width: 420px; margin: 0 auto;">
-                <h2 style="font-size: clamp(18px, 5vw, 22px); margin: 0 0 6px 0;">🎉 Seviye ${tamamlananSeviye} Tamamlandı!</h2>
+                <h2 style="font-size: clamp(18px, 5vw, 22px); margin: 0 0 6px 0;">🎉 Seviye ${tamamlananSeviye} Turu Tamamlandı!</h2>
                 <div style="font-size: clamp(32px, 9vw, 48px); font-weight: bold; color: #f59e0b; margin: 8px 0;">${quizScore.toFixed(2)} Puan</div>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0;">
                     <div style="background: rgba(16,185,129,0.08); border-radius: 10px; padding: 10px 4px;">
@@ -7439,9 +7804,9 @@ async function finishQuizWords() {
                     </div>
                 </div>
                 <p style="color: #10b981; font-size: 13px; margin: 6px 0;">📦 Ahsente, sandıktaki bütün kelimeleri öğrendin...</p>
-                <p style="color: #f59e0b; font-size: 13px; margin: 6px 0;">🎉 Bu seviyeyi tamamladığın için <strong>+2 puan</strong> kazandın!</p>
+                ${kilitNotuHTML}
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px;">
-                    <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="sonrakiSeviye()">➜ Sonraki Seviye (${mevcutSeviye}/${toplamSeviye})</button>
+                    ${altButonHTML}
                     <button class="btn btn-nav" style="width: 100%; padding: 12px; font-size: 14px;" onclick="goHome()">Bahçeye çık</button>
                 </div>
             </div>
@@ -8564,6 +8929,23 @@ document.getElementById('helpGameBtn')?.addEventListener('click', function() {
                     </p>
                 </div>
                 
+                <!-- 1.5 DERS KİLİTLERİ (YENİ) -->
+                <div style="background: rgba(245,158,11,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #f59e0b;">
+                    <p style="margin: 0; font-weight: 600; color: #fbbf24;">🔓 Dersler Nasıl Açılır?</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">
+                        Bir dersteki kelimelerin <strong>%${WORD_LEARN_UNLOCK_PERCENT}'ini</strong> öğrendiğinde:
+                    </p>
+                    <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 13px; opacity: 0.85;">
+                        <li>O dersin <span style="color: #a78bfa;">sınavı</span> açılır 📝</li>
+                        <li><span style="color: #34d399;">Bir sonraki dersin kelimeleri</span> otomatik açılır 🔓</li>
+                    </ul>
+                    <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.8;">
+                        Kilit açılması <strong>anında</strong> gerçekleşir; ekrandan çıkıp tekrar girmene gerek yok, 
+                        ders listesinde hemen açık görünür. Ayrıca bir dersin sınavını 
+                        <strong>%${EXAM_PASS_PERCENT}</strong> ile geçersen, Yarışma'da bir sonraki seviye açılır.
+                    </p>
+                </div>
+                
                 <!-- 2. SINAVLAR -->
                 <div style="background: rgba(139,92,246,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
                     <p style="margin: 0; font-weight: 600; color: #a78bfa;">📝 2. Sınavlar</p>
@@ -9344,16 +9726,34 @@ if (examBookSelect) {
                 examLessonSelect.disabled = false;
                 examLessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
                 
-                dersler.forEach(ders => {
+                // ✅ DÜZELTME: kilit durumları artık PARALEL (Promise.all) çekiliyor.
+                // Önceki halde her ders için sırayla await edildiğinden dropdown
+                // içeriği dersler tek tek (yaklaşık 1sn aralıklarla) geliyordu.
+                const unlockStatuses = await Promise.all(
+                    dersler.map(ders => isLessonExamUnlocked(ders.id))
+                );
+                
+                dersler.forEach((ders, i) => {
                     const option = document.createElement('option');
                     option.value = ders.id;
                     const count = examCounts[ders.id] || 0;
                     const qCount = questionCounts[ders.id] || 0;
+                    const examUnlocked = unlockStatuses[i];
                     
-                    // ===== SEÇENEK OLUŞTUR (renklendirme kaldırıldı, soru sayısı eklendi) =====
-                    option.textContent = qCount > 0
-                        ? `${ders.name} (${count} sınav, ${qCount} soru)`
-                        : `${ders.name} (${count} sınav)`;
+                    let label;
+                    if (!examUnlocked) {
+                        // ✅ DÜZELTME: kilitli derslerde sınav/soru sayısı gösterilmiyor,
+                        // metin kısa tutuluyor. 🔒 sağda.
+                        label = `${ders.name} (Önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren) 🔒`;
+                        option.disabled = true;
+                        option.dataset.locked = 'true';
+                    } else {
+                        // Aktif derslerde tam bilgi (sınav/soru sayısı) aynı şekilde kalıyor.
+                        label = qCount > 0
+                            ? `${ders.name} (${count} sınav, ${qCount} soru)`
+                            : `${ders.name} (${count} sınav)`;
+                    }
+                    option.textContent = label;
                     examLessonSelect.appendChild(option);
                 });
             }
@@ -9400,6 +9800,16 @@ if (examLessonSelect) {
             }
             const examCountInfo = document.getElementById('examCountInfo');
             if (examCountInfo) examCountInfo.textContent = '0 sınav';
+            return;
+        }
+        
+        const examUnlocked = await isLessonExamUnlocked(lessonId);
+        if (!examUnlocked) {
+            showTinyWarning(`🔒 Bu dersin sınavı kilitli. Önce kelimelerin %${WORD_LEARN_UNLOCK_PERCENT}'ini öğrenmelisin.`);
+            this.value = '';
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
+            }
             return;
         }
         
@@ -10765,7 +11175,9 @@ async function loadSandikWordsList() {
     // ============================================================
 // SANDIKTAN KURTARMAYA GİT - SANDIK EKRANINI GİZLE
 // ============================================================
-window.goKarmaGameFromSandik = function() {
+window.goKarmaGameFromSandik = async function() {
+    // ===== KİLİT KONTROLÜ: artık mevcutSeviye üzerinden yönetiliyor, ayrı kontrole gerek yok =====
+    
     // Sandık ekranını gizle
     const sandikScreen = document.getElementById('sandikScreen');
     if (sandikScreen) {
@@ -10774,7 +11186,7 @@ window.goKarmaGameFromSandik = function() {
     
     // Yarışma ekranını aç
     if (typeof goKarmaGame === 'function') {
-        goKarmaGame();
+        goKarmaGame(true);
     } else {
         // Eğer goKarmaGame yoksa manuel başlat
         startQuizWords();
