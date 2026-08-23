@@ -4425,6 +4425,9 @@ async function refreshLessonSelectLockState() {
 }
 
 // ===== showBtn onclick - TEK TANIM =====
+// ✅ YENİ: Aynı ders için kutlama mesajının tekrar tekrar çıkmaması için takip seti
+const celebratedExamUnlocks = new Set();
+
 showBtn.onclick = async () => {
     if (words.length === 0) return;
     const word = words[currentWordIndex];
@@ -4448,6 +4451,16 @@ showBtn.onclick = async () => {
         await markWordAsViewedForLesson(activeLessonId, word.id);
         // ✅ YENİ: %80'e ulaşıldıysa bir sonraki dersin kilidi anında açılsın
         refreshLessonSelectLockState();
+        
+        // ✅ YENİ: Bu dersin sınavı yeni açıldıysa oyuncuyu sınava yönlendiren
+        // eğlenceli bir bildirim göster (oyuncu "bitti" deyip çıkmasın).
+        if (!celebratedExamUnlocks.has(activeLessonId)) {
+            const p = await getLessonWordViewPercent(activeLessonId);
+            if (p >= WORD_LEARN_UNLOCK_PERCENT) {
+                celebratedExamUnlocks.add(activeLessonId);
+                showTinyWarning('Bu dersin sınavı açıldı! Hemen dene ve puan topla 🚀', 'fa-unlock');
+            }
+        }
     }
 };
 
@@ -4547,13 +4560,13 @@ function updateExamLockUI() {
 }
 
 // ===== ÇOK KÜÇÜK, KENDİLİĞİNDEN KAPANAN UYARI =====
-function showTinyWarning(message) {
+function showTinyWarning(message, icon = 'fa-lock') {
     let el = document.getElementById('tinyWarningToast');
     if (el) el.remove();
     
     el = document.createElement('div');
     el.id = 'tinyWarningToast';
-    el.innerHTML = `<i class="fas fa-lock"></i> ${message}`;
+    el.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
     el.style.cssText = `
         position: fixed;
         bottom: 30px;
@@ -5379,6 +5392,31 @@ async function completeExam() {
     const lessonName = getLessonNameById(currentExam.lessonId);
     const examTitle = currentExam.title || 'Sınav';
     
+    // ===== YENİ: Sonuç yüzdesine göre yönlendirici, motive edici mesaj =====
+    // Oyuncu "sınav bitti" deyip çıkmasın; her sonuç onu bir sonraki adıma sevk etsin.
+    const examPercent = totalQuestions > 0 ? Math.round((correct / totalQuestions) * 100) : 0;
+    const examPassed = examPercent >= EXAM_PASS_PERCENT;
+    
+    let resultTitle, resultSubtitle, resultCtaHTML;
+    if (examPassed) {
+        resultTitle = '🎉 Tebrikler, Sınavı Geçtin!';
+        resultSubtitle = `🚀 Yarışmada bir sonraki seviyen açıldı! Hemen gidip yeni kelimelerle mücadele et.`;
+        resultCtaHTML = `
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin: 6px 0 20px 0;">
+                <button class="btn btn-primary" onclick="goKarmaGame()" style="flex:1; min-width:150px; background:#f59e0b;"><i class="fas fa-dice"></i> Yarışmaya Katıl 🎲</button>
+                <button class="btn btn-primary" onclick="goWordsLearning()" style="flex:1; min-width:150px; background:#3b82f6;"><i class="fas fa-book"></i> Sonraki Derse Geç 📚</button>
+            </div>
+        `;
+    } else if (examPercent >= 50) {
+        resultTitle = '💪 Az Kaldı, Pes Etme!';
+        resultSubtitle = `%${examPercent} yaptın, %${EXAM_PASS_PERCENT}'e ulaşırsan yarışmada yeni seviye açılır. Tekrar dene, başarabilirsin! 🔥`;
+        resultCtaHTML = '';
+    } else {
+        resultTitle = '🌱 Sınav Bitti, Öğrenmeye Devam!';
+        resultSubtitle = `Kelimeleri biraz daha tekrar et, sonra tekrar dene. Her deneme seni zirveye yaklaştırıyor! ✨`;
+        resultCtaHTML = '';
+    }
+    
     // ===== ÖNCE SONUCU GÖSTER (FIREBASE BEKLEMEDEN) =====
     let resultHTML = `
         <div class="result-card">
@@ -5390,11 +5428,15 @@ async function completeExam() {
                 </div>
             </div>
             
-            <h2>🏆 Sınav Tamamlandı!</h2>
+            <h2>${resultTitle}</h2>
             <div class="score">${roundedScore} Puan</div>
-            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 20px; color: #f59e0b;">
+            <div style="font-size: 14px; margin-top: -10px; margin-bottom: 8px; color: #f59e0b;">
                 ${correct}/${totalQuestions} doğru
             </div>
+            <div style="font-size: 13px; margin-bottom: 16px; color: #d1d5db; opacity: 0.9; max-width: 420px; margin-left: auto; margin-right: auto;">
+                ${resultSubtitle}
+            </div>
+            ${resultCtaHTML}
             
             <!-- ===== PUAN ÖZETİ (YÜKLENİYOR) ===== -->
             <div id="examResultSummary" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin: 15px 0; text-align: left; border: 1px solid rgba(245,158,11,0.1);">
@@ -5468,8 +5510,7 @@ async function completeExam() {
     try {
         await saveExamResult(currentExam.title, score, correct, totalQuestions);
 
-        // ===== YENİ: %80+ ise dersi geçildi olarak işaretle (bir sonraki ders + yarışma seviyesi açılır) =====
-        const examPercent = totalQuestions > 0 ? Math.round((correct / totalQuestions) * 100) : 0;
+        // ===== %80+ ise dersi geçildi olarak işaretle (yarışma seviyesi açılır) =====
         if (currentExam.lessonId) {
             await markLessonPassedIfNeeded(currentExam.lessonId, examPercent);
         }
