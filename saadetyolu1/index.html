@@ -3870,14 +3870,17 @@ async function getPassedLessonIds() {
     }
 }
 
-// Bir dersin KELİME ÖĞRENME ekranı açık mı? (Bir önceki dersin sınavı %80 geçilmiş mi?)
+// Bir dersin KELİME ÖĞRENME ekranı açık mı? (Bir önceki dersin kelimelerinin %80'i öğrenilmiş mi?)
+// ✅ DÜZELTME: Artık bir önceki dersin SINAVININ geçilmesi şart değil.
+// Önceki ders kelimelerinin %WORD_LEARN_UNLOCK_PERCENT'i öğrenilir öğrenilmez
+// bir sonraki dersin kelimeleri otomatik açılır (sınav sonucu beklenmez).
 async function isLessonWordsUnlocked(lessonId) {
     const sequence = await getGlobalLessonSequence();
     const pos = getLessonPositionInSequence(sequence, lessonId);
     if (pos <= 0) return true; // İlk ders (veya sırada bulunamayan) her zaman açık
     const prevLessonId = sequence[pos - 1].id;
-    const passed = await getPassedLessonIds();
-    return passed.includes(prevLessonId);
+    const prevPercent = await getLessonWordViewPercent(prevLessonId);
+    return prevPercent >= WORD_LEARN_UNLOCK_PERCENT;
 }
 
 // Bir dersteki kelimelerin yüzde kaçı görüntülenmiş (Göster'e basılmış)?
@@ -4278,6 +4281,12 @@ bookSelect.onchange = async () => {
             lessonSelect.appendChild(option);
         });
         
+        // ✅ DÜZELTME: kitap seçilip dersler başarıyla yüklendiğinde ortadaki
+        // mesaj hiç güncellenmiyordu, eski "ÖNCE KİTAP SEÇİNİZ." yazısı donuk
+        // kalıyordu. Artık "ŞİMDİ DE DERS SEÇİNİZ.." doğru şekilde gösterilecek.
+        words = [];
+        updateWordDisplay();
+        
     } catch (error) {
         closeLoadingAlert();
         console.error('Dersler yüklenirken hata:', error);
@@ -4389,8 +4398,34 @@ async function updateWordDisplay() {
 
     
 
+// ✅ YENİ: Ders dropdown'ındaki kilit durumlarını canlı yeniler.
+// Kullanıcı kelime öğrenirken bir dersin %80'ini tamamlayınca, ekrandan
+// çıkıp tekrar girmesine gerek kalmadan bir sonraki dersin kilidi
+// dropdown'da anında açık görünür.
+async function refreshLessonSelectLockState() {
+    const lessonSelect = document.getElementById('lessonSelect');
+    if (!lessonSelect || !Array.isArray(lessons) || lessons.length === 0) return;
+    const currentValue = lessonSelect.value;
+    const unlockedStatuses = await Promise.all(lessons.map(lesson => isLessonWordsUnlocked(lesson.id)));
+    Array.from(lessonSelect.options).forEach(option => {
+        if (!option.value) return; // "-- Ders Seçin --" gibi placeholder
+        const idx = lessons.findIndex(l => l.id === option.value);
+        if (idx === -1) return;
+        const unlocked = unlockedStatuses[idx];
+        const lesson = lessons[idx];
+        option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
+        option.disabled = !unlocked;
+        if (unlocked) {
+            delete option.dataset.locked;
+        } else {
+            option.dataset.locked = 'true';
+        }
+    });
+    lessonSelect.value = currentValue;
+}
+
 // ===== showBtn onclick - TEK TANIM =====
-showBtn.onclick = () => {
+showBtn.onclick = async () => {
     if (words.length === 0) return;
     const word = words[currentWordIndex];
     turkishWord.textContent = word.turkish;
@@ -4410,7 +4445,9 @@ showBtn.onclick = () => {
     // ===== YENİ: Bu kelimeyi, dersin %80 ilerlemesi için işaretle =====
     const activeLessonId = document.getElementById('lessonSelect')?.value;
     if (activeLessonId && word.id) {
-        markWordAsViewedForLesson(activeLessonId, word.id);
+        await markWordAsViewedForLesson(activeLessonId, word.id);
+        // ✅ YENİ: %80'e ulaşıldıysa bir sonraki dersin kilidi anında açılsın
+        refreshLessonSelectLockState();
     }
 };
 
