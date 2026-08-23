@@ -4069,6 +4069,14 @@ window.goHome = () => {
         animateLogo(); // ANİMASYON EKLENDİ
     }
     
+    // ✅ DÜZELTME: ekran her açıldığında ortadaki yazı güncellensin.
+    // Önceden updateWordDisplay() hiç çağrılmadığı için HTML'deki statik
+    // "---" metni kalıyor, "ÖNCE KİTAP SEÇİNİZ." / "ŞİMDİ DE DERS SEÇİNİZ.."
+    // mesajları hiç görünmüyordu.
+    if (typeof updateWordDisplay === 'function') {
+        updateWordDisplay();
+    }
+    
     closeMenu();
 };
 
@@ -9637,15 +9645,18 @@ if (examBookSelect) {
                     const qCount = questionCounts[ders.id] || 0;
                     const examUnlocked = unlockStatuses[i];
                     
-                    // ===== SEÇENEK OLUŞTUR (renklendirme kaldırıldı, soru sayısı eklendi) =====
-                    let label = qCount > 0
-                        ? `${ders.name} (${count} sınav, ${qCount} soru)`
-                        : `${ders.name} (${count} sınav)`;
+                    let label;
                     if (!examUnlocked) {
-                        // 🔒 kilit simgesi artık metnin SONUNDA (sağ tarafta)
-                        label = `${label} - önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren 🔒`;
+                        // ✅ DÜZELTME: kilitli derslerde sınav/soru sayısı gösterilmiyor,
+                        // metin kısa tutuluyor. 🔒 sağda.
+                        label = `${ders.name} (Önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren) 🔒`;
                         option.disabled = true;
                         option.dataset.locked = 'true';
+                    } else {
+                        // Aktif derslerde tam bilgi (sınav/soru sayısı) aynı şekilde kalıyor.
+                        label = qCount > 0
+                            ? `${ders.name} (${count} sınav, ${qCount} soru)`
+                            : `${ders.name} (${count} sınav)`;
                     }
                     option.textContent = label;
                     examLessonSelect.appendChild(option);
