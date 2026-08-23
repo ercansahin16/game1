@@ -3599,7 +3599,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -3913,15 +3913,13 @@ async function markWordAsViewedForLesson(lessonId, wordId) {
     if (!currentUser || !lessonId || !wordId) return;
     try {
         const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        const data = userDoc.exists() ? userDoc.data() : {};
-        const viewedMap = data.viewedWordsByLesson || {};
-        const viewedIds = viewedMap[lessonId] || [];
-        if (!viewedIds.includes(wordId)) {
-            viewedIds.push(wordId);
-            viewedMap[lessonId] = viewedIds;
-            await updateDoc(userRef, { viewedWordsByLesson: viewedMap });
-        }
+        // ✅ DÜZELTME: önce oku-sonra-yaz yerine atomik arrayUnion kullanılıyor.
+        // Kullanıcı "Göster"e hızlı art arda basınca eski yöntemde araya giren
+        // yazmalar birbirini eziyor ve kelimeler kayboluyordu. arrayUnion bu
+        // riski tamamen ortadan kaldırır (Firestore tarafında atomik çalışır).
+        await updateDoc(userRef, {
+            [`viewedWordsByLesson.${lessonId}`]: arrayUnion(wordId)
+        });
     } catch (e) {
         console.log('markWordAsViewedForLesson hata:', e.message);
     }
