@@ -4250,17 +4250,25 @@ bookSelect.onchange = async () => {
         
         lessonSelect.disabled = false;
         lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        for (const lesson of lessons) {
-            const unlocked = await isLessonWordsUnlocked(lesson.id);
+        
+        // ✅ DÜZELTME: kilit durumları artık PARALEL (Promise.all) çekiliyor,
+        // böylece dersler tek tek gecikmeli değil hepsi birden listeleniyor.
+        const unlockedStatuses = await Promise.all(
+            lessons.map(lesson => isLessonWordsUnlocked(lesson.id))
+        );
+        
+        lessons.forEach((lesson, i) => {
+            const unlocked = unlockedStatuses[i];
             const option = document.createElement('option');
             option.value = lesson.id;
-            option.textContent = unlocked ? lesson.name : `🔒 ${lesson.name}`;
+            // 🔒 kilit simgesi artık metnin SONUNDA (sağ tarafta)
+            option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
             if (!unlocked) {
                 option.disabled = true;
                 option.dataset.locked = 'true';
             }
             lessonSelect.appendChild(option);
-        }
+        });
         
     } catch (error) {
         closeLoadingAlert();
@@ -9615,25 +9623,33 @@ if (examBookSelect) {
                 examLessonSelect.disabled = false;
                 examLessonSelect.innerHTML = '<option value="" selected>-- Ders Seçin --</option>';
                 
-                for (const ders of dersler) {
+                // ✅ DÜZELTME: kilit durumları artık PARALEL (Promise.all) çekiliyor.
+                // Önceki halde her ders için sırayla await edildiğinden dropdown
+                // içeriği dersler tek tek (yaklaşık 1sn aralıklarla) geliyordu.
+                const unlockStatuses = await Promise.all(
+                    dersler.map(ders => isLessonExamUnlocked(ders.id))
+                );
+                
+                dersler.forEach((ders, i) => {
                     const option = document.createElement('option');
                     option.value = ders.id;
                     const count = examCounts[ders.id] || 0;
                     const qCount = questionCounts[ders.id] || 0;
-                    const examUnlocked = await isLessonExamUnlocked(ders.id);
+                    const examUnlocked = unlockStatuses[i];
                     
                     // ===== SEÇENEK OLUŞTUR (renklendirme kaldırıldı, soru sayısı eklendi) =====
                     let label = qCount > 0
                         ? `${ders.name} (${count} sınav, ${qCount} soru)`
                         : `${ders.name} (${count} sınav)`;
                     if (!examUnlocked) {
-                        label = `🔒 ${label} - önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren`;
+                        // 🔒 kilit simgesi artık metnin SONUNDA (sağ tarafta)
+                        label = `${label} - önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren 🔒`;
                         option.disabled = true;
                         option.dataset.locked = 'true';
                     }
                     option.textContent = label;
                     examLessonSelect.appendChild(option);
-                }
+                });
             }
             
             // Sınav listesini temizle
