@@ -4172,7 +4172,15 @@ function sortLessonsByName(lessons) {
 // Mevcut updateWordDisplay fonksiyonunu değiştir
 async function updateWordDisplay() {
     if (words.length === 0) {
-        arabicWord.textContent = 'Yükleniyor';
+        const bookVal = document.getElementById('bookSelect')?.value;
+        const lessonVal = document.getElementById('lessonSelect')?.value;
+        if (!bookVal) {
+            arabicWord.textContent = 'Önce kitap seçiniz';
+        } else if (!lessonVal) {
+            arabicWord.textContent = 'Şimdi ders seçiniz';
+        } else {
+            arabicWord.textContent = 'Yükleniyor';
+        }
         turkishWord.textContent = '';
         currentIndexSpan.textContent = '0';
         totalWordsSpan.textContent = '0';
@@ -10890,7 +10898,16 @@ async function loadSandikWordsList() {
     // ============================================================
 // SANDIKTAN KURTARMAYA GİT - SANDIK EKRANINI GİZLE
 // ============================================================
-window.goKarmaGameFromSandik = function() {
+window.goKarmaGameFromSandik = async function() {
+    // ===== KİLİT KONTROLÜ =====
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const totalWordsViewed = userDoc.exists() ? (userDoc.data().totalWordsViewed || 0) : 0;
+    if (!isExamsUnlocked(totalWordsViewed)) {
+        showTinyWarning('Önce kelime öğrenin 📖');
+        return;
+    }
+    
     // Sandık ekranını gizle
     const sandikScreen = document.getElementById('sandikScreen');
     if (sandikScreen) {
