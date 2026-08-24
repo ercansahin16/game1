@@ -6239,6 +6239,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 // ===== 🔥 GÜNLÜK SERİYİ KONTROL ET / GÜNCELLE =====
                 await updateGunlukSeri(userRef, data);
                 
+                // ===== 🔥 ARKADAŞLIK SERİSİ RİSK KONTROLÜ (kullanıcı hatırlatmaları açtıysa) =====
+                checkFriendStreakReminders(data);
+                
                 // ===== 🤲 YENİ KULLANICI: DUA EKRANI + REHBER =====
                 // Daha önce görmemişse (yeni kayıt veya eski kullanıcı), 
                 // ana ekran tam yüklendikten sonra önce dua ekranı, 
@@ -7356,7 +7359,164 @@ const CANNED_MESSAGES = [
     { emoji: '🤙', text: 'Rahat ol, bu liderlik koltuğu kimseye kolay kolay verilmez 😎🤙' }
 ];
 
-// ===== GELEN MESAJA SADECE EMOJİ İLE HIZLI YANIT LİSTESİ =====
+// ===== 🔥 ARKADAŞLIK SERİSİ + 😊 EMOJİ REAKSİYON SAYACI ALTYAPISI =====
+// Mantık günlük genel seri (updateGunlukSeri) ile aynı: iki taraf da aynı gün
+// içinde birbirine en az bir mesaj/emoji gönderirse o günün serisi sayılır.
+// Bir gün atlanırsa seri 1'e sıfırlanır (Snapchat tarzı arkadaşlık serisi).
+function bugununTarihi() {
+    return new Date().toISOString().slice(0, 10);
+}
+function dununTarihi() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+}
+
+// pair: { streak, longest, lastCompletedDate, myMsgDate, theirMsgDate }
+// Her iki taraf da bugün mesajlaşmışsa (ve bugün için seri henüz sayılmamışsa) seriyi ilerletir.
+function tryBumpStreak(pair, today) {
+    if (pair.myMsgDate === today && pair.theirMsgDate === today && pair.lastCompletedDate !== today) {
+        const dun = dununTarihi();
+        pair.streak = (pair.lastCompletedDate === dun) ? ((pair.streak || 0) + 1) : 1;
+        pair.longest = Math.max(pair.longest || 0, pair.streak);
+        pair.lastCompletedDate = today;
+        return true;
+    }
+    return false;
+}
+
+// Gösterim anında: eğer aradan 1 günden fazla geçtiyse (bugün de dün de mesajlaşılmadıysa)
+// seri koptuğu için ekranda 0 gösterilir (Firestore'a yazmadan, sadece görsel düzeltme).
+function gorunurStreak(pair) {
+    if (!pair || !pair.streak) return 0;
+    const today = bugununTarihi();
+    const dun = dununTarihi();
+    if (pair.lastCompletedDate === today || pair.lastCompletedDate === dun) return pair.streak;
+    return 0; // seri kopmuş, henüz Firestore'a yansımamış olabilir
+}
+
+// Mesaj/emoji gönderildiğinde her iki kullanıcının dokümanını da güncelleyip
+// (a) arkadaşlık serisini ilerletir, (b) emoji reaksiyon sayaçlarını artırır.
+// isEmoji=true ise emojiStats sayaçları da güncellenir.
+async function bumpFriendshipOnSend(myUid, myRef, otherUid, otherRef, isEmoji) {
+    const today = bugununTarihi();
+    let streakBumped = false;
+    let newStreak = 0;
+    try {
+        // ===== 1) BENİM DOKÜMANIM: bugün ona mesaj attığımı işaretle =====
+        const mySnap = await getDoc(myRef);
+        const myData = mySnap.exists() ? mySnap.data() : {};
+        const myStreaks = myData.friendStreaks || {};
+        const myPair = Object.assign({ streak: 0, longest: 0, lastCompletedDate: null, myMsgDate: null, theirMsgDate: null }, myStreaks[otherUid] || {});
+        myPair.myMsgDate = today;
+        streakBumped = tryBumpStreak(myPair, today) || streakBumped;
+        newStreak = myPair.streak || 0;
+        
+        const myEmojiStats = myData.emojiStats || {};
+        const myPairEmoji = Object.assign({ sent: 0, received: 0 }, myEmojiStats[otherUid] || {});
+        if (isEmoji) myPairEmoji.sent = (myPairEmoji.sent || 0) + 1;
+        
+        const myUpdate = { [`friendStreaks.${otherUid}`]: myPair };
+        if (isEmoji) myUpdate[`emojiStats.${otherUid}`] = myPairEmoji;
+        await updateDoc(myRef, myUpdate);
+        
+        // ===== 2) KARŞI TARAFIN DOKÜMANI: onun bana bugün mesaj aldığını işaretle =====
+        const otherSnap = await getDoc(otherRef);
+        const otherData = otherSnap.exists() ? otherSnap.data() : {};
+        const otherStreaks = otherData.friendStreaks || {};
+        const otherPair = Object.assign({ streak: 0, longest: 0, lastCompletedDate: null, myMsgDate: null, theirMsgDate: null }, otherStreaks[myUid] || {});
+        otherPair.theirMsgDate = today;
+        tryBumpStreak(otherPair, today);
+        
+        const otherEmojiStats = otherData.emojiStats || {};
+        const otherPairEmoji = Object.assign({ sent: 0, received: 0 }, otherEmojiStats[myUid] || {});
+        if (isEmoji) otherPairEmoji.received = (otherPairEmoji.received || 0) + 1;
+        
+        const otherUpdate = { [`friendStreaks.${myUid}`]: otherPair };
+        if (isEmoji) otherUpdate[`emojiStats.${myUid}`] = otherPairEmoji;
+        await updateDoc(otherRef, otherUpdate);
+    } catch (e) {
+        console.log('bumpFriendshipOnSend hata:', e.message);
+    }
+    return { streakBumped, newStreak };
+}
+
+// ===== 🔔 GÜNLÜK HATIRLATMA BİLDİRİMLERİ: AÇ/KAPA =====
+window.toggleFriendReminders = async function(btnEl) {
+    const isOn = localStorage.getItem('friendReminders') === 'on';
+    if (isOn) {
+        localStorage.setItem('friendReminders', 'off');
+        if (btnEl) {
+            btnEl.innerHTML = '<i class="fas fa-bell"></i> Serilerini Kaybetme, Hatırlatmaları Aç';
+            btnEl.style.background = 'rgba(245,158,11,0.12)';
+            btnEl.style.color = '#f59e0b';
+            btnEl.style.borderColor = 'rgba(245,158,11,0.3)';
+        }
+        showTinyWarning('Günlük hatırlatmalar kapatıldı.', 'fa-bell-slash');
+        return;
+    }
+    // Tarayıcı bildirim izni destekleniyorsa iste; desteklenmese/reddedilse bile
+    // uygulama içi hatırlatma (toast) her durumda çalışmaya devam eder.
+    try {
+        if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            await Notification.requestPermission();
+        }
+    } catch (e) { /* bildirim API'si desteklenmiyor olabilir, önemli değil */ }
+    localStorage.setItem('friendReminders', 'on');
+    if (btnEl) {
+        btnEl.innerHTML = '<i class="fas fa-bell"></i> Günlük Hatırlatmalar Açık ✓';
+        btnEl.style.background = 'rgba(16,185,129,0.15)';
+        btnEl.style.color = '#10b981';
+        btnEl.style.borderColor = 'rgba(16,185,129,0.3)';
+    }
+    showTinyWarning('Harika! Serilerin risk altındayken sana haber vereceğiz. 🔔', 'fa-bell');
+};
+
+// ===== 🔥 SERİ RİSKİ KONTROLÜ: Girişte bir kez çalışır =====
+// Aktif serisi olup bugün henüz mesaj atmadığı arkadaşları bulur ve nazikçe hatırlatır.
+async function checkFriendStreakReminders(data) {
+    try {
+        if (localStorage.getItem('friendReminders') !== 'on') return;
+        const myStreaks = data.friendStreaks || {};
+        const today = bugununTarihi();
+        const dun = dununTarihi();
+        const riskliArkadaslar = [];
+        
+        for (const otherUid in myStreaks) {
+            const pair = myStreaks[otherUid];
+            if (!pair || !pair.streak) continue;
+            const seriHalaCanli = pair.lastCompletedDate === today || pair.lastCompletedDate === dun;
+            const bugunMesajAtilmadi = pair.myMsgDate !== today;
+            if (seriHalaCanli && bugunMesajAtilmadi) {
+                riskliArkadaslar.push({ uid: otherUid, streak: pair.streak });
+            }
+        }
+        
+        if (riskliArkadaslar.length === 0) return;
+        
+        // İsimleri al (en fazla 3 tanesini göster, mesaj kısa kalsın)
+        const gosterilecek = riskliArkadaslar.sort((a, b) => b.streak - a.streak).slice(0, 3);
+        const isimSnaps = await Promise.all(gosterilecek.map(f => getDoc(doc(db, 'users', f.uid))));
+        const isimler = isimSnaps.map((s, i) => s.exists() ? (s.data().name || s.data().email?.split('@')[0] || 'Arkadaşın') + ` (🔥${gosterilecek[i].streak})` : null).filter(Boolean);
+        
+        if (isimler.length === 0) return;
+        
+        const mesaj = riskliArkadaslar.length === 1
+            ? `${isimler[0]} ile serini bugün de devam ettirmeyi unutma!`
+            : `${isimler.join(', ')} ile serilerini bugün de devam ettirmeyi unutma!`;
+        
+        setTimeout(() => showTinyWarning(mesaj, 'fa-fire'), 1500);
+        
+        try {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification('🔥 Arkadaşlık Serin Risk Altında!', { body: mesaj });
+            }
+        } catch (e) { /* önemli değil */ }
+    } catch (e) {
+        console.log('checkFriendStreakReminders hata:', e.message);
+    }
+}
+
 // Günlük konuşmalara karşılık gelenler + maneviyata uygun olanlar karışık
 const EMOJI_REPLIES = [
     '👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🙌',
@@ -7650,6 +7810,7 @@ window.openSendMessageModal = function(targetUid, targetName) {
 window.sendCannedMessage = async function(targetUid, targetName, text) {
     if (!currentUser) return;
     try {
+        const myRef = doc(db, 'users', currentUser.uid);
         const targetRef = doc(db, 'users', targetUid);
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
@@ -7657,7 +7818,13 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
         const newMsg = { fromUid: currentUser.uid, fromName: myName, text: text, sentAt: Date.now(), read: false };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
-        showTinyWarning(`${targetName}'e mesajın gönderildi! 💌`, 'fa-paper-plane');
+        
+        const { streakBumped, newStreak } = await bumpFriendshipOnSend(currentUser.uid, myRef, targetUid, targetRef, false);
+        if (streakBumped) {
+            showTinyWarning(`${targetName} ile arkadaşlık serin 🔥 ${newStreak} güne çıktı!`, 'fa-fire');
+        } else {
+            showTinyWarning(`${targetName}'e mesajın gönderildi! 💌`, 'fa-paper-plane');
+        }
     } catch (e) {
         console.log('sendCannedMessage hata:', e.message);
     }
@@ -7667,6 +7834,7 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
 window.sendEmojiReply = async function(targetUid, targetName, emoji) {
     if (!currentUser) return;
     try {
+        const myRef = doc(db, 'users', currentUser.uid);
         const targetRef = doc(db, 'users', targetUid);
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
@@ -7674,7 +7842,13 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji) {
         const newMsg = { fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: Date.now(), read: false };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
-        showTinyWarning(`${targetName}'e ${emoji} ile yanıt verdin!`, 'fa-reply');
+        
+        const { streakBumped, newStreak } = await bumpFriendshipOnSend(currentUser.uid, myRef, targetUid, targetRef, true);
+        if (streakBumped) {
+            showTinyWarning(`${targetName} ile arkadaşlık serin 🔥 ${newStreak} güne çıktı!`, 'fa-fire');
+        } else {
+            showTinyWarning(`${targetName}'e ${emoji} ile yanıt verdin!`, 'fa-reply');
+        }
     } catch (e) {
         console.log('sendEmojiReply hata:', e.message);
     }
@@ -7870,18 +8044,42 @@ window.openFriendsListModal = async function() {
         const friendSnaps = await Promise.all(followingIds.map(uid => getDoc(doc(db, 'users', uid))));
         closeLoadingAlert();
         
+        const myStreaks = myData.friendStreaks || {};
+        const myEmojiStats = myData.emojiStats || {};
+        const today = bugununTarihi();
+        
         const friends = friendSnaps
             .filter(s => s.exists())
-            .map(s => ({ id: s.id, name: (s.data().name || s.data().email?.split('@')[0] || 'İsimsiz') }));
+            .map(s => {
+                const pair = myStreaks[s.id];
+                const streak = gorunurStreak(pair);
+                const emojiPair = myEmojiStats[s.id] || { sent: 0, received: 0 };
+                const totalReactions = (emojiPair.sent || 0) + (emojiPair.received || 0);
+                const messagedToday = pair && pair.myMsgDate === today;
+                return {
+                    id: s.id,
+                    name: (s.data().name || s.data().email?.split('@')[0] || 'İsimsiz'),
+                    streak, totalReactions, messagedToday
+                };
+            })
+            .sort((a, b) => b.streak - a.streak); // en yüksek serisi olan arkadaş üstte
+        
+        const remindersOn = localStorage.getItem('friendReminders') === 'on';
         
         const friendsHTML = friends.length === 0
             ? '<div class="tswal-dim" style="text-align:center; padding:16px; font-size:13px;">Takip ettiğin kimse bulunamadı.</div>'
             : friends.map(f => `
                 <div class="tswal-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; margin-bottom:6px;">
-                    <span style="font-size:13px; cursor:pointer;" data-open-profile="${f.id}">
-                        <i class="fas fa-user-friends" style="color:#10b981;"></i> ${f.name}
-                    </span>
-                    <div style="display:flex; gap:6px;">
+                    <div style="min-width:0;">
+                        <span style="font-size:13px; cursor:pointer;" data-open-profile="${f.id}">
+                            <i class="fas fa-user-friends" style="color:#10b981;"></i> ${f.name}
+                        </span>
+                        <div style="font-size:11px; margin-top:3px; display:flex; gap:8px; flex-wrap:wrap;">
+                            ${f.streak > 0 ? `<span style="color:#f59e0b; font-weight:700;" title="Arkadaşlık serisi">🔥 ${f.streak} gün${f.messagedToday ? '' : ' <span style=\'opacity:0.6; font-weight:400;\'>(bugün risk altında!)</span>'}</span>` : ''}
+                            ${f.totalReactions > 0 ? `<span style="opacity:0.6;" title="Toplam emoji reaksiyonu">😊 ${f.totalReactions}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-shrink:0;">
                         <button data-msg="${f.id}" data-name="${f.name.replace(/"/g, '&quot;')}" title="Mesaj Gönder" style="background:#3b82f6; color:white; border:none; padding:6px 9px; border-radius:8px; cursor:pointer; font-size:11px;"><i class="fas fa-paper-plane"></i></button>
                         <button data-unfollow="${f.id}" data-name="${f.name.replace(/"/g, '&quot;')}" title="Takibi Bırak" style="background:rgba(239,68,68,0.15); color:#ef4444; border:none; padding:6px 9px; border-radius:8px; cursor:pointer; font-size:11px;"><i class="fas fa-user-minus"></i></button>
                     </div>
@@ -7890,13 +8088,22 @@ window.openFriendsListModal = async function() {
         
         Swal.fire({
             title: `👥 Arkadaşlarım (${friends.length})`,
-            html: `<div style="text-align:left; max-height:360px; overflow-y:auto;">${friendsHTML}</div>`,
+            html: `
+                <div style="text-align:left;">
+                    <button id="friendRemindersBtn" style="width:100%; margin-bottom:10px; background:${remindersOn ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.12)'}; color:${remindersOn ? '#10b981' : '#f59e0b'}; border:1px solid ${remindersOn ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}; padding:8px; border-radius:10px; font-weight:600; cursor:pointer; font-size:12px;">
+                        <i class="fas fa-bell"></i> ${remindersOn ? 'Günlük Hatırlatmalar Açık ✓' : 'Serilerini Kaybetme, Hatırlatmaları Aç'}
+                    </button>
+                    <div style="max-height:340px; overflow-y:auto;">${friendsHTML}</div>
+                </div>
+            `,
             showConfirmButton: true,
             confirmButtonText: 'Kapat',
             confirmButtonColor: '#374151',
             width: '420px',
             customClass: { popup: 'compact-swal themed-swal' },
             didOpen: () => {
+                const remBtn = document.getElementById('friendRemindersBtn');
+                if (remBtn) remBtn.onclick = () => window.toggleFriendReminders(remBtn);
                 document.querySelectorAll('[data-msg]').forEach(btn => {
                     btn.onclick = () => {
                         const uid = btn.dataset.msg, name = btn.dataset.name;
