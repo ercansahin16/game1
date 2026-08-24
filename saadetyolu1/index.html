@@ -3260,6 +3260,25 @@ body.light-theme #profileScreen .info-row button:hover {
     <i class="fas fa-sync-alt" id="refreshIcon" style="font-size: 12px;"></i>
     <span id="refreshText">Yenile</span>
 </button>
+                <!-- ===== YENİ: BİLDİRİMLER (Takip İstekleri / Mesajlar) BUTONU ===== -->
+                <button id="notifBellBtn" onclick="window.openFollowRequestsModal()" style="
+    position: relative;
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #f59e0b;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+">
+    <i class="fas fa-bell"></i>
+    <span id="followRequestBadge" style="display:none; position:absolute; top:-4px; right:-4px; background:#ef4444; color:white; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
+</button>
             </div>
             <div class="word-count" id="rankingCount">0 oyuncu</div>
         </div>
@@ -3599,7 +3618,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -3835,16 +3854,20 @@ async function getGlobalLessonSequence(forceRefresh) {
 
     const booksSnap = await getDocs(collection(db, 'books'));
     let allBooks = booksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allBooks.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'tr'));
+    allBooks.sort((a, b) => {
+        const orderDiff = (a.order || 0) - (b.order || 0);
+        if (orderDiff !== 0) return orderDiff;
+        return (a.name || '').localeCompare(b.name || '', 'tr');
+    });
 
     const sequence = [];
     for (const book of allBooks) {
         const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', book.id)));
         let bookLessons = lessonsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         bookLessons.sort((a, b) => {
-            const numA = parseInt((a.name || '').replace(/\D/g, '')) || 0;
-            const numB = parseInt((b.name || '').replace(/\D/g, '')) || 0;
-            return numA - numB;
+            const orderDiff = (a.order || 0) - (b.order || 0);
+            if (orderDiff !== 0) return orderDiff;
+            return (a.name || '').localeCompare(b.name || '', 'tr');
         });
         bookLessons.forEach(lesson => {
             sequence.push({ id: lesson.id, name: lesson.name, bookId: book.id, bookName: book.name });
@@ -6101,6 +6124,11 @@ document.getElementById('doLoginBtn').onclick = async () => {
         await loadLessonsList();
         await loadUserExamHistory();
         
+        // ===== YENİ: Bekleyen takip isteği rozetini güncelle =====
+        if (typeof window.updateFollowRequestBadge === 'function') {
+            window.updateFollowRequestBadge();
+        }
+        
         // ===== SEVİYEYİ YÜKLE (GÜÇLENDİRİLMİŞ) =====
         try {
             const userRef = doc(db, 'users', user.uid);
@@ -6955,6 +6983,11 @@ window.goRanking = () => {
     // Sıralamayı yükle
     loadRanking();
     
+    // ===== YENİ: Bekleyen takip isteği rozetini güncelle =====
+    if (typeof window.updateFollowRequestBadge === 'function') {
+        window.updateFollowRequestBadge();
+    }
+    
     closeMenu();
 };
 
@@ -7060,7 +7093,7 @@ window.loadRanking = async function() {
                     const isCurrentUser = user.id === currentUser?.uid;
                     
                     html += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: ${isCurrentUser ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; border: ${isCurrentUser ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.03)'}; flex-shrink: 0;">
+                        <div onclick="window.openPlayerProfile('${user.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: ${isCurrentUser ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}; border-radius: 8px; border: ${isCurrentUser ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.03)'}; flex-shrink: 0; transition: background 0.2s;" onmouseover="this.style.background='rgba(245,158,11,0.08)'" onmouseout="this.style.background='${isCurrentUser ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}'">
                             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0;">
                                 <span style="font-weight: bold; width: 28px; text-align: center;">${medal}</span>
                                 <span style="font-weight: 600; font-size: 14px;">${index + 1}.</span>
@@ -7185,11 +7218,405 @@ window.loadRanking = async function() {
     }
 };
 
+// ============================================================
+// ===== YENİ: ARKADAŞLIK / TAKİP SİSTEMİ =====
+// Bir oyuncuya tıklayınca profili açılır. Takip etmeyen biri sadece
+// kısıtlı bilgi görür; takip edince tam istatistikler + mesaj gönderme
+// açılır. Takip isteği gönderilebilir, karşı taraf kabul/red edebilir.
+// ============================================================
 
+const CANNED_MESSAGES = [
+    { emoji: '👏', text: 'Çok başarılısın, harikasın!' },
+    { emoji: '🌟', text: 'Maşallah, gerçekten çok iyi gidiyorsun!' },
+    { emoji: '🔥', text: 'Bu tempo ile zirveye çıkacaksın!' },
+    { emoji: '💪', text: 'Bence biraz daha gayret edersen çok daha iyi olur.' },
+    { emoji: '🎯', text: 'Az kaldı, pes etme, devam et!' },
+    { emoji: '😴', text: 'Uykudan uyan, sıralamada seni göremiyorum 😄' },
+    { emoji: '🚀', text: 'İnanılmaz bir hızla ilerliyorsun, tebrikler!' },
+    { emoji: '🙌', text: 'Seninle yarışmak zor olacak, çok iyisin!' },
+    { emoji: '📚', text: 'Kelime hazinen gerçekten etkileyici!' },
+    { emoji: '🐢', text: 'Biraz yavaş gidiyorsun ama olsun, önemli olan devam etmek!' }
+];
 
+async function getMyDisplayName() {
+    try {
+        const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (mySnap.exists() && mySnap.data().name) return mySnap.data().name;
+    } catch (e) { /* yoksay */ }
+    return currentUser.displayName || currentUser.email?.split('@')[0] || 'Bir kullanıcı';
+}
+
+function buildStrengthsHTML(words, examCount, karmaAccuracy, level) {
+    const items = [];
+    if (words >= 50) items.push('📚 Geniş bir kelime hazinesi var');
+    else if (words > 0) items.push('📚 Kelime öğrenmeye devam ediyor');
+    if (examCount >= 5) items.push('📝 Düzenli olarak sınavlara giriyor');
+    if (karmaAccuracy >= 70) items.push('🎯 Yarışmada yüksek başarı oranına sahip');
+    if (level >= 5) items.push('🏔️ İyi bir seviyeye ulaşmış');
+    if (items.length === 0) items.push('🌱 Öğrenme yolculuğuna yeni başlamış');
+    return items.map(i => `<div style="padding:2px 0;">${i}</div>`).join('');
+}
+
+function buildWeaknessesHTML(sandikCount, karmaAccuracy, examCount) {
+    const items = [];
+    if (sandikCount >= 10) items.push('📦 Sandıkta çok fazla kelime birikmiş, tekrar etmesi gerek');
+    if (karmaAccuracy > 0 && karmaAccuracy < 50) items.push('🎯 Yarışmadaki başarı oranı düşük, pratik yapabilir');
+    if (examCount === 0) items.push('📝 Henüz hiç sınava girmemiş');
+    if (items.length === 0) items.push('👍 Şu an için belirgin bir eksik görünmüyor!');
+    return items.map(i => `<div style="padding:2px 0;">${i}</div>`).join('');
+}
+
+// ===== OYUNCU PROFİLİ (Liderlik Tablosunda bir oyuncuya tıklayınca) =====
+window.openPlayerProfile = async function(targetUid) {
+    if (!currentUser || !targetUid) return;
+    try {
+        showLoadingAlert('👤 Profil yükleniyor...');
+        const targetSnap = await getDoc(doc(db, 'users', targetUid));
+        if (!targetSnap.exists()) { closeLoadingAlert(); return; }
+        const targetData = targetSnap.data();
+        const targetName = (targetData.name || targetData.email?.split('@')[0] || 'İsimsiz').replace(/'/g, "\\'");
+        
+        const isSelf = targetUid === currentUser.uid;
+        const mySnap = isSelf ? null : await getDoc(doc(db, 'users', currentUser.uid));
+        const myData = mySnap && mySnap.exists() ? mySnap.data() : null;
+        
+        const isFollowing = isSelf ? false : (myData?.following || []).includes(targetUid);
+        const requestSent = isSelf ? false : (myData?.outgoingFollowRequests || []).includes(targetUid);
+        
+        closeLoadingAlert();
+        
+        // ===== İSTATİSTİKLERİ HESAPLA (loadRanking ile AYNI formül) =====
+        const quizScore = targetData.quizScore || 0;
+        const averageScore = targetData.averageScore || 0;
+        const mevcutSeviye = targetData.mevcutSeviye || 1;
+        const seviyePuani = (mevcutSeviye - 1) * 2;
+        const totalWordsViewed = targetData.totalWordsViewed || 0;
+        const kelimePuani = totalWordsViewed * 0.01;
+        const sandikCount = targetData.quizSandik?.length || 0;
+        const sandikCezasi = sandikCount * 1;
+        const totalScore = Math.max(0, Math.round((quizScore + averageScore + seviyePuani + kelimePuani - sandikCezasi) * 100) / 100);
+        const examsCompleted = targetData.examsCompleted || [];
+        const karmaStats = targetData.karmaStats || { total: 0, correct: 0, wrong: 0 };
+        const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
+        
+        const canSeeFullDetails = isSelf || isFollowing;
+        
+        let actionButtonsHTML = '';
+        if (!isSelf) {
+            if (isFollowing) {
+                actionButtonsHTML = `
+                    <div style="margin-top:14px;">
+                        <button onclick="window.openSendMessageModal('${targetUid}', '${targetName}')" style="width:100%; background:#3b82f6; color:white; border:none; padding:10px; border-radius:10px; font-weight:600; cursor:pointer; font-size:13px;">
+                            <i class="fas fa-paper-plane"></i> Mesaj Gönder
+                        </button>
+                        <div style="text-align:center; margin-top:6px; font-size:11px; color:#10b981;"><i class="fas fa-user-check"></i> Bu oyuncuyu takip ediyorsun</div>
+                    </div>
+                `;
+            } else if (requestSent) {
+                actionButtonsHTML = `
+                    <div style="margin-top:14px; text-align:center; background:rgba(245,158,11,0.1); color:#f59e0b; padding:10px; border-radius:10px; font-size:13px; font-weight:600;">
+                        <i class="fas fa-clock"></i> Takip İsteği Gönderildi
+                    </div>
+                `;
+            } else {
+                actionButtonsHTML = `
+                    <div style="margin-top:14px;">
+                        <button onclick="window.sendFollowRequest('${targetUid}', '${targetName}')" style="width:100%; background:#f59e0b; color:#121212; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px;">
+                            <i class="fas fa-user-plus"></i> Takip Et
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        let detailsHTML;
+        if (canSeeFullDetails) {
+            detailsHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top: 14px;">
+                    <div style="background: rgba(16,185,129,0.08); padding:10px; border-radius:10px; text-align:center;">
+                        <div style="font-size:18px; font-weight:700; color:#10b981;">${totalWordsViewed}</div>
+                        <div style="font-size:10px; opacity:0.7;">📖 Öğrenilen Kelime</div>
+                    </div>
+                    <div style="background: rgba(59,130,246,0.08); padding:10px; border-radius:10px; text-align:center;">
+                        <div style="font-size:18px; font-weight:700; color:#3b82f6;">${examsCompleted.length}</div>
+                        <div style="font-size:10px; opacity:0.7;">📝 Çözülen Sınav</div>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.08); padding:10px; border-radius:10px; text-align:center;">
+                        <div style="font-size:18px; font-weight:700; color:#f59e0b;">${karmaAccuracy}%</div>
+                        <div style="font-size:10px; opacity:0.7;">🎯 Yarışma Başarısı</div>
+                    </div>
+                    <div style="background: rgba(239,68,68,0.08); padding:10px; border-radius:10px; text-align:center;">
+                        <div style="font-size:18px; font-weight:700; color:#ef4444;">${sandikCount}</div>
+                        <div style="font-size:10px; opacity:0.7;">📦 Sandıktaki Kelime</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:12px; background: rgba(255,255,255,0.03); border-radius:10px; padding:12px;">
+                    <div style="font-size:12px; font-weight:600; color:#10b981; margin-bottom:6px;">✅ Güçlü Yönler</div>
+                    <div style="font-size:12px; opacity:0.85;">${buildStrengthsHTML(totalWordsViewed, examsCompleted.length, karmaAccuracy, mevcutSeviye)}</div>
+                </div>
+                <div style="margin-top:8px; background: rgba(255,255,255,0.03); border-radius:10px; padding:12px;">
+                    <div style="font-size:12px; font-weight:600; color:#ef4444; margin-bottom:6px;">📌 Gelişime Açık Yönler</div>
+                    <div style="font-size:12px; opacity:0.85;">${buildWeaknessesHTML(sandikCount, karmaAccuracy, examsCompleted.length)}</div>
+                </div>
+            `;
+        } else {
+            detailsHTML = `
+                <div style="margin-top:14px; background: rgba(255,255,255,0.03); border-radius:10px; padding:18px; text-align:center;">
+                    <div style="font-size:26px; margin-bottom:6px;">🔒</div>
+                    <div style="font-size:13px; opacity:0.8;">Detaylı istatistikleri ve başarıları görmek için bu oyuncuyu takip etmelisin.</div>
+                </div>
+            `;
+        }
+        
+        Swal.fire({
+            title: `👤 ${targetName}`,
+            html: `
+                <div style="text-align:left;">
+                    <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 4px;">
+                        <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">🏆 ${totalScore.toFixed(2)} P</span>
+                        <span style="background:rgba(255,255,255,0.06); padding:4px 12px; border-radius:20px; font-size:12px;">Seviye ${mevcutSeviye}</span>
+                    </div>
+                    ${detailsHTML}
+                    ${actionButtonsHTML}
+                </div>
+            `,
+            showConfirmButton: true,
+            confirmButtonText: 'Kapat',
+            confirmButtonColor: '#374151',
+            width: '420px',
+            customClass: { popup: 'compact-swal' }
+        });
+        
+    } catch (e) {
+        closeLoadingAlert();
+        console.log('openPlayerProfile hata:', e.message);
+    }
+};
+
+// ===== TAKİP İSTEĞİ GÖNDER =====
+window.sendFollowRequest = async function(targetUid, targetName) {
+    if (!currentUser || targetUid === currentUser.uid) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        const targetRef = doc(db, 'users', targetUid);
+        const myName = await getMyDisplayName();
+        
+        await updateDoc(targetRef, {
+            pendingFollowRequests: arrayUnion({ fromUid: currentUser.uid, fromName: myName })
+        });
+        await updateDoc(myRef, {
+            outgoingFollowRequests: arrayUnion(targetUid)
+        });
+        
+        Swal.close();
+        showTinyWarning(`${targetName} kullanıcısına takip isteği gönderildi! 📨`, 'fa-paper-plane');
+    } catch (e) {
+        console.log('sendFollowRequest hata:', e.message);
+    }
+};
+
+// ===== TAKİP İSTEĞİNİ KABUL ET =====
+window.acceptFollowRequest = async function(fromUid, fromName) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(myRef, {
+            followers: arrayUnion(fromUid),
+            pendingFollowRequests: arrayRemove({ fromUid, fromName })
+        });
+        try {
+            await updateDoc(doc(db, 'users', fromUid), {
+                following: arrayUnion(currentUser.uid),
+                outgoingFollowRequests: arrayRemove(currentUser.uid)
+            });
+        } catch (e) { /* karşı kullanıcı silinmiş olabilir, önemli değil */ }
+        
+        showTinyWarning(`${fromName} artık seni takip ediyor! 🤝`, 'fa-user-check');
+        window.updateFollowRequestBadge();
+    } catch (e) {
+        console.log('acceptFollowRequest hata:', e.message);
+    }
+};
+
+// ===== TAKİP İSTEĞİNİ REDDET =====
+window.declineFollowRequest = async function(fromUid, fromName) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(myRef, {
+            pendingFollowRequests: arrayRemove({ fromUid, fromName })
+        });
+        try {
+            await updateDoc(doc(db, 'users', fromUid), {
+                outgoingFollowRequests: arrayRemove(currentUser.uid)
+            });
+        } catch (e) { /* önemli değil */ }
+        window.updateFollowRequestBadge();
+    } catch (e) {
+        console.log('declineFollowRequest hata:', e.message);
+    }
+};
+
+// ===== SABİT MESAJ SEÇ VE GÖNDER (modal) =====
+window.openSendMessageModal = function(targetUid, targetName) {
+    const optionsHTML = CANNED_MESSAGES.map((m, i) => `
+        <button class="canned-msg-btn" data-idx="${i}" style="display:block; width:100%; text-align:left; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#e5e7eb; padding:10px 12px; border-radius:10px; margin-bottom:6px; cursor:pointer; font-size:13px;">
+            ${m.emoji} ${m.text}
+        </button>
+    `).join('');
     
+    Swal.fire({
+        title: `💬 ${targetName}'e Mesaj Gönder`,
+        html: `<div style="max-height:320px; overflow-y:auto; text-align:left;">${optionsHTML}</div>`,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: 'Vazgeç',
+        cancelButtonColor: '#374151',
+        width: '420px',
+        customClass: { popup: 'compact-swal' },
+        didOpen: () => {
+            document.querySelectorAll('.canned-msg-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const idx = parseInt(btn.dataset.idx);
+                    const msg = CANNED_MESSAGES[idx];
+                    Swal.close();
+                    window.sendCannedMessage(targetUid, targetName, `${msg.emoji} ${msg.text}`);
+                };
+            });
+        }
+    });
+};
 
-    
+// ===== SABİT MESAJI GÖNDER (Firestore'a yaz) =====
+window.sendCannedMessage = async function(targetUid, targetName, text) {
+    if (!currentUser) return;
+    try {
+        const targetRef = doc(db, 'users', targetUid);
+        const targetSnap = await getDoc(targetRef);
+        const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
+        const myName = await getMyDisplayName();
+        const newMsg = { fromUid: currentUser.uid, fromName: myName, text: text, sentAt: Date.now() };
+        const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
+        await updateDoc(targetRef, { inboxMessages: updated });
+        showTinyWarning(`${targetName}'e mesajın gönderildi! 💌`, 'fa-paper-plane');
+    } catch (e) {
+        console.log('sendCannedMessage hata:', e.message);
+    }
+};
+
+// ===== BİLDİRİMLER MODALI (Takip İstekleri + Mesajlar) =====
+window.openFollowRequestsModal = async function() {
+    if (!currentUser) return;
+    try {
+        showLoadingAlert('🔔 Bildirimler yükleniyor...');
+        const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
+        const myData = mySnap.exists() ? mySnap.data() : {};
+        const requests = myData.pendingFollowRequests || [];
+        const messages = (myData.inboxMessages || []).slice().reverse();
+        closeLoadingAlert();
+        
+        const requestsHTML = requests.length === 0
+            ? '<div style="text-align:center; padding:16px; opacity:0.6; font-size:13px;">Bekleyen takip isteğin yok.</div>'
+            : requests.map((r, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,0.04); padding:10px 12px; border-radius:10px; margin-bottom:6px;">
+                    <span style="font-size:13px;"><i class="fas fa-user"></i> ${r.fromName}</span>
+                    <div style="display:flex; gap:6px;">
+                        <button data-accept-idx="${i}" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px;"><i class="fas fa-check"></i></button>
+                        <button data-decline-idx="${i}" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        
+        const messagesHTML = messages.length === 0
+            ? '<div style="text-align:center; padding:16px; opacity:0.6; font-size:13px;">Henüz bir mesajın yok.</div>'
+            : messages.slice(0, 20).map(m => `
+                <div style="background:rgba(255,255,255,0.04); padding:10px 12px; border-radius:10px; margin-bottom:6px;">
+                    <div style="font-size:11px; opacity:0.6; margin-bottom:2px;"><i class="fas fa-user"></i> ${m.fromName}</div>
+                    <div style="font-size:13px;">${m.text}</div>
+                </div>
+            `).join('');
+        
+        Swal.fire({
+            title: '🔔 Bildirimler',
+            html: `
+                <div style="text-align:left;">
+                    <div style="display:flex; gap:6px; margin-bottom:12px;">
+                        <button id="notifTabRequests" style="flex:1; padding:8px; border:none; border-radius:8px; background:#f59e0b; color:#121212; font-weight:600; cursor:pointer; font-size:12px;">👥 İstekler (${requests.length})</button>
+                        <button id="notifTabMessages" style="flex:1; padding:8px; border:none; border-radius:8px; background:rgba(255,255,255,0.06); color:#e5e7eb; font-weight:600; cursor:pointer; font-size:12px;">💬 Mesajlar (${messages.length})</button>
+                    </div>
+                    <div id="notifPanelRequests" style="max-height:320px; overflow-y:auto;">${requestsHTML}</div>
+                    <div id="notifPanelMessages" style="max-height:320px; overflow-y:auto; display:none;">${messagesHTML}</div>
+                </div>
+            `,
+            showConfirmButton: true,
+            confirmButtonText: 'Kapat',
+            confirmButtonColor: '#374151',
+            width: '440px',
+            customClass: { popup: 'compact-swal' },
+            didOpen: () => {
+                const tabReq = document.getElementById('notifTabRequests');
+                const tabMsg = document.getElementById('notifTabMessages');
+                const panelReq = document.getElementById('notifPanelRequests');
+                const panelMsg = document.getElementById('notifPanelMessages');
+                tabReq.onclick = () => {
+                    tabReq.style.background = '#f59e0b'; tabReq.style.color = '#121212';
+                    tabMsg.style.background = 'rgba(255,255,255,0.06)'; tabMsg.style.color = '#e5e7eb';
+                    panelReq.style.display = 'block'; panelMsg.style.display = 'none';
+                };
+                tabMsg.onclick = () => {
+                    tabMsg.style.background = '#f59e0b'; tabMsg.style.color = '#121212';
+                    tabReq.style.background = 'rgba(255,255,255,0.06)'; tabReq.style.color = '#e5e7eb';
+                    panelMsg.style.display = 'block'; panelReq.style.display = 'none';
+                };
+                document.querySelectorAll('[data-accept-idx]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = parseInt(btn.dataset.acceptIdx);
+                        const r = requests[idx];
+                        Swal.close();
+                        window.acceptFollowRequest(r.fromUid, r.fromName);
+                    };
+                });
+                document.querySelectorAll('[data-decline-idx]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = parseInt(btn.dataset.declineIdx);
+                        const r = requests[idx];
+                        Swal.close();
+                        window.declineFollowRequest(r.fromUid, r.fromName);
+                    };
+                });
+            }
+        }).then(() => {
+            window.updateFollowRequestBadge();
+        });
+    } catch (e) {
+        closeLoadingAlert();
+        console.log('openFollowRequestsModal hata:', e.message);
+    }
+};
+
+// ===== HEADER'DAKİ BİLDİRİM ROZETİNİ GÜNCELLE =====
+window.updateFollowRequestBadge = async function() {
+    if (!currentUser) return;
+    try {
+        const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
+        const myData = mySnap.exists() ? mySnap.data() : {};
+        const count = (myData.pendingFollowRequests || []).length;
+        const badge = document.getElementById('followRequestBadge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.log('updateFollowRequestBadge hata:', e.message);
+    }
+};
+
+
 
     document.getElementById('goRanking').onclick = () => {
     goRanking();
@@ -9744,7 +10171,7 @@ if (examBookSelect) {
                     if (!examUnlocked) {
                         // ✅ DÜZELTME: kilitli derslerde sınav/soru sayısı gösterilmiyor,
                         // metin kısa tutuluyor. 🔒 sağda.
-                        label = `${ders.name} (Önce kelimeleri %${WORD_LEARN_UNLOCK_PERCENT} öğren) 🔒`;
+                        label = `${ders.name} 🔒`;
                         option.disabled = true;
                         option.dataset.locked = 'true';
                     } else {
