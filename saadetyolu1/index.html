@@ -7335,6 +7335,7 @@ window.openPlayerProfile = async function(targetUid) {
         const myData = mySnap && mySnap.exists() ? mySnap.data() : null;
         
         const isFollowing = isSelf ? false : (myData?.following || []).includes(targetUid);
+        const requestSent = isSelf ? false : (myData?.outgoingFollowRequests || []).includes(targetUid);
         
         closeLoadingAlert();
         
@@ -7368,10 +7369,16 @@ window.openPlayerProfile = async function(targetUid) {
                         <div style="text-align:center; font-size:11px; color:#10b981;"><i class="fas fa-user-check"></i> Bu oyuncuyu takip ediyorsun</div>
                     </div>
                 `;
+            } else if (requestSent) {
+                actionButtonsHTML = `
+                    <div style="margin-top:14px; text-align:center; background:rgba(245,158,11,0.1); color:#f59e0b; padding:10px; border-radius:10px; font-size:13px; font-weight:600;">
+                        <i class="fas fa-clock"></i> Takip İsteği Gönderildi
+                    </div>
+                `;
             } else {
                 actionButtonsHTML = `
                     <div style="margin-top:14px;">
-                        <button onclick="window.followUser('${targetUid}', '${targetName}')" style="width:100%; background:#f59e0b; color:#121212; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px;">
+                        <button onclick="window.sendFollowRequest('${targetUid}', '${targetName}')" style="width:100%; background:#f59e0b; color:#121212; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px;">
                             <i class="fas fa-user-plus"></i> Takip Et
                         </button>
                     </div>
@@ -7444,31 +7451,72 @@ window.openPlayerProfile = async function(targetUid) {
     }
 };
 
-// ===== TAKİP ET (tek taraflı - anında, istek/onay gerekmez) =====
-window.followUser = async function(targetUid, targetName) {
+// ===== TAKİP İSTEĞİ GÖNDER (karşı taraf onaylamalı; geri takip zorunlu değil) =====
+window.sendFollowRequest = async function(targetUid, targetName) {
     if (!currentUser || targetUid === currentUser.uid) return;
     try {
         const myRef = doc(db, 'users', currentUser.uid);
         const targetRef = doc(db, 'users', targetUid);
+        const myName = await getMyDisplayName();
         
-        await updateDoc(myRef, {
-            following: arrayUnion(targetUid)
+        await updateDoc(targetRef, {
+            pendingFollowRequests: arrayUnion({ fromUid: currentUser.uid, fromName: myName })
         });
-        try {
-            await updateDoc(targetRef, {
-                followers: arrayUnion(currentUser.uid)
-            });
-        } catch (e) { /* karşı kullanıcı silinmiş olabilir, önemli değil */ }
+        await updateDoc(myRef, {
+            outgoingFollowRequests: arrayUnion(targetUid)
+        });
         
         Swal.close();
-        showTinyWarning(`${targetName} kullanıcısını takip etmeye başladın! 🤝`, 'fa-user-check');
-        if (typeof window.loadRanking === 'function') window.loadRanking();
+        showTinyWarning(`${targetName} kullanıcısına takip isteği gönderildi! 📨`, 'fa-paper-plane');
     } catch (e) {
-        console.log('followUser hata:', e.message);
+        console.log('sendFollowRequest hata:', e.message);
     }
 };
 
-// ===== TAKİBİ BIRAK =====
+// ===== TAKİP İSTEĞİNİ KABUL ET =====
+window.acceptFollowRequest = async function(fromUid, fromName) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(myRef, {
+            followers: arrayUnion(fromUid),
+            pendingFollowRequests: arrayRemove({ fromUid, fromName })
+        });
+        try {
+            await updateDoc(doc(db, 'users', fromUid), {
+                following: arrayUnion(currentUser.uid),
+                outgoingFollowRequests: arrayRemove(currentUser.uid)
+            });
+        } catch (e) { /* karşı kullanıcı silinmiş olabilir, önemli değil */ }
+        
+        showTinyWarning(`${fromName} artık seni takip ediyor! 🤝`, 'fa-user-check');
+        window.updateNotifBadge();
+        if (typeof window.loadRanking === 'function') window.loadRanking();
+    } catch (e) {
+        console.log('acceptFollowRequest hata:', e.message);
+    }
+};
+
+// ===== TAKİP İSTEĞİNİ REDDET =====
+window.declineFollowRequest = async function(fromUid, fromName) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(myRef, {
+            pendingFollowRequests: arrayRemove({ fromUid, fromName })
+        });
+        try {
+            await updateDoc(doc(db, 'users', fromUid), {
+                outgoingFollowRequests: arrayRemove(currentUser.uid)
+            });
+        } catch (e) { /* önemli değil */ }
+        window.updateNotifBadge();
+    } catch (e) {
+        console.log('declineFollowRequest hata:', e.message);
+    }
+};
+
+// ===== TAKİBİ BIRAK (onay gerekmez, tek taraflı iptal) =====
 window.unfollowUser = async function(targetUid, targetName) {
     if (!currentUser) return;
     try {
@@ -7539,7 +7587,7 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
     }
 };
 
-// ===== BİLDİRİMLER MODALI (Mesajlar) =====
+// ===== BİLDİRİMLER MODALI (Takip İstekleri + Mesajlar) =====
 window.openNotificationsModal = async function() {
     if (!currentUser) return;
     try {
@@ -7547,9 +7595,22 @@ window.openNotificationsModal = async function() {
         const myRef = doc(db, 'users', currentUser.uid);
         const mySnap = await getDoc(myRef);
         const myData = mySnap.exists() ? mySnap.data() : {};
+        const requests = myData.pendingFollowRequests || [];
         const allMessages = myData.inboxMessages || [];
         const messages = allMessages.slice().reverse();
         closeLoadingAlert();
+        
+        const requestsHTML = requests.length === 0
+            ? '<div style="text-align:center; padding:16px; opacity:0.6; font-size:13px;">Bekleyen takip isteğin yok.</div>'
+            : requests.map((r, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,0.04); padding:10px 12px; border-radius:10px; margin-bottom:6px;">
+                    <span style="font-size:13px;"><i class="fas fa-user"></i> ${r.fromName}</span>
+                    <div style="display:flex; gap:6px;">
+                        <button data-accept-idx="${i}" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px;"><i class="fas fa-check"></i></button>
+                        <button data-decline-idx="${i}" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+            `).join('');
         
         const messagesHTML = messages.length === 0
             ? '<div style="text-align:center; padding:16px; opacity:0.6; font-size:13px;">Henüz bir mesajın yok. 📭</div>'
@@ -7561,13 +7622,56 @@ window.openNotificationsModal = async function() {
             `).join('');
         
         Swal.fire({
-            title: '🔔 Mesajlarım',
-            html: `<div style="text-align:left; max-height:360px; overflow-y:auto;">${messagesHTML}</div>`,
+            title: '🔔 Bildirimler',
+            html: `
+                <div style="text-align:left;">
+                    <div style="display:flex; gap:6px; margin-bottom:12px;">
+                        <button id="notifTabRequests" style="flex:1; padding:8px; border:none; border-radius:8px; background:#f59e0b; color:#121212; font-weight:600; cursor:pointer; font-size:12px;">👥 İstekler (${requests.length})</button>
+                        <button id="notifTabMessages" style="flex:1; padding:8px; border:none; border-radius:8px; background:rgba(255,255,255,0.06); color:#e5e7eb; font-weight:600; cursor:pointer; font-size:12px;">💬 Mesajlar (${messages.length})</button>
+                    </div>
+                    <div id="notifPanelRequests" style="max-height:320px; overflow-y:auto;">${requestsHTML}</div>
+                    <div id="notifPanelMessages" style="max-height:320px; overflow-y:auto; display:none;">${messagesHTML}</div>
+                </div>
+            `,
             showConfirmButton: true,
             confirmButtonText: 'Kapat',
             confirmButtonColor: '#374151',
             width: '440px',
-            customClass: { popup: 'compact-swal' }
+            customClass: { popup: 'compact-swal' },
+            didOpen: () => {
+                const tabReq = document.getElementById('notifTabRequests');
+                const tabMsg = document.getElementById('notifTabMessages');
+                const panelReq = document.getElementById('notifPanelRequests');
+                const panelMsg = document.getElementById('notifPanelMessages');
+                tabReq.onclick = () => {
+                    tabReq.style.background = '#f59e0b'; tabReq.style.color = '#121212';
+                    tabMsg.style.background = 'rgba(255,255,255,0.06)'; tabMsg.style.color = '#e5e7eb';
+                    panelReq.style.display = 'block'; panelMsg.style.display = 'none';
+                };
+                tabMsg.onclick = () => {
+                    tabMsg.style.background = '#f59e0b'; tabMsg.style.color = '#121212';
+                    tabReq.style.background = 'rgba(255,255,255,0.06)'; tabReq.style.color = '#e5e7eb';
+                    panelMsg.style.display = 'block'; panelReq.style.display = 'none';
+                };
+                document.querySelectorAll('[data-accept-idx]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = parseInt(btn.dataset.acceptIdx);
+                        const r = requests[idx];
+                        Swal.close();
+                        window.acceptFollowRequest(r.fromUid, r.fromName);
+                    };
+                });
+                document.querySelectorAll('[data-decline-idx]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = parseInt(btn.dataset.declineIdx);
+                        const r = requests[idx];
+                        Swal.close();
+                        window.declineFollowRequest(r.fromUid, r.fromName);
+                    };
+                });
+            }
+        }).then(() => {
+            window.updateNotifBadge();
         });
         
         // ===== görüntülenen mesajları okundu olarak işaretle =====
@@ -7584,17 +7688,19 @@ window.openNotificationsModal = async function() {
 // Eski isimle çağrılan yerler için uyumluluk
 window.openFollowRequestsModal = window.openNotificationsModal;
 
-// ===== HEADER'DAKİ BİLDİRİM ROZETİNİ GÜNCELLE (okunmamış mesaj sayısı) =====
+// ===== HEADER'DAKİ BİLDİRİM ROZETİNİ GÜNCELLE (bekleyen istek + okunmamış mesaj toplamı) =====
 window.updateNotifBadge = async function() {
     if (!currentUser) return;
     try {
         const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
         const myData = mySnap.exists() ? mySnap.data() : {};
-        const unreadCount = (myData.inboxMessages || []).filter(m => !m.read).length;
+        const reqCount = (myData.pendingFollowRequests || []).length;
+        const unreadMsgCount = (myData.inboxMessages || []).filter(m => !m.read).length;
+        const total = reqCount + unreadMsgCount;
         const badge = document.getElementById('followRequestBadge');
         if (badge) {
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            if (total > 0) {
+                badge.textContent = total > 9 ? '9+' : total;
                 badge.style.display = 'flex';
             } else {
                 badge.style.display = 'none';
