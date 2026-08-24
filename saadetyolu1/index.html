@@ -7356,6 +7356,14 @@ const CANNED_MESSAGES = [
     { emoji: '🤙', text: 'Rahat ol, bu liderlik koltuğu kimseye kolay kolay verilmez 😎🤙' }
 ];
 
+// ===== GELEN MESAJA SADECE EMOJİ İLE HIZLI YANIT LİSTESİ =====
+// Günlük konuşmalara karşılık gelenler + maneviyata uygun olanlar karışık
+const EMOJI_REPLIES = [
+    '👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🙌',
+    '🤝', '🥳', '😊', '💪', '😴', '🤔', '👌', '😅',
+    '🙏', '🤲', '📿', '🌙'
+];
+
 async function getMyDisplayName() {
     try {
         const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
@@ -7580,24 +7588,28 @@ window.declineFollowRequest = async function(fromUid, fromName) {
     }
 };
 
-// ===== TAKİBİ BIRAK (onay gerekmez, tek taraflı iptal) =====
+// ===== TAKİBİ BIRAK (tam karşılıklı iptal: her iki taraf da birbirini takipten çıkar) =====
 window.unfollowUser = async function(targetUid, targetName) {
     if (!currentUser) return;
     try {
         const myRef = doc(db, 'users', currentUser.uid);
         const targetRef = doc(db, 'users', targetUid);
         
+        // Benim tarafım: onu takipten çıkar + o beni takip ediyorsa onu da takipçilerimden çıkar
         await updateDoc(myRef, {
-            following: arrayRemove(targetUid)
+            following: arrayRemove(targetUid),
+            followers: arrayRemove(targetUid)
         });
+        // Karşı taraf: beni takipçilerinden çıkar + o beni takip ediyorsa onu da takip ettiklerinden çıkar
         try {
             await updateDoc(targetRef, {
-                followers: arrayRemove(currentUser.uid)
+                followers: arrayRemove(currentUser.uid),
+                following: arrayRemove(currentUser.uid)
             });
         } catch (e) { /* önemli değil */ }
         
         Swal.close();
-        showTinyWarning(`${targetName} takipten çıkarıldı.`, 'fa-user-minus');
+        showTinyWarning(`${targetName} ile bağlantı tamamen kaldırıldı.`, 'fa-user-minus');
         if (typeof window.loadRanking === 'function') window.loadRanking();
     } catch (e) {
         console.log('unfollowUser hata:', e.message);
@@ -7651,6 +7663,23 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
     }
 };
 
+// ===== GELEN MESAJA SADECE EMOJİ İLE YANIT GÖNDER =====
+window.sendEmojiReply = async function(targetUid, targetName, emoji) {
+    if (!currentUser) return;
+    try {
+        const targetRef = doc(db, 'users', targetUid);
+        const targetSnap = await getDoc(targetRef);
+        const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
+        const myName = await getMyDisplayName();
+        const newMsg = { fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: Date.now(), read: false };
+        const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
+        await updateDoc(targetRef, { inboxMessages: updated });
+        showTinyWarning(`${targetName}'e ${emoji} ile yanıt verdin!`, 'fa-reply');
+    } catch (e) {
+        console.log('sendEmojiReply hata:', e.message);
+    }
+};
+
 // ===== BİLDİRİMLER MODALI (Takip İstekleri + Mesajlar) =====
 window.openNotificationsModal = async function() {
     if (!currentUser) return;
@@ -7676,12 +7705,23 @@ window.openNotificationsModal = async function() {
                 </div>
             `).join('');
         
+        const emojiPickerHTML = (idx) => `
+            <div id="emojiRow-${idx}" style="display:none; flex-wrap:wrap; gap:5px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1);">
+                ${EMOJI_REPLIES.map(em => `
+                    <button data-emoji-reply="${idx}" data-emoji="${em}" style="font-size:17px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.15); border-radius:8px; padding:4px 7px; cursor:pointer; transition:transform 0.15s ease;" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">${em}</button>
+                `).join('')}
+            </div>
+        `;
         const messagesHTML = messages.length === 0
             ? '<div class="tswal-dim" style="text-align:center; padding:16px; font-size:13px;">Henüz bir mesajın yok. 📭</div>'
-            : messages.slice(0, 30).map(m => `
+            : messages.slice(0, 30).map((m, idx) => `
                 <div class="tswal-row" style="padding:10px 12px; border-radius:10px; margin-bottom:6px;">
-                    <div class="tswal-dim" style="font-size:11px; margin-bottom:2px;"><i class="fas fa-user"></i> ${m.fromName}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <div class="tswal-dim" style="font-size:11px; margin-bottom:2px;"><i class="fas fa-user"></i> ${m.fromName}</div>
+                        ${m.fromUid ? `<button data-reply-toggle="${idx}" title="Emoji ile yanıtla" style="background:rgba(255,255,255,0.06); border:none; color:#f59e0b; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:11px; white-space:nowrap;"><i class="fas fa-reply"></i> Yanıtla</button>` : ''}
+                    </div>
                     <div style="font-size:13px;">${m.text}</div>
+                    ${m.fromUid ? emojiPickerHTML(idx) : ''}
                 </div>
             `).join('');
         
@@ -7735,6 +7775,29 @@ window.openNotificationsModal = async function() {
                         const r = requests[idx];
                         Swal.close();
                         window.declineFollowRequest(r.fromUid, r.fromName);
+                    };
+                });
+                // ===== MESAJI EMOJİ İLE YANITLA: yanıtla butonuna basınca emoji satırı açılır/kapanır =====
+                document.querySelectorAll('[data-reply-toggle]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = btn.dataset.replyToggle;
+                        const row = document.getElementById(`emojiRow-${idx}`);
+                        if (!row) return;
+                        const isOpen = row.style.display === 'flex';
+                        // önce diğer açık emoji satırlarını kapat
+                        document.querySelectorAll('[id^="emojiRow-"]').forEach(r => r.style.display = 'none');
+                        row.style.display = isOpen ? 'none' : 'flex';
+                    };
+                });
+                document.querySelectorAll('[data-emoji-reply]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = parseInt(btn.dataset.emojiReply);
+                        const emoji = btn.dataset.emoji;
+                        const m = messages[idx];
+                        if (!m || !m.fromUid) return;
+                        const row = document.getElementById(`emojiRow-${idx}`);
+                        if (row) row.style.display = 'none';
+                        window.sendEmojiReply(m.fromUid, m.fromName, emoji);
                     };
                 });
             }
