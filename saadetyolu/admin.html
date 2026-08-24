@@ -2915,6 +2915,55 @@ window.resetUserSandik = async function(userId) {
     const karmaStats = userData.karmaStats || { total: 0, correct: 0, wrong: 0 };
     const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
     
+    // ===== YENİ: DERS İLERLEMESİ (Kelime Öğrenme Kilit Durumu) =====
+    // Oyun tarafında (index.html) bir dersin kelimelerinin %80'i öğrenilince
+    // bir sonraki dersin kelimeleri otomatik açılıyor. Bu sıralama admin
+    // panelindeki "Sıra" (order) alanına göre belirleniyor. Aşağıda bu
+    // kullanıcının her ders için ilerlemesi ve kilit durumu gösteriliyor —
+    // "neden bir sonraki ders açılmadı" sorularını admin buradan cevaplayabilir.
+    const WORD_LEARN_UNLOCK_PERCENT_ADMIN = 80; // index.html'deki eşikle birebir aynı
+    const viewedWordsByLesson = userData.viewedWordsByLesson || {};
+    let lessonProgressHTML = '<div style="text-align:center; padding:10px; opacity:0.6;">Henüz ders eklenmemiş.</div>';
+    try {
+        const booksSnap2 = await getDocs(query(collection(db, 'books'), orderBy('order', 'asc')));
+        const allBooksOrdered = booksSnap2.docs.map(d => ({ id: d.id, ...d.data() }));
+        let sequence = [];
+        for (const bk of allBooksOrdered) {
+            const lessonsSnap2 = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bk.id), orderBy('order', 'asc')));
+            lessonsSnap2.docs.forEach(d => sequence.push({ id: d.id, ...d.data(), bookName: bk.name }));
+        }
+        if (sequence.length > 0) {
+            // Her dersin toplam kelime sayısını PARALEL çek
+            const wordCounts = await Promise.all(
+                sequence.map(l => getDocs(query(collection(db, 'words'), where('lessonId', '==', l.id))))
+            );
+            const percents = sequence.map((l, i) => {
+                const total = wordCounts[i].size;
+                const viewed = (viewedWordsByLesson[l.id] || []).length;
+                return total > 0 ? Math.min(100, Math.round((viewed / total) * 100)) : 0;
+            });
+            lessonProgressHTML = sequence.map((l, i) => {
+                const pct = percents[i];
+                const prevPct = i === 0 ? 100 : percents[i - 1];
+                const unlocked = i === 0 || prevPct >= WORD_LEARN_UNLOCK_PERCENT_ADMIN;
+                const barColor = pct >= WORD_LEARN_UNLOCK_PERCENT_ADMIN ? '#10b981' : '#f59e0b';
+                return `
+                    <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:6px;">
+                        <div style="font-size:12px; font-weight:600; display:flex; justify-content:space-between; gap:8px;">
+                            <span>${unlocked ? '🔓' : '🔒'} ${l.name} <span style="opacity:0.5; font-weight:400;">(${l.bookName})</span></span>
+                            <span style="opacity:0.8; white-space:nowrap;">${pct}%</span>
+                        </div>
+                        <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:4px; margin-top:4px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:${barColor};"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        lessonProgressHTML = `<div style="text-align:center; padding:10px; opacity:0.6; color:#ef4444;">İlerleme yüklenemedi: ${e.message}</div>`;
+    }
+    
     document.getElementById('userDetailTitle').innerHTML = `
         <i class="fas fa-user"></i> ${userData.name || user.email.split('@')[0]} 
         <span style="font-size: 12px; background: #f59e0b; color: #121212; padding: 2px 12px; border-radius: 20px;">Seviye ${level}</span>
@@ -2969,6 +3018,15 @@ window.resetUserSandik = async function(userId) {
                 <div><span style="color:#10b981;">✅ Doğru:</span> <strong>${karmaStats.correct}</strong></div>
                 <div><span style="color:#ef4444;">❌ Yanlış:</span> <strong>${karmaStats.wrong}</strong></div>
                 <div><span style="color:#3b82f6;">🎯 Başarı:</span> <strong>${karmaAccuracy}%</strong></div>
+            </div>
+        </div>
+        
+        <!-- YENİ: DERS İLERLEMESİ / KİLİT DURUMU -->
+        <div style="margin-top: 15px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 14px;"><i class="fas fa-unlock"></i> Ders İlerlemesi (Kelime Öğrenme Kilidi)</h4>
+            <div style="font-size: 11px; opacity: 0.6; margin-bottom: 8px;">Bir dersin kelimelerinin %${WORD_LEARN_UNLOCK_PERCENT_ADMIN}'i öğrenilince bir sonraki ders otomatik açılır.</div>
+            <div style="max-height: 260px; overflow-y: auto;">
+                ${lessonProgressHTML}
             </div>
         </div>
         
