@@ -2578,6 +2578,22 @@ body.light-theme .swal2-popup.themed-swal .swal2-html-container {
     color: var(--text-main) !important;
 }
 
+/* ===== SOHBET (MESAJLAR) - Instagram/WhatsApp tarzı liste + balon görünümü ===== */
+.themed-swal .chat-list-row {
+    transition: background 0.15s ease;
+}
+.themed-swal .chat-list-row:hover {
+    background: var(--row-bg-hover);
+}
+.themed-swal .chat-bubble-theirs {
+    background: var(--row-bg);
+    color: var(--text-main);
+    border: 1px solid var(--row-border);
+}
+.themed-swal #chatBubbleArea::-webkit-scrollbar { width: 3px; background: transparent; }
+.themed-swal #chatBubbleArea::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.3); border-radius: 10px; }
+.themed-swal #chatBubbleArea { scrollbar-width: thin; }
+
 
     /* ============================================================
    YARDIM BUTONU
@@ -7754,23 +7770,58 @@ window.unfollowUser = async function(targetUid, targetName) {
     try {
         const myRef = doc(db, 'users', currentUser.uid);
         const targetRef = doc(db, 'users', targetUid);
-        
+
+        // ===== Arkadaşlıktan çıkarıldığında bu kişiyle olan TÜM mesajlar otomatik silinsin =====
+        // Silmeden önce iki tarafın da güncel mesaj listelerini okuyoruz ki filtreleyip yazabilelim.
+        const [mySnapBefore, targetSnapBefore] = await Promise.all([getDoc(myRef), getDoc(targetRef)]);
+        const myDataBefore = mySnapBefore.exists() ? mySnapBefore.data() : {};
+        const targetDataBefore = targetSnapBefore.exists() ? targetSnapBefore.data() : {};
+
+        const myInboxAfter = (myDataBefore.inboxMessages || []).filter(m => m.fromUid !== targetUid);
+        const myOutboxAfter = (myDataBefore.outboxMessages || []).filter(m => m.toUid !== targetUid);
+
         // Benim tarafım: onu takipten çıkar + o beni takip ediyorsa onu da takipçilerimden çıkar
+        // + bu kişiyle olan sohbet geçmişimi tamamen sil
         await updateDoc(myRef, {
             following: arrayRemove(targetUid),
-            followers: arrayRemove(targetUid)
+            followers: arrayRemove(targetUid),
+            inboxMessages: myInboxAfter,
+            outboxMessages: myOutboxAfter
         });
+        
         // Karşı taraf: beni takipçilerinden çıkar + o beni takip ediyorsa onu da takip ettiklerinden çıkar
+        // + karşı taraftaki sohbet geçmişini de sil
+        // ✅ NOT: Bu yazma karşı kullanıcının dokümanına yapılıyor. Firestore güvenlik
+        // kuralları başka bir kullanıcının alanlarını güncellemene izin vermiyorsa bu
+        // adım SESSİZCE başarısız olabilir ve karşı taraf seni hâlâ takip ediyor / mesajların
+        // hâlâ duruyor gibi görünmeye devam eder. Bu yüzden hatayı artık yutmuyoruz,
+        // kullanıcıya haber veriyoruz.
+        let targetTarafiBasarili = true;
         try {
+            const targetInboxAfter = (targetDataBefore.inboxMessages || []).filter(m => m.fromUid !== currentUser.uid);
+            const targetOutboxAfter = (targetDataBefore.outboxMessages || []).filter(m => m.toUid !== currentUser.uid);
             await updateDoc(targetRef, {
                 followers: arrayRemove(currentUser.uid),
-                following: arrayRemove(currentUser.uid)
+                following: arrayRemove(currentUser.uid),
+                inboxMessages: targetInboxAfter,
+                outboxMessages: targetOutboxAfter
             });
-        } catch (e) { /* önemli değil */ }
+        } catch (e) {
+            targetTarafiBasarili = false;
+            console.log('unfollowUser: karşı taraf güncellenemedi (muhtemelen güvenlik kuralları):', e.message);
+        }
+        
+        // Bu kişiyle bir sohbet ekranı açıksa listeye geri dön
+        if (window.__activeChatContactUid === targetUid) window.__activeChatContactUid = null;
         
         Swal.close();
-        showTinyWarning(`${targetName} ile bağlantı tamamen kaldırıldı.`, 'fa-user-minus');
+        if (targetTarafiBasarili) {
+            showTinyWarning(`${targetName} ile bağlantı ve tüm mesajlar kaldırıldı.`, 'fa-user-minus');
+        } else {
+            showTinyWarning(`${targetName} takipten çıkarıldı, ama karşı taraf güncellenemedi ⚠️`, 'fa-triangle-exclamation');
+        }
         if (typeof window.loadRanking === 'function') window.loadRanking();
+        window.updateNotifBadge();
     } catch (e) {
         console.log('unfollowUser hata:', e.message);
     }
@@ -7820,15 +7871,30 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
         const myName = await getMyDisplayName();
-        const newMsg = { id: genMsgId(), fromUid: currentUser.uid, fromName: myName, text: text, sentAt: Date.now(), read: false, replies: [] };
+        const msgId = genMsgId();
+        const sentAt = Date.now();
+        const newMsg = { id: msgId, fromUid: currentUser.uid, fromName: myName, text: text, sentAt: sentAt, read: false, replies: [] };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
+
+        // ===== Kendi tarafımda "gönderilenler" listesine de ekle (sohbet balonu olarak görünsün) =====
+        try {
+            const mySnap = await getDoc(myRef);
+            const myOutbox = mySnap.exists() ? (mySnap.data().outboxMessages || []) : [];
+            const newOutMsg = { id: msgId, toUid: targetUid, toName: targetName, text: text, sentAt: sentAt };
+            await updateDoc(myRef, { outboxMessages: [...myOutbox, newOutMsg].slice(-30) });
+        } catch (e) { /* sohbet geçmişi için, kritik değil */ }
         
         const { streakBumped, newStreak } = await bumpFriendshipOnSend(currentUser.uid, myRef, targetUid, targetRef, false);
         if (streakBumped) {
             showTinyWarning(`${targetName} ile arkadaşlık serin 🔥 ${newStreak} güne çıktı!`, 'fa-fire');
         } else {
             showTinyWarning(`${targetName}'e mesajın gönderildi! 💌`, 'fa-paper-plane');
+        }
+        window.updateNotifBadge();
+        // Bir sohbet ekranından gönderildiyse, aynı sohbete geri dön
+        if (window.__activeChatContactUid === targetUid && typeof window.openNotificationsModal === 'function') {
+            window.openNotificationsModal('messages', targetUid);
         }
     } catch (e) {
         console.log('sendCannedMessage hata:', e.message);
@@ -7847,15 +7913,25 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsg
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
         const myName = await getMyDisplayName();
-        const newMsg = { id: genMsgId(), fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: Date.now(), read: false, replies: [] };
+        const msgId = genMsgId();
+        const sentAt = Date.now();
+        const newMsg = { id: msgId, fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: sentAt, read: false, replies: [] };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
+
+        // ===== Kendi tarafımda "gönderilenler" listesine de ekle (sohbet balonu olarak görünsün) =====
+        try {
+            const mySnap = await getDoc(myRef);
+            const myOutbox = mySnap.exists() ? (mySnap.data().outboxMessages || []) : [];
+            const newOutMsg = { id: msgId, toUid: targetUid, toName: targetName, text: emoji, sentAt: sentAt };
+            await updateDoc(myRef, { outboxMessages: [...myOutbox, newOutMsg].slice(-30) });
+        } catch (e) { /* kritik değil */ }
         
         // ===== Kendi gelen kutumda ilgili mesajın altına iç içe yanıt olarak ekle =====
         if (originalMsgId) {
             try {
-                const mySnap = await getDoc(myRef);
-                const myMsgs = mySnap.exists() ? (mySnap.data().inboxMessages || []) : [];
+                const mySnap2 = await getDoc(myRef);
+                const myMsgs = mySnap2.exists() ? (mySnap2.data().inboxMessages || []) : [];
                 const newMyMsgs = myMsgs.map(m => {
                     if (m.id === originalMsgId) {
                         const replies = m.replies || [];
@@ -7872,6 +7948,11 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsg
             showTinyWarning(`${targetName} ile arkadaşlık serin 🔥 ${newStreak} güne çıktı!`, 'fa-fire');
         } else {
             showTinyWarning(`${targetName}'e ${emoji} ile yanıt verdin!`, 'fa-reply');
+        }
+        window.updateNotifBadge();
+        // Bir sohbet ekranından gönderildiyse, aynı sohbete geri dön
+        if (typeof window.openNotificationsModal === 'function') {
+            window.openNotificationsModal('messages', targetUid);
         }
     } catch (e) {
         console.log('sendEmojiReply hata:', e.message);
@@ -7891,7 +7972,8 @@ window.deleteInboxMessage = async function(msgId, fallbackSentAt) {
         await updateDoc(myRef, { inboxMessages: filtered });
         showTinyWarning('Mesaj silindi.', 'fa-trash');
         window.updateNotifBadge();
-        window.openNotificationsModal();
+        // ===== Mesajlar tabında ve (varsa) aynı sohbette kal, İstekler tabına atlama =====
+        window.openNotificationsModal('messages', window.__activeChatContactUid || null);
     } catch (e) {
         console.log('deleteInboxMessage hata:', e.message);
     }
@@ -7912,7 +7994,8 @@ window.deleteInboxReply = async function(msgId, replyIdx) {
             return m;
         });
         await updateDoc(myRef, { inboxMessages: updatedMsgs });
-        window.openNotificationsModal();
+        // ===== Mesajlar tabında ve (varsa) aynı sohbette kal, İstekler tabına atlama =====
+        window.openNotificationsModal('messages', window.__activeChatContactUid || null);
     } catch (e) {
         console.log('deleteInboxReply hata:', e.message);
     }
@@ -7921,7 +8004,11 @@ window.deleteInboxReply = async function(msgId, replyIdx) {
 
 
 // ===== BİLDİRİMLER MODALI (Takip İstekleri + Mesajlar) =====
-window.openNotificationsModal = async function() {
+// initialTab: 'requests' | 'messages' -> hangi tabın açık geleceğini belirler (varsayılan 'requests')
+// activeContactUid: verilirse Mesajlar tabı doğrudan o kişiyle olan sohbet (thread) ekranında açılır
+window.openNotificationsModal = async function(initialTab, activeContactUid) {
+    initialTab = initialTab || 'requests';
+    window.__activeChatContactUid = activeContactUid || null;
     if (!currentUser) return;
     try {
         showLoadingAlert('🔔 Bildirimler yükleniyor...');
@@ -7929,8 +8016,8 @@ window.openNotificationsModal = async function() {
         const mySnap = await getDoc(myRef);
         const myData = mySnap.exists() ? mySnap.data() : {};
         const requests = myData.pendingFollowRequests || [];
-        const allMessages = myData.inboxMessages || [];
-        const messages = allMessages.slice().reverse();
+        const inboxAll = myData.inboxMessages || [];   // bana gelen mesajlar
+        const outboxAll = myData.outboxMessages || []; // benim gönderdiğim mesajlar
         closeLoadingAlert();
         
         const requestsHTML = requests.length === 0
@@ -7944,56 +8031,127 @@ window.openNotificationsModal = async function() {
                     </div>
                 </div>
             `).join('');
-        
-        const emojiPickerHTML = (idx) => `
-            <div id="emojiRow-${idx}" style="display:none; flex-wrap:wrap; gap:5px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1);">
-                ${EMOJI_REPLIES.map(em => `
-                    <button data-emoji-reply="${idx}" data-emoji="${em}" style="font-size:17px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.15); border-radius:8px; padding:4px 7px; cursor:pointer; transition:transform 0.15s ease;" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">${em}</button>
-                `).join('')}
-            </div>
-        `;
-        // ===== Bir mesajın altına iç içe (Instagram yorumu gibi) girintili yanıtlar =====
-        const repliesHTML = (m, idx) => {
-            const replies = m.replies || [];
-            if (replies.length === 0) return '';
-            return `
-                <div style="margin-top:8px; padding-left:14px; border-left:2px solid rgba(245,158,11,0.35);">
-                    ${replies.map((r, rIdx) => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding:5px 8px; margin-top:4px; background:rgba(245,158,11,0.06); border-radius:8px;">
-                            <span style="font-size:15px;"><i class="fas fa-reply" style="font-size:9px; opacity:0.5; margin-right:4px;"></i>${r.emoji}</span>
-                            <button data-delete-reply-msg="${m.id || ''}" data-delete-reply-idx="${rIdx}" title="Yanıtı sil" style="background:none; border:none; color:#6b7280; cursor:pointer; font-size:11px; padding:2px 4px;"><i class="fas fa-times"></i></button>
+
+        // ===== Mesajları göndereni bilinen (fromUid'li) olanları kişiye göre sohbete grupla =====
+        const contacts = {};
+        inboxAll.forEach(m => {
+            if (!m.fromUid) return;
+            if (!contacts[m.fromUid]) contacts[m.fromUid] = { uid: m.fromUid, name: m.fromName, lastAt: 0, lastText: '', lastMine: false, unread: 0 };
+            const c = contacts[m.fromUid];
+            if (!m.read) c.unread++;
+            if ((m.sentAt || 0) >= c.lastAt) { c.lastAt = m.sentAt || 0; c.lastText = m.text; c.lastMine = false; c.name = m.fromName || c.name; }
+        });
+        outboxAll.forEach(m => {
+            if (!m.toUid) return;
+            if (!contacts[m.toUid]) contacts[m.toUid] = { uid: m.toUid, name: m.toName, lastAt: 0, lastText: '', lastMine: false, unread: 0 };
+            const c = contacts[m.toUid];
+            if ((m.sentAt || 0) >= c.lastAt) { c.lastAt = m.sentAt || 0; c.lastText = m.text; c.lastMine = true; }
+        });
+        // Kimin gönderdiği belli olmayan (sistem/eski) mesajlar sohbet listesine değil ayrı gösterilir
+        const systemMsgs = inboxAll.filter(m => !m.fromUid).slice().reverse();
+        const contactList = Object.values(contacts).sort((a, b) => b.lastAt - a.lastAt);
+        const totalUnreadChats = contactList.reduce((s, c) => s + (c.unread > 0 ? 1 : 0), 0) + systemMsgs.filter(m => !m.read).length;
+
+        const initials = (name) => (name || '?').trim().charAt(0).toUpperCase();
+        const timeLabel = (ts) => {
+            if (!ts) return '';
+            const d = new Date(ts);
+            const now = new Date();
+            const sameDay = d.toDateString() === now.toDateString();
+            return sameDay ? d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+        };
+
+        // ===== SOHBET LİSTESİ (Instagram/WhatsApp tarzı ana mesajlar ekranı) =====
+        const chatListHTML = () => {
+            if (contactList.length === 0 && systemMsgs.length === 0) {
+                return '<div class="tswal-dim" style="text-align:center; padding:30px 16px;"><div style="font-size:38px; margin-bottom:8px;">📭</div>Henüz bir sohbetin yok.</div>';
+            }
+            let html = contactList.map(c => `
+                <div class="chat-list-row" data-open-chat="${c.uid}" style="display:flex; align-items:center; gap:10px; padding:9px 6px; border-radius:12px; cursor:pointer; margin-bottom:2px;">
+                    <div style="width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#d97706); color:#121212; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0;">${initials(c.name)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; gap:6px;">
+                            <span style="font-size:13.5px; font-weight:600;">${c.name}</span>
+                            <span style="font-size:10.5px; opacity:0.5; flex-shrink:0;">${timeLabel(c.lastAt)}</span>
                         </div>
-                    `).join('')}
+                        <div style="display:flex; justify-content:space-between; gap:6px; align-items:center;">
+                            <span style="font-size:12px; opacity:0.65; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.lastMine ? 'Sen: ' : ''}${c.lastText}</span>
+                            ${c.unread > 0 ? `<span style="background:#f59e0b; color:#121212; font-size:10px; font-weight:700; border-radius:10px; padding:2px 6px; flex-shrink:0;">${c.unread}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            if (systemMsgs.length > 0) {
+                html += systemMsgs.map(m => `
+                    <div class="tswal-row" style="padding:10px 12px; border-radius:10px; margin-bottom:6px; margin-top:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                            <div class="tswal-dim" style="font-size:11px;"><i class="fas fa-bell"></i> ${m.fromName || 'Bildirim'}</div>
+                            <button data-delete-msg="${m.id || ''}" data-delete-sentat="${m.sentAt || ''}" title="Mesajı sil" style="background:rgba(239,68,68,0.1); border:none; color:#ef4444; border-radius:8px; padding:4px 7px; cursor:pointer; font-size:11px;"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <div style="font-size:13px; margin-top:2px;">${m.text}</div>
+                    </div>
+                `).join('');
+            }
+            return html;
+        };
+
+        // ===== SOHBET (THREAD) EKRANI - karşılıklı konuşma balonları =====
+        const chatThreadHTML = (contactUid) => {
+            const c = contacts[contactUid];
+            if (!c) return '<div class="tswal-dim" style="text-align:center; padding:20px;">Sohbet bulunamadı.</div>';
+            const received = inboxAll.filter(m => m.fromUid === contactUid).map(m => ({ ...m, mine: false }));
+            const sent = outboxAll.filter(m => m.toUid === contactUid).map(m => ({ ...m, mine: true }));
+            const thread = [...received, ...sent].sort((a, b) => (a.sentAt || 0) - (b.sentAt || 0));
+            const bubbles = thread.map((m, i) => {
+                const uniqueKey = `${m.mine ? 'out' : 'in'}-${m.id || i}`;
+                const bubbleClass = m.mine ? '' : 'chat-bubble-theirs';
+                const bubbleStyle = m.mine
+                    ? 'align-self:flex-end; background:#f59e0b; color:#121212; border-radius:14px 14px 3px 14px;'
+                    : 'align-self:flex-start; border-radius:14px 14px 14px 3px;';
+                const delBtn = !m.mine ? `<button data-delete-msg="${m.id || ''}" data-delete-sentat="${m.sentAt || ''}" title="Sil" style="background:none; border:none; color:#ef4444; opacity:0.55; cursor:pointer; font-size:10px; padding:0 0 0 6px;"><i class="fas fa-trash"></i></button>` : '';
+                const replyBtn = !m.mine ? `<button data-reply-toggle="${uniqueKey}" title="Emoji ile yanıtla" style="background:none; border:none; color:#f59e0b; opacity:0.8; cursor:pointer; font-size:10px; padding:0 0 0 6px;"><i class="fas fa-reply"></i></button>` : '';
+                const repliesInline = (m.replies || []).map(r => `<span style="font-size:13px; margin-left:4px;">${r.emoji}</span>`).join('');
+                return `
+                    <div style="display:flex; flex-direction:column; ${m.mine ? 'align-items:flex-end;' : 'align-items:flex-start;'} margin-bottom:9px;">
+                        <div class="${bubbleClass}" style="max-width:75%; padding:8px 12px; font-size:13px; ${bubbleStyle} word-break:break-word;">${m.text}${repliesInline}</div>
+                        <div style="display:flex; align-items:center; gap:2px; margin-top:2px;">
+                            <span style="font-size:10px; opacity:0.4;">${timeLabel(m.sentAt)}</span>
+                            ${delBtn}${replyBtn}
+                        </div>
+                        ${!m.mine ? `
+                        <div id="emojiRow-${uniqueKey}" style="display:none; flex-wrap:wrap; gap:5px; margin-top:4px;">
+                            ${EMOJI_REPLIES.map(em => `<button data-emoji-reply="${uniqueKey}" data-emoji="${em}" data-orig-msg-id="${m.id || ''}" style="font-size:16px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.15); border-radius:8px; padding:3px 6px; cursor:pointer;">${em}</button>`).join('')}
+                        </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            return `
+                <div style="display:flex; flex-direction:column; height:100%;">
+                    <div style="display:flex; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                        <button id="chatBackBtn" style="background:rgba(255,255,255,0.06); border:none; color:inherit; width:30px; height:30px; border-radius:50%; cursor:pointer; flex-shrink:0;"><i class="fas fa-arrow-left"></i></button>
+                        <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#d97706); color:#121212; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">${initials(c.name)}</div>
+                        <span style="font-weight:600; font-size:13.5px;">${c.name}</span>
+                    </div>
+                    <div id="chatBubbleArea" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding:4px 2px;">
+                        ${bubbles || '<div class="tswal-dim" style="text-align:center; padding:24px; font-size:12px;">Henüz mesaj yok, ilk mesajı sen gönder! 👋</div>'}
+                    </div>
+                    <div style="display:flex; gap:6px; padding-top:8px; margin-top:6px; border-top:1px solid rgba(255,255,255,0.08);">
+                        <button id="chatSendCannedBtn" style="flex:1; background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); padding:9px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer;"><i class="fas fa-comment-dots"></i> Mesaj Gönder</button>
+                    </div>
                 </div>
             `;
         };
-        const messagesHTML = messages.length === 0
-            ? '<div class="tswal-dim" style="text-align:center; padding:16px; font-size:13px;">Henüz bir mesajın yok. 📭</div>'
-            : messages.slice(0, 30).map((m, idx) => `
-                <div class="tswal-row" style="padding:10px 12px; border-radius:10px; margin-bottom:6px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                        <div class="tswal-dim" style="font-size:11px; margin-bottom:2px;"><i class="fas fa-user"></i> ${m.fromName}</div>
-                        <div style="display:flex; gap:4px; flex-shrink:0;">
-                            ${m.fromUid ? `<button data-reply-toggle="${idx}" title="Emoji ile yanıtla" style="background:rgba(255,255,255,0.06); border:none; color:#f59e0b; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:11px; white-space:nowrap;"><i class="fas fa-reply"></i> Yanıtla</button>` : ''}
-                            <button data-delete-msg="${m.id || ''}" data-delete-sentat="${m.sentAt || ''}" title="Mesajı sil" style="background:rgba(239,68,68,0.1); border:none; color:#ef4444; border-radius:8px; padding:4px 7px; cursor:pointer; font-size:11px;"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <div style="font-size:13px;">${m.text}</div>
-                    ${repliesHTML(m, idx)}
-                    ${m.fromUid ? emojiPickerHTML(idx) : ''}
-                </div>
-            `).join('');
         
         Swal.fire({
             title: '🔔 Bildirimler',
             html: `
                 <div style="text-align:left;">
                     <div style="display:flex; gap:6px; margin-bottom:12px;">
-                        <button id="notifTabRequests" style="flex:1; padding:8px; border:none; border-radius:8px; background:#f59e0b; color:#121212; font-weight:600; cursor:pointer; font-size:12px;">👥 İstekler (${requests.length})</button>
-                        <button id="notifTabMessages" class="tswal-tab-inactive" style="flex:1; padding:8px; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:12px;">💬 Mesajlar (${messages.length})</button>
+                        <button id="notifTabRequests" style="flex:1; padding:8px; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:12px;">👥 İstekler (${requests.length})</button>
+                        <button id="notifTabMessages" style="flex:1; padding:8px; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:12px;">💬 Mesajlar${totalUnreadChats > 0 ? ` (${totalUnreadChats})` : ''}</button>
                     </div>
-                    <div id="notifPanelRequests" style="max-height:320px; overflow-y:auto;">${requestsHTML}</div>
-                    <div id="notifPanelMessages" style="max-height:320px; overflow-y:auto; display:none;">${messagesHTML}</div>
+                    <div id="notifPanelRequests" style="max-height:360px; overflow-y:auto;">${requestsHTML}</div>
+                    <div id="notifPanelMessages" style="height:360px; display:none;"></div>
                 </div>
             `,
             showConfirmButton: true,
@@ -8006,20 +8164,21 @@ window.openNotificationsModal = async function() {
                 const tabMsg = document.getElementById('notifTabMessages');
                 const panelReq = document.getElementById('notifPanelRequests');
                 const panelMsg = document.getElementById('notifPanelMessages');
-                tabReq.onclick = () => {
-                    tabReq.classList.remove('tswal-tab-inactive');
-                    tabReq.style.background = '#f59e0b'; tabReq.style.color = '#121212';
-                    tabMsg.classList.add('tswal-tab-inactive');
-                    tabMsg.style.background = ''; tabMsg.style.color = '';
-                    panelReq.style.display = 'block'; panelMsg.style.display = 'none';
+
+                const activateTab = (tab) => {
+                    if (tab === 'requests') {
+                        tabReq.style.background = '#f59e0b'; tabReq.style.color = '#121212';
+                        tabMsg.style.background = ''; tabMsg.style.color = '';
+                        panelReq.style.display = 'block'; panelMsg.style.display = 'none';
+                    } else {
+                        tabMsg.style.background = '#f59e0b'; tabMsg.style.color = '#121212';
+                        tabReq.style.background = ''; tabReq.style.color = '';
+                        panelMsg.style.display = 'flex'; panelMsg.style.flexDirection = 'column'; panelReq.style.display = 'none';
+                    }
                 };
-                tabMsg.onclick = () => {
-                    tabMsg.classList.remove('tswal-tab-inactive');
-                    tabMsg.style.background = '#f59e0b'; tabMsg.style.color = '#121212';
-                    tabReq.classList.add('tswal-tab-inactive');
-                    tabReq.style.background = ''; tabReq.style.color = '';
-                    panelMsg.style.display = 'block'; panelReq.style.display = 'none';
-                };
+                tabReq.onclick = () => { window.__activeChatContactUid = null; activateTab('requests'); };
+                tabMsg.onclick = () => { activateTab('messages'); };
+
                 document.querySelectorAll('[data-accept-idx]').forEach(btn => {
                     btn.onclick = () => {
                         const idx = parseInt(btn.dataset.acceptIdx);
@@ -8036,54 +8195,86 @@ window.openNotificationsModal = async function() {
                         window.declineFollowRequest(r.fromUid, r.fromName);
                     };
                 });
-                // ===== MESAJI EMOJİ İLE YANITLA: yanıtla butonuna basınca emoji satırı açılır/kapanır =====
-                document.querySelectorAll('[data-reply-toggle]').forEach(btn => {
-                    btn.onclick = () => {
-                        const idx = btn.dataset.replyToggle;
-                        const row = document.getElementById(`emojiRow-${idx}`);
-                        if (!row) return;
-                        const isOpen = row.style.display === 'flex';
-                        // önce diğer açık emoji satırlarını kapat
-                        document.querySelectorAll('[id^="emojiRow-"]').forEach(r => r.style.display = 'none');
-                        row.style.display = isOpen ? 'none' : 'flex';
-                    };
-                });
-                document.querySelectorAll('[data-emoji-reply]').forEach(btn => {
-                    btn.onclick = () => {
-                        const idx = parseInt(btn.dataset.emojiReply);
-                        const emoji = btn.dataset.emoji;
-                        const m = messages[idx];
-                        if (!m || !m.fromUid) return;
-                        const row = document.getElementById(`emojiRow-${idx}`);
-                        if (row) row.style.display = 'none';
-                        window.sendEmojiReply(m.fromUid, m.fromName, emoji, m.id || null);
-                    };
-                });
-                // ===== MESAJI SİL =====
-                document.querySelectorAll('[data-delete-msg]').forEach(btn => {
-                    btn.onclick = () => {
-                        const msgId = btn.dataset.deleteMsg;
-                        const sentAt = btn.dataset.deleteSentat;
-                        window.deleteInboxMessage(msgId || null, sentAt);
-                    };
-                });
-                // ===== TEK BİR YANITI (EMOJİYİ) SİL =====
-                document.querySelectorAll('[data-delete-reply-msg]').forEach(btn => {
-                    btn.onclick = () => {
-                        const msgId = btn.dataset.deleteReplyMsg;
-                        const replyIdx = parseInt(btn.dataset.deleteReplyIdx);
-                        if (!msgId) return;
-                        window.deleteInboxReply(msgId, replyIdx);
-                    };
-                });
+
+                // ===== MESAJI SİL (hem sohbet listesindeki sistem mesajları hem thread içinden) =====
+                const wireDeleteButtons = () => {
+                    document.querySelectorAll('[data-delete-msg]').forEach(btn => {
+                        btn.onclick = () => {
+                            const msgId = btn.dataset.deleteMsg;
+                            const sentAt = btn.dataset.deleteSentat;
+                            window.deleteInboxMessage(msgId || null, sentAt);
+                        };
+                    });
+                };
+
+                // ===== MESAJLAR PANELİNİ DURUMA GÖRE ÇİZ: sohbet listesi ya da açık bir sohbet (thread) =====
+                const renderMessagesPanel = () => {
+                    if (window.__activeChatContactUid && contacts[window.__activeChatContactUid]) {
+                        panelMsg.innerHTML = chatThreadHTML(window.__activeChatContactUid);
+                        wireThreadHandlers();
+                    } else {
+                        window.__activeChatContactUid = null;
+                        panelMsg.innerHTML = chatListHTML();
+                        wireListHandlers();
+                    }
+                };
+                function wireListHandlers() {
+                    document.querySelectorAll('[data-open-chat]').forEach(row => {
+                        row.onclick = () => {
+                            window.__activeChatContactUid = row.dataset.openChat;
+                            renderMessagesPanel();
+                        };
+                    });
+                    wireDeleteButtons();
+                }
+                function wireThreadHandlers() {
+                    const backBtn = document.getElementById('chatBackBtn');
+                    if (backBtn) backBtn.onclick = () => { window.__activeChatContactUid = null; renderMessagesPanel(); };
+                    const sendBtn = document.getElementById('chatSendCannedBtn');
+                    if (sendBtn) {
+                        sendBtn.onclick = () => {
+                            const contactUid = window.__activeChatContactUid;
+                            const c = contacts[contactUid];
+                            Swal.close();
+                            window.openSendMessageModal(contactUid, c ? c.name : '');
+                        };
+                    }
+                    wireDeleteButtons();
+                    // ===== MESAJI EMOJİ İLE YANITLA: yanıtla butonuna basınca emoji satırı açılır/kapanır =====
+                    document.querySelectorAll('[data-reply-toggle]').forEach(btn => {
+                        btn.onclick = () => {
+                            const key = btn.dataset.replyToggle;
+                            const row = document.getElementById(`emojiRow-${key}`);
+                            if (!row) return;
+                            const isOpen = row.style.display === 'flex';
+                            document.querySelectorAll('[id^="emojiRow-"]').forEach(r => r.style.display = 'none');
+                            row.style.display = isOpen ? 'none' : 'flex';
+                        };
+                    });
+                    document.querySelectorAll('[data-emoji-reply]').forEach(btn => {
+                        btn.onclick = () => {
+                            const emoji = btn.dataset.emoji;
+                            const origMsgId = btn.dataset.origMsgId || null;
+                            const contactUid = window.__activeChatContactUid;
+                            const c = contacts[contactUid];
+                            if (!contactUid || !c) return;
+                            Swal.close();
+                            window.sendEmojiReply(contactUid, c.name, emoji, origMsgId);
+                        };
+                    });
+                }
+
+                // ===== BAŞLANGIÇ DURUMU: hangi tab, sohbet mi liste mi =====
+                activateTab(initialTab);
+                renderMessagesPanel();
             }
         }).then(() => {
             window.updateNotifBadge();
         });
         
         // ===== görüntülenen mesajları okundu olarak işaretle =====
-        if (allMessages.some(m => !m.read)) {
-            const updatedMsgs = allMessages.map(m => ({ ...m, read: true }));
+        if (inboxAll.some(m => !m.read)) {
+            const updatedMsgs = inboxAll.map(m => ({ ...m, read: true }));
             try { await updateDoc(myRef, { inboxMessages: updatedMsgs }); } catch (e) { /* önemli değil */ }
         }
         window.updateNotifBadge();
