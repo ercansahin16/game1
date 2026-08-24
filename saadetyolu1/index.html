@@ -7806,6 +7806,11 @@ window.openSendMessageModal = function(targetUid, targetName) {
     });
 };
 
+// ===== MESAJ/YANIT İÇİN BENZERSİZ KISA ID ÜRETİCİ =====
+function genMsgId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 // ===== SABİT MESAJI GÖNDER (Firestore'a yaz) =====
 window.sendCannedMessage = async function(targetUid, targetName, text) {
     if (!currentUser) return;
@@ -7815,7 +7820,7 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
         const myName = await getMyDisplayName();
-        const newMsg = { fromUid: currentUser.uid, fromName: myName, text: text, sentAt: Date.now(), read: false };
+        const newMsg = { id: genMsgId(), fromUid: currentUser.uid, fromName: myName, text: text, sentAt: Date.now(), read: false, replies: [] };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
         
@@ -7831,7 +7836,10 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
 };
 
 // ===== GELEN MESAJA SADECE EMOJİ İLE YANIT GÖNDER =====
-window.sendEmojiReply = async function(targetUid, targetName, emoji) {
+// originalMsgId verilirse: karşı tarafa yeni mesaj olarak gönderilir VE
+// ayrıca kendi gelen kutumda, hangi mesaja yanıt verdiğimiz belli olsun diye
+// o mesajın altına (Instagram yorumu gibi) iç içe eklenir.
+window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsgId) {
     if (!currentUser) return;
     try {
         const myRef = doc(db, 'users', currentUser.uid);
@@ -7839,9 +7847,25 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji) {
         const targetSnap = await getDoc(targetRef);
         const existing = targetSnap.exists() ? (targetSnap.data().inboxMessages || []) : [];
         const myName = await getMyDisplayName();
-        const newMsg = { fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: Date.now(), read: false };
+        const newMsg = { id: genMsgId(), fromUid: currentUser.uid, fromName: myName, text: emoji, sentAt: Date.now(), read: false, replies: [] };
         const updated = [...existing, newMsg].slice(-30); // son 30 mesaj tutulur
         await updateDoc(targetRef, { inboxMessages: updated });
+        
+        // ===== Kendi gelen kutumda ilgili mesajın altına iç içe yanıt olarak ekle =====
+        if (originalMsgId) {
+            try {
+                const mySnap = await getDoc(myRef);
+                const myMsgs = mySnap.exists() ? (mySnap.data().inboxMessages || []) : [];
+                const newMyMsgs = myMsgs.map(m => {
+                    if (m.id === originalMsgId) {
+                        const replies = m.replies || [];
+                        return { ...m, replies: [...replies, { emoji, sentAt: Date.now() }].slice(-20) };
+                    }
+                    return m;
+                });
+                await updateDoc(myRef, { inboxMessages: newMyMsgs });
+            } catch (e) { /* önemli değil, yanıt yine de karşı tarafa gitti */ }
+        }
         
         const { streakBumped, newStreak } = await bumpFriendshipOnSend(currentUser.uid, myRef, targetUid, targetRef, true);
         if (streakBumped) {
@@ -7853,6 +7877,48 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji) {
         console.log('sendEmojiReply hata:', e.message);
     }
 };
+
+// ===== BİR MESAJI GELEN KUTUSUNDAN SİL (id yoksa sentAt'e göre bulur - eski mesajlar için) =====
+window.deleteInboxMessage = async function(msgId, fallbackSentAt) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        const mySnap = await getDoc(myRef);
+        const myMsgs = mySnap.exists() ? (mySnap.data().inboxMessages || []) : [];
+        const filtered = msgId
+            ? myMsgs.filter(m => m.id !== msgId)
+            : myMsgs.filter(m => String(m.sentAt) !== String(fallbackSentAt));
+        await updateDoc(myRef, { inboxMessages: filtered });
+        showTinyWarning('Mesaj silindi.', 'fa-trash');
+        window.updateNotifBadge();
+        window.openNotificationsModal();
+    } catch (e) {
+        console.log('deleteInboxMessage hata:', e.message);
+    }
+};
+
+// ===== BİR MESAJIN ALTINDAKİ TEK BİR YANITI (EMOJİYİ) SİL =====
+window.deleteInboxReply = async function(msgId, replyIdx) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        const mySnap = await getDoc(myRef);
+        const myMsgs = mySnap.exists() ? (mySnap.data().inboxMessages || []) : [];
+        const updatedMsgs = myMsgs.map(m => {
+            if (m.id === msgId) {
+                const replies = (m.replies || []).filter((_, i) => i !== replyIdx);
+                return { ...m, replies };
+            }
+            return m;
+        });
+        await updateDoc(myRef, { inboxMessages: updatedMsgs });
+        window.openNotificationsModal();
+    } catch (e) {
+        console.log('deleteInboxReply hata:', e.message);
+    }
+};
+
+
 
 // ===== BİLDİRİMLER MODALI (Takip İstekleri + Mesajlar) =====
 window.openNotificationsModal = async function() {
@@ -7886,15 +7952,34 @@ window.openNotificationsModal = async function() {
                 `).join('')}
             </div>
         `;
+        // ===== Bir mesajın altına iç içe (Instagram yorumu gibi) girintili yanıtlar =====
+        const repliesHTML = (m, idx) => {
+            const replies = m.replies || [];
+            if (replies.length === 0) return '';
+            return `
+                <div style="margin-top:8px; padding-left:14px; border-left:2px solid rgba(245,158,11,0.35);">
+                    ${replies.map((r, rIdx) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding:5px 8px; margin-top:4px; background:rgba(245,158,11,0.06); border-radius:8px;">
+                            <span style="font-size:15px;"><i class="fas fa-reply" style="font-size:9px; opacity:0.5; margin-right:4px;"></i>${r.emoji}</span>
+                            <button data-delete-reply-msg="${m.id || ''}" data-delete-reply-idx="${rIdx}" title="Yanıtı sil" style="background:none; border:none; color:#6b7280; cursor:pointer; font-size:11px; padding:2px 4px;"><i class="fas fa-times"></i></button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        };
         const messagesHTML = messages.length === 0
             ? '<div class="tswal-dim" style="text-align:center; padding:16px; font-size:13px;">Henüz bir mesajın yok. 📭</div>'
             : messages.slice(0, 30).map((m, idx) => `
                 <div class="tswal-row" style="padding:10px 12px; border-radius:10px; margin-bottom:6px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                         <div class="tswal-dim" style="font-size:11px; margin-bottom:2px;"><i class="fas fa-user"></i> ${m.fromName}</div>
-                        ${m.fromUid ? `<button data-reply-toggle="${idx}" title="Emoji ile yanıtla" style="background:rgba(255,255,255,0.06); border:none; color:#f59e0b; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:11px; white-space:nowrap;"><i class="fas fa-reply"></i> Yanıtla</button>` : ''}
+                        <div style="display:flex; gap:4px; flex-shrink:0;">
+                            ${m.fromUid ? `<button data-reply-toggle="${idx}" title="Emoji ile yanıtla" style="background:rgba(255,255,255,0.06); border:none; color:#f59e0b; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:11px; white-space:nowrap;"><i class="fas fa-reply"></i> Yanıtla</button>` : ''}
+                            <button data-delete-msg="${m.id || ''}" data-delete-sentat="${m.sentAt || ''}" title="Mesajı sil" style="background:rgba(239,68,68,0.1); border:none; color:#ef4444; border-radius:8px; padding:4px 7px; cursor:pointer; font-size:11px;"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                     <div style="font-size:13px;">${m.text}</div>
+                    ${repliesHTML(m, idx)}
                     ${m.fromUid ? emojiPickerHTML(idx) : ''}
                 </div>
             `).join('');
@@ -7971,7 +8056,24 @@ window.openNotificationsModal = async function() {
                         if (!m || !m.fromUid) return;
                         const row = document.getElementById(`emojiRow-${idx}`);
                         if (row) row.style.display = 'none';
-                        window.sendEmojiReply(m.fromUid, m.fromName, emoji);
+                        window.sendEmojiReply(m.fromUid, m.fromName, emoji, m.id || null);
+                    };
+                });
+                // ===== MESAJI SİL =====
+                document.querySelectorAll('[data-delete-msg]').forEach(btn => {
+                    btn.onclick = () => {
+                        const msgId = btn.dataset.deleteMsg;
+                        const sentAt = btn.dataset.deleteSentat;
+                        window.deleteInboxMessage(msgId || null, sentAt);
+                    };
+                });
+                // ===== TEK BİR YANITI (EMOJİYİ) SİL =====
+                document.querySelectorAll('[data-delete-reply-msg]').forEach(btn => {
+                    btn.onclick = () => {
+                        const msgId = btn.dataset.deleteReplyMsg;
+                        const replyIdx = parseInt(btn.dataset.deleteReplyIdx);
+                        if (!msgId) return;
+                        window.deleteInboxReply(msgId, replyIdx);
                     };
                 });
             }
