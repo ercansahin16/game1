@@ -6607,6 +6607,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
         if (typeof window.__notifStartGlobalPolling === 'function') {
             window.__notifStartGlobalPolling();
         }
+        // ===== YENİ: Gerçek çevrimiçi durumu (presence) heartbeat'ini başlat =====
+        if (typeof window.__startPresenceHeartbeat === 'function') {
+            window.__startPresenceHeartbeat();
+        }
         
         // ===== SEVİYEYİ YÜKLE (GÜÇLENDİRİLMİŞ) =====
         try {
@@ -6667,6 +6671,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
         }
         if (typeof window.__notifStopLivePolling === 'function') {
             window.__notifStopLivePolling();
+        }
+        // ===== YENİ: Presence heartbeat'ini durdur =====
+        if (typeof window.__stopPresenceHeartbeat === 'function') {
+            window.__stopPresenceHeartbeat();
         }
         if (window.__notifState) { window.__notifState.open = false; window.__notifState.activeContactUid = null; window.__notifState.pickerFor = null; }
         
@@ -8277,6 +8285,18 @@ function __notifTimeLabel(ts) {
     const sameDay = d.toDateString() === now.toDateString();
     return sameDay ? d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
 }
+// Sohbet başlığında karşı tarafın GERÇEK durumunu gösterir (dekoratif değil):
+// lastActive bilinmiyorsa (henüz hiç çekilmemişse) nötr bir "•" gösterir,
+// bilinip de yakın zamandaysa yeşil nokta + "Çevrimiçi", değilse "X dk/sa önce aktifti" yazar.
+function __notifPresenceLabel(lastActive) {
+    if (lastActive === undefined) {
+        return `<span style="opacity:0.5;">senkronize ediliyor…</span>`;
+    }
+    const isOnline = lastActive && (Date.now() - lastActive < window.__presenceOnlineThresholdMs);
+    const dotColor = isOnline ? '#10b981' : 'rgba(255,255,255,0.25)';
+    const label = typeof __notifLastSeenLabel === 'function' ? __notifLastSeenLabel(lastActive) : (isOnline ? 'Çevrimiçi' : 'Çevrimdışı');
+    return `<span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow:0 0 5px #10b981;' : ''} flex-shrink:0;"></span><span>${label}</span>`;
+}
 
 // ===== MESAJ/YANIT İÇİN BENZERSİZ KISA ID ÜRETİCİ =====
 function genMsgId() {
@@ -8310,6 +8330,16 @@ window.__notifRefreshData = async function() {
     const systemMsgs = inboxAll.filter(m => !m.fromUid).slice().reverse();
     const contactList = Object.values(contacts).sort((a, b) => b.lastAt - a.lastAt);
     const totalUnreadChats = contactList.reduce((s, c) => s + (c.unread > 0 ? 1 : 0), 0) + systemMsgs.filter(m => !m.read).length;
+
+    // ===== Açık olan sohbetteki kişinin GERÇEK çevrimiçi durumunu al =====
+    // (dekoratif değil: karşı tarafın kendi belgesindeki lastActive heartbeat'ine bakar)
+    const activeUid = window.__notifState ? window.__notifState.activeContactUid : null;
+    if (activeUid && contacts[activeUid]) {
+        try {
+            const otherSnap = await getDoc(doc(db, 'users', activeUid));
+            contacts[activeUid].lastActive = otherSnap.exists() ? (otherSnap.data().lastActive || 0) : 0;
+        } catch (e) { contacts[activeUid].lastActive = 0; }
+    }
 
     window.__notifData = { myRef, myData, requests, inboxAll, outboxAll, contacts, contactList, systemMsgs, totalUnreadChats };
 
@@ -8414,8 +8444,12 @@ function __notifChatThreadHTML(data, contactUid) {
             <div style="display:flex; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.08);">
                 <button id="chatBackBtn" style="background:rgba(255,255,255,0.06); border:none; color:inherit; width:32px; height:32px; border-radius:50%; cursor:pointer; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.2);"><i class="fas fa-arrow-left"></i></button>
                 <div class="social-avatar small">${__notifInitials(c.name)}</div>
-                <span style="font-weight:700; font-size:14px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.name}</span>
-                <span title="Canlı güncelleniyor" style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981; flex-shrink:0;"></span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.name}</div>
+                    <div style="font-size:10.5px; opacity:0.6; display:flex; align-items:center; gap:4px;">
+                        ${__notifPresenceLabel(c.lastActive)}
+                    </div>
+                </div>
             </div>
             <div id="chatBubbleArea" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding:4px 2px;">
                 ${bubbles || '<div class="tswal-dim" style="text-align:center; padding:24px; font-size:12px;">Henüz mesaj yok, ilk mesajı sen gönder! 👋</div>'}
@@ -8534,9 +8568,11 @@ window.__notifWireDeleteButtons = function() {
 
 window.__notifWireList = function() {
     document.querySelectorAll('[data-open-chat]').forEach(row => {
-        row.onclick = () => {
+        row.onclick = async () => {
             window.__notifState.activeContactUid = row.dataset.openChat;
             window.__activeChatContactUid = row.dataset.openChat;
+            window.__notifRenderAll(); // anında liste->sohbet geçişini göster (presence "senkronize ediliyor" olarak başlar)
+            await window.__notifRefreshData(); // gerçek çevrimiçi durumunu hemen çek
             window.__notifRenderAll();
         };
     });
@@ -8798,6 +8834,9 @@ window.openNotificationsModal = async function(initialTab, activeContactUid) {
     }
 
     try {
+        window.__notifState.tab = wantTab;
+        window.__notifState.activeContactUid = wantContact || null;
+        window.__activeChatContactUid = wantContact || null;
         showLoadingAlert('🔔 Bildirimler yükleniyor...');
         await window.__notifRefreshData();
         closeLoadingAlert();
@@ -8806,10 +8845,6 @@ window.openNotificationsModal = async function(initialTab, activeContactUid) {
         console.log('openNotificationsModal hata:', e.message);
         return;
     }
-
-    window.__notifState.tab = wantTab;
-    window.__notifState.activeContactUid = wantContact || null;
-    window.__activeChatContactUid = wantContact || null;
 
     Swal.fire({
         title: '🔔 Bildirimler',
@@ -8960,6 +8995,47 @@ window.__notifStopGlobalPolling = function() {
     window.__notifSeenReqUids = new Set();
     window.__notifSeenMsgIds = new Set();
 };
+
+// ============================================================
+// ===== GERÇEK ÇEVRİMİÇİ DURUMU (PRESENCE / HEARTBEAT) =======
+// Kullanıcı uygulamayı açık tuttuğu sürece kendi belgesine periyodik
+// olarak "lastActive" zaman damgası yazar. Sohbet ekranındaki yeşil
+// nokta artık dekoratif değil: karşı tarafın belgesindeki bu zaman
+// damgasına bakıp gerçekten yakın zamanda aktif olup olmadığını
+// gösterir (yaklaşık 30-90 saniye çözünürlükte, gerçek zamanlı değil
+// ama gerçek veriye dayanır).
+// ============================================================
+window.__presenceHeartbeatTimer = null;
+window.__presenceOnlineThresholdMs = 90000; // 90 sn içinde heartbeat atmışsa "çevrimiçi" sayılır
+
+window.__presenceHeartbeatTick = async function() {
+    if (!currentUser) return;
+    try {
+        await updateDoc(doc(db, 'users', currentUser.uid), { lastActive: Date.now() });
+    } catch (e) { /* önemli değil */ }
+};
+window.__startPresenceHeartbeat = function() {
+    if (window.__presenceHeartbeatTimer) return;
+    window.__presenceHeartbeatTick();
+    window.__presenceHeartbeatTimer = setInterval(window.__presenceHeartbeatTick, 25000);
+};
+window.__stopPresenceHeartbeat = function() {
+    if (window.__presenceHeartbeatTimer) { clearInterval(window.__presenceHeartbeatTimer); window.__presenceHeartbeatTimer = null; }
+};
+
+// "X dk önce aktifti" gibi okunabilir bir etiket üretir.
+function __notifLastSeenLabel(lastActive) {
+    if (!lastActive) return 'Çevrimdışı';
+    const diffMs = Date.now() - lastActive;
+    if (diffMs < window.__presenceOnlineThresholdMs) return 'Çevrimiçi';
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Az önce aktifti';
+    if (mins < 60) return `${mins} dk önce aktifti`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} sa önce aktifti`;
+    const days = Math.floor(hours / 24);
+    return `${days} gün önce aktifti`;
+}
 
 // ===== ARKADAŞLARIM MODALI (takip ettiklerim listesi) =====
 window.openFriendsListModal = async function() {
