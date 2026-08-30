@@ -1636,9 +1636,45 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
                 cursor: pointer;
                 transition: transform 0.25s ease, background 0.25s ease;
                 flex-shrink: 0;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.1);
             }
             .header-more-btn:active { background: rgba(245,158,11,0.3); }
-            .header-more-btn.open { transform: rotate(-180deg); }
+            .header-more-btn.open { transform: rotate(90deg); }
+            
+            /* ===== MOBİL: "Bahçeye Çık" yazısı yerine 3D geri oku =====
+               Kullanıcı bir alt ekrandayken (sınav, ders, sıralama vb.)
+               homeLogo'ya JS tarafından 'logo-back-mode' sınıfı ekleniyor
+               (bkz. animateLogo()); burada o durumda metni gizleyip
+               yerine yuvarlak, kabartma efektli bir "<" ikonu gösteriyoruz. */
+            #homeLogo.logo-back-mode {
+                font-size: 0 !important;
+                color: transparent !important;
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(145deg, #fbbf24, #f59e0b);
+                box-shadow: 0 3px 8px rgba(245,158,11,0.4), inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -2px 3px rgba(0,0,0,0.18);
+                position: relative;
+                padding: 0 !important;
+                margin: 0 !important;
+                transition: transform 0.15s ease;
+            }
+            #homeLogo.logo-back-mode::before {
+                font-family: "Font Awesome 6 Free";
+                font-weight: 900;
+                content: "\f053";
+                font-size: 15px;
+                color: #121212;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            #homeLogo.logo-back-mode:active { transform: scale(0.92); }
             
             .header-extras {
                 display: none;
@@ -3616,7 +3652,7 @@ body.light-theme #profileScreen .info-row button:hover {
         </div>
         
         <!-- Mobilde: Müzik/Yardım/Seri'yi açıp kapatan buton -->
-        <button class="header-more-btn" id="headerMoreBtn" title="Diğer"><i class="fas fa-chevron-left"></i></button>
+        <button class="header-more-btn" id="headerMoreBtn" title="Diğer"><i class="fas fa-ellipsis-vertical"></i></button>
         
         <!-- 5. Çıkış Butonu -->
         <div class="logout-icon hidden" id="logoutIconBtn">
@@ -4790,6 +4826,7 @@ window.goHome = () => {
       if (homeLogo) {
         homeLogo.textContent = "Saadetyolu";
         homeLogo.classList.remove('logo-animate'); // Animasyonu temizle
+        homeLogo.classList.remove('logo-back-mode'); // ✅ Ana sayfadayız, "<" ikonunu kaldır
     }
     
     closeMenu();
@@ -11420,6 +11457,9 @@ function animateLogo() {
     const homeLogo = document.getElementById('homeLogo');
     if (!homeLogo) return;
     
+    // ✅ Artık bir alt ekrandayız demektir - mobilde metni "<" ikonuna çeviriyoruz
+    homeLogo.classList.add('logo-back-mode');
+    
     // Önce eski animasyonu temizle
     homeLogo.classList.remove('logo-animate');
     
@@ -12874,9 +12914,34 @@ function handleHeaderExit() {
                         wordsScreen.style.display !== 'none' && 
                         wordsScreen.style.display !== '';
     
+    // ✅ YENİ: Sınav ekranı kontrol et - ana sayfaya değil, BİR ÖNCEKİ MENÜYE
+    // (Sınavlar listesine) dönmeli. Örn: Sınav > Sınavlar listesi > (buradan
+    // sonra tekrar basılırsa) Ana Sayfa.
+    const quizScreenEl = document.getElementById('quizScreen');
+    const isQuizOpen = quizScreenEl &&
+                        quizScreenEl.style.display !== 'none' &&
+                        quizScreenEl.style.display !== '';
+    
     if (isKarmaOpen) {
         // SADECE yarışma açıkken uyarı göster
         confirmExitKarma();
+    } else if (isQuizOpen) {
+        // Sınav hâlâ devam ediyorsa (bitmediyse) onay iste, ilerleme kaybı konusunda uyar
+        if (typeof examCompleted !== 'undefined' && !examCompleted) {
+            showConfirm(
+                'Sınavdan çıkarsan bu denemenin ilerlemesi kaybolur. Sınavlar listesine dönmek istediğine emin misin?',
+                '⚠️ Sınavdan Çık',
+                'Evet, çık'
+            ).then((result) => {
+                if (result.isConfirmed) {
+                    stopTimer();
+                    window.goExams(true);
+                }
+            });
+        } else {
+            // Sınav zaten bitmiş (sonuç ekranındayız), kayıp bir şey yok
+            window.goExams(true);
+        }
     } else {
         // Diğer tüm ekranlarda direkt ana sayfa
         goHome();
