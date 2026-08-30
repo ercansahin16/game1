@@ -2679,44 +2679,46 @@ body.light-theme #karmaScreen .option-quiz {
    ============================================================ */
 
 .compact-swal {
-    border-radius: 12px !important;
+    border-radius: 14px !important;
+    max-width: 340px !important;
+    padding: 1.1rem !important;
 }
 
 .compact-swal .swal2-title {
-    font-size: 18px !important;
+    font-size: 16px !important;
     padding: 0 !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
 }
 
 .compact-swal .swal2-html-container {
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     margin: 4px 0 !important;
     padding: 0 !important;
 }
 
 .compact-swal .swal2-actions {
-    margin-top: 12px !important;
+    margin-top: 10px !important;
     gap: 8px !important;
 }
 
 .compact-swal .swal2-confirm {
-    font-size: 13px !important;
-    padding: 8px 20px !important;
+    font-size: 12.5px !important;
+    padding: 7px 18px !important;
 }
 
 .compact-swal .swal2-cancel {
-    font-size: 13px !important;
-    padding: 8px 20px !important;
+    font-size: 12.5px !important;
+    padding: 7px 18px !important;
 }
 
 .compact-swal .swal2-icon {
-    margin: 12px auto 4px auto !important;
-    width: 56px !important;
-    height: 56px !important;
+    margin: 8px auto 4px auto !important;
+    width: 46px !important;
+    height: 46px !important;
 }
 
 .compact-swal .swal2-icon .swal2-icon-content {
-    font-size: 32px !important;
+    font-size: 26px !important;
 }
 
 /* Küçük ekran için */
@@ -2766,6 +2768,12 @@ body.light-theme .themed-swal {
 }
 body:not(.light-theme) .swal2-popup.themed-swal {
     background: #1a1a1a !important;
+    border: 1px solid rgba(245,158,11,0.45) !important;
+    box-shadow:
+        0 0 0 1px rgba(245,158,11,0.25),
+        0 0 18px rgba(245,158,11,0.45),
+        0 0 42px rgba(245,158,11,0.22),
+        0 12px 36px rgba(0,0,0,0.55) !important;
 }
 body:not(.light-theme) .swal2-popup.themed-swal .swal2-title,
 body:not(.light-theme) .swal2-popup.themed-swal .swal2-html-container {
@@ -2773,6 +2781,12 @@ body:not(.light-theme) .swal2-popup.themed-swal .swal2-html-container {
 }
 body.light-theme .swal2-popup.themed-swal {
     background: #ffffff !important;
+    border: 1px solid rgba(245,158,11,0.4) !important;
+    box-shadow:
+        0 0 0 1px rgba(245,158,11,0.2),
+        0 0 16px rgba(245,158,11,0.3),
+        0 0 34px rgba(245,158,11,0.15),
+        0 10px 30px rgba(0,0,0,0.18) !important;
 }
 body.light-theme .swal2-popup.themed-swal .swal2-title,
 body.light-theme .swal2-popup.themed-swal .swal2-html-container {
@@ -4309,6 +4323,24 @@ import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, quer
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
+    // ============================================================
+    // ===== TÜM MODALLAR İÇİN KÜRESEL TEMA VARSAYILANI ===========
+    // Uygulamadaki onlarca Swal.fire() çağrısının çoğu kendi
+    // customClass'ını belirtmiyordu, bu yüzden bazı modallar (Sınavı
+    // Bitir onayı, Sınav başlatma, Yükleniyor ekranı vb.) her zaman
+    // SweetAlert2'nin varsayılan BEYAZ temasıyla açılıyordu - karanlık
+    // temada göz yorucu ve tutarsız duruyordu. Swal'ı burada bir
+    // "mixin" ile genişletip varsayılan customClass'a 'themed-swal'
+    // ekliyoruz; böylece customClass BELİRTMEYEN her Swal.fire() çağrısı
+    // otomatik olarak doğru temayı ve neon çerçeveyi alıyor. Zaten kendi
+    // customClass'ını belirten çağrılar aşağıda ayrıca güncellendi.
+    // ============================================================
+    if (typeof window.Swal !== 'undefined') {
+        window.Swal = window.Swal.mixin({
+            customClass: { popup: 'themed-swal compact-swal' }
+        });
+    }
+
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
         authDomain: "duapro-a7d7e.firebaseapp.com",
@@ -4455,7 +4487,7 @@ if (typeof showExamConfirm === 'undefined') {
                 width: '400px',
                 padding: '1.2rem',
                 customClass: {
-                    popup: 'compact-swal',
+                    popup: 'compact-swal themed-swal',
                     title: 'compact-title',
                     htmlContainer: 'compact-html'
                 }
@@ -4963,7 +4995,7 @@ bookSelect.onchange = async () => {
                 width: '380px',
                 padding: '1.5rem',
                 customClass: {
-                    popup: 'compact-swal'
+                    popup: 'compact-swal themed-swal'
                 }
             });
             return;
@@ -5010,7 +5042,7 @@ bookSelect.onchange = async () => {
             width: '380px',
             padding: '1.5rem',
             customClass: {
-                popup: 'compact-swal'
+                popup: 'compact-swal themed-swal'
             }
         });
     }
@@ -5337,7 +5369,7 @@ async function loadUserStats() {
                 padding: '1.5rem',
                 timer: 3000,
                 timerProgressBar: true,
-                customClass: { popup: 'compact-swal' }
+                customClass: { popup: 'compact-swal themed-swal' }
             });
             return;
         }
@@ -5574,7 +5606,7 @@ async function loadUserStats() {
                     confirmButtonText: 'Tamam',
                     width: '380px',
                     padding: '1.5rem',
-                    customClass: { popup: 'compact-swal' }
+                    customClass: { popup: 'compact-swal themed-swal' }
                 });
             } catch (signOutError) {
                 console.error('❌ Çıkış hatası:', signOutError);
@@ -5926,6 +5958,29 @@ function startExam(exam) {
     });
 }
 
+// ===== "TEKRAR DENE": aynı sınavı yeniden, baştan başlatır =====
+// Önceden "Tekrar Dene" butonu kullanıcıyı kitap/ders seçim ekranına
+// (goExams) gönderiyordu; oysa currentExam zaten bellekte duruyor,
+// bu yüzden hiçbir seçim yapmaya gerek kalmadan doğrudan aynı sınavı
+// sıfırlayıp yeniden başlatıyoruz.
+window.restartCurrentExam = function() {
+    if (!currentExam || !currentExam.questions) {
+        window.goExams(true);
+        return;
+    }
+    stopTimer();
+    userAnswers = new Array(currentExam.questions.length).fill(null);
+    examCompleted = false;
+    currentQuestionIndex = 0;
+    timerInterval = null;
+    timeLeft = 30;
+
+    document.getElementById('examsScreen').style.display = 'none';
+    document.getElementById('quizScreen').style.display = 'block';
+    showCurrentQuestion();
+    startTimer();
+};
+
 
 function showCurrentQuestion() {
     // ===== SORU KONTROLÜ =====
@@ -6177,7 +6232,7 @@ async function completeExam() {
                     <div>Boş</div>
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="goExams(true)"><i class="fas fa-redo"></i> Tekrar Dene</button>
+            <button class="btn btn-primary" onclick="restartCurrentExam()"><i class="fas fa-redo"></i> Tekrar Dene</button>
         </div>
         <div class="all-questions-container">
             <div class="all-questions-title">📋 Tüm Sorular ve Cevaplarınız</div>
@@ -7146,7 +7201,7 @@ async function loadExamsByLesson(lessonId) {
                 width: '380px',
                 padding: '1.5rem',
                 customClass: {
-                    popup: 'compact-swal'
+                    popup: 'compact-swal themed-swal'
                 }
             });
             return;
@@ -7167,7 +7222,7 @@ async function loadExamsByLesson(lessonId) {
             width: '380px',
             padding: '1.5rem',
             customClass: {
-                popup: 'compact-swal'
+                popup: 'compact-swal themed-swal'
             }
         });
     }
@@ -11308,7 +11363,7 @@ function showPuanDetay(quizScore, averageScore, mevcutSeviye, seviyePuani, total
         width: '480px',
         padding: '1.5rem',
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     });
 }
@@ -11963,7 +12018,7 @@ if (examBookSelect) {
                     confirmButtonText: 'Tamam',
                     width: '380px',
                     padding: '1.5rem',
-                    customClass: { popup: 'compact-swal' }
+                    customClass: { popup: 'compact-swal themed-swal' }
                 });
             }
         }
@@ -12026,7 +12081,7 @@ if (examLessonSelect) {
                     confirmButtonText: 'Tamam',
                     width: '380px',
                     padding: '1.5rem',
-                    customClass: { popup: 'compact-swal' }
+                    customClass: { popup: 'compact-swal themed-swal' }
                 });
             }
         }
@@ -12673,7 +12728,7 @@ function showLoadingAlert(message = '⏳ Yükleniyor, lütfen bekleyin...') {
             Swal.showLoading();
         },
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     });
 }
@@ -12694,7 +12749,7 @@ function showErrorAlert(message) {
         width: '380px',
         padding: '1.5rem',
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     });
 }
@@ -12712,7 +12767,7 @@ function showSuccessAlert(message) {
         width: '380px',
         padding: '1.5rem',
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     });
 }
@@ -12792,7 +12847,7 @@ window.confirmExitKarma = function() {
         width: '450px',
         padding: '1.5rem',
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     }).then((result) => {
         if (result.isConfirmed) {
@@ -13448,7 +13503,7 @@ window.confirmExitKarmaFromProfile = function() {
         width: '450px',
         padding: '1.5rem',
         customClass: {
-            popup: 'compact-swal'
+            popup: 'compact-swal themed-swal'
         }
     }).then((result) => {
         if (result.isConfirmed) {
