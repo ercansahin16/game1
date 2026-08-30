@@ -2,8 +2,18 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
+
+    <!-- ===== PWA / "APK'ya dönüştürülebilir" uygulama desteği ===== -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SaadetYolu">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     
     <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -385,6 +395,98 @@ select option {
             padding: 8px 12px;
         }
         
+/* ============================================================
+   ÖZEL AÇILIR MENÜ (native <select>'in yerini alan, ekranı
+   kaplamayan, boşluğa dokununca kapanan dropdown)
+   ============================================================ */
+.custom-select-wrap { position: relative; width: 100%; }
+.native-select-hidden { display: none !important; }
+.custom-select-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 14px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 0 1px 1px rgba(255,255,255,0.05);
+}
+.custom-select-trigger:hover:not(.disabled) { background: rgba(255,255,255,0.12); }
+.custom-select-trigger.open {
+    background: rgba(245,158,11,0.12);
+    box-shadow: 0 0 0 1px rgba(245,158,11,0.4), 0 3px 10px rgba(0,0,0,0.2);
+}
+.custom-select-trigger.disabled { opacity: 0.5; cursor: not-allowed; }
+.custom-select-trigger-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+.custom-select-trigger-arrow {
+    flex-shrink: 0;
+    font-size: 12px;
+    opacity: 0.7;
+    transition: transform 0.25s ease;
+}
+.custom-select-trigger.open .custom-select-trigger-arrow { transform: rotate(180deg); }
+
+/* Panel (açılan liste) ve arkasındaki tıklanabilir boşluk (backdrop) */
+.custom-select-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0,0,0,0.15);
+}
+.custom-select-panel {
+    position: fixed;
+    z-index: 9999;
+    overflow-y: auto;
+    background: #1a1a1a;
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
+    padding: 6px;
+    animation: customSelectPop 0.15s ease;
+}
+@keyframes customSelectPop {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.custom-select-item {
+    padding: 11px 14px;
+    border-radius: 9px;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: normal;
+    word-break: break-word;
+}
+.custom-select-item:hover { background: rgba(255,255,255,0.08); }
+.custom-select-item.active { background: rgba(245,158,11,0.15); color: #f59e0b; font-weight: 700; }
+.custom-select-item.placeholder { opacity: 0.6; font-style: italic; }
+.custom-select-item.locked { opacity: 0.45; cursor: not-allowed; }
+.custom-select-item.locked:hover { background: transparent; }
+@media (max-width: 480px) {
+    .custom-select-trigger { font-size: 13px; padding: 11px 13px; }
+    .custom-select-item { font-size: 14px; padding: 12px 14px; }
+}
+body.light-theme .custom-select-trigger { background: rgba(0,0,0,0.05); color: #1a1a1a; }
+body.light-theme .custom-select-trigger:hover:not(.disabled) { background: rgba(0,0,0,0.08); }
+body.light-theme .custom-select-panel { background: #ffffff; border-color: rgba(245,158,11,0.3); }
+body.light-theme .custom-select-item { color: #1a1a1a; }
+body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
+
         /* Kelime Alanları */
         .words-area {
             background: rgba(255,255,255,0.03);
@@ -676,13 +778,102 @@ select option {
         
         .quiz-header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(245,158,11,0.08), rgba(255,255,255,0.02));
+            border: 1px solid rgba(245,158,11,0.15);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.04);
+        }
+        .quiz-breadcrumb {
+            display: flex;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 6px;
+            font-size: 11.5px;
+            color: #f59e0b;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        .quiz-breadcrumb-sep { opacity: 0.4; font-weight: 400; }
+        .quiz-progress-row { display: flex; align-items: center; gap: 10px; }
+        .quiz-progress-track {
+            flex: 1;
+            height: 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .quiz-progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            box-shadow: 0 0 8px rgba(245,158,11,0.6);
+            transition: width 0.35s ease;
+        }
+        .quiz-progress-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-dim, rgba(255,255,255,0.6));
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .quiz-progress-current { color: #f59e0b; font-size: 14px; }
+        .quiz-header-bottom-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .quiz-answered-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #10b981;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+            padding: 6px 11px;
+            border-radius: 20px;
+        }
+        .quiz-timer-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #f59e0b;
+            background: rgba(245,158,11,0.12);
+            border: 1px solid rgba(245,158,11,0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+        .quiz-timer-pill.quiz-timer-danger {
+            color: #ef4444;
+            background: rgba(239,68,68,0.14);
+            border-color: rgba(239,68,68,0.35);
+            animation: quizTimerPulse 1s ease-in-out infinite;
+        }
+        @keyframes quizTimerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .quiz-finish-btn {
+            margin-left: auto;
+            padding: 7px 14px !important;
+            font-size: 12px !important;
+            border-radius: 20px !important;
+            box-shadow: 0 3px 8px rgba(239,68,68,0.3), inset 0 1px 1px rgba(255,255,255,0.15) !important;
+        }
+        @media (max-width: 480px) {
+            .quiz-breadcrumb { font-size: 10.5px; }
+            .quiz-finish-btn { margin-left: 0; flex: 1; justify-content: center; }
         }
         .quiz-info { display: flex; gap: 20px; font-size: 14px; }
         .quiz-info span { color: #f59e0b; font-weight: bold; }
@@ -1541,12 +1732,10 @@ select option {
                 overflow-y: visible !important;
             }
             
-            .quiz-header { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+            .quiz-header { flex-direction: column; margin-bottom: 15px; gap: 8px; }
             .quiz-info { gap: 12px; font-size: 11px; flex-wrap: wrap; }
             .quiz-info div { font-size: 11px; }
             .quiz-card { padding: 15px; }
-            .question-text { font-size: 22px !important; margin-bottom: 18px; }
-            .option-text { font-size: 13px !important; }
             .option-letter { font-size: 14px !important; }
             .options { gap: 8px; }
             .option { padding: 8px 12px !important; gap: 8px !important; }
@@ -1793,12 +1982,12 @@ select option {
             }
             
             .button-group .btn { padding: 6px 3px; font-size: 15px; height: 50px; }
-            .option { padding: 6px 10px !important; gap: 6px !important; }
-            .option-letter { font-size: 12px !important; width: 24px !important; }
+            .option { padding: 11px 12px !important; gap: 9px !important; }
+            .option-letter { font-size: 16px !important; width: 22px !important; }
             .quiz-navigation { gap: 6px; }
             .quiz-navigation .btn { padding: 6px 3px; font-size: 10px; }
             .quiz-navigation .btn i { font-size: 9px; }
-            .quiz-header .btn-danger { padding: 5px 8px !important; font-size: 10px !important; }
+            .quiz-finish-btn { padding: 7px 14px !important; font-size: 12px !important; }
             .quiz-info { gap: 8px; }
             .quiz-info div { font-size: 10px !important; }
             
@@ -5751,42 +5940,49 @@ function showCurrentQuestion() {
     const container = document.getElementById('quizContent');
     container.innerHTML = `
         <div class="quiz-header">
-            <!-- Kitap, Ders, Sınav bilgileri - DAHA KOMPAKT -->
-            <div style="background: rgba(245,158,11,0.08); padding: 4px 10px; border-radius: 8px; margin-bottom: 6px;">
-                <div style="font-size: 11px; color: #f59e0b; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-                    <span><i class="fas fa-book"></i> ${bookName}</span>
-                    <span><i class="fas fa-graduation-cap"></i> ${lessonName}</span>
-                    <span><i class="fas fa-pen"></i> ${examTitle}</span>
+            <!-- Kitap, Ders, Sınav bilgileri -->
+            <div class="quiz-breadcrumb">
+                <span><i class="fas fa-book"></i> ${bookName}</span>
+                <span class="quiz-breadcrumb-sep">›</span>
+                <span><i class="fas fa-graduation-cap"></i> ${lessonName}</span>
+                <span class="quiz-breadcrumb-sep">›</span>
+                <span><i class="fas fa-pen"></i> ${examTitle}</span>
+            </div>
+            <!-- Soru ilerleme çubuğu -->
+            <div class="quiz-progress-row">
+                <div class="quiz-progress-track">
+                    <div class="quiz-progress-fill" style="width: ${((currentQuestionIndex + 1) / currentExam.questions.length) * 100}%;"></div>
+                </div>
+                <div class="quiz-progress-label">
+                    <span class="quiz-progress-current">${currentQuestionIndex + 1}</span>/${currentExam.questions.length}
                 </div>
             </div>
-            <!-- Bilgi satırı - DAHA KOMPAKT -->
-            <div class="quiz-info" style="font-size: 12px; gap: 12px; margin-bottom: 4px;">
-                <div><i class="fas fa-list"></i> Soru <span>${currentQuestionIndex + 1}</span> / ${currentExam.questions.length}</div>
-                <div><i class="fas fa-check-circle"></i> <span>${answeredCount}</span> / ${currentExam.questions.length}</div>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <div id="questionTimer" style="font-size: 13px; font-weight: bold; color: ${timeLeft <= 10 ? '#ef4444' : '#f59e0b'};">
+            <div class="quiz-header-bottom-row">
+                <div class="quiz-answered-badge" title="Cevaplanan soru sayısı">
+                    <i class="fas fa-check-circle"></i> ${answeredCount}/${currentExam.questions.length}
+                </div>
+                <div id="questionTimer" class="quiz-timer-pill ${timeLeft <= 10 ? 'quiz-timer-danger' : ''}">
                     <i class="fas fa-hourglass-half"></i> ${timeLeft} sn
                 </div>
-                <button class="btn btn-danger" onclick="checkAndCompleteExam()" style="padding: 4px 12px; font-size: 11px;">
-                    <i class="fas fa-flag-checkered"></i> Sınavı Bitir
+                <button class="btn btn-danger quiz-finish-btn" onclick="checkAndCompleteExam()">
+                    <i class="fas fa-flag-checkered"></i> Bitir
                 </button>
             </div>
         </div>
         
         <!-- SORU KARTI - DAHA KOMPAKT -->
         <div class="quiz-card" style="padding: 14px 16px; margin-bottom: 12px;">
-           <div class="question-text" style="direction: ltr; text-align: left; font-size: 18px !important; margin-bottom: 12px !important;"> 
+           <div class="question-text" style="direction: ltr; text-align: left; font-size: 21px !important; margin-bottom: 14px !important;"> 
                 <span style="background: #f59e0b20; padding: 2px 10px; border-radius: 14px; margin-right: 8px !important; margin-bottom: 4px !important; display: inline-block; font-size: 13px;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap; direction: ltr; text-align: left; font-size: 18px;">${questionText}</span>
+                <span style="white-space: pre-wrap; direction: ltr; text-align: left; font-size: 21px;">${questionText}</span>
             </div>
             
             <!-- ŞIKLAR - DAHA KOMPAKT -->
-            <div class="options" id="optionsContainer" style="gap: 6px; margin-bottom: 12px;">
+            <div class="options" id="optionsContainer" style="gap: 8px; margin-bottom: 12px;">
                 ${question.options.map((opt, i) => `
-                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="padding: 8px 12px; gap: 8px; border-radius: 8px;">
-                        <div class="option-letter" style="font-size: 14px !important; min-width: 20px;">${letters[i]}.</div>
-                        <div class="option-text" style="direction: ltr; text-align: left; font-size: 14px !important;">${opt}</div>
+                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="padding: 12px 14px; gap: 10px; border-radius: 10px;">
+                        <div class="option-letter" style="font-size: 17px !important; min-width: 22px;">${letters[i]}.</div>
+                        <div class="option-text" style="direction: ltr; text-align: left; font-size: 17px !important;">${opt}</div>
                     </div>
                 `).join('')}
             </div>
@@ -7085,12 +7281,8 @@ document.getElementById('zoomBtn').onclick = () => {
 function updateTimerDisplay() {
     const timerElement = document.getElementById('questionTimer');
     if (timerElement) {
-        timerElement.innerHTML = `<i class="fas fa-hourglass-half"></i> Kalan Süre: ${timeLeft} sn`;
-        if (timeLeft <= 10) {
-            timerElement.style.color = '#ef4444';
-        } else {
-            timerElement.style.color = '#f59e0b';
-        }
+        timerElement.innerHTML = `<i class="fas fa-hourglass-half"></i> ${timeLeft} sn`;
+        timerElement.classList.toggle('quiz-timer-danger', timeLeft <= 10);
     }
 }
 
@@ -13271,7 +13463,156 @@ function openProfileAfterExit() {
     closeMenu();
 }
 
+// ============================================================
+// ===== ÖZEL AÇILIR MENÜ (CUSTOM DROPDOWN) =====================
+// Sorun: bazı telefonlarda native <select> açılınca (özellikle çok
+// sayıda ders/kitap seçeneği varken) liste tüm ekranı kaplıyor ve
+// dışarıya (boşluğa) dokunup kapatacak alan kalmıyordu.
+// Çözüm: native <select>'i olduğu gibi (gizli) tutup üstüne kendi
+// stilimizle, yüksekliği sınırlı, dışarı tıklanınca kapanan bir
+// panel çiziyoruz. Böylece mevcut tüm .value / .onchange kodu hiç
+// değişmeden çalışmaya devam ediyor.
+// ============================================================
+function enhanceSelectAsDropdown(selectEl) {
+    if (!selectEl || selectEl.dataset.customEnhanced) return;
+    selectEl.dataset.customEnhanced = 'true';
+
+    // Native select'i erişilebilirlik için DOM'da tutuyoruz ama görünmez yapıyoruz
+    selectEl.classList.add('native-select-hidden');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'custom-select-wrap';
+    selectEl.parentNode.insertBefore(wrap, selectEl);
+    wrap.appendChild(selectEl);
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-select-trigger';
+    trigger.innerHTML = `<span class="custom-select-trigger-label"></span><i class="fas fa-chevron-down custom-select-trigger-arrow"></i>`;
+    wrap.appendChild(trigger);
+
+    const labelEl = trigger.querySelector('.custom-select-trigger-label');
+
+    let panel = null;
+    let backdrop = null;
+
+    function currentLabel() {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        return opt ? opt.textContent : '';
+    }
+    function syncLabel() {
+        labelEl.textContent = currentLabel();
+        trigger.disabled = selectEl.disabled;
+        trigger.classList.toggle('disabled', selectEl.disabled);
+    }
+
+    function closePanel() {
+        if (panel) { panel.remove(); panel = null; }
+        if (backdrop) { backdrop.remove(); backdrop = null; }
+        trigger.classList.remove('open');
+    }
+
+    function buildPanel() {
+        panel = document.createElement('div');
+        panel.className = 'custom-select-panel';
+
+        Array.from(selectEl.options).forEach((opt) => {
+            const item = document.createElement('div');
+            item.className = 'custom-select-item';
+            if (opt.disabled) item.classList.add('locked');
+            if (opt.value === selectEl.value) item.classList.add('active');
+            if (!opt.value) item.classList.add('placeholder');
+            item.textContent = opt.textContent;
+            item.addEventListener('click', () => {
+                if (opt.disabled) {
+                    if (typeof showTinyWarning === 'function') {
+                        showTinyWarning('🔒 Bu seçenek kilitli.', 'fa-lock');
+                    }
+                    return;
+                }
+                selectEl.value = opt.value;
+                syncLabel();
+                closePanel();
+                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            panel.appendChild(item);
+        });
+
+        document.body.appendChild(panel);
+        positionPanel();
+    }
+
+    function positionPanel() {
+        if (!panel) return;
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const maxH = Math.min(320, Math.max(spaceBelow, spaceAbove) - 24);
+        panel.style.maxHeight = Math.max(140, maxH) + 'px';
+        panel.style.width = rect.width + 'px';
+        panel.style.left = rect.left + 'px';
+
+        if (spaceBelow >= 160 || spaceBelow >= spaceAbove) {
+            panel.style.top = (rect.bottom + 6) + 'px';
+            panel.style.bottom = 'auto';
+        } else {
+            panel.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            panel.style.top = 'auto';
+        }
+    }
+
+    function openPanel() {
+        if (selectEl.disabled) return;
+        if (panel) { closePanel(); return; }
+
+        backdrop = document.createElement('div');
+        backdrop.className = 'custom-select-backdrop';
+        // ✅ Boşluğa dokununca (backdrop'a tıklanınca) sadece kapanır, seçim değişmez
+        backdrop.addEventListener('click', closePanel);
+        document.body.appendChild(backdrop);
+
+        buildPanel();
+        trigger.classList.add('open');
+
+        const reposition = () => positionPanel();
+        window.addEventListener('resize', reposition, { once: true });
+        window.addEventListener('scroll', () => closePanel(), { once: true, capture: true });
+    }
+
+    trigger.addEventListener('click', openPanel);
+
+    // Native select'in options'ları koddaki farklı yerlerde .innerHTML/.appendChild
+    // ile yeniden oluşturuluyor - bunları otomatik yakalayıp senkron kalmak için:
+    const observer = new MutationObserver(() => { syncLabel(); if (panel) { closePanel(); } });
+    observer.observe(selectEl, { childList: true });
+
+    // Bazı yerlerde select.value doğrudan (change event'siz) değiştiriliyor;
+    // düşük maliyetli bir periyodik senkronizasyonla etiketi her zaman güncel tutuyoruz.
+    setInterval(syncLabel, 500);
+
+    syncLabel();
+}
+
+function enhanceAllDropdownSelects() {
+    ['bookSelect', 'lessonSelect', 'examBookSelect', 'examLessonSelect', 'myWordsBookSelect'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) enhanceSelectAsDropdown(el);
+    });
+}
+enhanceAllDropdownSelects();
+
+
     
+</script>
+<script>
+    // ===== SERVICE WORKER KAYDI (PWA çevrimdışı destek + "Ana Ekrana Ekle") =====
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js').catch((err) => {
+                console.log('Service worker kaydı başarısız:', err);
+            });
+        });
+    }
 </script>
 </body>
 </html>
