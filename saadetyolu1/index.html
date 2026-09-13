@@ -3906,7 +3906,6 @@ body.light-theme #profileScreen .info-row button:hover {
     </div>
     <div class="arabic-word" id="arabicWord">---</div>
     <div class="turkish-word" id="turkishWord"></div>
-    <div class="word-tap-hint" id="wordTapHint"><i class="fas fa-hand-pointer"></i> Anlamı görmek için dokun</div>
     
     <!-- ✅ YENİ: Kelime Listeme Ekle Butonu -->
     <button id="addToMyWordsBtn" class="btn-add-to-list" data-word-id="" data-arabic="" data-turkish="" title="Kelime Listeme Ekle">
@@ -3918,6 +3917,7 @@ body.light-theme #profileScreen .info-row button:hover {
                     <i class="fas fa-arrow-right"></i> Sonraki Derse Geç
                 </button>
                 <div class="navigation">
+                    <div class="word-tap-hint" id="wordTapHint"><i class="fas fa-hand-pointer"></i> Anlamı görmek için dokun</div>
                     <div class="progress-info">
                         <span id="currentIndex">0</span> / <span id="totalWords">0</span>
                         <div class="progress-bar">
@@ -5577,14 +5577,19 @@ function showTinyWarning(message, icon = 'fa-lock') {
         color: #f59e0b;
         border: 1px solid rgba(245,158,11,0.4);
         padding: 10px 18px;
-        border-radius: 30px;
+        border-radius: 16px;
         font-size: 13px;
         font-weight: 600;
         box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         z-index: 9999;
         opacity: 0;
         transition: opacity 0.25s ease, transform 0.25s ease;
-        white-space: nowrap;
+        white-space: normal;
+        max-width: min(92vw, 380px);
+        width: max-content;
+        text-align: center;
+        line-height: 1.4;
+        box-sizing: border-box;
     `;
     document.body.appendChild(el);
     
@@ -13261,7 +13266,12 @@ window.removeFromMyWords = async function(wordId) {
         
         // ===== ANLIK OLARAK LİSTEDEN KALDIR =====
         // Kelime Listem sayfasındaki kartı kaldır
-        const wordCard = document.querySelector(`[data-word-id="${wordId}"]`);
+        // ✅ DÜZELTME: Bu sorgu önceden sayfadaki TÜM [data-word-id] elemanlarını
+        // buluyordu — bu da "Kelime Öğren" ekranındaki +/- butonunu (o da aynı
+        // data-word-id'yi taşıyor) yanlışlıkla DOM'dan tamamen siliyordu, buton
+        // sayfa yenilenene kadar bir daha hiç görünmüyordu. Artık sadece gerçek
+        // liste kartlarının bulunduğu container'lar içinde aranıyor.
+        const wordCard = document.querySelector(`#myWordsList [data-word-id="${wordId}"], #sandikWordsList [data-word-id="${wordId}"]`);
         if (wordCard) {
             // Kartı kaldır
             wordCard.remove();
