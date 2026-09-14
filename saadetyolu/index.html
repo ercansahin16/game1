@@ -513,7 +513,129 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             text-align: center;
             position: relative;
             transition: 0.3s;
+            touch-action: pan-y; /* yatay kaydırmayı biz yönetiyoruz, dikey scroll serbest kalsın */
         }
+
+        /* ============================================================
+           📱 KELİME KARTI - MOBİL KAYDIRMA (SWIPE) ANİMASYONU
+           Sadece mobilde JS tarafından tetiklenir; masaüstünde bu
+           sınıflar hiç eklenmediği için görsel olarak bir etkisi olmaz.
+           ============================================================ */
+        .word-card.wc-exit-left  { transform: translateX(-110%) rotate(-4deg); opacity: 0; }
+        .word-card.wc-exit-right { transform: translateX(110%) rotate(4deg); opacity: 0; }
+        .word-card.wc-enter-from-right { transform: translateX(110%) rotate(4deg); opacity: 0; transition: none !important; }
+        .word-card.wc-enter-from-left  { transform: translateX(-110%) rotate(-4deg); opacity: 0; transition: none !important; }
+
+        /* Mobilde: dokun-göster ipucu (yalnızca henüz gösterilmemiş kelimede görünür) */
+        .word-tap-hint {
+            display: none;
+            font-size: 11px;
+            opacity: 0.55;
+            margin-top: 6px;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        /* ============================================================
+           💡 KİŞİSEL KELİME İPUCU (kullanıcının kendi hatırlatma notu/emojisi)
+           Sol üstte: ikon (ipucu ekle/düzenle). Sol ALT köşede: küçük "ipucu"
+           etiketi (basınca gerçek ipucu metni açılır/kapanır - gizli kalır).
+           ============================================================ */
+        .word-hint-toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.4);
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.9;
+            transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+        .word-hint-toggle-btn:hover { opacity: 1; transform: scale(1.1); }
+        .word-hint-toggle-btn.has-hint {
+            background: rgba(16,185,129,0.18);
+            border-color: rgba(16,185,129,0.5);
+            color: #10b981;
+        }
+        .word-hint-label {
+            position: absolute;
+            bottom: 10px;
+            left: 14px;
+            z-index: 2;
+            display: none;
+            font-size: 10px;
+            opacity: 0.5;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            text-underline-offset: 2px;
+            user-select: none;
+            max-width: 100px;
+            text-align: left;
+            line-height: 1.25;
+            word-break: break-word;
+            transition: opacity 0.15s ease, color 0.15s ease;
+        }
+        .word-hint-label:hover { opacity: 0.75; }
+        .word-hint-label.is-revealed {
+            opacity: 0.95;
+            font-style: italic;
+            font-weight: 600;
+            text-decoration: none;
+            color: #f59e0b;
+        }
+        @media (max-width: 768px) {
+            .word-hint-toggle-btn { top: 8px; left: 8px; width: 26px; height: 26px; font-size: 12px; }
+            .word-hint-label { bottom: 8px; left: 10px; font-size: 9px; max-width: 80px; }
+        }
+
+        /* Mobilde: dersin son kelimesine gelince görünen "Sonraki Derse Geç" butonu */
+        .next-lesson-mobile-btn {
+            display: none;
+            width: 100%;
+            margin-top: 14px;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            animation: nextLessonPop 0.4s ease;
+        }
+        .next-lesson-mobile-btn:active { transform: scale(0.97); }
+        @keyframes nextLessonPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Masaüstünde (769px+) mobil-özel elemanlar KESİNLİKLE görünmesin,
+           mevcut Önceki/Göster/Sonraki butonları AYNEN kalsın. */
+        @media (min-width: 769px) {
+            .word-tap-hint,
+            .next-lesson-mobile-btn { display: none !important; }
+        }
+        /* Mobilde (768px ve altı): Önceki / Göster / Sonraki butonları kaldırılıyor,
+           yerine kart üzerine dokunma + sağa/sola kaydırma geliyor. */
+        @media (max-width: 768px) {
+            #prevBtn, #showBtn, #nextBtn { display: none !important; }
+            .word-card { cursor: pointer; }
+        }
+        
         
         /* Arapça Kelime Fontu */
         .arabic-word {
@@ -3843,6 +3965,11 @@ body.light-theme #profileScreen .info-row button:hover {
             <i class="fas fa-search-plus"></i>
         </button>
     </div>
+    <!-- 💡 Kişisel ipucu: sol üstte ikon (ekle/düzenle), sol altta gizli "ipucu" etiketi (basınca açılır) -->
+    <button id="wordHintToggleBtn" class="word-hint-toggle-btn" type="button" title="Kelime ipucu ekle/düzenle">
+        <i class="fas fa-lightbulb"></i>
+    </button>
+    <span id="wordHintLabel" class="word-hint-label" style="display:none;" title="İpucunu göster/gizle">ipucu</span>
     <div class="arabic-word" id="arabicWord">---</div>
     <div class="turkish-word" id="turkishWord"></div>
     
@@ -3851,7 +3978,13 @@ body.light-theme #profileScreen .info-row button:hover {
         <i class="fas fa-plus-circle"></i>
     </button>
 </div>
+                <!-- 📱 Mobilde: dersin son kelimesine gelince görünen "sonraki derse geç" butonu -->
+                <button id="nextLessonMobileBtn" class="next-lesson-mobile-btn" type="button">
+
+                    <i class="fas fa-arrow-right"></i> Sonraki Derse Geç
+                </button>
                 <div class="navigation">
+                    <div class="word-tap-hint" id="wordTapHint"><i class="fas fa-hand-pointer"></i> Dokun: anlamı gör &nbsp;·&nbsp; <i class="fas fa-arrows-left-right"></i> Kaydır: sonraki/önceki kelime</div>
                     <div class="progress-info">
                         <span id="currentIndex">0</span> / <span id="totalWords">0</span>
                         <div class="progress-bar">
@@ -4366,7 +4499,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -5009,6 +5142,13 @@ bookSelect.onchange = async () => {
     // ===== YÜKLENİYOR ALERT =====
     showLoadingAlert('📚 Dersler yükleniyor...');
     
+    // ✅ DÜZELTME: Dersler Firestore'dan gelene kadar dropdown'ı hemen KİLİTLE ve
+    // açıkça "yükleniyor" yaz. Önceden dropdown veri gelene kadar eski/boş
+    // haliyle açılabiliyordu, oyuncu "ders yok" sanıp kapatıp 2-3 kez tekrar
+    // deniyordu (aslında sadece Firestore'dan yanıt bekleniyordu).
+    lessonSelect.disabled = true;
+    lessonSelect.innerHTML = '<option value="">⏳ Dersler yükleniyor...</option>';
+    
     try {
         // ===== DERSLERİ GETİR (orderBy ile) =====
         const snapshot = await getDocs(query(
@@ -5081,6 +5221,10 @@ bookSelect.onchange = async () => {
         closeLoadingAlert();
         console.error('Dersler yüklenirken hata:', error);
         
+        // ✅ "yükleniyor" yazısında asılı kalmasın, açıkça hata durumuna geçsin
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">⚠️ Dersler yüklenemedi</option>';
+        
         Swal.fire({
             icon: 'error',
             title: '❌ Hata!',
@@ -5135,6 +5279,135 @@ function sortLessonsByName(lessons) {
     };
 
 // Mevcut updateWordDisplay fonksiyonunu değiştir
+// ===== 📱 KART İPUCU (dokun/kaydır) - SADECE İLK 5 KELİMEDE GÖSTERİLİR =====
+// Kullanıcı bazlı localStorage sayacı: ilk 5 kelimeden sonra ipucu bir daha hiç
+// gözükmez (kullanıcı artık öğrenmiş sayılır). Sayaç kullanıcıya özel tutulur.
+function _wordHintKey() {
+    return `wordCardHintShown_${currentUser ? currentUser.uid : 'misafir'}`;
+}
+function getWordHintShowCount() {
+    return parseInt(localStorage.getItem(_wordHintKey()) || '0', 10);
+}
+function bumpWordHintShowCount() {
+    const c = getWordHintShowCount() + 1;
+    localStorage.setItem(_wordHintKey(), String(c));
+    return c;
+}
+
+// ============================================================
+// 🐦 KİŞİSEL KELİME İPUCU (kullanıcının kendi hatırlatma notu/emojisi)
+// Firestore'da users/{uid}.wordHints = { [wordId]: "kısa ipucu metni" }
+// ============================================================
+let wordHintsCache = null;
+let wordHintsCacheLoadingPromise = null;
+
+async function ensureWordHintsCache() {
+    if (wordHintsCache) return wordHintsCache;
+    if (!currentUser) return {};
+    if (wordHintsCacheLoadingPromise) return wordHintsCacheLoadingPromise;
+    wordHintsCacheLoadingPromise = (async () => {
+        try {
+            const snap = await getDoc(doc(db, 'users', currentUser.uid));
+            wordHintsCache = (snap.exists() && snap.data().wordHints) || {};
+        } catch (e) {
+            console.log('ensureWordHintsCache hata:', e.message);
+            wordHintsCache = {};
+        }
+        return wordHintsCache;
+    })();
+    return wordHintsCacheLoadingPromise;
+}
+
+function renderWordHintForCurrentWord() {
+    const label = document.getElementById('wordHintLabel');
+    const btn = document.getElementById('wordHintToggleBtn');
+    if (!label) return;
+    const word = words[currentWordIndex];
+    const hint = (wordHintsCache && word && word.id) ? wordHintsCache[word.id] : null;
+    
+    // ✅ Kelime her değiştiğinde ipucu tekrar GİZLİ (kapalı) hâle döner
+    label.classList.remove('is-revealed');
+    
+    if (hint) {
+        label.dataset.hint = hint;
+        label.textContent = 'ipucu';
+        label.style.display = 'inline-block';
+        if (btn) btn.classList.add('has-hint');
+    } else {
+        label.dataset.hint = '';
+        label.textContent = '';
+        label.style.display = 'none';
+        if (btn) btn.classList.remove('has-hint');
+    }
+}
+
+// 🐦 kuş ikonuna basınca açılan küçük ipucu ekleme/düzenleme/silme penceresi
+window.openWordHintEditor = async function() {
+    if (!currentUser || words.length === 0) return;
+    const word = words[currentWordIndex];
+    if (!word || !word.id) return;
+    
+    await ensureWordHintsCache();
+    const existing = wordHintsCache[word.id] || '';
+    
+    const result = await Swal.fire({
+        title: '🐦 Kelime İpucu',
+        html: `<div style="font-size:12px; opacity:0.7; margin-bottom:4px;">"${word.arabic}" kelimesini hatırlaman için kısa bir ipucu yaz (kelime veya emoji).</div>`,
+        input: 'text',
+        inputValue: existing,
+        inputAttributes: { maxlength: '24', autocomplete: 'off' },
+        inputPlaceholder: 'Örn: 🌍 ya da "toprak gibi"',
+        showCancelButton: true,
+        showDenyButton: !!existing,
+        confirmButtonText: 'Kaydet',
+        denyButtonText: '🗑️ Sil',
+        cancelButtonText: 'Vazgeç',
+        confirmButtonColor: '#f59e0b',
+        denyButtonColor: '#ef4444',
+        cancelButtonColor: '#374151',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
+    
+    if (result.isDenied) {
+        await saveWordHint(word.id, null);
+    } else if (result.isConfirmed) {
+        const trimmed = (result.value || '').trim().slice(0, 24);
+        await saveWordHint(word.id, trimmed || null);
+    }
+};
+
+async function saveWordHint(wordId, hintTextOrNull) {
+    if (!currentUser) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        if (hintTextOrNull) {
+            wordHintsCache[wordId] = hintTextOrNull;
+            await updateDoc(myRef, { [`wordHints.${wordId}`]: hintTextOrNull });
+            showTinyWarning('İpucu kaydedildi! 🐦', 'fa-dove');
+        } else {
+            delete wordHintsCache[wordId];
+            await updateDoc(myRef, { [`wordHints.${wordId}`]: deleteField() });
+            showTinyWarning('İpucu silindi.', 'fa-trash');
+        }
+        renderWordHintForCurrentWord();
+    } catch (e) {
+        console.log('saveWordHint hata:', e.message);
+    }
+}
+document.getElementById('wordHintToggleBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.openWordHintEditor();
+});
+// 👉 Gizli "ipucu" etiketine basınca gerçek ipucu metni açılır/kapanır
+document.getElementById('wordHintLabel')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const label = e.currentTarget;
+    const hint = label.dataset.hint;
+    if (!hint) return;
+    const isRevealed = label.classList.toggle('is-revealed');
+    label.textContent = isRevealed ? hint : 'ipucu';
+});
+
 async function updateWordDisplay() {
     if (words.length === 0) {
         const bookVal = document.getElementById('bookSelect')?.value;
@@ -5179,11 +5452,32 @@ async function updateWordDisplay() {
         updateAddButton(word.id, isAdded);
     }
     
+    // ===== 🐦 KİŞİSEL İPUCU: mevcut kelimenin ipucunu göster =====
+    await ensureWordHintsCache();
+    renderWordHintForCurrentWord();
+    
     currentIndexSpan.textContent = currentWordIndex + 1;
     totalWordsSpan.textContent = words.length;
     wordCountInfo.textContent = `${words.length} kelime`;
     const progress = ((currentWordIndex + 1) / words.length) * 100;
     progressFill.style.width = `${progress}%`;
+    
+    // ===== 📱 MOBİL: dokun-ipucunu göster (SADECE İLK 5 KELİMEDE) + dersin son kelimesindeysek "sonraki derse geç" butonunu göster =====
+    const tapHint = document.getElementById('wordTapHint');
+    if (tapHint) {
+        const shownSoFar = getWordHintShowCount();
+        if (shownSoFar < 5) {
+            tapHint.style.display = 'flex';
+            bumpWordHintShowCount();
+        } else {
+            tapHint.style.display = 'none';
+        }
+    }
+    const nextLessonBtn = document.getElementById('nextLessonMobileBtn');
+    if (nextLessonBtn) {
+        const isLastWord = currentWordIndex === words.length - 1;
+        nextLessonBtn.style.display = isLastWord ? 'flex' : 'none';
+    }
 }
 
     
@@ -5218,8 +5512,12 @@ async function refreshLessonSelectLockState() {
 // ✅ YENİ: Aynı ders için kutlama mesajının tekrar tekrar çıkmaması için takip seti
 const celebratedExamUnlocks = new Set();
 
-showBtn.onclick = async () => {
+// ===== KELİME ANLAMINI GÖSTER (Göster butonu VE mobilde karta dokunma ortak mantığı) =====
+// ✅ Aynı kelime için birden fazla kez tetiklenirse puan/işaretleme tekrarlanmasın diye
+// '?' hâlâ ekrandaysa (yani henüz gösterilmediyse) çalışır, aksi halde no-op.
+async function revealCurrentWord() {
     if (words.length === 0) return;
+    if (!turkishWord.querySelector('.big-question')) return; // zaten gösterilmiş
     const word = words[currentWordIndex];
     turkishWord.textContent = word.turkish;
     turkishWord.style.opacity = '1';
@@ -5229,6 +5527,10 @@ showBtn.onclick = async () => {
         arabicWord.style.setProperty('font-size', '56px', 'important');
         arabicWord.style.setProperty('font-weight', '700', 'important');
     }
+    
+    // 📱 Mobilde anlam gösterilince dokun-ipucu artık gereksiz
+    const tapHint = document.getElementById('wordTapHint');
+    if (tapHint) tapHint.style.display = 'none';
     
     // ===== PUAN EKLE =====
     addWordLearningPoint();
@@ -5252,18 +5554,146 @@ showBtn.onclick = async () => {
             }
         }
     }
-};
+}
+showBtn.onclick = revealCurrentWord;
 
-    prevBtn.onclick = () => {
+// ===== ÖNCEKİ / SONRAKİ KELİMEYE GEÇ (Önceki/Sonraki butonları VE mobil kaydırma ortak mantığı) =====
+function goPrevWord() {
+    if (words.length === 0) return;
+    currentWordIndex = (currentWordIndex - 1 + words.length) % words.length;
+    updateWordDisplay();
+}
+function goNextWord() {
+    if (words.length === 0) return;
+    currentWordIndex = (currentWordIndex + 1) % words.length;
+    updateWordDisplay();
+}
+prevBtn.onclick = goPrevWord;
+nextBtn.onclick = goNextWord;
+
+// ============================================================
+// 📱 MOBİL: KART ÜZERİNDE DOKUN (anlamı göster) + SOLA/SAĞA KAYDIR (önceki/sonraki)
+// Sadece dar ekranlarda (≤768px) aktif olur; masaüstünde bu kod hiçbir şeyi
+// değiştirmez, mevcut Önceki/Göster/Sonraki butonları orada aynen çalışır.
+// ============================================================
+(function setupWordCardMobileGestures() {
+    const card = document.getElementById('wordCard');
+    if (!card) return;
+    
+    const isMobileViewport = () => window.innerWidth <= 768;
+    const TAP_MAX_MOVE = 12;      // bu kadar pikselden az hareket = dokunma sayılır
+    const SWIPE_MIN_MOVE = 55;    // bu kadar pikselden fazla yatay hareket = kaydırma sayılır
+    
+    let startX = 0, startY = 0, startTime = 0;
+    
+    card.addEventListener('touchstart', (e) => {
+        if (!isMobileViewport()) return;
+        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, #wordHintToggleBtn, #wordHintLabel')) return; // bu butonlar kendi işini yapsın
+        if (!e.touches || e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+    }, { passive: true });
+    
+    card.addEventListener('touchend', (e) => {
+        if (!isMobileViewport()) return;
+        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, #wordHintToggleBtn, #wordHintLabel')) return;
         if (words.length === 0) return;
-        currentWordIndex = (currentWordIndex - 1 + words.length) % words.length;
-        updateWordDisplay();
-    };
-    nextBtn.onclick = () => {
-        if (words.length === 0) return;
-        currentWordIndex = (currentWordIndex + 1) % words.length;
-        updateWordDisplay();
-    };
+        const touch = e.changedTouches && e.changedTouches[0];
+        if (!touch) return;
+        
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        const dt = Date.now() - startTime;
+        const absDx = Math.abs(dx), absDy = Math.abs(dy);
+        
+        if (absDx < TAP_MAX_MOVE && absDy < TAP_MAX_MOVE && dt < 500) {
+            // ===== DOKUNMA: anlamı göster =====
+            revealCurrentWord();
+            return;
+        }
+        
+        if (absDx > SWIPE_MIN_MOVE && absDx > absDy * 1.3) {
+            // ===== YATAY KAYDIRMA: önceki/sonraki kelimeye geç (güzel animasyonla) =====
+            if (dx < 0) {
+                animateWordSwipe('next');
+            } else {
+                animateWordSwipe('prev');
+            }
+        }
+    }, { passive: true });
+})();
+
+// ===== 📱 Kelime kartını güzel bir kaydırma animasyonuyla değiştir =====
+function animateWordSwipe(direction) {
+    const card = document.getElementById('wordCard');
+    if (!card) { (direction === 'next' ? goNextWord() : goPrevWord()); return; }
+    
+    const exitClass = direction === 'next' ? 'wc-exit-left' : 'wc-exit-right';
+    const enterClass = direction === 'next' ? 'wc-enter-from-right' : 'wc-enter-from-left';
+    
+    card.classList.add(exitClass);
+    setTimeout(() => {
+        // İçeriği değiştir (kart görünmez durumdayken)
+        if (direction === 'next') goNextWord(); else goPrevWord();
+        
+        card.classList.remove(exitClass);
+        card.classList.add(enterClass); // transition:none ile anında karşı kenara ışınla
+        
+        // Çift requestAnimationFrame: tarayıcının "anında" konumu render etmesini garantiler,
+        // ardından enter sınıfını kaldırınca normal transition ile içeri kayar.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                card.classList.remove(enterClass);
+            });
+        });
+    }, 240);
+}
+
+// ===== 📱 Dersin son kelimesindeyken "Sonraki Derse Geç" butonu =====
+window.goToNextLessonMobile = async function() {
+    const lessonSelect = document.getElementById('lessonSelect');
+    const bookSelect = document.getElementById('bookSelect');
+    const currentLessonId = lessonSelect?.value;
+    if (!currentLessonId) return;
+    
+    try {
+        showLoadingAlert('📚 Sıradaki ders hazırlanıyor...');
+        const sequence = await getGlobalLessonSequence();
+        const pos = getLessonPositionInSequence(sequence, currentLessonId);
+        
+        if (pos === -1 || pos === sequence.length - 1) {
+            closeLoadingAlert();
+            showTinyWarning('🎉 Tebrikler, son dersteydin! Başka ders kalmadı.', 'fa-trophy');
+            return;
+        }
+        
+        const nextLesson = sequence[pos + 1];
+        const unlocked = await isLessonWordsUnlocked(nextLesson.id);
+        if (!unlocked) {
+            closeLoadingAlert();
+            showTinyWarning('🔒 Sıradaki ders henüz kilitli. Bu dersin kelimelerinin %' + WORD_LEARN_UNLOCK_PERCENT + '\'ini görmelisin.', 'fa-lock');
+            return;
+        }
+        
+        // Farklı bir kitaptaysa önce kitabı değiştir (ders dropdown'ı yeniden yüklenir)
+        if (nextLesson.bookId !== bookSelect.value) {
+            bookSelect.value = nextLesson.bookId;
+            await bookSelect.onchange();
+        }
+        
+        lessonSelect.value = nextLesson.id;
+        await lessonSelect.onchange();
+        
+        closeLoadingAlert();
+        showTinyWarning(`📖 "${nextLesson.name}" dersine geçtin!`, 'fa-book');
+    } catch (e) {
+        closeLoadingAlert();
+        console.log('goToNextLessonMobile hata:', e.message);
+    }
+};
+document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => window.goToNextLessonMobile());
+
 
     // ===== 🔥 GÜNLÜK SERİ (STREAK) HESAPLAMA =====
     // Kullanıcı her gün ilk giriş yaptığında çağrılır. Dünkü tarih varsa seri +1,
@@ -5366,14 +5796,19 @@ function showTinyWarning(message, icon = 'fa-lock') {
         color: #f59e0b;
         border: 1px solid rgba(245,158,11,0.4);
         padding: 10px 18px;
-        border-radius: 30px;
+        border-radius: 16px;
         font-size: 13px;
         font-weight: 600;
         box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         z-index: 9999;
         opacity: 0;
         transition: opacity 0.25s ease, transform 0.25s ease;
-        white-space: nowrap;
+        white-space: normal;
+        max-width: min(92vw, 380px);
+        width: max-content;
+        text-align: center;
+        line-height: 1.4;
+        box-sizing: border-box;
     `;
     document.body.appendChild(el);
     
@@ -11073,7 +11508,12 @@ let ruhuDinletAudio = null;
 let ruhuDinletAktif = false;
 
 // Müzik dosyasının yolu (sıkıştırdığın dosya)
-const RUHU_DINLET_URL = 'https://www.dropbox.com/scl/fi/iylq9sqwif06o1qpg1u8k/fon.mp3?rlkey=6s0o5l2cmfwob39va3m65qxaw&dl=1';
+// ✅ DÜZELTME (iPhone'da çalmama sorunu): dl=1 Dropbox'ta "indirilsin" tepkisi
+// üretiyor; iOS Safari'nin medya oynatıcısı (AVFoundation) bu tür yanıtları
+// akış (stream) olarak kabul etmiyor ve sessizce çalmayı reddediyor —
+// Android/Chrome ise buna toleranslı olduğu için orada sorunsuz çalışıyordu.
+// raw=1 aynı dosyayı DOĞRUDAN/akış uyumlu şekilde sunduğu için iPhone'da da çalışır.
+const RUHU_DINLET_URL = 'https://www.dropbox.com/scl/fi/iylq9sqwif06o1qpg1u8k/fon.mp3?rlkey=6s0o5l2cmfwob39va3m65qxaw&raw=1';
 
 function ruhuDinletToggle() {
     // Audio nesnesi yoksa oluştur
@@ -11081,6 +11521,8 @@ function ruhuDinletToggle() {
         ruhuDinletAudio = new Audio(RUHU_DINLET_URL);
         ruhuDinletAudio.loop = true; // Sürekli çalsın
         ruhuDinletAudio.volume = 0.5; // %50 ses
+        ruhuDinletAudio.preload = 'auto'; // iOS'un dosyayı erkenden hazırlamasına yardımcı olur
+        ruhuDinletAudio.setAttribute('playsinline', ''); // iOS'ta tam ekran/harici oynatıcıya sıçramasın
         
         // Hata durumunda
         ruhuDinletAudio.onerror = function() {
@@ -13050,7 +13492,12 @@ window.removeFromMyWords = async function(wordId) {
         
         // ===== ANLIK OLARAK LİSTEDEN KALDIR =====
         // Kelime Listem sayfasındaki kartı kaldır
-        const wordCard = document.querySelector(`[data-word-id="${wordId}"]`);
+        // ✅ DÜZELTME: Bu sorgu önceden sayfadaki TÜM [data-word-id] elemanlarını
+        // buluyordu — bu da "Kelime Öğren" ekranındaki +/- butonunu (o da aynı
+        // data-word-id'yi taşıyor) yanlışlıkla DOM'dan tamamen siliyordu, buton
+        // sayfa yenilenene kadar bir daha hiç görünmüyordu. Artık sadece gerçek
+        // liste kartlarının bulunduğu container'lar içinde aranıyor.
+        const wordCard = document.querySelector(`#myWordsList [data-word-id="${wordId}"], #sandikWordsList [data-word-id="${wordId}"]`);
         if (wordCard) {
             // Kartı kaldır
             wordCard.remove();
