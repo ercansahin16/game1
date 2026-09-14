@@ -539,20 +539,14 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
 
         /* ============================================================
            💡 KİŞİSEL KELİME İPUCU (kullanıcının kendi hatırlatma notu/emojisi)
-           Sol üstte: ikon (ipucu ekle/düzenle) + altında küçük "ipucu" etiketi
-           (etikete basınca gerçek ipucu metni açılır/kapanır - gizli kalır)
+           Sol üstte: ikon (ipucu ekle/düzenle). Sol ALT köşede: küçük "ipucu"
+           etiketi (basınca gerçek ipucu metni açılır/kapanır - gizli kalır).
            ============================================================ */
-        .word-hint-wrap {
+        .word-hint-toggle-btn {
             position: absolute;
             top: 10px;
             left: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
             z-index: 2;
-        }
-        .word-hint-toggle-btn {
             width: 30px;
             height: 30px;
             border-radius: 50%;
@@ -574,6 +568,10 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             color: #10b981;
         }
         .word-hint-label {
+            position: absolute;
+            bottom: 10px;
+            left: 14px;
+            z-index: 2;
             display: none;
             font-size: 10px;
             opacity: 0.5;
@@ -581,8 +579,8 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             text-decoration: underline dotted;
             text-underline-offset: 2px;
             user-select: none;
-            max-width: 64px;
-            text-align: center;
+            max-width: 100px;
+            text-align: left;
             line-height: 1.25;
             word-break: break-word;
             transition: opacity 0.15s ease, color 0.15s ease;
@@ -596,9 +594,8 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             color: #f59e0b;
         }
         @media (max-width: 768px) {
-            .word-hint-wrap { top: 8px; left: 8px; gap: 3px; }
-            .word-hint-toggle-btn { width: 26px; height: 26px; font-size: 12px; }
-            .word-hint-label { font-size: 9px; max-width: 50px; }
+            .word-hint-toggle-btn { top: 8px; left: 8px; width: 26px; height: 26px; font-size: 12px; }
+            .word-hint-label { bottom: 8px; left: 10px; font-size: 9px; max-width: 80px; }
         }
 
         /* Mobilde: dersin son kelimesine gelince görünen "Sonraki Derse Geç" butonu */
@@ -3968,13 +3965,11 @@ body.light-theme #profileScreen .info-row button:hover {
             <i class="fas fa-search-plus"></i>
         </button>
     </div>
-    <!-- 💡 Kişisel ipucu: ikon (ekle/düzenle) + altında gizli "ipucu" etiketi (basınca açılır) -->
-    <div class="word-hint-wrap">
-        <button id="wordHintToggleBtn" class="word-hint-toggle-btn" type="button" title="Kelime ipucu ekle/düzenle">
-            <i class="fas fa-lightbulb"></i>
-        </button>
-        <span id="wordHintLabel" class="word-hint-label" style="display:none;" title="İpucunu göster/gizle">ipucu</span>
-    </div>
+    <!-- 💡 Kişisel ipucu: sol üstte ikon (ekle/düzenle), sol altta gizli "ipucu" etiketi (basınca açılır) -->
+    <button id="wordHintToggleBtn" class="word-hint-toggle-btn" type="button" title="Kelime ipucu ekle/düzenle">
+        <i class="fas fa-lightbulb"></i>
+    </button>
+    <span id="wordHintLabel" class="word-hint-label" style="display:none;" title="İpucunu göster/gizle">ipucu</span>
     <div class="arabic-word" id="arabicWord">---</div>
     <div class="turkish-word" id="turkishWord"></div>
     
@@ -5593,7 +5588,7 @@ nextBtn.onclick = goNextWord;
     
     card.addEventListener('touchstart', (e) => {
         if (!isMobileViewport()) return;
-        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, .word-hint-wrap')) return; // bu butonlar kendi işini yapsın
+        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, #wordHintToggleBtn, #wordHintLabel')) return; // bu butonlar kendi işini yapsın
         if (!e.touches || e.touches.length !== 1) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
@@ -5602,7 +5597,7 @@ nextBtn.onclick = goNextWord;
     
     card.addEventListener('touchend', (e) => {
         if (!isMobileViewport()) return;
-        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, .word-hint-wrap')) return;
+        if (e.target.closest('#addToMyWordsBtn, #zoomBtn, #wordHintToggleBtn, #wordHintLabel')) return;
         if (words.length === 0) return;
         const touch = e.changedTouches && e.changedTouches[0];
         if (!touch) return;
