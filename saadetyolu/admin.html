@@ -28,8 +28,9 @@
            bunu tarayıcı seviyesinde kapatıyor (Chrome/Android); Safari/iOS için de
            aşağıda ek bir touchmove koruması var. */
         html, body {
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: none;
             overscroll-behavior-x: none;
+            overscroll-behavior: none;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -833,10 +834,15 @@
         const touchY = e.touches[0].clientY;
         const scrollable = findScrollableAncestor(e.target);
         const scrollTop = scrollable.scrollTop;
-        // İlgili kaydırılabilir alan (modal, liste vb.) zaten en üstteyse VE parmak
-        // aşağı doğru hareket ediyorsa (pull-to-refresh hareketi) engelle. Alan
-        // kendi içinde kaydırılabiliyorsa (scrollTop > 0) dokunmuyoruz.
-        if (scrollTop <= 0 && touchY > touchStartY) {
+        const maxScrollTop = scrollable.scrollHeight - scrollable.clientHeight;
+        const atTop = scrollTop <= 0;
+        const atBottom = scrollTop >= maxScrollTop - 1;
+        const draggingDown = touchY > touchStartY;
+        const draggingUp = touchY < touchStartY;
+        // İlgili kaydırılabilir alan (modal, liste vb.) zaten en üstteyken aşağı,
+        // ya da en alttayken yukarı çekiliyorsa (elastik "bounce" / sayfa yenileme
+        // jesti) engelle. Alan kendi içinde hâlâ kaydırılabiliyorsa dokunmuyoruz.
+        if ((atTop && draggingDown) || (atBottom && draggingUp)) {
             e.preventDefault();
         }
     }, { passive: false });
@@ -1848,6 +1854,16 @@ window.closeModal = function(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('visible');
 };
+
+// Boşluğa (karartılmış arka plana) tıklayınca modal otomatik kapansın.
+// e.target tam olarak ".modal" kapsayıcısının kendisiyse tıklama arka
+// plana yapılmış demektir (içerik kutusuna tıklarsa e.target farklı olur).
+document.addEventListener('click', function (e) {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('modal') && t.classList.contains('visible')) {
+        t.classList.remove('visible');
+    }
+});
 
 // ============================================================
 // DUYURU PANOSU
