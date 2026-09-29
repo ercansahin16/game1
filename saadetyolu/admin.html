@@ -3262,6 +3262,21 @@ window.resetUserSandik = async function(userId) {
     // ===== KARMA İSTATİSTİKLERİ =====
     const karmaStats = userData.karmaStats || { total: 0, correct: 0, wrong: 0 };
     const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
+
+    // ===== 🏆 TOPLAM PUAN + BU AY (SEZON) + 🔁 TEKRAR MODU =====
+    // index.html'deki formülle BİREBİR AYNI olmalı - bu iki dosya ayrı
+    // JS modülleri olduğu için formül burada da tekrar hesaplanıyor.
+    const seviyePuaniHesap = (level - 1) * 2;
+    const kelimePuaniHesap = totalWords * 0.01;
+    const sandikCezasiHesap = sandik.length * 1;
+    const toplamPuanHesap = Math.max(0, Math.round((quizScore + avgScore + seviyePuaniHesap + kelimePuaniHesap - sandikCezasiHesap) * 100) / 100);
+    const adminSezonId = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const buAySkoru = (userData.seasonId === adminSezonId)
+        ? Math.max(0, Math.round((toplamPuanHesap - (userData.seasonBaselineScore || 0)) * 100) / 100)
+        : 0;
+    const reviewQueueObj = userData.reviewQueue || {};
+    const reviewToplamSayisi = Object.keys(reviewQueueObj).length;
+    const reviewVadesiGelen = Object.values(reviewQueueObj).filter(r => (r.nextReviewAt || 0) <= Date.now()).length;
     
     // ===== YENİ: DERS İLERLEMESİ (Kelime Öğrenme Kilit Durumu) =====
     // Oyun tarafında (index.html) bir dersin kelimelerinin %80'i öğrenilince
@@ -3358,6 +3373,16 @@ window.resetUserSandik = async function(userId) {
             </div>
         </div>
         
+        <!-- 🏆 TOPLAM PUAN / BU AY (SEZON) / 🔁 TEKRAR MODU -->
+        <div style="background: rgba(245,158,11,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(245,158,11,0.15);">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #f59e0b;">🏆 Puan &amp; Sezon Durumu</div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div><span style="opacity:0.6;">Tüm Zamanlar:</span> <strong style="color:#f59e0b;">${toplamPuanHesap.toFixed(2)} P</strong></div>
+                <div><span style="opacity:0.6;">📅 Bu Ay:</span> <strong style="color:#10b981;">${buAySkoru.toFixed(2)} P</strong></div>
+                <div><span style="opacity:0.6;">🔁 Tekrar Kuyruğu:</span> <strong>${reviewToplamSayisi} kelime</strong>${reviewVadesiGelen > 0 ? ` <span style="color:#ef4444;">(${reviewVadesiGelen} vadesi geldi)</span>` : ''}</div>
+            </div>
+        </div>
+
         <!-- KARMA İSTATİSTİKLERİ -->
         <div style="background: rgba(16,185,129,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(16,185,129,0.1);">
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #f59e0b;">🎯 Karma İstatistikleri</div>
