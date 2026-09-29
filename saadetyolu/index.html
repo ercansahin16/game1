@@ -5712,6 +5712,40 @@ window.goToNextLessonMobile = async function() {
 document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => window.goToNextLessonMobile());
 
 
+    // ===== 📢 ADMİN DUYURU PANOSU =====
+    // Admin panelinden yayınlanan tek "aktif" duyuru appConfig/announcement
+    // belgesinde tutulur. Kullanıcının kendi belgesindeki lastSeenAnnouncementId
+    // alanı, en son gördüğü duyurunun kimliğini saklar. İkisi farklıysa (yeni
+    // duyuru var ya da hiç görmemiş) duyuru bir kez gösterilir; "Anladım"
+    // denince o kimlik kullanıcıya kaydedilir ve bir sonraki duyuruya kadar
+    // tekrar çıkmaz.
+    async function checkAndShowAnnouncement(userRef, userData) {
+        try {
+            const annSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
+            if (!annSnap.exists()) return;
+            const ann = annSnap.data();
+            if (!ann.id || !ann.message) return;
+            if (userData.lastSeenAnnouncementId === ann.id) return;
+
+            const guvenliMesaj = String(ann.message)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+
+            Swal.fire({
+                icon: 'info',
+                title: ann.title || '📢 Duyuru',
+                html: `<div style="text-align:left; font-size:15px; line-height:1.6;">${guvenliMesaj}</div>`,
+                confirmButtonText: 'Anladım',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(() => {
+                updateDoc(userRef, { lastSeenAnnouncementId: ann.id }).catch(() => {});
+            });
+        } catch (e) {
+            console.log('Duyuru kontrol hatası:', e.message);
+        }
+    }
+
     // ===== 🔥 GÜNLÜK SERİ (STREAK) HESAPLAMA =====
     // Kullanıcı her gün ilk giriş yaptığında çağrılır. Dünkü tarih varsa seri +1,
     // bugün zaten sayıldıysa dokunmaz, aradan gün geçtiyse seri 1'e sıfırlanır.
@@ -7513,12 +7547,18 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 checkFriendStreakReminders(data);
                 
                 // ===== 🤲 YENİ KULLANICI: DUA EKRANI + REHBER =====
-                // Daha önce görmemişse (yeni kayıt veya eski kullanıcı), 
-                // ana ekran tam yüklendikten sonra önce dua ekranı, 
+                // Daha önce görmemişse (yeni kayıt veya eski kullanıcı),
+                // ana ekran tam yüklendikten sonra önce dua ekranı,
                 // ardından (buton tıklanınca) rehber gösterilir
                 if (!data.tourCompleted && typeof window.showDuaScreen === 'function') {
                     setTimeout(() => window.showDuaScreen(), 900);
                 }
+
+                // ===== 📢 ADMİN DUYURUSU: yeni bir duyuru varsa ve bu kullanıcı
+                // henüz görmediyse bir kez göster. "Anladım" deyince bir daha
+                // gösterilmez (Firestore'da kullanıcıya özel lastSeenAnnouncementId
+                // ile takip ediliyor, bir sonraki duyuruya kadar tekrar çıkmaz). =====
+                setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1600);
             }
         } catch (error) {
             console.log('⚠️ Seviye yükleme hatası:', error);

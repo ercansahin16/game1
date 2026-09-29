@@ -856,6 +856,7 @@
         <small id="sidebarAdminName">Administrator</small>
     </div>
     <div class="sidebar-item" id="goDashboard"><i class="fas fa-chart-line"></i> Anasayfa</div>
+    <div class="sidebar-item" id="goAnnouncements"><i class="fas fa-bullhorn"></i> Duyurular</div>
     <div class="sidebar-item" id="goBooks"><i class="fas fa-book"></i> Kitaplar</div>
     <div class="sidebar-item" id="goLessons"><i class="fas fa-graduation-cap"></i> Dersler</div>
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
@@ -965,6 +966,43 @@
                     <div style="font-size: 11px; opacity: 0.7;">En çok sandığa düşenler</div>
                 </div>
             </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- DUYURULAR BÖLÜMÜ -->
+        <!-- Admin buradan yeni bir duyuru yayınlar. Kullanıcı index.html'e
+             girdiğinde (giriş yaptıktan sonra) bu duyuruyu bir kez görür,
+             "Anladım" deyince bir daha görmez - ta ki yeni bir duyuru
+             yayınlanana kadar (Firestore: appConfig/announcement + her
+             kullanıcının kendi lastSeenAnnouncementId alanı). -->
+        <div id="announcementsSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-bullhorn"></i> Duyurular</h2>
+            </div>
+
+            <!-- Aktif duyuru önizlemesi -->
+            <div id="activeAnnouncementBox" style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+                <div style="font-size: 12px; opacity: 0.7; margin-bottom: 6px;">ŞU AN AKTİF DUYURU</div>
+                <div id="activeAnnouncementContent" style="font-size: 14px;">Aktif duyuru yok.</div>
+                <button id="clearAnnouncementBtn" class="btn" style="margin-top: 10px; background: rgba(239,68,68,0.15); color: #ef4444; padding: 6px 14px; font-size: 12px; display: none;">
+                    <i class="fas fa-times"></i> Duyuruyu Kaldır
+                </button>
+            </div>
+
+            <!-- Yeni duyuru formu -->
+            <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <label style="font-size: 12px; opacity: 0.8; display: block; margin-bottom: 6px;">Başlık (isteğe bağlı)</label>
+                <input type="text" id="announcementTitleInput" placeholder="Örn: Yeni Ders Eklendi!" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; opacity: 0.8; display: block; margin-bottom: 6px;">Duyuru Metni</label>
+                <textarea id="announcementMessageInput" rows="4" placeholder="Kullanıcılara göstermek istediğin mesajı yaz..." style="width: 100%; padding: 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: inherit; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+                <button id="publishAnnouncementBtn" class="btn btn-success" style="margin-top: 12px; width: 100%;">
+                    <i class="fas fa-paper-plane"></i> Duyuru Yayınla
+                </button>
+            </div>
+
+            <!-- Geçmiş duyurular -->
+            <h3 style="font-size: 14px; opacity: 0.8; margin-bottom: 10px;">Geçmiş Duyurular</h3>
+            <div class="items-list" id="announcementHistoryList"></div>
         </div>
 
         <div id="booksSection" class="section-card hidden">
@@ -1542,6 +1580,7 @@
     overlay.onclick = closeMenu;
 
     document.getElementById('goDashboard').onclick = () => { showSection('dashboard'); closeMenu(); };
+    document.getElementById('goAnnouncements').onclick = () => { showSection('announcements'); loadAnnouncements(); closeMenu(); };
     document.getElementById('goBooks').onclick = () => { showSection('books'); loadBooks(); closeMenu(); };
     document.getElementById('goLessons').onclick = () => { showSection('lessons'); loadLessonBooks(); closeMenu(); };
     document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
@@ -1756,6 +1795,7 @@
 
  function showSection(section) {
     document.getElementById('dashboardSection').classList.add('hidden');
+    document.getElementById('announcementsSection').classList.add('hidden');
     document.getElementById('booksSection').classList.add('hidden');
     document.getElementById('lessonsSection').classList.add('hidden');
     document.getElementById('wordsSection').classList.add('hidden');
@@ -1764,9 +1804,11 @@
     document.getElementById('bulkUploadSection').classList.add('hidden');
     document.getElementById('bulkExamUploadSection').classList.add('hidden');
      document.getElementById('dataManagementSection').classList.add('hidden'); // YENİ
-    
+
     if (section === 'dashboard') {
         document.getElementById('dashboardSection').classList.remove('hidden');
+    } else if (section === 'announcements') {
+        document.getElementById('announcementsSection').classList.remove('hidden');
     } else if (section === 'books') {
         document.getElementById('booksSection').classList.remove('hidden');
     } else if (section === 'lessons') {
@@ -1799,6 +1841,139 @@ window.closeModal = function(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('visible');
 };
+
+// ============================================================
+// DUYURU PANOSU
+// appConfig/announcement -> "şu an aktif" tek duyuru (id, title, message, publishedAt)
+// announcements/{id}     -> geçmiş kayıtları (admin panelinde liste + silme için)
+// index.html tarafında her kullanıcının kendi belgesinde tuttuğu
+// lastSeenAnnouncementId alanı ile karşılaştırılarak "bir kez göster" sağlanıyor.
+// ============================================================
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+async function loadAnnouncements() {
+    // Aktif duyuru önizlemesi
+    const activeBox = document.getElementById('activeAnnouncementContent');
+    const clearBtn = document.getElementById('clearAnnouncementBtn');
+    try {
+        const annSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
+        if (annSnap.exists() && annSnap.data().id && annSnap.data().message) {
+            const ann = annSnap.data();
+            activeBox.innerHTML = `<strong>${escapeHtml(ann.title || '📢 Duyuru')}</strong><br>${escapeHtml(ann.message).replace(/\n/g, '<br>')}`;
+            clearBtn.style.display = 'inline-flex';
+        } else {
+            activeBox.textContent = 'Aktif duyuru yok.';
+            clearBtn.style.display = 'none';
+        }
+    } catch (e) {
+        activeBox.textContent = 'Duyuru yüklenirken hata oluştu.';
+        console.log('loadAnnouncements hata:', e.message);
+    }
+
+    // Geçmiş duyurular listesi
+    const historyList = document.getElementById('announcementHistoryList');
+    historyList.innerHTML = '<div style="opacity:0.6; padding:10px;">Yükleniyor...</div>';
+    try {
+        const q = query(collection(db, 'announcements'), orderBy('publishedAt', 'desc'));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            historyList.innerHTML = '<div style="opacity:0.6; padding:10px;">Henüz duyuru yayınlanmamış.</div>';
+            return;
+        }
+        historyList.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const a = docSnap.data();
+            const tarih = a.publishedAt ? new Date(a.publishedAt).toLocaleString('tr-TR') : '';
+            const item = document.createElement('div');
+            item.className = 'item';
+            item.innerHTML = `
+                <div class="item-info">
+                    <strong>${escapeHtml(a.title || '📢 Duyuru')}</strong>
+                    <small style="display:block; white-space:pre-wrap; margin-top:4px;">${escapeHtml(a.message)}</small>
+                    <small style="opacity:0.6;">${tarih}</small>
+                </div>
+                <div class="item-actions">
+                    <button class="icon-btn" title="Sil" onclick="deleteAnnouncementHistoryItem('${docSnap.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            historyList.appendChild(item);
+        });
+    } catch (e) {
+        historyList.innerHTML = '<div style="opacity:0.6; padding:10px;">Geçmiş yüklenirken hata oluştu.</div>';
+        console.log('loadAnnouncements geçmiş hata:', e.message);
+    }
+}
+
+async function publishAnnouncement() {
+    const titleInput = document.getElementById('announcementTitleInput');
+    const messageInput = document.getElementById('announcementMessageInput');
+    const title = titleInput.value.trim();
+    const message = messageInput.value.trim();
+
+    if (!message) {
+        Swal.fire({ icon: 'warning', title: 'Duyuru metni boş olamaz', confirmButtonText: 'Tamam' });
+        return;
+    }
+
+    const id = String(Date.now());
+    const publishedAt = Date.now();
+    const data = { id, title, message, publishedAt };
+
+    try {
+        await setDoc(doc(db, 'appConfig', 'announcement'), data);
+        await setDoc(doc(db, 'announcements', id), data);
+        titleInput.value = '';
+        messageInput.value = '';
+        Swal.fire({ icon: 'success', title: 'Duyuru yayınlandı!', text: 'Kullanıcılar bir sonraki girişlerinde bu duyuruyu görecek.', confirmButtonText: 'Tamam' });
+        loadAnnouncements();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
+    }
+}
+
+async function clearAnnouncement() {
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Duyuruyu Kaldır',
+        text: 'Aktif duyuru kaldırılsın mı? Kullanıcılara artık gösterilmeyecek.',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Kaldır',
+        cancelButtonText: 'Vazgeç'
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+        await setDoc(doc(db, 'appConfig', 'announcement'), { id: null, title: '', message: '', publishedAt: null });
+        loadAnnouncements();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
+    }
+}
+
+window.deleteAnnouncementHistoryItem = async function (id) {
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Bu kayıt silinsin mi?',
+        text: 'Sadece geçmiş listesinden silinir; şu an aktif gösterilen duyuruyu etkilemez.',
+        showCancelButton: true,
+        confirmButtonText: 'Evet, Sil',
+        cancelButtonText: 'Vazgeç'
+    });
+    if (!result.isConfirmed) return;
+    try {
+        await deleteDoc(doc(db, 'announcements', id));
+        loadAnnouncements();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
+    }
+};
+
+document.getElementById('publishAnnouncementBtn').onclick = publishAnnouncement;
+document.getElementById('clearAnnouncementBtn').onclick = clearAnnouncement;
 
 async function loadBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
