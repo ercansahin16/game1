@@ -12,8 +12,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SaadetYolu">
-    <link rel="icon" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <!-- Sekme/adres çubuğu ikonu: birden fazla boyut + favicon.ico +
+         cache-busting sürüm parametresi (?v=2) - eski önbellekteki jenerik
+         ikon takılı kalmasın diye. Logo değişirse ?v= değerini artır. -->
+    <link rel="icon" href="favicon.ico?v=2" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-72.png?v=2">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=2">
+    <link rel="shortcut icon" href="favicon.ico?v=2">
+    <link rel="apple-touch-icon" href="icons/icon-192.png?v=2">
 
     <!-- ===== PWA kurulum (Ana Ekrana Ekle) olayını en erken anda yakala =====
          Tarayıcı "beforeinstallprompt" olayını sayfa yüklenirken herhangi bir
@@ -3426,6 +3433,107 @@ body.light-theme .user-rank-full { background: #ffffff; }
     }
 }
 
+/* ============================================================
+   📢 DUYURU İKONU + TEK SEFERLİK "BULUT" İPUCU
+   Günlük Seri rozetinin yanındaki küçük ikon. Yeni/okunmamış bir
+   duyuru varsa üzerinde kırmızı bir nokta belirir. Kullanıcı ilk
+   girişinde (yeni duyuru varsa) ikonun yanında bir kere, kibarca,
+   bulut/konuşma balonu şeklinde küçük bir ipucu belirir ve birkaç
+   saniye sonra kendiliğinden kaybolur - hiçbir şeyi engellemez.
+   ============================================================ */
+.announcement-icon-btn {
+    position: relative;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #f59e0b;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+.announcement-icon-btn:hover { background: rgba(245,158,11,0.25); transform: scale(1.05); }
+.announcement-icon-btn:active { transform: scale(0.92); }
+.announcement-icon-btn .announcement-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+    display: none;
+}
+body.light-theme .announcement-icon-btn .announcement-dot { border-color: #ffffff; }
+.announcement-icon-btn.has-unread .announcement-dot { display: block; }
+.announcement-icon-btn .announcement-label { display: none; }
+.header-extras .announcement-icon-btn {
+    width: 100% !important;
+    height: auto;
+    border-radius: 14px;
+    justify-content: flex-start !important;
+    gap: 8px;
+    padding: 6px 12px;
+}
+.header-extras .announcement-icon-btn .announcement-label { display: inline; font-size: 13px; font-weight: 600; }
+.header-extras .announcement-icon-btn .announcement-dot { top: 4px; right: 10px; }
+
+.announcement-cloud-tip {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fffaf0;
+    color: #92400e;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 22px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    white-space: nowrap;
+    z-index: 610;
+    cursor: pointer;
+    animation: cloudTipPop 0.35s ease;
+}
+.announcement-cloud-tip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border-radius: 50%;
+}
+.announcement-cloud-tip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #fffaf0;
+}
+@keyframes cloudTipPop {
+    from { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.9); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.announcement-cloud-tip.fade-out {
+    animation: cloudTipFade 0.4s ease forwards;
+}
+@keyframes cloudTipFade {
+    to { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.9); }
+}
+@media (max-width: 480px) {
+    .announcement-cloud-tip { font-size: 10.5px; padding: 7px 12px; white-space: normal; max-width: 180px; }
+}
+
 
 
 
@@ -3787,7 +3895,14 @@ body.light-theme #profileScreen .info-row button:hover {
             <div id="gunlukSeriBadge" onclick="showProfile()" style="display:none; align-items:center; gap:4px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 10px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;" title="Günlük Seri">
                 🔥 <span id="gunlukSeriBadgeText">0</span>
             </div>
-            
+
+            <!-- 📢 DUYURU İKONU -->
+            <button class="announcement-icon-btn" id="announcementIconBtn" title="Duyurular">
+                <i class="fas fa-bullhorn"></i>
+                <span class="announcement-label">Duyurular</span>
+                <span class="announcement-dot"></span>
+            </button>
+
             <!-- YARDIM BUTONU -->
             <button id="helpGameBtn" class="help-game-btn" title="Oyun Nasıl Oynanır?">
                 <i class="fas fa-question-circle"></i> <span>Yardım</span>
@@ -4214,8 +4329,12 @@ body.light-theme #profileScreen .info-row button:hover {
             <button class="tab-btn" data-tab="tab3" style="padding: 8px 16px; border: none; border-radius: 10px; background: rgba(255,255,255,0.05); color: #1a1a2e; font-weight: 600; cursor: pointer; transition: 0.3s; font-size: 13px;">
                 <i class="fas fa-trophy"></i> Sıralama
             </button>
+            <button class="tab-btn" id="announcementsTabBtn" data-tab="tab4" style="position: relative; padding: 8px 16px; border: none; border-radius: 10px; background: rgba(255,255,255,0.05); color: #1a1a2e; font-weight: 600; cursor: pointer; transition: 0.3s; font-size: 13px;">
+                <i class="fas fa-bullhorn"></i> Duyurular
+                <span id="announcementsTabDot" style="display:none; position:absolute; top:2px; right:4px; width:8px; height:8px; background:#ef4444; border-radius:50%;"></span>
+            </button>
         </div>
-        
+
         <!-- ===== TAB 1: PROFİL BİLGİLERİ + ŞİFRE DEĞİŞTİR ===== -->
         <div id="tab1" class="tab-content" style="display: block;">
             <div style="padding: 10px 0;">
@@ -4398,10 +4517,25 @@ body.light-theme #profileScreen .info-row button:hover {
         <div id="userRank" style="margin-top: 14px; text-align: center;">
             <div style="font-size: 13px; opacity: 0.6; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px;">📍 Senin Sıralaman: Yükleniyor...</div>
         </div>
-    
+
     </div>
 </div>
-        
+
+<!-- ===== TAB 4: DUYURULAR ===== -->
+<div id="tab4" class="tab-content" style="display: none;">
+    <div style="padding: 10px 0;">
+        <h4 style="color: #f59e0b; font-size: 15px; margin-bottom: 12px;">
+            <i class="fas fa-bullhorn"></i> Duyurular
+        </h4>
+        <div id="announcementsTabList">
+            <div style="text-align: center; padding: 20px; color: #6b7280;">
+                <div style="font-size: 36px; margin-bottom: 10px;">📢</div>
+                <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
         <!-- ===== ÇIKIŞ BUTONU ===== -->
         <button class="btn btn-nav" style="margin-top: 15px; width: 100%; padding: 10px;" onclick="goHome()">🌿 Bahçeye çık</button>
     </div>
@@ -5713,37 +5847,136 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
 
 
     // ===== 📢 ADMİN DUYURU PANOSU =====
-    // Admin panelinden yayınlanan tek "aktif" duyuru appConfig/announcement
-    // belgesinde tutulur. Kullanıcının kendi belgesindeki lastSeenAnnouncementId
-    // alanı, en son gördüğü duyurunun kimliğini saklar. İkisi farklıysa (yeni
-    // duyuru var ya da hiç görmemiş) duyuru bir kez gösterilir; "Anladım"
-    // denince o kimlik kullanıcıya kaydedilir ve bir sonraki duyuruya kadar
-    // tekrar çıkmaz.
+    // appConfig/announcement -> şu an aktif (en son yayınlanan) duyuru.
+    // announcements/{id}     -> tüm duyuru geçmişi (Profil > Duyurular sekmesi).
+    // Kullanıcı belgesinde iki ayrı alan tutulur:
+    //   - lastSeenAnnouncementId   : bulut ipucu bir kez gösterildi mi
+    //     (bir daha çıkmasın diye, yeni duyuru gelene kadar).
+    //   - lastOpenedAnnouncementId : kullanıcı Duyurular sekmesini gerçekten
+    //     açtı mı (ikondaki kırmızı nokta bunu görene kadar kalır).
+    // ÖNEMLİ: Artık girişte engelleyici bir pencere (modal) AÇILMIYOR - sadece
+    // ikonun yanında kibar, kendiliğinden kaybolan bir "bulut" ipucu beliriyor.
+    let __currentUserRef = null;
+    let __latestAnnouncement = null;
+
+    function setAnnouncementUnreadState(isUnread) {
+        const iconBtn = document.getElementById('announcementIconBtn');
+        if (iconBtn) iconBtn.classList.toggle('has-unread', isUnread);
+        const tabDot = document.getElementById('announcementsTabDot');
+        if (tabDot) tabDot.style.display = isUnread ? 'block' : 'none';
+    }
+
     async function checkAndShowAnnouncement(userRef, userData) {
         try {
+            __currentUserRef = userRef;
             const annSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
             if (!annSnap.exists()) return;
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
-            if (userData.lastSeenAnnouncementId === ann.id) return;
+            __latestAnnouncement = ann;
 
-            const guvenliMesaj = String(ann.message)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>');
+            setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== ann.id);
 
-            Swal.fire({
-                icon: 'info',
-                title: ann.title || '📢 Duyuru',
-                html: `<div style="text-align:left; font-size:15px; line-height:1.6;">${guvenliMesaj}</div>`,
-                confirmButtonText: 'Anladım',
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then(() => {
+            // Bulut ipucu: SADECE bu kullanıcı bu duyuruyu hiç görmediyse, bir kez.
+            if (userData.lastSeenAnnouncementId !== ann.id) {
+                showAnnouncementCloudTip();
                 updateDoc(userRef, { lastSeenAnnouncementId: ann.id }).catch(() => {});
-            });
+            }
         } catch (e) {
             console.log('Duyuru kontrol hatası:', e.message);
         }
+    }
+
+    function showAnnouncementCloudTip() {
+        const iconBtn = document.getElementById('announcementIconBtn');
+        if (!iconBtn) return;
+
+        // Mobilde "Günlük Seri/Yardım" paneli kapalıysa, ipucunun görünmesi için
+        // geçici olarak açıyoruz; kullanıcı hiçbir şeye dokunmasa da kendiliğinden
+        // kapanır - kalıcı bir düzen değişikliği/kayma olmuyor.
+        const headerExtras = document.getElementById('headerExtras');
+        const wasClosed = !!(headerExtras && !headerExtras.classList.contains('open'));
+        if (wasClosed) headerExtras.classList.add('open');
+
+        const tip = document.createElement('div');
+        tip.className = 'announcement-cloud-tip';
+        tip.textContent = '📢 Yeni bir duyuru var!';
+        const kapat = () => {
+            tip.classList.add('fade-out');
+            setTimeout(() => {
+                tip.remove();
+                if (wasClosed && headerExtras) headerExtras.classList.remove('open');
+            }, 400);
+        };
+        tip.onclick = (e) => {
+            e.stopPropagation();
+            kapat();
+            if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
+        };
+        iconBtn.appendChild(tip);
+        setTimeout(kapat, 4500);
+    }
+
+    document.getElementById('announcementIconBtn')?.addEventListener('click', () => {
+        if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
+    });
+
+    // Profil > Duyurular sekmesi: tüm geçmiş duyurular satır satır, tıklayınca modal
+    window.loadAnnouncementsTab = async function () {
+        const listEl = document.getElementById('announcementsTabList');
+        if (listEl) {
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;">Yükleniyor...</div>';
+            try {
+                const q = query(collection(db, 'announcements'), orderBy('publishedAt', 'desc'));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;"><div style="font-size:36px; margin-bottom:10px;">📭</div><p>Henüz duyuru yok.</p></div>';
+                } else {
+                    listEl.innerHTML = '';
+                    snapshot.forEach(docSnap => {
+                        const a = docSnap.data();
+                        const tarih = a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+                        const guvenliBaslik = String(a.title || '📢 Duyuru').replace(/</g, '&lt;');
+                        const guvenliOnizleme = String(a.message || '').replace(/</g, '&lt;');
+                        const row = document.createElement('div');
+                        row.style.cssText = 'padding:12px 14px; margin-bottom:8px; background:rgba(255,255,255,0.04); border-radius:12px; cursor:pointer; transition:0.2s;';
+                        row.onmouseover = () => row.style.background = 'rgba(245,158,11,0.08)';
+                        row.onmouseout = () => row.style.background = 'rgba(255,255,255,0.04)';
+                        row.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                                <strong style="font-size:14px;">${guvenliBaslik}</strong>
+                                <span style="font-size:11px; opacity:0.6; white-space:nowrap;">${tarih}</span>
+                            </div>
+                            <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
+                        `;
+                        row.onclick = () => openAnnouncementModal(a);
+                        listEl.appendChild(row);
+                    });
+                }
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;">Duyurular yüklenirken hata oluştu.</div>';
+                console.log('loadAnnouncementsTab hata:', e.message);
+            }
+        }
+
+        // Sekme açıldı - okunmamış işaretini kaldır
+        setAnnouncementUnreadState(false);
+        if (__currentUserRef && __latestAnnouncement) {
+            updateDoc(__currentUserRef, { lastOpenedAnnouncementId: __latestAnnouncement.id }).catch(() => {});
+        }
+    };
+
+    function openAnnouncementModal(a) {
+        const guvenliMesaj = String(a.message || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+        Swal.fire({
+            icon: 'info',
+            title: a.title || '📢 Duyuru',
+            html: `<div style="text-align:left; font-size:15px; line-height:1.6;">${guvenliMesaj}</div>`,
+            confirmButtonText: 'Tamam',
+            showCloseButton: true
+        });
     }
 
     // ===== 🔥 GÜNLÜK SERİ (STREAK) HESAPLAMA =====
@@ -7554,11 +7787,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     setTimeout(() => window.showDuaScreen(), 900);
                 }
 
-                // ===== 📢 ADMİN DUYURUSU: yeni bir duyuru varsa ve bu kullanıcı
-                // henüz görmediyse bir kez göster. "Anladım" deyince bir daha
-                // gösterilmez (Firestore'da kullanıcıya özel lastSeenAnnouncementId
-                // ile takip ediliyor, bir sonraki duyuruya kadar tekrar çıkmaz). =====
-                setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1600);
+                // ===== 📢 ADMİN DUYURUSU: Yeni bir duyuru varsa Günlük Seri
+                // rozetinin yanındaki ikonda kırmızı nokta belirir; kullanıcı
+                // bu duyuruyu ilk kez görüyorsa ayrıca küçük, tatlı bir bulut
+                // ipucu belirip birkaç saniye sonra kendiliğinden kaybolur.
+                // ARTIK EKRANI ENGELLEYEN BİR PENCERE AÇILMIYOR. =====
+                setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1200);
             }
         } catch (error) {
             console.log('⚠️ Seviye yükleme hatası:', error);
@@ -12342,45 +12576,57 @@ if (titleText.includes('📦 Sandıktaki Kelimeler')) {
     const contents = {
         tab1: document.getElementById('tab1'),
         tab2: document.getElementById('tab2'),
-        tab3: document.getElementById('tab3')
+        tab3: document.getElementById('tab3'),
+        tab4: document.getElementById('tab4')
     };
-    
+
     function setActiveTab(activeTab) {
         tabs.forEach(t => {
             t.classList.remove('active');
             t.style.background = '';
             t.style.color = '';
         });
-        
+
         Object.values(contents).forEach(c => {
             if (c) c.style.display = 'none';
         });
-        
+
         if (activeTab) {
             activeTab.classList.add('active');
             activeTab.style.background = '#f59e0b';
             activeTab.style.color = '#121212';
-            
+
             const tabId = activeTab.dataset.tab;
             if (contents[tabId]) {
                 contents[tabId].style.display = 'block';
             }
+            if (tabId === 'tab4' && typeof window.loadAnnouncementsTab === 'function') {
+                window.loadAnnouncementsTab();
+            }
         }
     }
-    
+
     tabs.forEach(tab => {
         tab.addEventListener('click', function() {
             setActiveTab(this);
         });
     });
-    
+
     const firstActiveTab = document.querySelector('.tab-btn.active');
     if (firstActiveTab) {
         setActiveTab(firstActiveTab);
     } else if (tabs.length > 0) {
         setActiveTab(tabs[0]);
     }
-    
+
+    // "Duyurular" ikonuna veya buluta tıklanınca doğrudan Profil > Duyurular
+    // sekmesini aç.
+    window.openAnnouncementsTab = function () {
+        if (typeof showProfile === 'function') showProfile();
+        const tab4Btn = document.getElementById('announcementsTabBtn');
+        if (tab4Btn) setTimeout(() => setActiveTab(tab4Btn), 50);
+    };
+
     function refreshTabStyles() {
         const activeTab = document.querySelector('.tab-btn.active');
         tabs.forEach(tab => {
