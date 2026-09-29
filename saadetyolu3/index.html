@@ -327,6 +327,14 @@ html, body {
             transition: 0.3s;
         }
         .theme-icon-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.05); }
+        .login-theme-btn {
+            position: fixed;
+            top: calc(16px + env(safe-area-inset-top, 0px));
+            right: 16px;
+            z-index: 60;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
         
         /* Ana Sayfa Kartları */
         #mainContent {
@@ -738,16 +746,16 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
         /* Giriş Ekranı */
         .login-card {
             max-width: 400px;
-            margin: 50px auto;
+            margin: 6vh auto 20px;
             text-align: center;
             background: rgba(255,255,255,0.05);
             border-radius: 20px;
-            padding: 30px;
+            padding: 22px;
             backdrop-filter: blur(10px);
         }
         .input-wrapper {
             position: relative;
-            margin: 10px 0;
+            margin: 7px 0;
         }
         .input-wrapper input {
             width: 100%;
@@ -757,6 +765,7 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             border-radius: 10px;
             background: rgba(255,255,255,0.08);
             color: white;
+            margin: 0;
         }
         .toggle-password {
             position: absolute;
@@ -1095,7 +1104,9 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
         /* ===== LOGO ROZETİ: koyu temada logo neredeyse görünmüyordu - gri bir
            "kart" arka planı ekleyip logoyu bu kartın üstünde gösteriyoruz.
            Yükseklik resmin kendi yüksekliğiyle aynı kalıyor, sadece yanlara
-           (sağ/sol) ekstra dolgu vererek kutuyu biraz daha GENİŞ yapıyoruz. */
+           (sağ/sol) ekstra dolgu vererek kutuyu biraz daha GENİŞ yapıyoruz.
+           3D "kabartma" efekti: çok katmanlı gölge + altın çerçeve ile logo
+           öne çıkıyor ve daha belirgin görünüyor. */
         .logo-badge {
             display: inline-flex;
             align-items: center;
@@ -1111,17 +1122,21 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             max-width: 100%;
             margin: 0 !important;
             border-radius: 20px;
+            box-shadow: 0 10px 22px rgba(0,0,0,0.35);
         }
         body:not(.light-theme) .logo-badge {
-            background: #2c2c30;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(145deg, #34343a, #232326);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.5), 0 4px 14px rgba(245,158,11,0.2), inset 0 2px 3px rgba(255,255,255,0.08), inset 0 -4px 8px rgba(0,0,0,0.4);
+            border: 1px solid rgba(245,158,11,0.25);
         }
         body.light-theme .logo-badge {
             background: transparent;
             padding: 0;
         }
-        
+        body.light-theme .logo-badge img {
+            box-shadow: 0 12px 26px rgba(0,0,0,0.2);
+        }
+
         /* ============================================================
            PROFİL - TIKLANABİLİR İSTATİSTİK KARTLARI
            ============================================================ */
@@ -1946,7 +1961,7 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             .button-group { display: flex; flex-direction: row; justify-content: space-between; gap: 8px; width: 100%; }
             .button-group .btn { flex: 1; justify-content: center; padding: 8px 5px; font-size: 15px; white-space: nowrap; height: 50px; }
             
-            .login-card { padding: 20px; margin: 30px auto; width: 95%; }
+            .login-card { padding: 18px; margin: 10vh auto 20px; width: 95%; }
             .exams-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .exam-card { padding: 10px; }
             .exam-title { font-size: 13px; margin-bottom: 6px; }
@@ -3753,6 +3768,12 @@ body.light-theme #profileScreen .info-row button:hover {
     </div>
     <div class="overlay" id="overlay"></div>
 
+    <!-- Giriş ekranında (henüz login olmadan) tema değiştirme ikonu.
+         mainHeader login öncesi display:none olduğu için, içindeki
+         themeIconBtn görünmüyordu - bağımsız, sabit konumlu bu buton
+         login ekranında da tema değiştirmeyi mümkün kılıyor. -->
+    <button class="theme-icon-btn login-theme-btn" id="loginThemeBtn" title="Tema Değiştir"><i class="fas fa-moon"></i></button>
+
     <div class="container">
         <!-- Header -->
 <div class="header" id="mainHeader" style="display: none;">
@@ -3790,14 +3811,14 @@ body.light-theme #profileScreen .info-row button:hover {
 </div>
         <!-- Giriş Ekranı -->
         <div id="loginScreen" class="login-card">
-            <div style="text-align: center; margin-bottom: 25px;">
+            <div style="text-align: center; margin-bottom: 14px;">
                 <div class="logo-badge">
                     <img src="tools/logo.png" alt="Saadet Yolu Logo">
                 </div>
                 <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Kelime Öğrenme Platformu</div>
             </div>
-            <p style="margin: 10px 0; font-size: 13px; text-align: center;">Rahman ve Rahim olan Allah'ın adıyla...</p>
-            <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <p style="margin: 6px 0; font-size: 12px; text-align: center;">Rahman ve Rahim olan Allah'ın adıyla...</p>
+            <div style="display: flex; gap: 10px; margin: 12px 0;">
                 <button id="showLoginBtn" class="btn" style="flex:1; background:#f59e0b; color:#121212;">Login</button>
                 <button id="showRegisterBtn" class="btn" style="flex:1; background:#3b82f6; color:white;">Kayıt Ol</button>
             </div>
@@ -6905,28 +6926,32 @@ window.checkAndCompleteExam = () => {
     let isDark = true;
     const themeIconBtn = document.getElementById('themeIconBtn');
     const themeBtnSidebar = document.getElementById('themeBtnSidebar');
-    
+    const loginThemeBtn = document.getElementById('loginThemeBtn');
+
     function applyTheme() {
         if (isDark) {
             document.body.classList.remove('light-theme');
             themeIconBtn.innerHTML = '<i class="fas fa-moon"></i>';
             themeBtnSidebar.innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
+            if (loginThemeBtn) loginThemeBtn.innerHTML = '<i class="fas fa-moon"></i>';
         } else {
             document.body.classList.add('light-theme');
             themeIconBtn.innerHTML = '<i class="fas fa-sun"></i>';
             themeBtnSidebar.innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
+            if (loginThemeBtn) loginThemeBtn.innerHTML = '<i class="fas fa-sun"></i>';
         }
     }
-    
+
     function changeTheme() {
         isDark = !isDark;
         applyTheme();
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
-    
+
     themeIconBtn.onclick = () => { changeTheme(); };
     themeBtnSidebar.onclick = () => { changeTheme(); closeMenu(); };
-    
+    if (loginThemeBtn) loginThemeBtn.onclick = () => { changeTheme(); };
+
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
         isDark = false;
@@ -7421,7 +7446,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'flex';
         themeIconBtn.classList.add('hidden');
-        
+        if (loginThemeBtn) loginThemeBtn.style.display = 'none';
+
         // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
         // loadUserStats bunları dolduracak (Firestore'dan)
         document.getElementById('userNameDisplay').textContent = '';
@@ -7546,7 +7572,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
         // Tema butonunu göster
         const themeIconBtn = document.getElementById('themeIconBtn');
         if (themeIconBtn) themeIconBtn.classList.remove('hidden');
-        
+        const loginThemeBtnLogout = document.getElementById('loginThemeBtn');
+        if (loginThemeBtnLogout) loginThemeBtnLogout.style.display = 'flex';
+
         // Giriş ekranını göster
         const loginScreen = document.getElementById('loginScreen');
         if (loginScreen) loginScreen.style.display = 'block';
