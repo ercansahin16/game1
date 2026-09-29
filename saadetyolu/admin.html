@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Admin Panel - SaadetYolu</title>
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <!-- SweetAlert2 (deleteLesson fonksiyonu bunu kullanıyor, önceden eksikti) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -202,24 +204,36 @@
             background: rgba(255,255,255,0.1);
             transform: scale(1.05);
         }
+        .login-theme-btn {
+            position: fixed;
+            top: calc(16px + env(safe-area-inset-top, 0px));
+            right: 16px;
+            z-index: 60;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
         .login-card {
             max-width: 400px;
-            margin: 50px auto;
+            margin: 6vh auto 20px;
             text-align: center;
             background: rgba(255,255,255,0.05);
             border-radius: 20px;
-            padding: 30px;
+            padding: 22px;
             backdrop-filter: blur(10px);
         }
         .login-card h2 {
             margin-bottom: 20px;
             color: #f59e0b;
         }
-        .login-title { font-size: 20px; font-weight: bold; color: #f59e0b; }
-        .login-subtitle { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+        .login-title { font-size: 18px; font-weight: bold; color: #f59e0b; }
+        .login-subtitle { font-size: 10px; opacity: 0.7; margin-top: 3px; }
+        .login-card .input-wrapper { margin: 7px 0; }
+        .login-card .input-wrapper input { margin: 0; }
         /* ===== LOGO ROZETİ: koyu temada logo görünmüyordu - gri kart arkaplanı.
            Yükseklik aynı kalıyor, yanlara dolgu ile kutu biraz daha geniş oluyor.
-           (index.html ile birebir aynı ölçekte: 220px / 180px / 160px) */
+           (index.html ile birebir aynı ölçekte: 220px / 180px / 160px)
+           3D "kabartma" efekti: çok katmanlı gölge + altın çerçeve ile logo
+           öne çıkıyor ve daha belirgin görünüyor. */
         .logo-badge {
             display: inline-flex;
             align-items: center;
@@ -234,15 +248,20 @@
             height: 220px;
             max-width: 100%;
             border-radius: 20px;
+            box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+            transition: transform 0.3s ease;
         }
         body:not(.light-theme) .logo-badge {
-            background: #2c2c30;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(145deg, #34343a, #232326);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.5), 0 4px 14px rgba(245,158,11,0.2), inset 0 2px 3px rgba(255,255,255,0.08), inset 0 -4px 8px rgba(0,0,0,0.4);
+            border: 1px solid rgba(245,158,11,0.25);
         }
         body.light-theme .logo-badge {
             background: transparent;
             padding: 0;
+        }
+        body.light-theme .logo-badge img {
+            box-shadow: 0 12px 26px rgba(0,0,0,0.2);
         }
         .sidebar-logo-badge {
             display: inline-flex;
@@ -811,6 +830,12 @@
 
 <div class="overlay" id="overlay"></div>
 
+<!-- Giriş ekranında (henüz login olmadan) tema değiştirme ikonu.
+     mainHeader login öncesi display:none olduğu için, içindeki
+     themeIconBtn görünmüyordu - bağımsız, sabit konumlu bu buton
+     login ekranında da tema değiştirmeyi mümkün kılıyor. -->
+<button class="theme-icon-btn login-theme-btn" id="loginThemeBtn" title="Tema Değiştir"><i class="fas fa-moon"></i></button>
+
 <div class="container">
     <div class="header" id="mainHeader" style="display: none;">
         <div class="logo" onclick="showSection('dashboard'); closeMenu();" style="cursor: pointer;">🔐 AnaSayfa</div>
@@ -823,7 +848,7 @@
     </div>
 
     <div id="loginScreen" class="login-card">
-        <div style="text-align: center; margin-bottom: 25px;">
+        <div style="text-align: center; margin-bottom: 14px;">
             <div class="logo-badge">
                 <img src="tools/logo.png" alt="Saadet Yolu Logo">
             </div>
@@ -1681,6 +1706,8 @@
         menuBtn.classList.add('hidden');
         document.getElementById('logoutIconBtn').classList.add('hidden');
         document.getElementById('themeIconBtn').classList.remove('hidden');
+        const loginThemeBtnLogout = document.getElementById('loginThemeBtn');
+        if (loginThemeBtnLogout) loginThemeBtnLogout.style.display = 'flex';
         closeMenu();
     }
 
@@ -3409,6 +3436,8 @@ window.updateWordCountDisplay = function(count) {
         menuBtn.classList.remove('hidden');
         document.getElementById('logoutIconBtn').classList.remove('hidden');
         document.getElementById('themeIconBtn').classList.add('hidden');
+        const loginThemeBtnLogin = document.getElementById('loginThemeBtn');
+        if (loginThemeBtnLogin) loginThemeBtnLogin.style.display = 'none';
         loadBooks();
         loadLessonBooks();
         loadWordBooks();
@@ -3441,28 +3470,34 @@ window.updateWordCountDisplay = function(count) {
             document.body.classList.remove('light-theme');
             document.getElementById('themeIconBtn').innerHTML = '<i class="fas fa-moon"></i>';
             document.getElementById('themeBtnSidebar').innerHTML = '<i class="fas fa-moon"></i> Tema Değiştir';
+            const loginThemeBtn = document.getElementById('loginThemeBtn');
+            if (loginThemeBtn) loginThemeBtn.innerHTML = '<i class="fas fa-moon"></i>';
         } else {
             document.body.classList.add('light-theme');
             document.getElementById('themeIconBtn').innerHTML = '<i class="fas fa-sun"></i>';
             document.getElementById('themeBtnSidebar').innerHTML = '<i class="fas fa-sun"></i> Tema Değiştir';
+            const loginThemeBtn = document.getElementById('loginThemeBtn');
+            if (loginThemeBtn) loginThemeBtn.innerHTML = '<i class="fas fa-sun"></i>';
         }
     }
-    
+
     function changeTheme() {
         isDark = !isDark;
         applyTheme();
         localStorage.setItem('adminTheme', isDark ? 'dark' : 'light');
     }
-    
+
     document.getElementById('themeIconBtn').onclick = () => { changeTheme(); };
     document.getElementById('themeBtnSidebar').onclick = () => { changeTheme(); closeMenu(); };
-    
+    const loginThemeBtnEl = document.getElementById('loginThemeBtn');
+    if (loginThemeBtnEl) loginThemeBtnEl.onclick = () => { changeTheme(); };
+
     const savedTheme = localStorage.getItem('adminTheme');
     if (savedTheme === 'light') {
         isDark = false;
         applyTheme();
     }
-    
+
     window.toggleAdminPassword = () => {
         const input = document.getElementById('adminPassword');
         const button = input.parentElement.querySelector('.toggle-password');
