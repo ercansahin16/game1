@@ -4221,6 +4221,7 @@ body.light-theme #profileScreen .info-row button:hover {
         <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
         <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
         <div class="sidebar-item" id="installAppBtn"><i class="fas fa-download"></i> Uygulamayı İndir</div>
+        <div class="sidebar-item" id="checkUpdateBtn"><i class="fas fa-rotate"></i> Yeni Sürümü Denetle</div>
         <div class="sidebar-footer" style="position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
@@ -15390,6 +15391,51 @@ enhanceAllDropdownSelects();
             });
         });
     }
+
+    // ===== MENÜ: "YENİ SÜRÜMÜ DENETLE" BUTONU =====
+    // Otomatik güncelleme bazı iPhone/iOS cihazlarında (özellikle "Ana Ekrana
+    // Ekle" ile açılan PWA'larda) güvenilir çalışmayabiliyor. Bu buton, tüm
+    // önbelleği elle temizleyip sayfayı önbellek-atlamalı (cache-busting) bir
+    // adresle yeniden yükleyerek en güncel sürümü garanti şekilde getirir.
+    window.checkForAppUpdate = async function () {
+        const goster = (typeof Swal !== 'undefined');
+        try {
+            if (goster) {
+                Swal.fire({
+                    title: 'Güncelleme aranıyor…',
+                    text: 'En güncel sürüm indiriliyor, lütfen bekleyin.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+            }
+
+            // 1) Tüm service worker önbelleklerini temizle
+            if ('caches' in window) {
+                const anahtarlar = await caches.keys();
+                await Promise.all(anahtarlar.map((k) => caches.delete(k)));
+            }
+
+            // 2) Service worker kaydını güncellemeye zorla
+            if ('serviceWorker' in navigator) {
+                const kayitlar = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(kayitlar.map((r) => r.update().catch(() => {})));
+            }
+
+            // 3) Sayfayı önbellek-atlamalı bir adresle tazele (tarayıcı HTTP
+            //    önbelleğini de baypas eder, gerçekten yeni index.html gelir)
+            const yeniUrl = new URL(window.location.href);
+            yeniUrl.searchParams.set('_v', Date.now());
+            window.location.replace(yeniUrl.toString());
+        } catch (e) {
+            console.log('Güncelleme kontrolü hatası:', e.message);
+            window.location.reload();
+        }
+    };
+    document.getElementById('checkUpdateBtn')?.addEventListener('click', () => {
+        window.checkForAppUpdate();
+    });
 </script>
 </body>
 </html>
