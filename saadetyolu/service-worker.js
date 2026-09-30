@@ -4,7 +4,7 @@
 // Firestore/Firebase istekleri önbelleğe ALINMAZ (her zaman ağdan gider),
 // çünkü kullanıcı verisi (puan, mesajlar, arkadaşlar) her zaman güncel olmalı.
 
-const CACHE_NAME = 'saadetyolu-shell-v2';
+const CACHE_NAME = 'saadetyolu-shell-v3';
 const APP_SHELL = [
     './index.html',
     './manifest.json',
@@ -42,20 +42,19 @@ self.addEventListener('fetch', (event) => {
         return; // servis çalışanı araya girmesin, tarayıcı normal şekilde ağa gitsin
     }
 
+    // AĞ ÖNCELİKLİ (network-first): telefon internete bağlıyken HER ZAMAN en
+    // güncel sürüm ağdan çekilir ve önbellek güncellenir. "Ana Ekrana Ekle" ile
+    // açılan PWA'larda eski sürümün takılı kalmaması için önbellek sadece ağa
+    // tamamen ulaşılamadığında (çevrimdışıyken) yedek olarak kullanılır.
     event.respondWith(
-        caches.match(event.request).then((cached) => {
-            const networkFetch = fetch(event.request)
-                .then((response) => {
-                    if (response && response.status === 200) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                    }
-                    return response;
-                })
-                .catch(() => cached); // ağ yoksa önbellekten dön
-
-            // Önbellekte varsa hemen onu göster (hızlı açılış), arka planda da tazele
-            return cached || networkFetch;
-        })
+        fetch(event.request)
+            .then((response) => {
+                if (response && response.status === 200) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });

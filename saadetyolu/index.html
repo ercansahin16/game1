@@ -15368,8 +15368,25 @@ enhanceAllDropdownSelects();
     // ===== SERVICE WORKER KAYDI (PWA çevrimdışı destek + "Ana Ekrana Ekle") =====
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js').catch((err) => {
+            navigator.serviceWorker.register('service-worker.js').then((reg) => {
+                // Uygulama her açıldığında / öne geldiğinde yeni sürüm var mı diye kontrol et
+                // ("Ana Ekrana Ekle" ile açılan PWA'lar genelde tamamen kapanmıyor, arka planda
+                // askıda kalıyor - bu yüzden tekrar öne gelince manuel güncelleme kontrolü şart)
+                reg.update();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') reg.update();
+                });
+            }).catch((err) => {
                 console.log('Service worker kaydı başarısız:', err);
+            });
+
+            // Yeni service worker devreye girince (yeni sürüm indirilip aktif olunca)
+            // sayfayı otomatik olarak BİR KEZ yenile, kullanıcı manuel bir şey yapmasın
+            let swYenilendi = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (swYenilendi) return;
+                swYenilendi = true;
+                window.location.reload();
             });
         });
     }
