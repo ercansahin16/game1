@@ -5037,7 +5037,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs as __rawGetDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -5224,24 +5224,6 @@ if (typeof showExamConfirm === 'undefined') {
     
    const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// ===== KOTA TASARRUFU: Tüm koleksiyon okumalarını kısa süre bellekte tut =====
-// Kitap/ders/kelime/sınav listeleri nadiren değişir; sıralama için kullanıcı listesi 3 dk tutulur.
-const __GETDOCS_TTL = { books: 600000, lessons: 600000, words: 600000, exams: 600000, users: 180000 };
-const __getDocsCache = new Map();
-function getDocs(q) {
-    try {
-        if (q && q.type === 'collection' && __GETDOCS_TTL[q.path]) {
-            const hit = __getDocsCache.get(q.path);
-            if (hit && Date.now() - hit.t < __GETDOCS_TTL[q.path]) return hit.p;
-            const p = __rawGetDocs(q);
-            __getDocsCache.set(q.path, { t: Date.now(), p });
-            p.catch(() => __getDocsCache.delete(q.path));
-            return p;
-        }
-    } catch (e) {}
-    return __rawGetDocs(q);
-}
 const auth = getAuth(app);
 let isZoomed = true; // Zoom durumu
 
@@ -6703,17 +6685,8 @@ async function loadUserStats() {
         if (profileEmail) profileEmail.textContent = currentUser.email;
         
         // ===== 4. DİĞER VERİLERİ AL =====
-        // Kota tasarrufu: kelime sayısı her seferinde tüm koleksiyon okunarak değil, 6 saatlik önbellekten alınır
-        let totalWords = 0;
-        try {
-            const c = JSON.parse(localStorage.getItem('__totalWordsCache') || 'null');
-            if (c && c.n > 0 && Date.now() - c.t < 6 * 3600 * 1000) totalWords = c.n;
-        } catch (e) {}
-        if (!totalWords) {
-            const wordsSnapshot = await getDocs(collection(db, 'words'));
-            totalWords = wordsSnapshot.docs.length;
-            try { localStorage.setItem('__totalWordsCache', JSON.stringify({ n: totalWords, t: Date.now() })); } catch (e) {}
-        }
+        const wordsSnapshot = await getDocs(collection(db, 'words'));
+        const totalWords = wordsSnapshot.docs.length;
         const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
         
         if (userDoc.exists()) {
@@ -10825,12 +10798,12 @@ window.__notifLiveTimer = null;
 window.__notifStartLivePolling = function() {
     if (window.__notifLiveTimer) return;
     window.__notifLiveTimer = setInterval(async () => {
-        if (!window.__notifState.open || !currentUser || document.hidden) return;
+        if (!window.__notifState.open || !currentUser) return;
         try {
             await window.__notifRefreshData();
             window.__notifRenderAll();
         } catch (e) { /* sessizce geç */ }
-    }, 20000);
+    }, 6000);
 };
 window.__notifStopLivePolling = function() {
     if (window.__notifLiveTimer) { clearInterval(window.__notifLiveTimer); window.__notifLiveTimer = null; }
@@ -10878,7 +10851,7 @@ window.__notifShowBrowserNotification = function(title, body) {
 };
 
 window.__notifBgTick = async function() {
-    if (!currentUser || document.hidden) return;
+    if (!currentUser) return;
     try {
         const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
         const myData = mySnap.exists() ? mySnap.data() : {};
@@ -10926,7 +10899,7 @@ window.__notifStartGlobalPolling = function() {
     window.__notifSeenReqUids = new Set();
     window.__notifSeenMsgIds = new Set();
     window.__notifBgTick();
-    window.__notifBgTimer = setInterval(window.__notifBgTick, 90000);
+    window.__notifBgTimer = setInterval(window.__notifBgTick, 20000);
 };
 window.__notifStopGlobalPolling = function() {
     if (window.__notifBgTimer) { clearInterval(window.__notifBgTimer); window.__notifBgTimer = null; }
@@ -10945,10 +10918,10 @@ window.__notifStopGlobalPolling = function() {
 // ama gerçek veriye dayanır).
 // ============================================================
 window.__presenceHeartbeatTimer = null;
-window.__presenceOnlineThresholdMs = 300000; // 90 sn içinde heartbeat atmışsa "çevrimiçi" sayılır
+window.__presenceOnlineThresholdMs = 90000; // 90 sn içinde heartbeat atmışsa "çevrimiçi" sayılır
 
 window.__presenceHeartbeatTick = async function() {
-    if (!currentUser || document.hidden) return;
+    if (!currentUser) return;
     try {
         await updateDoc(doc(db, 'users', currentUser.uid), { lastActive: Date.now() });
     } catch (e) { /* önemli değil */ }
@@ -10956,7 +10929,7 @@ window.__presenceHeartbeatTick = async function() {
 window.__startPresenceHeartbeat = function() {
     if (window.__presenceHeartbeatTimer) return;
     window.__presenceHeartbeatTick();
-    window.__presenceHeartbeatTimer = setInterval(window.__presenceHeartbeatTick, 240000);
+    window.__presenceHeartbeatTimer = setInterval(window.__presenceHeartbeatTick, 25000);
 };
 window.__stopPresenceHeartbeat = function() {
     if (window.__presenceHeartbeatTimer) { clearInterval(window.__presenceHeartbeatTimer); window.__presenceHeartbeatTimer = null; }
@@ -12027,7 +12000,7 @@ window.showLeaderboard = async () => {
 
 
     // YARIŞMA TEST KODU
-window.testYarisma = async function testYarisma() {
+(async function testYarisma() {
     console.log('🔍 YARIŞMA TEST BAŞLIYOR...');
     
     // 1. Kelimeleri kontrol et
@@ -12062,7 +12035,7 @@ window.testYarisma = async function testYarisma() {
     }
     
     console.log('✅ TEST TAMAMLANDI');
-};
+})();
 
 
 
@@ -12369,7 +12342,7 @@ async function safeOperation(operation) {
 
 
 // Sınav sıralama testi
-window.testSiralama = async function testSiralama() {
+(async function testSiralama() {
     console.log('===== SINAV SIRALAMA TESTİ =====');
     
     // 1. Mevcut sınavları getir
@@ -12408,7 +12381,7 @@ window.testSiralama = async function testSiralama() {
             console.log('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
         }
     }
-};
+})();
 
 
 
