@@ -41,12 +41,31 @@ app.post('/api/sso-login', async (req, res) => {
       return res.status(429).json({ error: 'Çok fazla deneme. Lütfen biraz bekleyin.' });
     }
 
-    const url = `${HERYER_BASE_URL}/get-auth-token-link?apiKey=${encodeURIComponent(HERYER_API_KEY)}&userEmail=${encodeURIComponent(email)}&userPassword=${encodeURIComponent(password)}`;
-    const resp = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(15000) });
-    const text = await resp.text();
+    // Belgeye göre servis POST ile çağrılır (apiKey, userEmail, userPassword)
+    const resp = await fetch(`${HERYER_BASE_URL}/get-auth-token-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: HERYER_API_KEY, userEmail: email, userPassword: password }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const text = (await resp.text()).trim();
 
-    const bilinenHatalar = ['Email veya şifre yanlış', 'Yetkisiz işlem.'];
-    if (!resp.ok || bilinenHatalar.some(h => text.includes(h))) {
+    // Başarı: 200 ve geriye bir giriş linki döner. Başka her şey reddedilir (güvenli taraf).
+    const basarili = resp.ok && !text.includes('<') && /loginWithToken\//.test(text);
+    if (!basarili) {
+      if (text.includes('Email veya şifre yanlış')) {
+        return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
+      }
+      if (text.includes('Aktivasyon süreniz dolmuştur')) {
+        return res.status(403).json({ error: 'saadetyolu.net hesabınızın kullanım süresi dolmuş' });
+      }
+      if (text.includes('Geçersiz kullanıcı') || text.includes('geçici olarak dondurulmuş')) {
+        return res.status(403).json({ error: 'Bu hesapla giriş yapılamıyor' });
+      }
+      console.error('Heryer beklenmeyen cevap:', resp.status, text.slice(0, 120).replace(/\s+/g, ' '));
+      if (text.includes('Yetkisiz işlem')) {
+        return res.status(502).json({ error: 'Servis ayarı hatalı, yönetici ile iletişime geçin' });
+      }
       return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
     }
 
