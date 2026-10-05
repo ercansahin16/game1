@@ -37,7 +37,7 @@ app.post('/api/sso-login', async (req, res) => {
     if (!email || !password || email.length > 200 || password.length > 200) {
       return res.status(400).json({ error: 'E-posta ve şifre gerekli' });
     }
-    if (tooMany('ip:' + req.ip, 60, 600000) || tooMany('em:' + email, 8, 600000)) {
+    if (tooMany('ip:' + req.ip, 300, 600000) || tooMany('em:' + email, 8, 600000)) {
       return res.status(429).json({ error: 'Çok fazla deneme. Lütfen biraz bekleyin.' });
     }
 
