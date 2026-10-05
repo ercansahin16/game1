@@ -6685,8 +6685,17 @@ async function loadUserStats() {
         if (profileEmail) profileEmail.textContent = currentUser.email;
         
         // ===== 4. DİĞER VERİLERİ AL =====
-        const wordsSnapshot = await getDocs(collection(db, 'words'));
-        const totalWords = wordsSnapshot.docs.length;
+        // Kota tasarrufu: kelime sayısı her seferinde tüm koleksiyon okunarak değil, 6 saatlik önbellekten alınır
+        let totalWords = 0;
+        try {
+            const c = JSON.parse(localStorage.getItem('__totalWordsCache') || 'null');
+            if (c && c.n > 0 && Date.now() - c.t < 6 * 3600 * 1000) totalWords = c.n;
+        } catch (e) {}
+        if (!totalWords) {
+            const wordsSnapshot = await getDocs(collection(db, 'words'));
+            totalWords = wordsSnapshot.docs.length;
+            try { localStorage.setItem('__totalWordsCache', JSON.stringify({ n: totalWords, t: Date.now() })); } catch (e) {}
+        }
         const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
         
         if (userDoc.exists()) {
@@ -12000,7 +12009,7 @@ window.showLeaderboard = async () => {
 
 
     // YARIŞMA TEST KODU
-(async function testYarisma() {
+window.testYarisma = async function testYarisma() {
     console.log('🔍 YARIŞMA TEST BAŞLIYOR...');
     
     // 1. Kelimeleri kontrol et
@@ -12035,7 +12044,7 @@ window.showLeaderboard = async () => {
     }
     
     console.log('✅ TEST TAMAMLANDI');
-})();
+};
 
 
 
@@ -12342,7 +12351,7 @@ async function safeOperation(operation) {
 
 
 // Sınav sıralama testi
-(async function testSiralama() {
+window.testSiralama = async function testSiralama() {
     console.log('===== SINAV SIRALAMA TESTİ =====');
     
     // 1. Mevcut sınavları getir
@@ -12381,7 +12390,7 @@ async function safeOperation(operation) {
             console.log('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
         }
     }
-})();
+};
 
 
 
