@@ -81,10 +81,10 @@ app.post('/api/sso-login', async (req, res) => {
     }
 
     // Uygulama Firestore'da kullanıcı belgesi yoksa oturumu kapattığı için burada oluşturuyoruz
-    const ref = db.collection('users').doc(userRecord.uid);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      await ref.set({
+    // Okuma yapmadan tek yazma: belge varsa 'zaten var' hatası alınır ve geçilir.
+    // Firestore kotası dolsa bile giriş engellenmesin diye hata olursa sadece loglanır.
+    try {
+      await db.collection('users').doc(userRecord.uid).create({
         name: email.split('@')[0],
         email: email,
         totalWordsViewed: 0,
@@ -98,6 +98,8 @@ app.post('/api/sso-login', async (req, res) => {
         createdAt: new Date().toISOString(),
         provider: 'saadetyolu'
       });
+    } catch (e) {
+      if (e.code !== 6) console.error('Kullanıcı belgesi oluşturulamadı (giriş devam ediyor):', e && e.message);
     }
 
     const token = await admin.auth().createCustomToken(userRecord.uid);
