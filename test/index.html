@@ -15372,7 +15372,9 @@ function enhanceSelectAsDropdown(selectEl) {
         trigger.classList.toggle('disabled', selectEl.disabled);
     }
 
+    let panelScrollCleanup = null;
     function closePanel() {
+        if (panelScrollCleanup) { panelScrollCleanup(); panelScrollCleanup = null; }
         if (panel) { panel.remove(); panel = null; }
         if (backdrop) { backdrop.remove(); backdrop = null; }
         trigger.classList.remove('open');
@@ -15442,7 +15444,14 @@ function enhanceSelectAsDropdown(selectEl) {
 
         const reposition = () => positionPanel();
         window.addEventListener('resize', reposition, { once: true });
-        window.addEventListener('scroll', () => closePanel(), { once: true, capture: true });
+        // ✅ DÜZELTME: Listenin KENDİ içinde kaydırma paneli kapatmamalı (aksi halde
+        // telefonda liste kaydırılamaz, 7. dersten sonrası görünmez). Yalnızca sayfa kayarsa kapat.
+        const onPageScroll = (ev) => {
+            if (panel && ev.target && (ev.target === panel || panel.contains(ev.target))) return;
+            closePanel();
+        };
+        window.addEventListener('scroll', onPageScroll, { capture: true });
+        panelScrollCleanup = () => window.removeEventListener('scroll', onPageScroll, { capture: true });
     }
 
     trigger.addEventListener('click', openPanel);
