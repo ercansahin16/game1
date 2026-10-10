@@ -3757,6 +3757,32 @@ body.light-theme .announcement-icon-btn .announcement-dot { border-color: #fffff
 .announcement-icon-btn .announcement-label { display: none; }
 
 /* 📢 Okunmamış duyuru baloncuğu (sadece mobilde: üç nokta düğmesinin altında) */
+/* ===== 🔔 Okunmamış duyuru satırı: canlı başlık + neon çerçeve ===== */
+.ann-row-unread{
+  position:relative;
+  border:1.5px solid rgba(251,191,36,.85)!important;
+  background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(236,72,153,.08))!important;
+  box-shadow:0 0 6px rgba(251,191,36,.7),0 0 16px rgba(245,158,11,.45),inset 0 0 10px rgba(251,191,36,.12);
+  animation:annNeon 1.8s ease-in-out infinite;
+}
+@keyframes annNeon{
+  0%,100%{box-shadow:0 0 5px rgba(251,191,36,.6),0 0 12px rgba(245,158,11,.35),inset 0 0 8px rgba(251,191,36,.10)}
+  50%{box-shadow:0 0 9px rgba(251,191,36,.95),0 0 24px rgba(245,158,11,.65),inset 0 0 14px rgba(251,191,36,.18)}
+}
+.ann-row-unread .ann-title{
+  font-size:15px!important;font-weight:800;
+  background:linear-gradient(90deg,#fde68a,#fb923c,#f472b6,#fde68a);background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fbbf24;
+  animation:annShine 3s linear infinite;
+}
+@keyframes annShine{to{background-position:200% center}}
+.ann-new-badge{
+  display:inline-block;margin-left:8px;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:.5px;
+  color:#3b2400;background:linear-gradient(180deg,#fde68a,#f59e0b);-webkit-text-fill-color:#3b2400;
+  box-shadow:0 0 8px rgba(251,191,36,.8);vertical-align:middle;
+}
+@media (prefers-reduced-motion:reduce){.ann-row-unread,.ann-row-unread .ann-title{animation:none}}
+
 .announcement-chip {
     display: none;
     position: absolute;
@@ -6471,6 +6497,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
             __latestAnnouncement = ann;
+            window.__annUnreadId = (userData.lastOpenedAnnouncementId !== ann.id) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== ann.id);
 
@@ -6541,12 +6568,16 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                         const guvenliBaslik = String(a.title || '📢 Duyuru').replace(/</g, '&lt;');
                         const guvenliOnizleme = String(a.message || '').replace(/</g, '&lt;');
                         const row = document.createElement('div');
+                        const okunmamis = !!window.__annUnreadId && window.__annUnreadId === docSnap.id;
                         row.style.cssText = 'padding:12px 14px; margin-bottom:8px; background:rgba(255,255,255,0.04); border-radius:12px; cursor:pointer; transition:0.2s;';
-                        row.onmouseover = () => row.style.background = 'rgba(245,158,11,0.08)';
-                        row.onmouseout = () => row.style.background = 'rgba(255,255,255,0.04)';
+                        if (okunmamis) row.classList.add('ann-row-unread');
+                        else {
+                            row.onmouseover = () => row.style.background = 'rgba(245,158,11,0.08)';
+                            row.onmouseout = () => row.style.background = 'rgba(255,255,255,0.04)';
+                        }
                         row.innerHTML = `
                             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                                <strong style="font-size:14px;">${guvenliBaslik}</strong>
+                                <span><strong class="ann-title" style="font-size:14px;">${guvenliBaslik}</strong>${okunmamis ? '<span class="ann-new-badge">YENİ</span>' : ''}</span>
                                 <span style="font-size:11px; opacity:0.6; white-space:nowrap;">${tarih}</span>
                             </div>
                             <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
@@ -6563,6 +6594,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
 
         // Sekme açıldı - okunmamış işaretini kaldır
         setAnnouncementUnreadState(false);
+        window.__annUnreadId = null;
         if (__currentUserRef && __latestAnnouncement) {
             updateDoc(__currentUserRef, { lastOpenedAnnouncementId: __latestAnnouncement.id }).catch(() => {});
         }

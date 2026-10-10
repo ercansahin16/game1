@@ -1015,7 +1015,6 @@
                 </div>
                 <div class="action-buttons">
                     <button id="editLessonBookBtn" class="btn btn-warning icon-btn" title="Seçili Kitabı Düzenle"><i class="fas fa-edit"></i></button>
-                    <button id="deleteLessonBookBtn" class="btn btn-danger icon-btn" title="Seçili Kitabı Sil"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="items-list" id="lessonsList"></div>
@@ -1053,7 +1052,6 @@
                 </div>
                 <div class="action-buttons">
                     <button id="editWordLessonBtn" class="btn btn-warning icon-btn" title="Seçili Dersi Düzenle"><i class="fas fa-edit"></i></button>
-                    <button id="deleteWordLessonBtn" class="btn btn-danger icon-btn" title="Seçili Dersi Sil"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="items-list" id="wordsList"></div>
@@ -1724,7 +1722,7 @@ async function loadBooks() {
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger icon-btn" onclick="deleteBook('${book.id}')"><i class="fas fa-trash"></i></button>
+                    
                 </div>
             `;
             container.appendChild(div);
@@ -1746,21 +1744,7 @@ async function loadBooks() {
         }
     };
     
-    window.deleteBook = async (id) => {
-        if (confirm('Bu kitabı silmek istediğinize emin misiniz?')) {
-            const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', id)));
-            for (const lesson of lessonsSnap.docs) {
-                const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lesson.id)));
-                for (const word of wordsSnap.docs) await deleteDoc(doc(db, 'words', word.id));
-                await deleteDoc(doc(db, 'lessons', lesson.id));
-            }
-            await deleteDoc(doc(db, 'books', id));
-            loadBooks();
-            loadLessonBooks();
-            loadWordBooks();
-            updateStats();
-        }
-    };
+    
 
     document.getElementById('goDataManagement').onclick = () => {
     showSection('dataManagement');
@@ -1839,7 +1823,7 @@ if (addBookBtn) {
         snapshot.docs.forEach(doc => {
             const data = doc.data();
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteLesson('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button></div>`;
             container.appendChild(div);
         });
         document.getElementById('statLessons').innerHTML = snapshot.size;
@@ -1852,11 +1836,7 @@ if (addBookBtn) {
         closeMenu();
     };
     
-    document.getElementById('deleteLessonBookBtn').onclick = () => {
-        if (!currentLessonBookId) { alert('Lütfen bir kitap seçin!'); return; }
-        if (confirm('Bu kitabı silmek istediğinize emin misiniz?')) deleteBook(currentLessonBookId);
-        closeMenu();
-    };
+    
 
     window.editLesson = async (id) => {
         const snap = await getDoc(doc(db, 'lessons', id));
@@ -1875,85 +1855,7 @@ if (addBookBtn) {
    // ============================================================
 // DERS SİLME - LOADER EKLİ
 // ============================================================
-window.deleteLesson = async (id) => {
-    // Kullanıcıya onay soralım
-    const confirmResult = await Swal.fire({
-        title: '⚠️ Dersi Sil',
-        text: 'Bu dersi ve içindeki tüm kelimeleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz!',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Evet, Sil',
-        cancelButtonText: 'İptal',
-        width: '420px',
-        padding: '1.5rem',
-        customClass: { popup: 'compact-swal' }
-    });
-    
-    if (!confirmResult.isConfirmed) return;
-    
-    // Loading göster
-    Swal.fire({
-        title: '⏳ Siliniyor...',
-        text: 'Ders ve kelimeler siliniyor, lütfen bekleyin...',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-            Swal.showLoading();
-        },
-        customClass: { popup: 'compact-swal' }
-    });
-    
-    try {
-        // 1. Bu derse ait kelimeleri sil
-        const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', id)));
-        let wordCount = 0;
-        
-        for (const word of wordsSnap.docs) {
-            await deleteDoc(doc(db, 'words', word.id));
-            wordCount++;
-        }
-        
-        // 2. Dersi sil
-        await deleteDoc(doc(db, 'lessons', id));
-        
-        // 3. Başarılı mesajı
-        Swal.fire({
-            icon: 'success',
-            title: '✅ Silindi!',
-            html: `
-                <div style="text-align: center; padding: 5px 0;">
-                    <p>📚 Ders başarıyla silindi.</p>
-                    <p style="font-size: 13px; opacity: 0.7;">${wordCount} kelime silindi.</p>
-                </div>
-            `,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'Tamam',
-            width: '380px',
-            padding: '1.5rem',
-            customClass: { popup: 'compact-swal' }
-        });
-        
-        // 4. Listeyi yenile
-        document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
-        updateStats();
-        
-    } catch (error) {
-        console.error('Ders silme hatası:', error);
-        Swal.fire({
-            icon: 'error',
-            title: '❌ Hata!',
-            text: 'Ders silinirken bir hata oluştu: ' + error.message,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Tamam',
-            width: '380px',
-            padding: '1.5rem',
-            customClass: { popup: 'compact-swal' }
-        });
-    }
-};
+
 
     document.getElementById('addLessonBtn').onclick = () => {
         if (!currentLessonBookId) { alert('Lütfen önce bir kitap seçin!'); return; }
@@ -2116,7 +2018,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
     snapshot.docs.forEach(doc => {
         const data = doc.data();
         const div = document.createElement('div'); div.className = 'item';
-        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button></div>`;
         container.appendChild(div);
     });
     
@@ -2131,11 +2033,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
         closeMenu();
     };
     
-    document.getElementById('deleteWordLessonBtn').onclick = () => {
-        if (!currentWordLessonId) { alert('Lütfen bir ders seçin!'); return; }
-        if (confirm('Bu dersi silmek istediğinize emin misiniz?')) deleteLesson(currentWordLessonId);
-        closeMenu();
-    };
+    
 
     // ===== TÜM KELİMELERDE GLOBAL ARAMA (kitap/ders seçmeden, tüm veritabanında) =====
     let globalWordSearchTimeout = null;
@@ -2186,7 +2084,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
                 const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
                 const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
                 const div = document.createElement('div'); div.className = 'item';
-                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${d.id}')"><i class="fas fa-trash"></i></button></div>`;
+                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button></div>`;
                 container.appendChild(div);
             });
         } catch (error) {
@@ -2195,16 +2093,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
         }
     }
 
-    window.deleteWordFromSearch = async (id) => {
-        if (!confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) return;
-        await deleteDoc(doc(db, 'words', id));
-        updateStats();
-        const term = document.getElementById('globalWordSearch').value.trim();
-        if (term) runGlobalWordSearch(term); else document.getElementById('findDuplicateWordsBtn').click();
-        if (currentWordLessonId) {
-            document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
-        }
-    };
+    
 
     // ===== TEKRARLANAN KELİME BULUCU =====
     document.getElementById('findDuplicateWordsBtn').addEventListener('click', async () => {
@@ -2250,7 +2139,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
                     const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
                     return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,0.06);">
                         <span style="font-size:13px;">${it.turkish} <span style="opacity:0.6;">— 📚 ${bookName} / ${lessonName}</span></span>
-                        <button class="btn btn-danger icon-btn" onclick="deleteWordFromSearch('${it.id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                        
                     </div>`;
                 }).join('');
                 group.innerHTML = `<strong class="arabic-word" style="font-size:20px !important;">${arabic}</strong> <span style="font-size:12px; opacity:0.6;">(${items.length} kez)</span>${itemsHTML}`;
@@ -2363,19 +2252,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
         }
     };
     
- window.deleteWord = async (id) => {
-    if (confirm('Bu kelimeyi silmek istediğinize emin misiniz?')) {
-        await deleteDoc(doc(db, 'words', id));
-        document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
-        updateStats();
-        
-        // Kelime sayısını güncelle
-        if (currentWordLessonId) {
-            const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', currentWordLessonId)));
-            updateWordCountDisplay(snapshot.size);
-        }
-    }
-};
+ 
 
     document.getElementById('addWordBtn').onclick = async () => {
         if (!currentWordLessonId) { alert('Lütfen önce bir ders seçin!'); return; }
@@ -2451,13 +2328,7 @@ window.editExam = async (id) => {
     }
 };
     
-    window.deleteExam = async (id) => {
-        if (confirm('Bu sınavı silmek istediğinize emin misiniz?')) {
-            await deleteDoc(doc(db, 'exams', id));
-            loadExams();
-            updateStats();
-        }
-    };
+    
     
     function renderQuestions() {
         const container = document.getElementById('questionsContainer');
@@ -3941,7 +3812,7 @@ document.getElementById('wordLessonSelect').onchange = async () => {
     snapshot.docs.forEach(doc => {
         const data = doc.data();
         const div = document.createElement('div'); div.className = 'item';
-        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" onclick="deleteWord('${doc.id}')"><i class="fas fa-trash"></i></button></div>`;
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button></div>`;
         container.appendChild(div);
     });
     
@@ -4179,7 +4050,7 @@ function displayAdminExams(exams) {
             </div>
             <div class="item-actions">
                 <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-danger icon-btn" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash"></i></button>
+                
             </div>
         `;
         container.appendChild(div);
