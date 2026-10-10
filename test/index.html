@@ -5052,7 +5052,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -5248,10 +5248,32 @@ window.__pidTag = function(pid) {
 };
 window.__ensurePublicId = async function(userRef, existing) {
     if (existing) return existing;
-    for (let i = 0; i < 8; i++) {
+    let atomicOk = true; // 'publicIds' kayıt defteri kurallarla açıksa çakışma imkânsızdır
+    for (let i = 0; i < 10; i++) {
         const buf = new Uint32Array(1);
         crypto.getRandomValues(buf);
         const cand = String(10000000 + (buf[0] % 90000000));
+        if (atomicOk) {
+            try {
+                // Tek işlemde: ID boşsa hem kayıt defterine hem kullanıcıya yaz (aynı anda iki kişi alamaz)
+                const ok = await runTransaction(db, async (tx) => {
+                    const regRef = doc(db, 'publicIds', cand);
+                    const userSnap = await tx.get(userRef);
+                    if (userSnap.exists() && userSnap.data().publicId) return userSnap.data().publicId;
+                    const reg = await tx.get(regRef);
+                    if (reg.exists()) return null;
+                    tx.set(regRef, { uid: userRef.id });
+                    tx.update(userRef, { publicId: cand });
+                    return cand;
+                });
+                if (ok) return ok;
+                continue;
+            } catch (e) {
+                if (e && e.code === 'permission-denied') { atomicOk = false; }
+                else { console.log('ID işlemi hatası:', e.message); continue; }
+            }
+        }
+        // Yedek yol (kurallar henüz 'publicIds' için açık değilse): sorgu ile kontrol
         const dup = await getDocs(query(collection(db, 'users'), where('publicId', '==', cand)));
         if (!dup.empty) continue;
         await updateDoc(userRef, { publicId: cand });
