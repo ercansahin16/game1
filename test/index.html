@@ -3756,6 +3756,49 @@ body.light-theme .announcement-icon-btn .announcement-dot { border-color: #fffff
 .announcement-icon-btn.has-unread .announcement-dot { display: block; }
 .announcement-icon-btn .announcement-label { display: none; }
 
+/* 📢 Okunmamış duyuru şeridi (üç noktadan bağımsız, her zaman görünür) */
+.announcement-banner {
+    display: none;
+    width: calc(100% - 24px);
+    max-width: 640px;
+    margin: 8px auto 0 auto;
+    padding: 10px 14px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgba(245,158,11,0.55);
+    border-radius: 12px;
+    background: linear-gradient(90deg, rgba(245,158,11,0.22), rgba(239,68,68,0.18));
+    color: #f59e0b;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    animation: announcementBannerPulse 2.2s ease-in-out infinite;
+}
+.announcement-banner.show { display: flex !important; }
+.announcement-banner-icon { font-size: 16px; }
+body.light-theme .announcement-banner { color: #b45309; }
+/* Giriş yapılmamışken (üst bar gizliyken) şerit de görünmesin */
+#mainHeader[style*="display: none"] + #announcementBanner { display: none !important; }
+@keyframes announcementBannerPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.45); }
+    50% { box-shadow: 0 0 0 7px rgba(245,158,11,0); }
+}
+/* Üç nokta düğmesinin üzerinde okunmamış duyuru noktası */
+.header-more-btn { position: relative; }
+.header-more-btn.has-unread-ann::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+}
+body.light-theme .header-more-btn.has-unread-ann::after { border-color: #ffffff; }
+
 /* ============================================================
    🔁 TEKRAR MODU İKONU
    Duyuru ikonunun yanında. "Kelime Öğren"de öğrenilen kelimeler
@@ -4300,6 +4343,11 @@ body.light-theme #profileScreen .info-row button:hover {
         </div>
     </div>
 </div>
+<!-- 📢 OKUNMAMIŞ DUYURU ŞERİDİ: üç noktayı açmadan görünür, duyurular okunana kadar kalır -->
+<button type="button" id="announcementBanner" class="announcement-banner" style="display:none;">
+    <span class="announcement-banner-icon"><i class="fas fa-bullhorn"></i></span>
+    <span class="announcement-banner-text">Yeni bir duyuru var! <u>Oku</u></span>
+</button>
         <!-- Giriş Ekranı -->
         <div id="loginScreen" class="login-card">
             <div style="text-align: center; margin-bottom: 14px;">
@@ -6464,6 +6512,11 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
         if (iconBtn) iconBtn.classList.toggle('has-unread', isUnread);
         const tabDot = document.getElementById('announcementsTabDot');
         if (tabDot) tabDot.style.display = isUnread ? 'block' : 'none';
+        // Üç noktayı açmadan görünen kalıcı şerit + üç nokta düğmesinde kırmızı nokta
+        const banner = document.getElementById('announcementBanner');
+        if (banner) banner.classList.toggle('show', !!isUnread);
+        const moreBtn = document.getElementById('headerMoreBtn');
+        if (moreBtn) moreBtn.classList.toggle('has-unread-ann', !!isUnread);
     }
 
     async function checkAndShowAnnouncement(userRef, userData) {
@@ -6478,8 +6531,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== ann.id);
 
             // Bulut ipucu: SADECE bu kullanıcı bu duyuruyu hiç görmediyse, bir kez.
+            // (Bulut ipucu kaldırıldı: üç noktayı kendiliğinden açıyordu. Yerine okunana
+            // kadar kalıcı duran 'Yeni bir duyuru var' şeridi geldi.)
             if (userData.lastSeenAnnouncementId !== ann.id) {
-                showAnnouncementCloudTip();
                 updateDoc(userRef, { lastSeenAnnouncementId: ann.id }).catch(() => {});
             }
         } catch (e) {
@@ -6518,6 +6572,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     }
 
     document.getElementById('announcementIconBtn')?.addEventListener('click', () => {
+        if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
+    });
+    document.getElementById('announcementBanner')?.addEventListener('click', () => {
         if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
     });
 
