@@ -4860,94 +4860,8 @@ if (adminExamLessonSelect) {
 
 
 
-    // Tüm kullanıcıların sandığını sıfırla
-document.getElementById('resetAllSandikBtn')?.addEventListener('click', async () => {
-    const resultDiv = document.getElementById('resetResult');
-    
-    // Çift onay
-    const confirm1 = confirm('🚨 UYARI: Bu işlem TÜM kullanıcıların sandığındaki kelimeleri KALICI OLARAK silecektir! Devam etmek istediğinize emin misiniz?');
-    
-    if (!confirm1) {
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(239,68,68,0.1)';
-        resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.style.borderRadius = '10px';
-        resultDiv.style.padding = '10px';
-        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
-        setTimeout(() => resultDiv.style.display = 'none', 3000);
-        return;
-    }
-    
-    const confirm2 = confirm('⚠️ SON UYARI: Bu işlem GERİ ALINAMAZ! Tüm kullanıcıların sandıkları silinecek. Emin misiniz?');
-    
-    if (!confirm2) {
-        resultDiv.style.display = 'block';
-        resultDiv.style.background = 'rgba(239,68,68,0.1)';
-        resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.style.borderRadius = '10px';
-        resultDiv.style.padding = '10px';
-        resultDiv.innerHTML = '<span style="color: #ef4444;">❌ İşlem iptal edildi.</span>';
-        setTimeout(() => resultDiv.style.display = 'none', 3000);
-        return;
-    }
-    
-    // Butonu devre dışı bırak
-    const btn = document.getElementById('resetAllSandikBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sıfırlanıyor...';
-    
-    resultDiv.style.display = 'block';
-    resultDiv.style.background = 'rgba(59,130,246,0.1)';
-    resultDiv.style.border = '1px solid #3b82f6';
-    resultDiv.style.borderRadius = '10px';
-    resultDiv.style.padding = '10px';
-    resultDiv.innerHTML = '<span style="color: #3b82f6;">🔄 Tüm kullanıcıların sandıkları sıfırlanıyor...</span>';
-    
-    try {
-        // Tüm kullanıcıları getir
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        let updatedCount = 0;
-        let errorCount = 0;
-        
-        for (const userDoc of usersSnapshot.docs) {
-            try {
-                const userRef = doc(db, 'users', userDoc.id);
-                await updateDoc(userRef, { 
-                    quizSandik: [],
-                    quizScore: 0  // İstersen puanı da sıfırla
-                });
-                updatedCount++;
-                console.log(`✅ ${userDoc.id} sandığı sıfırlandı`);
-            } catch (error) {
-                errorCount++;
-                console.error(`❌ ${userDoc.id} sıfırlanamadı:`, error);
-            }
-        }
-        
-        resultDiv.style.background = 'rgba(16,185,129,0.1)';
-        resultDiv.style.border = '1px solid #10b981';
-        resultDiv.innerHTML = `
-            <span style="color: #10b981;">
-                ✅ Sıfırlama tamamlandı!<br>
-                📦 ${updatedCount} kullanıcının sandığı sıfırlandı.<br>
-                ${errorCount > 0 ? `⚠️ ${errorCount} kullanıcıda hata oluştu.` : ''}
-            </span>
-        `;
-        
-    } catch (error) {
-        console.error('Sıfırlama hatası:', error);
-        resultDiv.style.background = 'rgba(239,68,68,0.1)';
-        resultDiv.style.border = '1px solid #ef4444';
-        resultDiv.innerHTML = `<span style="color: #ef4444;">❌ Hata: ${error.message}</span>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Tüm Sandıkları Sıfırla';
-        
-        setTimeout(() => {
-            resultDiv.style.display = 'none';
-        }, 5000);
-    }
-});
+// (Eski, aynı düğmeye ikinci kez bağlanan ve yarışma puanını da sıfırlayan kopya kaldırıldı;
+// geçerli kod aşağıdaki '1. Tüm Kullanıcıların Sandığını Sıfırla' bölümündedir.)
 // ========== İNTERNET BAĞLANTISI KONTROLÜ ==========
 let isOnline = navigator.onLine;
 const offlineBanner = document.getElementById('offlineBanner');
@@ -6296,6 +6210,166 @@ window.openExamModal = async function() {
 
 
     
+
+// =====================================================================
+// 🛡️ TEHLİKELİ İŞLEM KORUMASI (veri silen/sıfırlayan tüm düğmeler)
+// Aşamalar: 1) Uyarı (3 sn beklemeli)  2) Matematik doğrulaması
+//           3) (Yüksek riskli işlemlerde) onay kelimesini yazma + önce yedek indirme seçeneği
+// Yanlışlıkla veya çocuk eline geçince tek tıkla veri silinmesin diye.
+// =====================================================================
+(function () {
+    const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+
+    function makeQuestion(kind) {
+        const ops = ['+', '−', '×', '÷'];
+        const op = ops[(kind + rnd(0, 3)) % 4];
+        let a, b, ans;
+        if (op === '+') { a = rnd(23, 89); b = rnd(12, 58); ans = a + b; }
+        else if (op === '−') { a = rnd(60, 99); b = rnd(12, 49); ans = a - b; }
+        else if (op === '×') { a = rnd(6, 12); b = rnd(4, 9); ans = a * b; }
+        else { b = rnd(3, 9); ans = rnd(4, 12); a = b * ans; }
+        return { text: `${a} ${op} ${b} = ?`, answer: ans };
+    }
+
+    async function warningStep(title, impact) {
+        let iv = null;
+        const r = await Swal.fire({
+            icon: 'warning',
+            title: title,
+            html: `<div style="text-align:left; font-size:14px; line-height:1.6;">${impact}
+                   <div style="margin-top:10px; padding:8px 10px; background:rgba(239,68,68,0.12); border-radius:8px; color:#ef4444; font-weight:600;">
+                   Bu işlem geri alınamaz.</div></div>`,
+            showCancelButton: true,
+            confirmButtonText: 'Anladım, devam et',
+            cancelButtonText: 'Vazgeç',
+            confirmButtonColor: '#ef4444',
+            focusCancel: true,
+            allowOutsideClick: false,
+            didOpen: () => {
+                const btn = Swal.getConfirmButton();
+                let sec = 3;
+                btn.disabled = true;
+                btn.textContent = `Anladım (${sec})`;
+                iv = setInterval(() => {
+                    sec--;
+                    if (sec <= 0) { clearInterval(iv); btn.disabled = false; btn.textContent = 'Anladım, devam et'; }
+                    else btn.textContent = `Anladım (${sec})`;
+                }, 1000);
+            },
+            willClose: () => { if (iv) clearInterval(iv); }
+        });
+        return r.isConfirmed;
+    }
+
+    async function mathStep(count) {
+        for (let i = 0; i < count; i++) {
+            let ok = false;
+            for (let t = 0; t < 3 && !ok; t++) {
+                const q = makeQuestion(i * 2 + t);
+                const r = await Swal.fire({
+                    title: '🧮 Doğrulama sorusu',
+                    html: `<div style="font-size:30px; font-weight:700; margin:6px 0 4px 0;">${q.text}</div>
+                           <div style="font-size:12px; opacity:0.7;">Soru ${i + 1}/${count} · Sonucu yazın</div>`,
+                    input: 'text',
+                    inputAttributes: { inputmode: 'numeric', autocomplete: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Kontrol et',
+                    cancelButtonText: 'Vazgeç',
+                    allowOutsideClick: false
+                });
+                if (!r.isConfirmed) return false;
+                ok = Number(String(r.value || '').trim()) === q.answer;
+                if (!ok) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Yanlış cevap',
+                        text: t < 2 ? 'Yeni bir soru soruyorum.' : 'Üç kez yanlış yapıldı, işlem iptal edildi.',
+                        timer: 1600,
+                        showConfirmButton: false
+                    });
+                }
+            }
+            if (!ok) return false;
+        }
+        return true;
+    }
+
+    // level: 'medium' => uyarı + 1 soru | 'high' => uyarı + 2 soru + kelime yazma + yedek seçeneği
+    window.adminDangerGuard = async function ({ title, impact, level = 'high', word = 'ONAYLIYORUM' }) {
+        if (!(await warningStep(title, impact))) return false;
+        if (!(await mathStep(level === 'high' ? 2 : 1))) return false;
+        if (level !== 'high') return true;
+        const r = await Swal.fire({
+            title: 'Son adım',
+            html: `<div style="text-align:left; font-size:14px;">
+                     Devam etmek için aşağıya <strong>${word}</strong> yazın.
+                     <input id="dangerWordInput" class="swal2-input" style="margin:10px 0 8px 0; width:100%;" autocomplete="off" placeholder="${word}">
+                     <label style="display:flex; gap:8px; align-items:center; font-size:13px;">
+                       <input type="checkbox" id="dangerBackupChk" checked> Önce yedeği indir (önerilir)
+                     </label>
+                   </div>`,
+            showCancelButton: true,
+            confirmButtonText: 'İşlemi yap',
+            cancelButtonText: 'Vazgeç',
+            confirmButtonColor: '#ef4444',
+            allowOutsideClick: false,
+            preConfirm: () => {
+                const v = (document.getElementById('dangerWordInput').value || '').trim().toLocaleUpperCase('tr-TR');
+                if (v !== word.toLocaleUpperCase('tr-TR')) { Swal.showValidationMessage(`"${word}" yazmalısınız`); return false; }
+                return { backup: document.getElementById('dangerBackupChk').checked };
+            }
+        });
+        if (!r.isConfirmed) return false;
+        if (r.value && r.value.backup && typeof window.backupAllData === 'function') {
+            await window.backupAllData();
+        }
+        return true;
+    };
+
+    // ---- Düğmeler (yakalama aşamasında durdurulur, onaylanırsa orijinal işlem çalışır) ----
+    const GATED_BUTTONS = {
+        resetAllSandikBtn: { level: 'high', title: 'Tüm sandıklar sıfırlansın mı?', impact: 'TÜM kullanıcıların sandığındaki kelimeler <strong>kalıcı olarak silinecek</strong>.' },
+        resetAllScoresBtn: { level: 'high', title: 'Tüm puanlar sıfırlansın mı?', impact: 'TÜM kullanıcıların Karma Puanı ve Sınav Puanı <strong>sıfırlanacak</strong>.' },
+        resetAllDataBtn:   { level: 'high', title: 'Tüm kullanıcı verileri sıfırlansın mı?', impact: 'TÜM kullanıcıların puanı, sandığı, ilerlemesi ve diğer verileri <strong>sıfırlanacak</strong>.' },
+        resetUserSandikBtn:{ level: 'medium', title: 'Bu kullanıcının sandığı sıfırlansın mı?', impact: 'Seçilen kullanıcının sandığındaki kelimeler <strong>silinecek</strong>.' },
+        resetUserScoreBtn: { level: 'medium', title: 'Bu kullanıcının puanları sıfırlansın mı?', impact: 'Seçilen kullanıcının puanları <strong>sıfırlanacak</strong>.' }
+    };
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest ? e.target.closest('button') : null;
+        if (!btn || !GATED_BUTTONS[btn.id] || btn.dataset.dangerApproved === '1') return;
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        if (btn.disabled) return;
+        const ok = await window.adminDangerGuard(GATED_BUTTONS[btn.id]);
+        if (!ok) return;
+        // Eski kodun kendi confirm() pencerelerini tekrar sormasın (zaten doğrulandı)
+        const oldConfirm = window.confirm;
+        window.confirm = () => true;
+        btn.dataset.dangerApproved = '1';
+        try { btn.click(); } finally { window.confirm = oldConfirm; delete btn.dataset.dangerApproved; }
+    }, true);
+
+    // ---- Doğrudan fonksiyon çağrıları (kullanıcı listesindeki ikonlar, geri yükleme) ----
+    function wrapFn(name, cfgFn, onDecline) {
+        const orig = window[name];
+        if (typeof orig !== 'function') { console.log('Koruma: fonksiyon bulunamadı', name); return; }
+        window[name] = async function (...args) {
+            const ok = await window.adminDangerGuard(cfgFn(...args));
+            if (!ok) { if (onDecline) onDecline(...args); return; }
+            const oldConfirm = window.confirm;
+            window.confirm = () => true;
+            let p;
+            try { p = orig.apply(this, args); } finally { window.confirm = oldConfirm; }
+            return await p;
+        };
+    }
+    wrapFn('resetUserSandik', () => ({ level: 'medium', title: 'Bu kullanıcının sandığı sıfırlansın mı?', impact: 'Kullanıcının sandığındaki kelimeler <strong>silinecek</strong>.' }));
+    wrapFn('resetUserScore',  () => ({ level: 'medium', title: 'Bu kullanıcının puanları sıfırlansın mı?', impact: 'Kullanıcının puanları <strong>sıfırlanacak</strong>.' }));
+    wrapFn('deleteUserFirestore', () => ({ level: 'high', title: 'Kullanıcı silinsin mi?', word: 'SİL', impact: 'Kullanıcının tüm kaydı <strong>kalıcı olarak silinecek</strong>.' }));
+    wrapFn('restoreFromBackupFile', () => ({ level: 'high', title: 'Yedekten geri yüklensin mi?', word: 'GERİ YÜKLE', impact: 'Yedek dosyasındaki kayıtlar mevcut verilerin <strong>üzerine yazılacak</strong>.' }),
+        (fileInput) => { try { fileInput.value = ''; } catch (e) {} });
+})();
+
 </script>
 </body>
 </html>
