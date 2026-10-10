@@ -9941,12 +9941,9 @@ function renderRankingUI(mode) {
     const toplamOyuncu = users.length;
 
     // ===== İLKLER GRUBU BELİRLEME =====
-    let ilklerSayisi;
-    if (toplamOyuncu <= 50) {
-        ilklerSayisi = toplamOyuncu;
-    } else {
-        ilklerSayisi = Math.max(1, Math.ceil(toplamOyuncu * 0.35));
-    }
+    // Puanı olan HERKES listelenir (kaydırılabilir). 'İLK 10' sadece kutlama/vurgu içindir.
+    const ilklerSayisi = toplamOyuncu;
+    const ONE_CIKAN = 10;
     const ilkler = users.slice(0, ilklerSayisi);
 
     // ===== RANKING LİSTESİNİ OLUŞTUR =====
@@ -9988,9 +9985,9 @@ function renderRankingUI(mode) {
             html += `
                 <div style="text-align: center; padding: 8px; background: rgba(245,158,11,0.08); border-radius: 10px; margin-bottom: 4px; flex-shrink: 0;">
                     <span style="color: #f59e0b; font-weight: 700; font-size: 13px;">
-                        ⭐ İLK ${ilklerSayisi}
+                        ⭐ TÜM OYUNCULAR (${ilklerSayisi})
                     </span>
-                    <span style="font-size: 11px; opacity: 0.6;">- ${mode === 'season' ? `${getSeasonLabel(getCurrentSeasonId())} ayının en başarılıları` : 'En başarılı oyuncular'}</span>
+                    <span style="font-size: 11px; opacity: 0.6;">- ${mode === 'season' ? `${getSeasonLabel(getCurrentSeasonId())} ayının en başarılıları` : 'Puanı olan herkes · kaydırarak gör'}</span>
                 </div>
             `;
 
@@ -10053,7 +10050,7 @@ function renderRankingUI(mode) {
             if (!container) return;
 
             if (userData) {
-                const ilklerdeMi = userIndex < ilklerSayisi && userIndex !== -1;
+                const ilklerdeMi = userIndex < ONE_CIKAN && userIndex !== -1;
                 const gosterilenPuan = userData[scoreField];
 
                 // ===== DETAYLARI OLUŞTUR (DOĞRU DEĞERLERLE) =====
@@ -10074,7 +10071,7 @@ function renderRankingUI(mode) {
                             <div class="user-rank-summary-main">
                                 <span class="user-rank-summary-icon">${ilklerdeMi ? '🎉' : '📈'}</span>
                                 <div>
-                                    <div class="user-rank-summary-title" style="color: ${ilklerdeMi ? '#10b981' : '#f59e0b'};">${ilklerdeMi ? `İLK ${ilklerSayisi}'DESİN!` : `İlk ${ilklerSayisi}'de Değilsin`}</div>
+                                    <div class="user-rank-summary-title" style="color: ${ilklerdeMi ? '#10b981' : '#f59e0b'};">${ilklerdeMi ? `İLK ${ONE_CIKAN}'DASIN!` : `Sıralamadaki Yerin`}</div>
                                     <div class="user-rank-summary-sub">📍 ${userIndex + 1}. sırada &nbsp;•&nbsp; ${gosterilenPuan.toFixed(2)} P</div>
                                 </div>
                             </div>
