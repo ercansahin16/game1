@@ -5362,7 +5362,7 @@ window.__ensurePublicId = async function(userRef, existing) {
                 continue;
             } catch (e) {
                 if (e && e.code === 'permission-denied') { atomicOk = false; }
-                else { console.log('ID işlemi hatası:', e.message); continue; }
+                else { window.__pidError = e.code || e.message; console.log('ID işlemi hatası:', e.code, e.message); continue; }
             }
         }
         // Yedek yol (kurallar henüz 'publicIds' için açık değilse): sorgu ile kontrol
@@ -5391,21 +5391,64 @@ window.searchPlayerById = async function(raw) {
         if (window.showWarning) window.showWarning('Arama yapılamadı, lütfen tekrar deneyin.');
     }
 };
-// Sıralama listelerinin üstüne "ID ile oyuncu ara" kutusu ekler (bir kez)
+// Sıralama listelerinin üstüne "oyuncu ara" kutusu ekler (bir kez): isim VEYA 8 haneli ID
+window.__searchSuggest = function(q) {
+    const t = String(q || '').trim().toLocaleLowerCase('tr');
+    if (t.length < 2) return [];
+    const digits = t.replace(/\D/g, '');
+    return (typeof lastRankingUsers !== 'undefined' ? lastRankingUsers : []).filter(u =>
+        String(u.name || '').toLocaleLowerCase('tr').includes(t) ||
+        (digits.length >= 3 && u.publicId && String(u.publicId).includes(digits))
+    ).slice(0, 8);
+};
+window.__runPlayerSearch = function(raw) {
+    const v = String(raw || '').trim();
+    if (/^\d{8}$/.test(v)) return window.searchPlayerById(v);
+    const list = window.__searchSuggest(v);
+    if (list.length === 1) return window.openPlayerProfile(list[0].id);
+    if (list.length === 0 && window.showWarning) window.showWarning('Eşleşen oyuncu bulunamadı. İsmi ya da 8 haneli ID yazın.');
+};
 window.__ensureRankSearchBars = function() {
     document.querySelectorAll('#rankingList').forEach(list => {
         if (list.previousElementSibling && list.previousElementSibling.classList.contains('rank-id-search')) return;
         const bar = document.createElement('div');
         bar.className = 'rank-id-search';
-        bar.style.cssText = 'display:flex; gap:8px; margin:8px 0 10px 0;';
-        bar.innerHTML = '<input type="text" inputmode="numeric" maxlength="8" placeholder="🔎 Oyuncu ara (8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
-            '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>';
-        const inp = bar.querySelector('input'), btn = bar.querySelector('button');
-        inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, ''); });
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') window.searchPlayerById(inp.value); });
-        btn.addEventListener('click', () => window.searchPlayerById(inp.value));
+        bar.style.cssText = 'position:relative; display:flex; gap:8px; margin:8px 0 10px 0;';
+        bar.innerHTML = '<input type="text" maxlength="30" autocomplete="off" placeholder="🔎 Oyuncu ara (isim veya 8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
+            '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>' +
+            '<div class="rank-suggest" style="display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; z-index:30; max-height:260px; overflow:auto; border-radius:12px; background:#25252b; border:1px solid rgba(245,158,11,0.35); box-shadow:0 10px 24px rgba(0,0,0,0.5);"></div>';
+        const inp = bar.querySelector('input'), btn = bar.querySelector('button'), box = bar.querySelector('.rank-suggest');
+        const hide = () => { box.style.display = 'none'; };
+        const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        inp.addEventListener('input', () => {
+            const res = window.__searchSuggest(inp.value);
+            if (!res.length) { hide(); return; }
+            box.innerHTML = res.map(u => `<div data-uid="${esc(u.id)}" style="padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(255,255,255,0.06);"><span>${esc(u.name)}</span><span style="opacity:.55; font-size:12px;">${u.publicId ? esc(u.publicId) : ''}</span></div>`).join('');
+            box.style.display = 'block';
+        });
+        box.addEventListener('click', e => {
+            const row = e.target.closest('[data-uid]'); if (!row) return;
+            hide(); inp.value = ''; window.openPlayerProfile(row.dataset.uid);
+        });
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') { hide(); window.__runPlayerSearch(inp.value); } });
+        btn.addEventListener('click', () => { hide(); window.__runPlayerSearch(inp.value); });
+        document.addEventListener('click', e => { if (!bar.contains(e.target)) hide(); });
         list.parentNode.insertBefore(bar, list);
     });
+};
+// Profilde ID görünmüyorsa elle yeniden dene (hata nedenini de gösterir)
+window.__retryPublicId = async function() {
+    try {
+        if (!currentUser) return;
+        const userRef = doc(db, 'users', currentUser.uid);
+        const snap = await getDoc(userRef);
+        const pid = await window.__ensurePublicId(userRef, snap.data()?.publicId || null);
+        if (pid) {
+            window.__myPublicId = pid;
+            const el = document.getElementById('profilePublicId'); if (el) { el.textContent = pid; el.style.cursor = ''; el.onclick = null; }
+            if (window.showWarning) window.showWarning('ID oluşturuldu: ' + pid);
+        } else if (window.showWarning) window.showWarning('ID oluşturulamadı: ' + (window.__pidError || 'bilinmeyen hata'));
+    } catch (e) { if (window.showWarning) window.showWarning('ID hatası: ' + (e.code || e.message)); }
 };
 const auth = getAuth(app);
 let isZoomed = true; // Zoom durumu
@@ -6940,7 +6983,11 @@ async function loadUserStats() {
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) profileEmail.textContent = currentUser.email;
         const profilePublicId = document.getElementById('profilePublicId');
-        if (profilePublicId) profilePublicId.textContent = myPublicId || '—';
+        if (profilePublicId) {
+            profilePublicId.textContent = myPublicId || '— (oluştur)';
+            profilePublicId.style.cursor = myPublicId ? '' : 'pointer';
+            profilePublicId.onclick = myPublicId ? null : () => window.__retryPublicId();
+        }
         
         // ===== 4. DİĞER VERİLERİ AL =====
         const wordsSnapshot = await getDocs(collection(db, 'words'));
