@@ -957,6 +957,12 @@
                     <div id="statAvgUserScore">0.00</div>
                     <div><i class="fas fa-star"></i> Ort. Kullanıcı Puanı</div>
                 </div>
+                <!-- Duyurular -->
+                <div class="stats-card" id="statAnnouncementsCard" style="cursor: pointer;">
+                    <div id="statAnnouncements">0</div>
+                    <div><i class="fas fa-bullhorn"></i> Duyuru</div>
+                    <div id="statAnnouncementsStatus" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
+                </div>
                 <!-- Toplu Kelime Yükleme -->
                 <div class="stats-card" id="statBulkUploadCard" style="cursor: pointer; border-color: rgba(16,185,129,0.3);">
                     <div style="font-size: 28px; color: #10b981;">📤</div>
@@ -1000,6 +1006,9 @@
             <div id="activeAnnouncementBox" style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
                 <div style="font-size: 12px; opacity: 0.7; margin-bottom: 6px;">ŞU AN AKTİF DUYURU</div>
                 <div id="activeAnnouncementContent" style="font-size: 14px;">Aktif duyuru yok.</div>
+                <button id="editActiveAnnouncementBtn" class="btn" style="margin-top: 10px; margin-right: 6px; background: rgba(59,130,246,0.15); color: #3b82f6; padding: 6px 14px; font-size: 12px; display: none;">
+                    <i class="fas fa-pen"></i> Düzenle
+                </button>
                 <button id="clearAnnouncementBtn" class="btn" style="margin-top: 10px; background: rgba(239,68,68,0.15); color: #ef4444; padding: 6px 14px; font-size: 12px; display: none;">
                     <i class="fas fa-times"></i> Duyuruyu Kaldır
                 </button>
@@ -1881,19 +1890,26 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+let activeAnnouncementId = null;
 async function loadAnnouncements() {
+    updateAnnouncementStat();
     // Aktif duyuru önizlemesi
     const activeBox = document.getElementById('activeAnnouncementContent');
     const clearBtn = document.getElementById('clearAnnouncementBtn');
+    const editActiveBtn = document.getElementById('editActiveAnnouncementBtn');
     try {
         const annSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
         if (annSnap.exists() && annSnap.data().id && annSnap.data().message) {
             const ann = annSnap.data();
+            activeAnnouncementId = ann.id;
             activeBox.innerHTML = `<strong>${escapeHtml(ann.title || '📢 Duyuru')}</strong><br>${escapeHtml(ann.message).replace(/\n/g, '<br>')}`;
             clearBtn.style.display = 'inline-flex';
+            if (editActiveBtn) editActiveBtn.style.display = 'inline-flex';
         } else {
+            activeAnnouncementId = null;
             activeBox.textContent = 'Aktif duyuru yok.';
             clearBtn.style.display = 'none';
+            if (editActiveBtn) editActiveBtn.style.display = 'none';
         }
     } catch (e) {
         activeBox.textContent = 'Duyuru yüklenirken hata oluştu.';
@@ -1920,9 +1936,10 @@ async function loadAnnouncements() {
                 <div class="item-info">
                     <strong>${escapeHtml(a.title || '📢 Duyuru')}</strong>
                     <small style="display:block; white-space:pre-wrap; margin-top:4px;">${escapeHtml(a.message)}</small>
-                    <small style="opacity:0.6;">${tarih}</small>
+                    <small style="opacity:0.6;">${tarih}${a.editedAt ? ' · düzenlendi ' + new Date(a.editedAt).toLocaleString('tr-TR') : ''}</small>
                 </div>
                 <div class="item-actions">
+                    <button class="icon-btn" title="Düzenle" onclick="editAnnouncement('${docSnap.id}')"><i class="fas fa-pen"></i></button>
                     <button class="icon-btn" title="Sil" onclick="deleteAnnouncementHistoryItem('${docSnap.id}')"><i class="fas fa-trash"></i></button>
                 </div>
             `;
@@ -1998,8 +2015,83 @@ window.deleteAnnouncementHistoryItem = async function (id) {
     }
 };
 
+// ===== DUYURU DÜZENLE =====
+// Yazım/anlatım hatasını düzeltmek için. id ve yayın tarihi DEĞİŞMEZ; böylece
+// kullanıcılara "yeni duyuru var" bildirimi yeniden gitmez, okuyanların okundu
+// durumu bozulmaz. Düzeltilmiş metin hem geçmiş listesinde hem aktif duyuruda güncellenir.
+window.editAnnouncement = async function (id) {
+    if (!id) return;
+    let current;
+    try {
+        const snap = await getDoc(doc(db, 'announcements', id));
+        if (!snap.exists()) {
+            Swal.fire({ icon: 'error', title: 'Duyuru bulunamadı', confirmButtonText: 'Tamam' });
+            return;
+        }
+        current = snap.data();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
+        return;
+    }
+    const result = await Swal.fire({
+        title: 'Duyuruyu Düzenle',
+        html: `
+            <div style="text-align:left;">
+                <label style="font-size:12px; opacity:0.8; display:block; margin-bottom:6px;">Duyuru Başlığı</label>
+                <input id="editAnnTitle" class="swal2-input" style="margin:0 0 12px 0; width:100%;" value="${escapeHtml(current.title || '')}">
+                <label style="font-size:12px; opacity:0.8; display:block; margin-bottom:6px;">Duyuru Metni</label>
+                <textarea id="editAnnMessage" class="swal2-textarea" rows="6" style="margin:0; width:100%;">${escapeHtml(current.message || '')}</textarea>
+                <div style="font-size:11px; opacity:0.65; margin-top:8px;">Not: Düzeltme kullanıcılara yeni bir bildirim göndermez; sadece metin güncellenir.</div>
+            </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'Vazgeç',
+        focusConfirm: false,
+        preConfirm: () => {
+            const title = document.getElementById('editAnnTitle').value.trim();
+            const message = document.getElementById('editAnnMessage').value.trim();
+            if (!message) { Swal.showValidationMessage('Duyuru metni boş olamaz'); return false; }
+            return { title, message };
+        }
+    });
+    if (!result.isConfirmed) return;
+    const { title, message } = result.value;
+    const editedAt = Date.now();
+    try {
+        await updateDoc(doc(db, 'announcements', id), { title, message, editedAt });
+        // Aktif duyuru da bu ise, kullanıcıların gördüğü kopya da güncellensin
+        const activeSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
+        if (activeSnap.exists() && activeSnap.data().id === id) {
+            await updateDoc(doc(db, 'appConfig', 'announcement'), { title, message, editedAt });
+        }
+        Swal.fire({ icon: 'success', title: 'Duyuru güncellendi', timer: 1400, showConfirmButton: false });
+        loadAnnouncements();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
+    }
+};
+
+// ===== ANA SAYFADAKİ "DUYURU" İSTATİSTİK KARTI =====
+async function updateAnnouncementStat() {
+    const numEl = document.getElementById('statAnnouncements');
+    const statusEl = document.getElementById('statAnnouncementsStatus');
+    if (!numEl) return;
+    try {
+        const all = await getDocs(collection(db, 'announcements'));
+        numEl.textContent = all.size;
+        const act = await getDoc(doc(db, 'appConfig', 'announcement'));
+        const aktif = act.exists() && act.data().id && act.data().message;
+        if (statusEl) {
+            statusEl.innerHTML = aktif ? '<span style="color:#10b981;">● Aktif duyuru var</span>' : '<span style="opacity:0.7;">○ Aktif duyuru yok</span>';
+        }
+    } catch (e) {
+        console.log('updateAnnouncementStat hata:', e.message);
+    }
+}
+
 document.getElementById('publishAnnouncementBtn').onclick = publishAnnouncement;
 document.getElementById('clearAnnouncementBtn').onclick = clearAnnouncement;
+document.getElementById('editActiveAnnouncementBtn').onclick = () => window.editAnnouncement(activeAnnouncementId);
 
 async function loadBooks() {
     const snapshot = await getDocs(collection(db, 'books'));
@@ -3644,6 +3736,7 @@ window.deleteUserFirestore = async (userId) => {
         document.getElementById('statWords').innerHTML = words.size;
         document.getElementById('statExams').innerHTML = exams.size;
         document.getElementById('statUsers').innerHTML = usersSnap.size;
+        updateAnnouncementStat();
 
         // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
         let sandikToplam = 0;
@@ -3730,6 +3823,7 @@ window.updateWordCountDisplay = function(count) {
     document.getElementById('statWordsCard').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
     document.getElementById('statExamsCard').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
     document.getElementById('statUsersCard').onclick = () => { showSection('users'); loadUsers(); closeMenu(); };
+    document.getElementById('statAnnouncementsCard').onclick = () => { showSection('announcements'); loadAnnouncements(); closeMenu(); };
 
     // Tema işlemleri
     let isDark = true;
