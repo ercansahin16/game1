@@ -5471,11 +5471,18 @@ window.__ensureRankSearchBars = function() {
         const bar = document.createElement('div');
         bar.className = 'rank-id-search';
         bar.style.cssText = 'position:relative; display:flex; gap:8px; margin:8px 0 10px 0;';
-        bar.innerHTML = '<input type="text" maxlength="30" autocomplete="off" placeholder="🔎 Oyuncu ara (isim veya 8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
+        bar.innerHTML = '<input type="text" maxlength="30" autocomplete="off" placeholder="🔎 Oyuncu ara" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
             '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>' +
             '<button type="button" class="hof-btn" title="Ayın Şampiyonları" style="padding:10px 12px; border:1px solid rgba(245,158,11,0.5); border-radius:10px; background:rgba(245,158,11,0.12); color:#fbbf24; font-weight:700; cursor:pointer;">🏅</button>' +
             '<div class="rank-suggest" style="display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; z-index:30; max-height:260px; overflow:auto; border-radius:12px; background:#25252b; border:1px solid rgba(245,158,11,0.35); box-shadow:0 10px 24px rgba(0,0,0,0.5);"></div>';
         const inp = bar.querySelector('input'), btn = bar.querySelector('button'), box = bar.querySelector('.rank-suggest');
+        // İlk kullanımda ipucu yazısı uzun; sonraki girişlerde sadece "Oyuncu ara"
+        let ipucuGorulmus = false;
+        try { ipucuGorulmus = !!localStorage.getItem('oyuncu_ara_ipucu'); } catch (e) {}
+        if (!ipucuGorulmus) {
+            inp.placeholder = '🔎 Oyuncu ara (isim veya 8 haneli ID)';
+            try { localStorage.setItem('oyuncu_ara_ipucu', '1'); } catch (e) {}
+        }
         bar.querySelector('.hof-btn').addEventListener('click', () => window.openSeasonHallOfFame());
         const hide = () => { box.style.display = 'none'; };
         const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
