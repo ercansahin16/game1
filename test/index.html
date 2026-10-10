@@ -6634,6 +6634,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     }
 
     document.getElementById('announcementIconBtn')?.addEventListener('click', () => {
+        // Duyurular sayfası açılıyor: üç nokta paneli kapansın
+        document.getElementById('headerExtras')?.classList.remove('open');
+        document.getElementById('headerMoreBtn')?.classList.remove('open');
         if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
     });
     // Baloncuğa basınca üç nokta panelini açar (oyuncu Duyurular ikonunu kendisi görüp basar)
@@ -6673,7 +6676,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                             </div>
                             <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
                         `;
-                        row.onclick = () => openAnnouncementModal(a);
+                        row.onclick = () => { openAnnouncementModal(a); markAnnouncementRead(docSnap.id, row); };
                         listEl.appendChild(row);
                     });
                 }
@@ -6683,13 +6686,25 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             }
         }
 
-        // Sekme açıldı - okunmamış işaretini kaldır
-        setAnnouncementUnreadState(false);
-        window.__annUnreadId = null;
-        if (__currentUserRef && __latestAnnouncement) {
-            updateDoc(__currentUserRef, { lastOpenedAnnouncementId: __latestAnnouncement.id }).catch(() => {});
-        }
+        // NOT: Okundu bilgisi burada gönderilmez; sadece duyuruya basılıp modal açılınca gönderilir.
     };
+
+    // Duyuru modalı açıldığında: okunmamış işaretini kaldır + okundu bilgisini kaydet
+    function markAnnouncementRead(annId, row) {
+        if (row) {
+            row.classList.remove('ann-row-unread');
+            row.querySelector('.ann-new-badge')?.remove();
+            row.onmouseover = () => row.style.background = 'rgba(245,158,11,0.08)';
+            row.onmouseout = () => row.style.background = 'rgba(255,255,255,0.04)';
+        }
+        if (!__latestAnnouncement || __latestAnnouncement.id !== annId) return;
+        if (window.__annUnreadId !== annId) return;
+        window.__annUnreadId = null;
+        setAnnouncementUnreadState(false);
+        if (__currentUserRef) {
+            updateDoc(__currentUserRef, { lastOpenedAnnouncementId: annId }).catch(() => {});
+        }
+    }
 
     function openAnnouncementModal(a) {
         const guvenliMesaj = String(a.message || '')
