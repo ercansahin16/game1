@@ -5422,7 +5422,10 @@ window.__focusPlayer = function(uid) {
                 </div>
                 <div style="font-size:12px; color:#fbbf24; white-space:nowrap;">Profil <i class="fas fa-chevron-right"></i></div>
             </div>`;
-        box.querySelector('[data-uid]').onclick = () => window.openPlayerProfile(uid);
+        box.querySelector('[data-uid]').onclick = () => {
+            document.querySelectorAll('.rank-found').forEach(b => { b.style.display = 'none'; b.innerHTML = ''; });
+            window.openPlayerProfile(uid);
+        };
     });
     // Listede o satıra git ve kısa süre vurgula
     const row = Array.from(document.querySelectorAll('.lb-row')).find(r => (r.getAttribute('onclick') || '').includes("'" + uid + "'"));
@@ -9849,6 +9852,16 @@ let lastRankingFollowingSet = new Set();
 let rankingActiveMode = 'all'; // 'all' = Tüm Zamanlar, 'season' = Bu Ay
 
 window.loadRanking = async function() {
+    // ===== YÜKLENİYOR GÖSTERGESİ (oyuncu beklediğini bilsin) =====
+    document.querySelectorAll('#rankingList').forEach(el => {
+        el.innerHTML = `<div style="text-align:center; padding:34px 10px;">
+            <div style="font-size:34px; color:#f59e0b;"><i class="fas fa-spinner fa-spin"></i></div>
+            <div style="margin-top:12px; font-weight:700; font-size:15px;">Sıralama yükleniyor…</div>
+            <div style="margin-top:4px; font-size:12px; opacity:.6;">Oyuncular getiriliyor, lütfen bekleyin</div>
+        </div>`;
+    });
+    document.querySelectorAll('#rankingCount').forEach(el => { el.textContent = 'yükleniyor…'; });
+    document.querySelectorAll('.rank-found').forEach(el => { el.style.display = 'none'; });
     try {
         // ===== TOPLAM DERS SAYISINI AL (SEVİYE SAYISI) =====
         const lessonsSnapshot = await getDocs(collection(db, 'lessons'));
@@ -9906,6 +9919,7 @@ window.loadRanking = async function() {
         renderRankingUI(rankingActiveMode);
     } catch (error) {
         console.error('Sıralama yükleme hatası:', error);
+        document.querySelectorAll('#rankingList').forEach(el => { el.innerHTML = '<div style="text-align:center; padding:26px 10px; color:#ef4444;">❌ Sıralama yüklenemedi. Yenile düğmesine basarak tekrar deneyin.</div>'; });
         showError('Sıralama yüklenemedi: ' + error.message);
     }
 };
