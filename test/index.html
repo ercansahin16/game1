@@ -5416,8 +5416,10 @@ window.__ensureRankSearchBars = function() {
         bar.style.cssText = 'position:relative; display:flex; gap:8px; margin:8px 0 10px 0;';
         bar.innerHTML = '<input type="text" maxlength="30" autocomplete="off" placeholder="🔎 Oyuncu ara (isim veya 8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
             '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>' +
+            '<button type="button" class="hof-btn" title="Ayın Şampiyonları" style="padding:10px 12px; border:1px solid rgba(245,158,11,0.5); border-radius:10px; background:rgba(245,158,11,0.12); color:#fbbf24; font-weight:700; cursor:pointer;">🏅</button>' +
             '<div class="rank-suggest" style="display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; z-index:30; max-height:260px; overflow:auto; border-radius:12px; background:#25252b; border:1px solid rgba(245,158,11,0.35); box-shadow:0 10px 24px rgba(0,0,0,0.5);"></div>';
         const inp = bar.querySelector('input'), btn = bar.querySelector('button'), box = bar.querySelector('.rank-suggest');
+        bar.querySelector('.hof-btn').addEventListener('click', () => window.openSeasonHallOfFame());
         const hide = () => { box.style.display = 'none'; };
         const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         inp.addEventListener('input', () => {
@@ -5516,6 +5518,120 @@ function getSeasonLabel(seasonId) {
     const ayIndex = parseInt(ay, 10) - 1;
     return `${aylar[ayIndex] || ay} ${yil}`;
 }
+
+
+// ========== 🏅 AYIN ŞAMPİYONLARI (ilk 3) ==========
+// seasonWinners/{YYYY-MM} -> { seasonId, winners:[{uid,name,publicId,score}], createdAt }
+// Yeni ayın ilk girişinde, kayıt yoksa İLK giren kullanıcının cihazı geçen ayın ilk 3'ünü hesaplar
+// ve işlemle (transaction) bir kez yazar. Sonra herkes bu tek belgeyi okur.
+// Geçen ayın puanı: kullanıcı henüz yeni aya geçmediyse (seasonId == geçen ay) toplam - baseline,
+// geçtiyse seasonHistory içindeki kayıt.
+window.__prevSeasonId = function() {
+    const d = new Date();
+    return getCurrentSeasonId(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+};
+window.__finalizeSeasonWinners = async function(prevId) {
+    const ref = doc(db, 'seasonWinners', prevId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return snap.data();
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const rows = [];
+    usersSnap.forEach(d => {
+        const u = d.data();
+        let score = null;
+        if (u.seasonId === prevId) {
+            const total = computeTotalScoreFromUserData(u, 1).totalScore;
+            score = Math.max(0, Math.round((total - (u.seasonBaselineScore || 0)) * 100) / 100);
+        } else {
+            const h = (u.seasonHistory || []).find(x => x.seasonId === prevId);
+            if (h) score = h.score || 0;
+        }
+        if (score && score > 0) rows.push({ uid: d.id, name: u.name || u.email?.split('@')[0] || 'İsimsiz', publicId: u.publicId || null, score });
+    });
+    rows.sort((a, b) => b.score - a.score);
+    const winners = rows.slice(0, 3);
+    if (winners.length === 0) return null;
+    const result = await runTransaction(db, async (tx) => {
+        const cur = await tx.get(ref);
+        if (cur.exists()) return cur.data();
+        const data = { seasonId: prevId, winners, createdAt: new Date().toISOString() };
+        tx.set(ref, data);
+        return data;
+    });
+    return result;
+};
+window.__launchConfetti = function() {
+    const c = document.createElement('canvas');
+    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:99999;pointer-events:none;';
+    c.width = innerWidth; c.height = innerHeight;
+    document.body.appendChild(c);
+    const g = c.getContext('2d');
+    const colors = ['#fbbf24', '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#ec4899'];
+    const P = Array.from({ length: 140 }, () => ({
+        x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.6,
+        w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, vy: 2 + Math.random() * 3.5, vx: -1.5 + Math.random() * 3,
+        r: Math.random() * 6, vr: -0.2 + Math.random() * 0.4, col: colors[(Math.random() * colors.length) | 0]
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+        g.clearRect(0, 0, c.width, c.height);
+        P.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.col; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
+        if (t - t0 < 5500) requestAnimationFrame(frame); else c.remove();
+    })(t0);
+};
+window.__showSeasonPodium = function(data, opts = {}) {
+    const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const w = data.winners || [];
+    const myIdx = currentUser ? w.findIndex(x => x.uid === currentUser.uid) : -1;
+    const col = (i, h, medal, bg) => w[i] ? `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; min-width:0;">
+            <div style="font-size:${i === 0 ? 34 : 28}px;">${medal}</div>
+            <div style="font-weight:800; font-size:${i === 0 ? 15 : 13}px; text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${w[i].uid === currentUser?.uid ? 'color:#fbbf24;' : ''}">${esc(w[i].name)}</div>
+            <div style="font-size:11px; opacity:.6;">${w[i].publicId ? esc(w[i].publicId) : '&nbsp;'}</div>
+            <div style="font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:6px;">🏆 ${w[i].score} P</div>
+            <div style="width:100%; height:${h}px; border-radius:10px 10px 0 0; background:${bg}; display:flex; align-items:flex-start; justify-content:center; padding-top:6px; font-weight:800; color:#1a1a2e; font-size:20px;">${i + 1}</div>
+        </div>` : '<div style="flex:1"></div>';
+    const msg = opts.review ? '' : (myIdx >= 0
+        ? `<div style="margin-top:14px; font-weight:800; font-size:16px; color:#fbbf24;">🎉 Tebrikler! ${getSeasonLabel(data.seasonId)} ayında ${myIdx + 1}. oldun!</div>`
+        : `<div style="margin-top:14px; font-size:13px; opacity:.8;">Bu ay sıra sende olabilir. Bol bol çalış, zirveye oyna! 💪</div>`);
+    Swal.fire({
+        title: `🏅 ${getSeasonLabel(data.seasonId)} Şampiyonları`,
+        html: `<div style="display:flex; gap:8px; align-items:flex-end; margin-top:8px;">${col(1, 70, '🥈', 'linear-gradient(180deg,#e5e7eb,#9ca3af)')}${col(0, 100, '🥇', 'linear-gradient(180deg,#fde68a,#f59e0b)')}${col(2, 50, '🥉', 'linear-gradient(180deg,#fdba74,#c2762f)')}</div>${msg}`,
+        confirmButtonText: opts.review ? 'Kapat' : 'Tebrikler! 👏',
+        confirmButtonColor: '#f59e0b',
+        width: 420
+    });
+    if (!opts.review) window.__launchConfetti();
+};
+// Girişte: geçen ayın şampiyonlarını (ayın ilk 7 günü içinde, kullanıcı başına bir kez) kutla
+window.__checkSeasonCelebration = async function() {
+    try {
+        if (!currentUser) return;
+        if (new Date().getDate() > 7) return;
+        const prevId = window.__prevSeasonId();
+        const key = 'sezon_kutlandi_' + prevId;
+        try { if (localStorage.getItem(key)) return; } catch (e) {}
+        const data = await window.__finalizeSeasonWinners(prevId);
+        if (!data || !data.winners || !data.winners.length) return;
+        window.__showSeasonPodium(data);
+        try { localStorage.setItem(key, '1'); } catch (e) {}
+    } catch (e) { console.log('Şampiyon kutlaması hatası:', e.message); }
+};
+// Geçmiş şampiyonlar (Sıralama ekranındaki "Şampiyonlar" düğmesi)
+window.openSeasonHallOfFame = async function() {
+    try {
+        const snap = await getDocs(collection(db, 'seasonWinners'));
+        const list = snap.docs.map(d => d.data()).sort((a, b) => String(b.seasonId).localeCompare(String(a.seasonId)));
+        if (!list.length) { if (window.showWarning) window.showWarning('Henüz şampiyon ilan edilmiş bir ay yok. İlk şampiyonlar ay sonunda belli olacak!'); return; }
+        const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const rows = list.map(d => `
+            <div style="text-align:left; padding:10px 12px; margin-bottom:8px; border-radius:12px; background:rgba(255,255,255,0.05);">
+                <div style="font-weight:800; color:#fbbf24; margin-bottom:4px;">📅 ${getSeasonLabel(d.seasonId)}</div>
+                ${(d.winners || []).map((x, i) => `<div style="font-size:13px; display:flex; justify-content:space-between; gap:8px;"><span>${['🥇','🥈','🥉'][i]} ${esc(x.name)}</span><span style="opacity:.7;">${x.score} P</span></div>`).join('')}
+            </div>`).join('');
+        Swal.fire({ title: '🏅 Ayın Şampiyonları', html: `<div style="max-height:55vh; overflow:auto;">${rows}</div>`, confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', width: 420 });
+    } catch (e) { if (window.showWarning) window.showWarning('Şampiyonlar yüklenemedi: ' + e.message); }
+};
 
 // ========== GÜNLÜK SERİ (STREAK) ==========
 let gunlukSeri = 0;              // Kullanıcının mevcut günlük serisi
@@ -8790,6 +8906,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     console.log('⚠️ Sezon kontrolü hatası:', e.message);
                 }
 
+                // ===== 🏅 GEÇEN AYIN ŞAMPİYONLARINI KUTLA (ayın ilk 7 günü, bir kez) =====
+                setTimeout(() => { window.__checkSeasonCelebration(); }, 3500);
+
                 // ===== 🔁 TEKRAR MODU: kullanıcının tekrar kuyruğunu belleğe al =====
                 reviewQueueCache = data.reviewQueue || {};
                 updateReviewBadge();
@@ -10237,7 +10356,7 @@ window.openPlayerProfile = async function(targetUid) {
         const karmaStats = targetData.karmaStats || { total: 0, correct: 0, wrong: 0 };
         const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
         
-        const canSeeFullDetails = isSelf || isFollowing;
+        const canSeeFullDetails = true; // Artık arkadaş olmasa da herkesin detayları görünür
         
         let actionButtonsHTML = '';
         if (!isSelf) {
