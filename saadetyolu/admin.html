@@ -772,7 +772,26 @@
     transform: none !important;
 }
     
-    </style>
+    
+.daily-box{margin-top:18px;padding:16px;border-radius:16px;background:linear-gradient(160deg,rgba(59,130,246,.10),rgba(139,92,246,.08));border:1px solid rgba(99,102,241,.3)}
+.daily-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.daily-title{font-size:16px;font-weight:700}
+.daily-range{display:flex;gap:6px}
+.daily-range button{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:inherit;border-radius:10px;padding:5px 11px;font-size:12px;cursor:pointer}
+.daily-range button.on{background:#6366f1;border-color:#6366f1;color:#fff}
+.daily-today{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.daily-pill{text-align:center;padding:12px 6px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+.daily-pill b{display:block;font-size:26px;line-height:1.1}
+.daily-pill span{font-size:11px;opacity:.75}
+.daily-table-wrap{overflow-x:auto}
+.daily-table{width:100%;border-collapse:collapse;font-size:13px}
+.daily-table th,.daily-table td{padding:7px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.daily-table th:first-child,.daily-table td:first-child{text-align:left}
+.daily-table tr.today td{font-weight:700;background:rgba(99,102,241,.14)}
+.dbar{display:block;height:4px;border-radius:4px;margin-top:3px;background:linear-gradient(90deg,#6366f1,#a855f7);min-width:2px}
+.daily-note{font-size:11px;opacity:.6;margin-top:10px}
+@media(max-width:560px){.daily-today{grid-template-columns:repeat(2,1fr)}}
+</style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -952,6 +971,19 @@
                     <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Zor Kelimeler Raporu</div>
                     <div style="font-size: 11px; opacity: 0.7;">En çok sandığa düşenler</div>
                 </div>
+            </div>
+
+            <!-- ===== GÜNLÜK HAREKET ===== -->
+            <div class="daily-box" id="dailyBox">
+                <div class="daily-head">
+                    <div class="daily-title"><i class="fas fa-chart-column"></i> Günlük Hareket</div>
+                    <div class="daily-range">
+                        <button data-r="7">7 gün</button><button data-r="14" class="on">14 gün</button><button data-r="30">30 gün</button>
+                    </div>
+                </div>
+                <div class="daily-today" id="dailyToday"></div>
+                <div class="daily-table-wrap"><table class="daily-table"><thead><tr><th>Gün</th><th>👥 Giren</th><th>📖 Kelime</th><th>📝 Sınav</th><th>❓ Soru</th></tr></thead><tbody id="dailyBody"></tbody></table></div>
+                <div class="daily-note">ℹ️ Sınav sayısı geçmiş kayıtlardan da hesaplanır. Giren kişi, kelime ve karma soru sayıları bu özelliğin devreye girdiği günden itibaren birikir.</div>
             </div>
         </div>
 
@@ -3097,11 +3129,61 @@ function timeAgo(date) {
             const toplamPuan = quizScore + ortalamaPuan + seviyePuani + kelimePuani - sandikCount;
             puanToplam += toplamPuan;
         });
+        renderDailyStats(usersSnap.docs.map(d => d.data()));
         const statSandikEl = document.getElementById('statSandikTotal');
         if (statSandikEl) statSandikEl.textContent = sandikToplam;
         const statAvgEl = document.getElementById('statAvgUserScore');
         if (statAvgEl) statAvgEl.textContent = usersSnap.size > 0 ? (puanToplam / usersSnap.size).toFixed(2) : '0.00';
     }
+
+
+    // ===== 📈 GÜNLÜK HAREKET İSTATİSTİKLERİ =====
+    // Ek okuma yapmaz: updateStats'ın zaten okuduğu kullanıcı belgelerinden hesaplanır.
+    let __dailyUsers = [];
+    let __dailyRange = 14;
+    const __trDay = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(d);
+    function renderDailyStats(users) {
+        if (users) __dailyUsers = users;
+        const box = document.getElementById('dailyBox'); if (!box) return;
+        const days = [];
+        for (let i = 0; i < __dailyRange; i++) days.push(__trDay(new Date(Date.now() - i * 86400000)));
+        const agg = {}; days.forEach(d => agg[d] = { v: 0, w: 0, e: 0, q: 0 });
+        __dailyUsers.forEach(u => {
+            const seen = new Set();
+            const log = u.dailyLog || {};
+            Object.keys(log).forEach(k => {
+                const d = k.slice(1, 5) + '-' + k.slice(5, 7) + '-' + k.slice(7, 9);
+                const e = log[k] || {};
+                if (!agg[d]) return;
+                if (e.v) seen.add(d);
+                agg[d].w += e.w || 0; agg[d].q += e.q || 0;
+            });
+            if (u.lastActive) { const t = new Date(u.lastActive); if (!isNaN(t)) { const d = __trDay(t); if (agg[d]) seen.add(d); } }
+            seen.forEach(d => agg[d].v++);
+            (u.examsCompleted || []).forEach(ex => {
+                const t = new Date(ex.date); if (isNaN(t)) return;
+                const d = __trDay(t); if (!agg[d]) return;
+                agg[d].e++; agg[d].q += ex.total || 0;
+            });
+        });
+        const t = agg[days[0]];
+        document.getElementById('dailyToday').innerHTML =
+            `<div class="daily-pill"><b>${t.v}</b><span>👥 Bugün giren</span></div>` +
+            `<div class="daily-pill"><b>${t.w}</b><span>📖 Bugün kelime</span></div>` +
+            `<div class="daily-pill"><b>${t.e}</b><span>📝 Bugün sınav</span></div>` +
+            `<div class="daily-pill"><b>${t.q}</b><span>❓ Bugün soru</span></div>`;
+        const mx = { v: 1, w: 1, e: 1, q: 1 };
+        days.forEach(d => ['v', 'w', 'e', 'q'].forEach(k => { if (agg[d][k] > mx[k]) mx[k] = agg[d][k]; }));
+        const cell = (d, k) => `${agg[d][k]}<span class="dbar" style="width:${Math.round(agg[d][k] / mx[k] * 100)}%"></span>`;
+        document.getElementById('dailyBody').innerHTML = days.map((d, i) => {
+            const label = new Date(d + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', weekday: 'short' });
+            return `<tr class="${i === 0 ? 'today' : ''}"><td>${i === 0 ? 'Bugün' : label}</td><td>${cell(d, 'v')}</td><td>${cell(d, 'w')}</td><td>${cell(d, 'e')}</td><td>${cell(d, 'q')}</td></tr>`;
+        }).join('');
+    }
+    document.querySelectorAll('.daily-range button').forEach(b => b.onclick = () => {
+        document.querySelectorAll('.daily-range button').forEach(x => x.classList.toggle('on', x === b));
+        __dailyRange = +b.dataset.r; renderDailyStats();
+    });
 
     // Toplu Kelime Yükleme Kartı
 document.getElementById('statBulkUploadCard')?.addEventListener('click', () => {

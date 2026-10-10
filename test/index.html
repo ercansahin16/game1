@@ -6774,12 +6774,20 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
         }
     }
 
+    // ===== 📈 GÜNLÜK HAREKET KAYDI (admin istatistikleri için) =====
+    // Mevcut yazma işlemlerine ek alan olarak eklenir; EKSTRA Firestore yazması yapmaz.
+    // users/{uid}.dailyLog.dYYYYMMDD = { v:1 (girdi), w:kelime, q:soru } (Türkiye saati)
+    window.__dayField = function () {
+        const k = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date()).replace(/-/g, '');
+        return 'dailyLog.d' + k;
+    };
+
     async function updateUserProgress() {
         if (!currentUser) return;
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         const current = userDoc.data()?.totalWordsViewed || 0;
-        await updateDoc(userRef, { totalWordsViewed: current + 1, lastActive: new Date().toISOString() });
+        await updateDoc(userRef, { totalWordsViewed: current + 1, lastActive: new Date().toISOString(), [window.__dayField() + '.v']: 1, [window.__dayField() + '.w']: increment(1) });
         loadUserStats();
     }
 
@@ -7209,7 +7217,8 @@ async function saveExamResult(examTitle, score, correct, total) {
         // Sınav puanı quizScore'a eklenmez, sadece averageScore olarak kaydedilir
         await updateDoc(userRef, {
             examsCompleted: examsCompleted,
-            averageScore: averageScore
+            averageScore: averageScore,
+            [window.__dayField() + '.v']: 1
             // quizScore: newQuizScore  // ❌ BU SATIRI SİL - Sınav puanı yarışma puanına karışmasın
         });
         
@@ -9521,7 +9530,7 @@ async function saveKarmaStats(correct) {
     
    
     
-    await updateDoc(userRef, { karmaStats: stats });
+    await updateDoc(userRef, { karmaStats: stats, [window.__dayField() + '.v']: 1, [window.__dayField() + '.q']: increment(1) });
     
     
     // Ekranda istatistikleri güncelle
@@ -11175,7 +11184,7 @@ window.__presenceOnlineThresholdMs = 90000; // 90 sn içinde heartbeat atmışsa
 window.__presenceHeartbeatTick = async function() {
     if (!currentUser) return;
     try {
-        await updateDoc(doc(db, 'users', currentUser.uid), { lastActive: Date.now() });
+        await updateDoc(doc(db, 'users', currentUser.uid), { lastActive: Date.now(), [window.__dayField() + '.v']: 1 });
     } catch (e) { /* önemli değil */ }
 };
 window.__startPresenceHeartbeat = function() {
