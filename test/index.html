@@ -4779,6 +4779,21 @@ body.light-theme #profileScreen .info-row button:hover {
                         </div>
                     </div>
                     
+                    <!-- Oyuncu ID -->
+                    <div style="
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        padding: 6px 0; 
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    ">
+                        <span style="font-weight: 500; font-size: 13px; opacity: 0.7;">ID Numarası :</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span id="profilePublicId" style="font-size: 15px; font-weight: 700; letter-spacing: 1px; color: #1a1a2e;">—</span>
+                            <button type="button" onclick="(function(){var t=document.getElementById('profilePublicId').textContent; if(navigator.clipboard&&/^\d{8}$/.test(t)){navigator.clipboard.writeText(t); if(window.showWarning) window.showWarning('ID kopyalandı: '+t);}})()" style="padding: 3px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.06); color: #9ca3af; cursor: pointer; font-size: 11px;" title="Kopyala"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    
                     <!-- Toplam Puan -->
                     <div style="
                         display: flex; 
@@ -5224,6 +5239,60 @@ if (typeof showExamConfirm === 'undefined') {
     
    const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ===== OYUNCU ID (8 haneli, rakam) =====
+// Her kullanıcıya benzersiz 8 haneli bir ID verilir (10.000.000 - 99.999.999).
+// İlk girişte otomatik üretilir; arkadaş bulmak ve arama için kullanılır.
+window.__pidTag = function(pid) {
+    return pid ? ` <span style="opacity:.55; font-weight:400; font-size:.82em;">(${pid})</span>` : '';
+};
+window.__ensurePublicId = async function(userRef, existing) {
+    if (existing) return existing;
+    for (let i = 0; i < 8; i++) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        const cand = String(10000000 + (buf[0] % 90000000));
+        const dup = await getDocs(query(collection(db, 'users'), where('publicId', '==', cand)));
+        if (!dup.empty) continue;
+        await updateDoc(userRef, { publicId: cand });
+        return cand;
+    }
+    return null;
+};
+window.searchPlayerById = async function(raw) {
+    const v = String(raw || '').replace(/\D/g, '');
+    if (v.length !== 8) {
+        if (window.showWarning) window.showWarning('ID 8 haneli bir sayı olmalıdır (örn: 12345678).');
+        return;
+    }
+    try {
+        const snap = await getDocs(query(collection(db, 'users'), where('publicId', '==', v)));
+        if (snap.empty) {
+            if (window.showWarning) window.showWarning('Bu ID ile bir oyuncu bulunamadı.');
+            return;
+        }
+        window.openPlayerProfile(snap.docs[0].id);
+    } catch (e) {
+        console.log('ID arama hatası:', e.message);
+        if (window.showWarning) window.showWarning('Arama yapılamadı, lütfen tekrar deneyin.');
+    }
+};
+// Sıralama listelerinin üstüne "ID ile oyuncu ara" kutusu ekler (bir kez)
+window.__ensureRankSearchBars = function() {
+    document.querySelectorAll('#rankingList').forEach(list => {
+        if (list.previousElementSibling && list.previousElementSibling.classList.contains('rank-id-search')) return;
+        const bar = document.createElement('div');
+        bar.className = 'rank-id-search';
+        bar.style.cssText = 'display:flex; gap:8px; margin:8px 0 10px 0;';
+        bar.innerHTML = '<input type="text" inputmode="numeric" maxlength="8" placeholder="🔎 Oyuncu ara (8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
+            '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>';
+        const inp = bar.querySelector('input'), btn = bar.querySelector('button');
+        inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, ''); });
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') window.searchPlayerById(inp.value); });
+        btn.addEventListener('click', () => window.searchPlayerById(inp.value));
+        list.parentNode.insertBefore(bar, list);
+    });
+};
 const auth = getAuth(app);
 let isZoomed = true; // Zoom durumu
 
@@ -6651,6 +6720,11 @@ async function loadUserStats() {
             // updatedDoc ile devam et
         }
 
+        // ===== OYUNCU ID (yoksa üret) =====
+        let myPublicId = data.publicId || null;
+        try { myPublicId = await window.__ensurePublicId(userRef, myPublicId); } catch (e) { console.log('ID üretilemedi:', e.message); }
+        window.__myPublicId = myPublicId;
+
         // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
         console.log('📧 Email:', currentUser.email);
@@ -6678,11 +6752,13 @@ async function loadUserStats() {
         
         // Sidebar (sol menü)
         const sidebarUserName = document.getElementById('sidebarUserName');
-        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${userName}`;
+        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${userName}${window.__pidTag(myPublicId)}`;
         
         // Email
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) profileEmail.textContent = currentUser.email;
+        const profilePublicId = document.getElementById('profilePublicId');
+        if (profilePublicId) profilePublicId.textContent = myPublicId || '—';
         
         // ===== 4. DİĞER VERİLERİ AL =====
         const wordsSnapshot = await getDocs(collection(db, 'words'));
@@ -9422,6 +9498,7 @@ window.loadRanking = async function() {
                     id: docSnap.id,
                     name: data.name || data.email?.split('@')[0] || 'İsimsiz',
                     email: data.email,
+                    publicId: data.publicId || null,
                     totalScore: s.totalScore,
                     seasonScore: seasonScore,
                     quizScore: s.quizScore,
@@ -9452,6 +9529,7 @@ function renderRankingUI(mode) {
     const scoreField = mode === 'season' ? 'seasonScore' : 'totalScore';
     const users = [...lastRankingUsers].sort((a, b) => b[scoreField] - a[scoreField]);
     const myFollowingSet = lastRankingFollowingSet;
+    window.__ensureRankSearchBars();
 
     // ===== SEKME BUTONLARININ GÖRÜNÜMÜNÜ GÜNCELLE =====
     document.querySelectorAll('.ranking-tab-btn').forEach(btn => {
@@ -9529,7 +9607,7 @@ function renderRankingUI(mode) {
                             <div class="social-avatar small">${lbInitials(user.name)}</div>
                             <div class="lb-name-wrap">
                                 <div class="lb-name-row">
-                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}</span>
+                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}${window.__pidTag(user.publicId)}</span>
                                     ${isFriend ? '<i class="fas fa-user-friends" style="color:#10b981; font-size:11px;" title="Arkadaşınız"></i>' : ''}
                                     ${isCurrentUser ? '<span style="font-size: 9px; color: #10b981; font-weight: 700; background: rgba(16,185,129,0.15); padding: 1px 8px; border-radius: 10px;">SEN</span>' : ''}
                                 </div>
@@ -10003,7 +10081,7 @@ window.openPlayerProfile = async function(targetUid) {
         }
         
         Swal.fire({
-            title: `👤 ${targetName}`,
+            title: `👤 ${targetName}${window.__pidTag(targetData.publicId)}`,
             html: `
                 <div style="text-align:left;">
                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 4px;">
