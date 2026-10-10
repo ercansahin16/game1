@@ -5336,13 +5336,21 @@ const db = getFirestore(app);
 window.__pidTag = function(pid) {
     return pid ? ` <span style="opacity:.5; font-weight:300; font-size:.75em; letter-spacing:.3px;">(#${pid})</span>` : '';
 };
+// uid'den türetilen sabit 8 haneli ID (herkes için aynı sonuç; kayıt yazılamasa bile görünür kalır)
+window.__idFromUid = function(uid) {
+    let h = 2166136261;
+    const str = String(uid || '');
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return String(10000000 + (h % 90000000));
+};
 window.__ensurePublicId = async function(userRef, existing) {
     if (existing) return existing;
     let atomicOk = true; // 'publicIds' kayıt defteri kurallarla açıksa çakışma imkânsızdır
     for (let i = 0; i < 10; i++) {
         const buf = new Uint32Array(1);
         crypto.getRandomValues(buf);
-        const cand = String(10000000 + (buf[0] % 90000000));
+        // İlk deneme: uid'den türetilen sabit ID (çakışırsa sonraki denemeler rastgele)
+        const cand = (i === 0) ? window.__idFromUid(userRef.id) : String(10000000 + (buf[0] % 90000000));
         if (atomicOk) {
             try {
                 // Tek işlemde: ID boşsa hem kayıt defterine hem kullanıcıya yaz (aynı anda iki kişi alamaz)
@@ -5380,6 +5388,8 @@ window.searchPlayerById = async function(raw) {
     try {
         const snap = await getDocs(query(collection(db, 'users'), where('publicId', '==', v)));
         if (snap.empty) {
+            const hit = (typeof lastRankingUsers !== 'undefined' ? lastRankingUsers : []).find(u => String(u.publicId) === v);
+            if (hit) { window.__focusPlayer(hit.id); return; }
             if (window.showWarning) window.showWarning('Bu ID ile bir oyuncu bulunamadı.');
             return;
         }
@@ -5585,7 +5595,7 @@ window.__finalizeSeasonWinners = async function(prevId) {
             const h = (u.seasonHistory || []).find(x => x.seasonId === prevId);
             if (h) score = h.score || 0;
         }
-        if (score && score > 0) rows.push({ uid: d.id, name: u.name || u.email?.split('@')[0] || 'İsimsiz', publicId: u.publicId || null, score });
+        if (score && score > 0) rows.push({ uid: d.id, name: u.name || u.email?.split('@')[0] || 'İsimsiz', publicId: u.publicId || window.__idFromUid(d.id), score });
     });
     rows.sort((a, b) => b.score - a.score);
     const winners = rows.slice(0, 3);
@@ -7103,6 +7113,7 @@ async function loadUserStats() {
         // ===== OYUNCU ID (yoksa üret) =====
         let myPublicId = data.publicId || null;
         try { myPublicId = await window.__ensurePublicId(userRef, myPublicId); } catch (e) { console.log('ID üretilemedi:', e.message); }
+        if (!myPublicId) myPublicId = window.__idFromUid(currentUser.uid);
         window.__myPublicId = myPublicId;
 
         // ===== KONSOLA YAZDIR =====
@@ -9896,7 +9907,7 @@ window.loadRanking = async function() {
                     id: docSnap.id,
                     name: data.name || data.email?.split('@')[0] || 'İsimsiz',
                     email: data.email,
-                    publicId: data.publicId || null,
+                    publicId: data.publicId || window.__idFromUid(docSnap.id),
                     totalScore: s.totalScore,
                     seasonScore: seasonScore,
                     quizScore: s.quizScore,
@@ -10517,7 +10528,7 @@ window.openPlayerProfile = async function(targetUid) {
         }
         
         Swal.fire({
-            title: `👤 ${targetName}${window.__pidTag(targetData.publicId)}`,
+            title: `👤 ${targetName}${window.__pidTag(targetData.publicId || window.__idFromUid(targetUid))}`,
             html: `
                 <div style="text-align:left;">
                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 4px;">

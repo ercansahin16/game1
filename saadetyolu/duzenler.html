@@ -500,6 +500,7 @@ async function bulkUsers({emoji,title,msg,word,okText,okClass,fields,doneTxt}){
     p.close(); toast(`✅ ${s.size} ${doneTxt}`); loadUsers();
   }catch(e){p.close();toast('❌ '+e.message,true);}
 }
+function idFromUid(uid){let h=2166136261;const t=String(uid||'');for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return String(10000000+(h%90000000));}
 $('bulkIds').onclick=async()=>{
   if(!await confirmBox({emoji:'🆔',title:'ID Ata',msg:'ID\'si olmayan tüm kullanıcılara 8 haneli benzersiz ID verilecek.',okText:'Ata',okClass:'green'})) return;
   const p=progressBox('ID atanıyor');
@@ -512,7 +513,7 @@ $('bulkIds').onclick=async()=>{
       let ok=false;
       for(let i=0;i<15&&!ok;i++){
         const b=new Uint32Array(1); crypto.getRandomValues(b);
-        const cand=String(10000000+(b[0]%90000000));
+        const cand=(i===0)?idFromUid(d.id):String(10000000+(b[0]%90000000));
         if(taken.has(cand)) continue;
         try{
           const r=await runTransaction(db,async tx=>{
