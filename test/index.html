@@ -5385,7 +5385,7 @@ window.searchPlayerById = async function(raw) {
             if (window.showWarning) window.showWarning('Bu ID ile bir oyuncu bulunamadı.');
             return;
         }
-        window.openPlayerProfile(snap.docs[0].id);
+        window.__focusPlayer(snap.docs[0].id);
     } catch (e) {
         console.log('ID arama hatası:', e.message);
         if (window.showWarning) window.showWarning('Arama yapılamadı, lütfen tekrar deneyin.');
@@ -5401,16 +5401,62 @@ window.__searchSuggest = function(q) {
         (digits.length >= 3 && u.publicId && String(u.publicId).includes(digits))
     ).slice(0, 8);
 };
+// Seçilen oyuncuyu sıralamada göster: sırası, seviyesi, puanı + listede o satıra git
+window.__focusPlayer = function(uid) {
+    const mode = (typeof rankingActiveMode !== 'undefined') ? rankingActiveMode : 'all';
+    const field = mode === 'season' ? 'seasonScore' : 'totalScore';
+    const sorted = [...lastRankingUsers].sort((a, b) => b[field] - a[field]);
+    const idx = sorted.findIndex(u => u.id === uid);
+    if (idx < 0) { window.openPlayerProfile(uid); return; } // sıralamada yoksa (puanı 0) doğrudan profili aç
+    const u = sorted[idx];
+    const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const modeLabel = mode === 'season' ? 'Bu Ay' : 'Tüm Zamanlar';
+    document.querySelectorAll('.rank-found').forEach(box => {
+        box.style.display = 'block';
+        box.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-uid="${esc(uid)}">
+                <div style="min-width:54px; text-align:center; padding:8px 6px; border-radius:12px; background:rgba(245,158,11,0.18); color:#fbbf24; font-weight:800; font-size:20px; line-height:1;">#${idx + 1}<div style="font-size:9px; font-weight:600; opacity:.7; margin-top:3px;">/ ${sorted.length}</div></div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(u.name)}${window.__pidTag(u.publicId)}</div>
+                    <div style="font-size:12px; opacity:.8; margin-top:3px;">🎓 Seviye ${u.mevcutSeviye}/${u.toplamSeviye} &nbsp; 🏆 ${u[field]} P (${modeLabel}) &nbsp; 📖 ${u.totalWords} &nbsp; 📦 ${u.sandikCount}</div>
+                </div>
+                <div style="font-size:12px; color:#fbbf24; white-space:nowrap;">Profil <i class="fas fa-chevron-right"></i></div>
+            </div>`;
+        box.querySelector('[data-uid]').onclick = () => window.openPlayerProfile(uid);
+    });
+    // Listede o satıra git ve kısa süre vurgula
+    const row = Array.from(document.querySelectorAll('.lb-row')).find(r => (r.getAttribute('onclick') || '').includes("'" + uid + "'"));
+    if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.transition = 'box-shadow .3s, transform .3s';
+        row.style.boxShadow = '0 0 0 2px #f59e0b, 0 0 18px rgba(245,158,11,.7)';
+        row.style.transform = 'scale(1.02)';
+        setTimeout(() => { row.style.boxShadow = ''; row.style.transform = ''; }, 2600);
+    }
+};
+// 🧪 GEÇİCİ: Şampiyon kutlaması önizleme (onaydan sonra kaldırılacak)
+window.__previewSeasonCelebration = function(asWinner) {
+    const fake = [
+        { uid: 'x1', name: 'Ahmet Y.', publicId: '12345678', score: 42.5 },
+        { uid: 'x2', name: 'Fatma K.', publicId: '23456789', score: 31.2 },
+        { uid: 'x3', name: 'Mehmet S.', publicId: '34567890', score: 20.8 }
+    ];
+    if (asWinner && currentUser) {
+        const me = lastRankingUsers.find(u => u.id === currentUser.uid);
+        fake[1] = { uid: currentUser.uid, name: me?.name || 'Sen', publicId: window.__myPublicId || null, score: 31.2 };
+    }
+    window.__showSeasonPodium({ seasonId: window.__prevSeasonId(), winners: fake });
+};
 window.__runPlayerSearch = function(raw) {
     const v = String(raw || '').trim();
     if (/^\d{8}$/.test(v)) return window.searchPlayerById(v);
     const list = window.__searchSuggest(v);
-    if (list.length === 1) return window.openPlayerProfile(list[0].id);
+    if (list.length === 1) return window.__focusPlayer(list[0].id);
     if (list.length === 0 && window.showWarning) window.showWarning('Eşleşen oyuncu bulunamadı. İsmi ya da 8 haneli ID yazın.');
 };
 window.__ensureRankSearchBars = function() {
     document.querySelectorAll('#rankingList').forEach(list => {
-        if (list.previousElementSibling && list.previousElementSibling.classList.contains('rank-id-search')) return;
+        if (list.parentNode.querySelector('.rank-id-search')) return;
         const bar = document.createElement('div');
         bar.className = 'rank-id-search';
         bar.style.cssText = 'position:relative; display:flex; gap:8px; margin:8px 0 10px 0;';
@@ -5430,12 +5476,24 @@ window.__ensureRankSearchBars = function() {
         });
         box.addEventListener('click', e => {
             const row = e.target.closest('[data-uid]'); if (!row) return;
-            hide(); inp.value = ''; window.openPlayerProfile(row.dataset.uid);
+            hide(); inp.value = ''; window.__focusPlayer(row.dataset.uid);
         });
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') { hide(); window.__runPlayerSearch(inp.value); } });
         btn.addEventListener('click', () => { hide(); window.__runPlayerSearch(inp.value); });
         document.addEventListener('click', e => { if (!bar.contains(e.target)) hide(); });
         list.parentNode.insertBefore(bar, list);
+        // Arama sonucu kartı (sıra / seviye / puan)
+        const found = document.createElement('div');
+        found.className = 'rank-found';
+        found.style.cssText = 'display:none; margin:0 0 10px 0; padding:10px 12px; border-radius:14px; background:linear-gradient(135deg,rgba(245,158,11,0.14),rgba(255,255,255,0.04)); border:1px solid rgba(245,158,11,0.45);';
+        bar.after(found);
+        // 🧪 GEÇİCİ önizleme düğmeleri (onaydan sonra kaldırılacak)
+        const prev = document.createElement('div');
+        prev.className = 'preview-temp';
+        prev.style.cssText = 'display:flex; gap:8px; margin:0 0 10px 0; flex-wrap:wrap;';
+        prev.innerHTML = '<button type="button" data-w="1" style="flex:1; padding:8px; border-radius:10px; border:1px dashed #a855f7; background:rgba(168,85,247,0.12); color:#d8b4fe; font-weight:700; font-size:12px; cursor:pointer;">🧪 Kutlama: Kazanan görünümü</button><button type="button" data-w="0" style="flex:1; padding:8px; border-radius:10px; border:1px dashed #a855f7; background:rgba(168,85,247,0.12); color:#d8b4fe; font-weight:700; font-size:12px; cursor:pointer;">🧪 Kutlama: Kazanamayan görünümü</button>';
+        prev.querySelectorAll('button').forEach(b => b.onclick = () => window.__previewSeasonCelebration(b.dataset.w === '1'));
+        found.after(prev);
     });
 };
 // Profilde ID görünmüyorsa elle yeniden dene (hata nedenini de gösterir)
