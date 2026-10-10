@@ -4871,6 +4871,21 @@ body.light-theme #profileScreen .info-row button:hover {
                         </div>
                     </div>
                     
+                    <!-- Oyuncu ID -->
+                    <div style="
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        padding: 6px 0; 
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    ">
+                        <span style="font-weight: 500; font-size: 13px; opacity: 0.7;">ID Numarası :</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span id="profilePublicId" style="font-size: 15px; font-weight: 700; letter-spacing: 1px; color: #1a1a2e;">—</span>
+                            <button type="button" onclick="(function(){var t=document.getElementById('profilePublicId').textContent; if(navigator.clipboard&&/^\d{8}$/.test(t)){navigator.clipboard.writeText(t); if(window.showWarning) window.showWarning('ID kopyalandı: '+t);}})()" style="padding: 3px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.06); color: #9ca3af; cursor: pointer; font-size: 11px;" title="Kopyala"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    
                     <!-- Toplam Puan -->
                     <div style="
                         display: flex; 
@@ -5101,7 +5116,7 @@ body.light-theme #profileScreen .info-row button:hover {
         </div>
         
         <!-- Kelime Listesi - SADECE GÖRÜNTÜLEME, KALDIRMA BUTONU YOK -->
-        <div id="sandikWordsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; max-height: 60vh; overflow-y: auto; padding: 4px;">
+        <div id="sandikWordsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; max-height: 60vh; max-height: max(160px, calc(100dvh - 470px)); overflow-y: auto; padding: 4px; -webkit-overflow-scrolling: touch;">
             <div style="text-align: center; padding: 40px; color: #6b7280; grid-column: 1 / -1;">
                 <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
                 <p>Sandıkta hiç kelime yok!</p>
@@ -5109,17 +5124,15 @@ body.light-theme #profileScreen .info-row button:hover {
             </div>
         </div>
         
-        <!-- Butonlar - SADECE KURTARMAYA GİT -->
-        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-            <button class="btn btn-primary" id="kurtarmayaGitBtn" onclick="goKarmaGameFromSandik()" style="flex: 1; padding: 12px;">
+        <!-- Butonlar: yan yana, ekranın altında sabit (kelime listesi ortada kayar) -->
+        <div style="position: sticky; bottom: 8px; z-index: 5; display: flex; gap: 10px; margin-top: 12px; padding-top: 8px;">
+            <button class="btn btn-primary" id="kurtarmayaGitBtn" onclick="goKarmaGameFromSandik()" style="flex: 1; padding: 12px 8px; white-space: nowrap; box-shadow: 0 6px 16px rgba(0,0,0,0.45);">
                 <i class="fas fa-rocket"></i> Kurtarmaya Git
             </button>
+            <button class="btn btn-nav" onclick="goHome()" style="flex: 1; padding: 12px 8px; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 6px 16px rgba(0,0,0,0.45);">
+                🌿 Bahçeye çık
+            </button>
         </div>
-        
-        <!-- Bahçeye çık -->
-        <button class="btn btn-nav" onclick="goHome()" style="margin-top: 15px; width: 100%; padding: 12px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1);">
-            🌿 Bahçeye çık
-        </button>
     </div>
 </div>
 
@@ -5129,7 +5142,7 @@ body.light-theme #profileScreen .info-row button:hover {
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -5316,6 +5329,168 @@ if (typeof showExamConfirm === 'undefined') {
     
    const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ===== OYUNCU ID (8 haneli, rakam) =====
+// Her kullanıcıya benzersiz 8 haneli bir ID verilir (10.000.000 - 99.999.999).
+// İlk girişte otomatik üretilir; arkadaş bulmak ve arama için kullanılır.
+window.__pidTag = function(pid) {
+    return pid ? ` <span style="opacity:.5; font-weight:300; font-size:.75em; letter-spacing:.3px;">(#${pid})</span>` : '';
+};
+window.__ensurePublicId = async function(userRef, existing) {
+    if (existing) return existing;
+    let atomicOk = true; // 'publicIds' kayıt defteri kurallarla açıksa çakışma imkânsızdır
+    for (let i = 0; i < 10; i++) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        const cand = String(10000000 + (buf[0] % 90000000));
+        if (atomicOk) {
+            try {
+                // Tek işlemde: ID boşsa hem kayıt defterine hem kullanıcıya yaz (aynı anda iki kişi alamaz)
+                const ok = await runTransaction(db, async (tx) => {
+                    const regRef = doc(db, 'publicIds', cand);
+                    const userSnap = await tx.get(userRef);
+                    if (userSnap.exists() && userSnap.data().publicId) return userSnap.data().publicId;
+                    const reg = await tx.get(regRef);
+                    if (reg.exists()) return null;
+                    tx.set(regRef, { uid: userRef.id });
+                    tx.update(userRef, { publicId: cand });
+                    return cand;
+                });
+                if (ok) return ok;
+                continue;
+            } catch (e) {
+                if (e && e.code === 'permission-denied') { atomicOk = false; }
+                else { window.__pidError = e.code || e.message; console.log('ID işlemi hatası:', e.code, e.message); continue; }
+            }
+        }
+        // Yedek yol (kurallar henüz 'publicIds' için açık değilse): sorgu ile kontrol
+        const dup = await getDocs(query(collection(db, 'users'), where('publicId', '==', cand)));
+        if (!dup.empty) continue;
+        await updateDoc(userRef, { publicId: cand });
+        return cand;
+    }
+    return null;
+};
+window.searchPlayerById = async function(raw) {
+    const v = String(raw || '').replace(/\D/g, '');
+    if (v.length !== 8) {
+        if (window.showWarning) window.showWarning('ID 8 haneli bir sayı olmalıdır (örn: 12345678).');
+        return;
+    }
+    try {
+        const snap = await getDocs(query(collection(db, 'users'), where('publicId', '==', v)));
+        if (snap.empty) {
+            if (window.showWarning) window.showWarning('Bu ID ile bir oyuncu bulunamadı.');
+            return;
+        }
+        window.__focusPlayer(snap.docs[0].id);
+    } catch (e) {
+        console.log('ID arama hatası:', e.message);
+        if (window.showWarning) window.showWarning('Arama yapılamadı, lütfen tekrar deneyin.');
+    }
+};
+// Sıralama listelerinin üstüne "oyuncu ara" kutusu ekler (bir kez): isim VEYA 8 haneli ID
+window.__searchSuggest = function(q) {
+    const t = String(q || '').trim().toLocaleLowerCase('tr');
+    if (t.length < 2) return [];
+    const digits = t.replace(/\D/g, '');
+    return (typeof lastRankingUsers !== 'undefined' ? lastRankingUsers : []).filter(u =>
+        String(u.name || '').toLocaleLowerCase('tr').includes(t) ||
+        (digits.length >= 3 && u.publicId && String(u.publicId).includes(digits))
+    ).slice(0, 8);
+};
+// Seçilen oyuncuyu sıralamada göster: sırası, seviyesi, puanı + listede o satıra git
+window.__focusPlayer = function(uid) {
+    const mode = (typeof rankingActiveMode !== 'undefined') ? rankingActiveMode : 'all';
+    const field = mode === 'season' ? 'seasonScore' : 'totalScore';
+    const sorted = [...lastRankingUsers].sort((a, b) => b[field] - a[field]);
+    const idx = sorted.findIndex(u => u.id === uid);
+    if (idx < 0) { window.openPlayerProfile(uid); return; } // sıralamada yoksa (puanı 0) doğrudan profili aç
+    const u = sorted[idx];
+    const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const modeLabel = mode === 'season' ? 'Bu Ay' : 'Tüm Zamanlar';
+    document.querySelectorAll('.rank-found').forEach(box => {
+        box.style.display = 'block';
+        box.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-uid="${esc(uid)}">
+                <div style="min-width:54px; text-align:center; padding:8px 6px; border-radius:12px; background:rgba(245,158,11,0.18); color:#fbbf24; font-weight:800; font-size:20px; line-height:1;">#${idx + 1}<div style="font-size:9px; font-weight:600; opacity:.7; margin-top:3px;">/ ${sorted.length}</div></div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(u.name)}${window.__pidTag(u.publicId)}</div>
+                    <div style="font-size:12px; opacity:.8; margin-top:3px;">🎓 Seviye ${u.mevcutSeviye}/${u.toplamSeviye} &nbsp; 🏆 ${u[field]} P (${modeLabel}) &nbsp; 📖 ${u.totalWords} &nbsp; 📦 ${u.sandikCount}</div>
+                </div>
+                <div style="font-size:12px; color:#fbbf24; white-space:nowrap;">Profil <i class="fas fa-chevron-right"></i></div>
+            </div>`;
+        box.querySelector('[data-uid]').onclick = () => {
+            document.querySelectorAll('.rank-found').forEach(b => { b.style.display = 'none'; b.innerHTML = ''; });
+            window.openPlayerProfile(uid);
+        };
+    });
+    // Listede o satıra git ve kısa süre vurgula
+    const row = Array.from(document.querySelectorAll('.lb-row')).find(r => (r.getAttribute('onclick') || '').includes("'" + uid + "'"));
+    if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.transition = 'box-shadow .3s, transform .3s';
+        row.style.boxShadow = '0 0 0 2px #f59e0b, 0 0 18px rgba(245,158,11,.7)';
+        row.style.transform = 'scale(1.02)';
+        setTimeout(() => { row.style.boxShadow = ''; row.style.transform = ''; }, 2600);
+    }
+};
+window.__runPlayerSearch = function(raw) {
+    const v = String(raw || '').trim();
+    if (/^\d{8}$/.test(v)) return window.searchPlayerById(v);
+    const list = window.__searchSuggest(v);
+    if (list.length === 1) return window.__focusPlayer(list[0].id);
+    if (list.length === 0 && window.showWarning) window.showWarning('Eşleşen oyuncu bulunamadı. İsmi ya da 8 haneli ID yazın.');
+};
+window.__ensureRankSearchBars = function() {
+    document.querySelectorAll('#rankingList').forEach(list => {
+        if (list.parentNode.querySelector('.rank-id-search')) return;
+        const bar = document.createElement('div');
+        bar.className = 'rank-id-search';
+        bar.style.cssText = 'position:relative; display:flex; gap:8px; margin:8px 0 10px 0;';
+        bar.innerHTML = '<input type="text" maxlength="30" autocomplete="off" placeholder="🔎 Oyuncu ara (isim veya 8 haneli ID)" style="flex:1; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:inherit; font-size:14px;">' +
+            '<button type="button" style="padding:10px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;"><i class="fas fa-search"></i></button>' +
+            '<button type="button" class="hof-btn" title="Ayın Şampiyonları" style="padding:10px 12px; border:1px solid rgba(245,158,11,0.5); border-radius:10px; background:rgba(245,158,11,0.12); color:#fbbf24; font-weight:700; cursor:pointer;">🏅</button>' +
+            '<div class="rank-suggest" style="display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; z-index:30; max-height:260px; overflow:auto; border-radius:12px; background:#25252b; border:1px solid rgba(245,158,11,0.35); box-shadow:0 10px 24px rgba(0,0,0,0.5);"></div>';
+        const inp = bar.querySelector('input'), btn = bar.querySelector('button'), box = bar.querySelector('.rank-suggest');
+        bar.querySelector('.hof-btn').addEventListener('click', () => window.openSeasonHallOfFame());
+        const hide = () => { box.style.display = 'none'; };
+        const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        inp.addEventListener('input', () => {
+            const res = window.__searchSuggest(inp.value);
+            if (!res.length) { hide(); return; }
+            box.innerHTML = res.map(u => `<div data-uid="${esc(u.id)}" style="padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(255,255,255,0.06);"><span>${esc(u.name)}</span><span style="opacity:.55; font-size:12px;">${u.publicId ? esc(u.publicId) : ''}</span></div>`).join('');
+            box.style.display = 'block';
+        });
+        box.addEventListener('click', e => {
+            const row = e.target.closest('[data-uid]'); if (!row) return;
+            hide(); inp.value = ''; window.__focusPlayer(row.dataset.uid);
+        });
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') { hide(); window.__runPlayerSearch(inp.value); } });
+        btn.addEventListener('click', () => { hide(); window.__runPlayerSearch(inp.value); });
+        document.addEventListener('click', e => { if (!bar.contains(e.target)) hide(); });
+        list.parentNode.insertBefore(bar, list);
+        // Arama sonucu kartı (sıra / seviye / puan)
+        const found = document.createElement('div');
+        found.className = 'rank-found';
+        found.style.cssText = 'display:none; margin:0 0 10px 0; padding:10px 12px; border-radius:14px; background:linear-gradient(135deg,rgba(245,158,11,0.14),rgba(255,255,255,0.04)); border:1px solid rgba(245,158,11,0.45);';
+        bar.after(found);
+    });
+};
+// Profilde ID görünmüyorsa elle yeniden dene (hata nedenini de gösterir)
+window.__retryPublicId = async function() {
+    try {
+        if (!currentUser) return;
+        const userRef = doc(db, 'users', currentUser.uid);
+        const snap = await getDoc(userRef);
+        const pid = await window.__ensurePublicId(userRef, snap.data()?.publicId || null);
+        if (pid) {
+            window.__myPublicId = pid;
+            const el = document.getElementById('profilePublicId'); if (el) { el.textContent = pid; el.style.cursor = ''; el.onclick = null; }
+            if (window.showWarning) window.showWarning('ID oluşturuldu: ' + pid);
+        } else if (window.showWarning) window.showWarning('ID oluşturulamadı: ' + (window.__pidError || 'bilinmeyen hata'));
+    } catch (e) { if (window.showWarning) window.showWarning('ID hatası: ' + (e.code || e.message)); }
+};
 const auth = getAuth(app);
 let isZoomed = true; // Zoom durumu
 
@@ -5382,6 +5557,120 @@ function getSeasonLabel(seasonId) {
     const ayIndex = parseInt(ay, 10) - 1;
     return `${aylar[ayIndex] || ay} ${yil}`;
 }
+
+
+// ========== 🏅 AYIN ŞAMPİYONLARI (ilk 3) ==========
+// seasonWinners/{YYYY-MM} -> { seasonId, winners:[{uid,name,publicId,score}], createdAt }
+// Yeni ayın ilk girişinde, kayıt yoksa İLK giren kullanıcının cihazı geçen ayın ilk 3'ünü hesaplar
+// ve işlemle (transaction) bir kez yazar. Sonra herkes bu tek belgeyi okur.
+// Geçen ayın puanı: kullanıcı henüz yeni aya geçmediyse (seasonId == geçen ay) toplam - baseline,
+// geçtiyse seasonHistory içindeki kayıt.
+window.__prevSeasonId = function() {
+    const d = new Date();
+    return getCurrentSeasonId(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+};
+window.__finalizeSeasonWinners = async function(prevId) {
+    const ref = doc(db, 'seasonWinners', prevId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return snap.data();
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const rows = [];
+    usersSnap.forEach(d => {
+        const u = d.data();
+        let score = null;
+        if (u.seasonId === prevId) {
+            const total = computeTotalScoreFromUserData(u, 1).totalScore;
+            score = Math.max(0, Math.round((total - (u.seasonBaselineScore || 0)) * 100) / 100);
+        } else {
+            const h = (u.seasonHistory || []).find(x => x.seasonId === prevId);
+            if (h) score = h.score || 0;
+        }
+        if (score && score > 0) rows.push({ uid: d.id, name: u.name || u.email?.split('@')[0] || 'İsimsiz', publicId: u.publicId || null, score });
+    });
+    rows.sort((a, b) => b.score - a.score);
+    const winners = rows.slice(0, 3);
+    if (winners.length === 0) return null;
+    const result = await runTransaction(db, async (tx) => {
+        const cur = await tx.get(ref);
+        if (cur.exists()) return cur.data();
+        const data = { seasonId: prevId, winners, createdAt: new Date().toISOString() };
+        tx.set(ref, data);
+        return data;
+    });
+    return result;
+};
+window.__launchConfetti = function() {
+    const c = document.createElement('canvas');
+    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:99999;pointer-events:none;';
+    c.width = innerWidth; c.height = innerHeight;
+    document.body.appendChild(c);
+    const g = c.getContext('2d');
+    const colors = ['#fbbf24', '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#ec4899'];
+    const P = Array.from({ length: 140 }, () => ({
+        x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.6,
+        w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, vy: 2 + Math.random() * 3.5, vx: -1.5 + Math.random() * 3,
+        r: Math.random() * 6, vr: -0.2 + Math.random() * 0.4, col: colors[(Math.random() * colors.length) | 0]
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+        g.clearRect(0, 0, c.width, c.height);
+        P.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.col; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
+        if (t - t0 < 5500) requestAnimationFrame(frame); else c.remove();
+    })(t0);
+};
+window.__showSeasonPodium = function(data, opts = {}) {
+    const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const w = data.winners || [];
+    const myIdx = currentUser ? w.findIndex(x => x.uid === currentUser.uid) : -1;
+    const col = (i, h, medal, bg) => w[i] ? `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; min-width:0;">
+            <div style="font-size:${i === 0 ? 34 : 28}px;">${medal}</div>
+            <div style="font-weight:800; font-size:${i === 0 ? 15 : 13}px; text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${w[i].uid === currentUser?.uid ? 'color:#fbbf24;' : ''}">${esc(w[i].name)}</div>
+            <div style="font-size:11px; opacity:.6;">${w[i].publicId ? esc(w[i].publicId) : '&nbsp;'}</div>
+            <div style="font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:6px;">🏆 ${w[i].score} P</div>
+            <div style="width:100%; height:${h}px; border-radius:10px 10px 0 0; background:${bg}; display:flex; align-items:flex-start; justify-content:center; padding-top:6px; font-weight:800; color:#1a1a2e; font-size:20px;">${i + 1}</div>
+        </div>` : '<div style="flex:1"></div>';
+    const msg = opts.review ? '' : (myIdx >= 0
+        ? `<div style="margin-top:14px; font-weight:800; font-size:16px; color:#fbbf24;">🎉 Tebrikler! ${getSeasonLabel(data.seasonId)} ayında ${myIdx + 1}. oldun!</div>`
+        : `<div style="margin-top:14px; font-size:13px; opacity:.8;">Bu ay sıra sende olabilir. Bol bol çalış, zirveye oyna! 💪</div>`);
+    Swal.fire({
+        title: `🏅 ${getSeasonLabel(data.seasonId)} Şampiyonları`,
+        html: `<div style="display:flex; gap:8px; align-items:flex-end; margin-top:8px;">${col(1, 70, '🥈', 'linear-gradient(180deg,#e5e7eb,#9ca3af)')}${col(0, 100, '🥇', 'linear-gradient(180deg,#fde68a,#f59e0b)')}${col(2, 50, '🥉', 'linear-gradient(180deg,#fdba74,#c2762f)')}</div>${msg}`,
+        confirmButtonText: opts.review ? 'Kapat' : 'Tebrikler! 👏',
+        confirmButtonColor: '#f59e0b',
+        width: 420
+    });
+    if (!opts.review) window.__launchConfetti();
+};
+// Girişte: geçen ayın şampiyonlarını (ayın ilk 7 günü içinde, kullanıcı başına bir kez) kutla
+window.__checkSeasonCelebration = async function() {
+    try {
+        if (!currentUser) return;
+        if (new Date().getDate() > 7) return;
+        const prevId = window.__prevSeasonId();
+        const key = 'sezon_kutlandi_' + prevId;
+        try { if (localStorage.getItem(key)) return; } catch (e) {}
+        const data = await window.__finalizeSeasonWinners(prevId);
+        if (!data || !data.winners || !data.winners.length) return;
+        window.__showSeasonPodium(data);
+        try { localStorage.setItem(key, '1'); } catch (e) {}
+    } catch (e) { console.log('Şampiyon kutlaması hatası:', e.message); }
+};
+// Geçmiş şampiyonlar (Sıralama ekranındaki "Şampiyonlar" düğmesi)
+window.openSeasonHallOfFame = async function() {
+    try {
+        const snap = await getDocs(collection(db, 'seasonWinners'));
+        const list = snap.docs.map(d => d.data()).sort((a, b) => String(b.seasonId).localeCompare(String(a.seasonId)));
+        if (!list.length) { if (window.showWarning) window.showWarning('Henüz şampiyon ilan edilmiş bir ay yok. İlk şampiyonlar ay sonunda belli olacak!'); return; }
+        const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const rows = list.map(d => `
+            <div style="text-align:left; padding:10px 12px; margin-bottom:8px; border-radius:12px; background:rgba(255,255,255,0.05);">
+                <div style="font-weight:800; color:#fbbf24; margin-bottom:4px;">📅 ${getSeasonLabel(d.seasonId)}</div>
+                ${(d.winners || []).map((x, i) => `<div style="font-size:13px; display:flex; justify-content:space-between; gap:8px;"><span>${['🥇','🥈','🥉'][i]} ${esc(x.name)}</span><span style="opacity:.7;">${x.score} P</span></div>`).join('')}
+            </div>`).join('');
+        Swal.fire({ title: '🏅 Ayın Şampiyonları', html: `<div style="max-height:55vh; overflow:auto;">${rows}</div>`, confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', width: 420 });
+    } catch (e) { if (window.showWarning) window.showWarning('Şampiyonlar yüklenemedi: ' + e.message); }
+};
 
 // ========== GÜNLÜK SERİ (STREAK) ==========
 let gunlukSeri = 0;              // Kullanıcının mevcut günlük serisi
@@ -6811,6 +7100,11 @@ async function loadUserStats() {
             // updatedDoc ile devam et
         }
 
+        // ===== OYUNCU ID (yoksa üret) =====
+        let myPublicId = data.publicId || null;
+        try { myPublicId = await window.__ensurePublicId(userRef, myPublicId); } catch (e) { console.log('ID üretilemedi:', e.message); }
+        window.__myPublicId = myPublicId;
+
         // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
         console.log('📧 Email:', currentUser.email);
@@ -6838,11 +7132,17 @@ async function loadUserStats() {
         
         // Sidebar (sol menü)
         const sidebarUserName = document.getElementById('sidebarUserName');
-        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${userName}`;
+        if (sidebarUserName) sidebarUserName.innerHTML = `<i class="fas fa-user"></i> ${userName}${window.__pidTag(myPublicId)}`;
         
         // Email
         const profileEmail = document.getElementById('profileEmail');
         if (profileEmail) profileEmail.textContent = currentUser.email;
+        const profilePublicId = document.getElementById('profilePublicId');
+        if (profilePublicId) {
+            profilePublicId.textContent = myPublicId || '— (oluştur)';
+            profilePublicId.style.cursor = myPublicId ? '' : 'pointer';
+            profilePublicId.onclick = myPublicId ? null : () => window.__retryPublicId();
+        }
         
         // ===== 4. DİĞER VERİLERİ AL =====
         const wordsSnapshot = await getDocs(collection(db, 'words'));
@@ -8645,6 +8945,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     console.log('⚠️ Sezon kontrolü hatası:', e.message);
                 }
 
+                // ===== 🏅 GEÇEN AYIN ŞAMPİYONLARINI KUTLA (ayın ilk 7 günü, bir kez) =====
+                setTimeout(() => { window.__checkSeasonCelebration(); }, 3500);
+
                 // ===== 🔁 TEKRAR MODU: kullanıcının tekrar kuyruğunu belleğe al =====
                 reviewQueueCache = data.reviewQueue || {};
                 updateReviewBadge();
@@ -9547,6 +9850,16 @@ let lastRankingFollowingSet = new Set();
 let rankingActiveMode = 'all'; // 'all' = Tüm Zamanlar, 'season' = Bu Ay
 
 window.loadRanking = async function() {
+    // ===== YÜKLENİYOR GÖSTERGESİ (oyuncu beklediğini bilsin) =====
+    document.querySelectorAll('#rankingList').forEach(el => {
+        el.innerHTML = `<div style="text-align:center; padding:34px 10px;">
+            <div style="font-size:34px; color:#f59e0b;"><i class="fas fa-spinner fa-spin"></i></div>
+            <div style="margin-top:12px; font-weight:700; font-size:15px;">Sıralama yükleniyor…</div>
+            <div style="margin-top:4px; font-size:12px; opacity:.6;">Oyuncular getiriliyor, lütfen bekleyin</div>
+        </div>`;
+    });
+    document.querySelectorAll('#rankingCount').forEach(el => { el.textContent = 'yükleniyor…'; });
+    document.querySelectorAll('.rank-found').forEach(el => { el.style.display = 'none'; });
     try {
         // ===== TOPLAM DERS SAYISINI AL (SEVİYE SAYISI) =====
         const lessonsSnapshot = await getDocs(collection(db, 'lessons'));
@@ -9583,6 +9896,7 @@ window.loadRanking = async function() {
                     id: docSnap.id,
                     name: data.name || data.email?.split('@')[0] || 'İsimsiz',
                     email: data.email,
+                    publicId: data.publicId || null,
                     totalScore: s.totalScore,
                     seasonScore: seasonScore,
                     quizScore: s.quizScore,
@@ -9603,6 +9917,7 @@ window.loadRanking = async function() {
         renderRankingUI(rankingActiveMode);
     } catch (error) {
         console.error('Sıralama yükleme hatası:', error);
+        document.querySelectorAll('#rankingList').forEach(el => { el.innerHTML = '<div style="text-align:center; padding:26px 10px; color:#ef4444;">❌ Sıralama yüklenemedi. Yenile düğmesine basarak tekrar deneyin.</div>'; });
         showError('Sıralama yüklenemedi: ' + error.message);
     }
 };
@@ -9613,6 +9928,7 @@ function renderRankingUI(mode) {
     const scoreField = mode === 'season' ? 'seasonScore' : 'totalScore';
     const users = [...lastRankingUsers].sort((a, b) => b[scoreField] - a[scoreField]);
     const myFollowingSet = lastRankingFollowingSet;
+    window.__ensureRankSearchBars();
 
     // ===== SEKME BUTONLARININ GÖRÜNÜMÜNÜ GÜNCELLE =====
     document.querySelectorAll('.ranking-tab-btn').forEach(btn => {
@@ -9623,12 +9939,9 @@ function renderRankingUI(mode) {
     const toplamOyuncu = users.length;
 
     // ===== İLKLER GRUBU BELİRLEME =====
-    let ilklerSayisi;
-    if (toplamOyuncu <= 50) {
-        ilklerSayisi = toplamOyuncu;
-    } else {
-        ilklerSayisi = Math.max(1, Math.ceil(toplamOyuncu * 0.35));
-    }
+    // Puanı olan HERKES listelenir (kaydırılabilir). 'İLK 10' sadece kutlama/vurgu içindir.
+    const ilklerSayisi = toplamOyuncu;
+    const ONE_CIKAN = 10;
     const ilkler = users.slice(0, ilklerSayisi);
 
     // ===== RANKING LİSTESİNİ OLUŞTUR =====
@@ -9668,12 +9981,6 @@ function renderRankingUI(mode) {
             `;
         } else if (ilkler.length > 0) {
             html += `
-                <div style="text-align: center; padding: 8px; background: rgba(245,158,11,0.08); border-radius: 10px; margin-bottom: 4px; flex-shrink: 0;">
-                    <span style="color: #f59e0b; font-weight: 700; font-size: 13px;">
-                        ⭐ İLK ${ilklerSayisi}
-                    </span>
-                    <span style="font-size: 11px; opacity: 0.6;">- ${mode === 'season' ? `${getSeasonLabel(getCurrentSeasonId())} ayının en başarılıları` : 'En başarılı oyuncular'}</span>
-                </div>
             `;
 
             ilkler.forEach((user, index) => {
@@ -9690,7 +9997,7 @@ function renderRankingUI(mode) {
                             <div class="social-avatar small">${lbInitials(user.name)}</div>
                             <div class="lb-name-wrap">
                                 <div class="lb-name-row">
-                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}</span>
+                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}${window.__pidTag(user.publicId)}</span>
                                     ${isFriend ? '<i class="fas fa-user-friends" style="color:#10b981; font-size:11px;" title="Arkadaşınız"></i>' : ''}
                                     ${isCurrentUser ? '<span style="font-size: 9px; color: #10b981; font-weight: 700; background: rgba(16,185,129,0.15); padding: 1px 8px; border-radius: 10px;">SEN</span>' : ''}
                                 </div>
@@ -9735,7 +10042,7 @@ function renderRankingUI(mode) {
             if (!container) return;
 
             if (userData) {
-                const ilklerdeMi = userIndex < ilklerSayisi && userIndex !== -1;
+                const ilklerdeMi = userIndex < ONE_CIKAN && userIndex !== -1;
                 const gosterilenPuan = userData[scoreField];
 
                 // ===== DETAYLARI OLUŞTUR (DOĞRU DEĞERLERLE) =====
@@ -9756,7 +10063,7 @@ function renderRankingUI(mode) {
                             <div class="user-rank-summary-main">
                                 <span class="user-rank-summary-icon">${ilklerdeMi ? '🎉' : '📈'}</span>
                                 <div>
-                                    <div class="user-rank-summary-title" style="color: ${ilklerdeMi ? '#10b981' : '#f59e0b'};">${ilklerdeMi ? `İLK ${ilklerSayisi}'DESİN!` : `İlk ${ilklerSayisi}'de Değilsin`}</div>
+                                    <div class="user-rank-summary-title" style="color: ${ilklerdeMi ? '#10b981' : '#f59e0b'};">${ilklerdeMi ? `İLK ${ONE_CIKAN}'DASIN!` : `Sıralamadaki Yerin`}</div>
                                     <div class="user-rank-summary-sub">📍 ${userIndex + 1}. sırada &nbsp;•&nbsp; ${gosterilenPuan.toFixed(2)} P</div>
                                 </div>
                             </div>
@@ -10057,6 +10364,85 @@ function buildWeaknessesHTML(sandikCount, karmaAccuracy, examCount) {
     return items.map(i => `<div style="padding:2px 0;">${i}</div>`).join('');
 }
 
+// ===== OYUNCU PROFİLİ: ek bilgiler (ayın başarısı, geçmiş aylar, şampiyonluk, seri, rozetler) =====
+window.__getSeasonWinners = async function() {
+    if (window.__seasonWinnersCache) return window.__seasonWinnersCache;
+    try {
+        const snap = await getDocs(collection(db, 'seasonWinners'));
+        window.__seasonWinnersCache = snap.docs.map(d => d.data());
+    } catch (e) { window.__seasonWinnersCache = []; }
+    return window.__seasonWinnersCache;
+};
+window.__profileExtrasHTML = async function(u, uid, st) {
+    const curId = getCurrentSeasonId();
+    const seasonNow = (u.seasonId === curId) ? Math.max(0, Math.round((st.totalScore - (u.seasonBaselineScore || 0)) * 100) / 100) : 0;
+    let seasonRank = '';
+    try {
+        const sorted = [...lastRankingUsers].sort((a, b) => b.seasonScore - a.seasonScore);
+        const i = sorted.findIndex(x => x.id === uid);
+        if (i >= 0 && sorted[i].seasonScore > 0) seasonRank = `<div style="font-size:10px; opacity:.7;">Bu ay sıralaması: #${i + 1}</div>`;
+    } catch (e) {}
+    const winners = await window.__getSeasonWinners();
+    const medals = [];
+    winners.forEach(w => (w.winners || []).forEach((x, i) => { if (x.uid === uid) medals.push({ seasonId: w.seasonId, place: i + 1 }); }));
+    medals.sort((a, b) => String(b.seasonId).localeCompare(String(a.seasonId)));
+    const history = (u.seasonHistory || []).slice(-6).reverse();
+    const friends = (u.following || []).length;
+    const streak = u.gunlukSeri || 0, bestStreak = u.enUzunSeri || 0;
+    const exams = u.examsCompleted || [];
+    const bestExam = exams.length ? Math.round(Math.max(...exams.map(e => e.score || 0))) : 0;
+    const km = u.karmaStats || { total: 0, correct: 0, wrong: 0 };
+    const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : '';
+    const level = st.mevcutSeviye;
+    const acc = km.total > 0 ? Math.round(km.correct / km.total * 100) : 0;
+    // Rozetler (mevcut verilerden hesaplanır)
+    const badges = [
+        { e: '🌱', t: 'Yeni Başlayan', ok: st.words >= 1 },
+        { e: '📚', t: 'Kelime Avcısı (100+ kelime)', ok: st.words >= 100 },
+        { e: '🧠', t: 'Kelime Ustası (500+ kelime)', ok: st.words >= 500 },
+        { e: '🔥', t: '7 Gün Seri', ok: Math.max(streak, bestStreak) >= 7 },
+        { e: '🌋', t: '30 Gün Seri', ok: Math.max(streak, bestStreak) >= 30 },
+        { e: '📝', t: 'Sınav Ustası (10+ sınav)', ok: exams.length >= 10 },
+        { e: '💯', t: 'Sınavda 90+ puan', ok: bestExam >= 90 },
+        { e: '🎯', t: 'Keskin Nişancı (%70+, 30+ soru)', ok: km.total >= 30 && acc >= 70 },
+        { e: '🏔️', t: 'Seviye 5+', ok: level >= 5 },
+        { e: '👥', t: 'Sosyal (5+ arkadaş)', ok: friends >= 5 },
+        { e: '🏆', t: 'Ayın Şampiyonu', ok: medals.length > 0 }
+    ];
+    const earned = badges.filter(b => b.ok).length;
+    const pill = (v, l, c) => `<div style="background:rgba(${c},0.08); padding:9px 6px; border-radius:10px; text-align:center;"><div style="font-size:16px; font-weight:700;">${v}</div><div style="font-size:10px; opacity:.7;">${l}</div></div>`;
+    const badgeHTML = badges.map(b => `<span title="${b.t}" style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:12px; font-size:20px; ${b.ok ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5); box-shadow:0 0 10px rgba(245,158,11,0.25);' : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); filter:grayscale(1); opacity:.35;'}">${b.e}</span>`).join('');
+    const medalHTML = medals.length
+        ? medals.map(m => `<span style="display:inline-block; margin:2px 4px 2px 0; padding:3px 9px; border-radius:99px; font-size:11px; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);">${['🥇','🥈','🥉'][m.place - 1]} ${getSeasonLabel(m.seasonId)}</span>`).join('')
+        : '<span style="font-size:11px; opacity:.55;">Henüz ay şampiyonluğu yok</span>';
+    const histHTML = history.length
+        ? history.map(h => `<div style="display:flex; justify-content:space-between; font-size:12px; padding:2px 0;"><span>📅 ${getSeasonLabel(h.seasonId)}</span><span style="color:#f59e0b; font-weight:700;">${h.score} P</span></div>`).join('')
+        : '<div style="font-size:11px; opacity:.55;">Geçmiş ay kaydı yok</div>';
+    return `
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+            <div style="background:rgba(245,158,11,0.10); padding:9px 6px; border-radius:10px; text-align:center;"><div style="font-size:16px; font-weight:700; color:#f59e0b;">${seasonNow} P</div><div style="font-size:10px; opacity:.7;">📅 Bu Ayın Başarısı</div>${seasonRank}</div>
+            ${pill('🔥 ' + streak, 'Günlük Seri', '239,68,68')}
+            ${pill(bestStreak, '🏅 En Uzun Seri', '168,85,247')}
+            ${pill(bestExam ? bestExam : '-', '💯 En Yüksek Sınav', '59,130,246')}
+            ${pill(exams.length ? Math.round((u.averageScore || 0) * 10) / 10 : '-', '📊 Sınav Ortalaması', '16,185,129')}
+            ${pill(friends, '👥 Arkadaş', '236,72,153')}
+        </div>
+        <div style="margin-top:10px; background: var(--panel-bg); border-radius:10px; padding:12px;">
+            <div style="font-size:12px; font-weight:600; color:#f59e0b; margin-bottom:8px;">🏅 Ay Şampiyonlukları</div>
+            <div>${medalHTML}</div>
+        </div>
+        <div style="margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:12px;">
+            <div style="font-size:12px; font-weight:600; color:#f59e0b; margin-bottom:6px;">📈 Geçmiş Aylar</div>
+            ${histHTML}
+        </div>
+        <div style="margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:12px;">
+            <div style="font-size:12px; font-weight:600; color:#f59e0b; margin-bottom:8px;">🎖️ Rozetler <span style="opacity:.6; font-weight:400;">(${earned}/${badges.length})</span></div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">${badgeHTML}</div>
+        </div>
+        ${joined ? `<div style="text-align:center; font-size:11px; opacity:.5; margin-top:10px;">🗓️ ${joined} tarihinden beri aramızda</div>` : ''}
+        <div style="font-size:0;"></div>`;
+};
+
 // ===== OYUNCU PROFİLİ (Liderlik Tablosunda bir oyuncuya tıklayınca) =====
 window.openPlayerProfile = async function(targetUid) {
     if (!currentUser || !targetUid) return;
@@ -10090,7 +10476,11 @@ window.openPlayerProfile = async function(targetUid) {
         const karmaStats = targetData.karmaStats || { total: 0, correct: 0, wrong: 0 };
         const karmaAccuracy = karmaStats.total > 0 ? Math.round((karmaStats.correct / karmaStats.total) * 100) : 0;
         
-        const canSeeFullDetails = isSelf || isFollowing;
+        const canSeeFullDetails = true; // Artık arkadaş olmasa da herkesin detayları görünür
+        let extrasHTML = '';
+        try {
+            extrasHTML = await window.__profileExtrasHTML(targetData, targetUid, { totalScore, mevcutSeviye, words: totalWordsViewed });
+        } catch (e) { console.log('Profil ek bilgileri hatası:', e.message); }
         
         let actionButtonsHTML = '';
         if (!isSelf) {
@@ -10145,6 +10535,7 @@ window.openPlayerProfile = async function(targetUid) {
                     </div>
                 </div>
                 
+                ${extrasHTML}
                 <div style="margin-top:12px; background: var(--panel-bg); border-radius:10px; padding:12px;">
                     <div style="font-size:12px; font-weight:600; color:#10b981; margin-bottom:6px;">✅ Güçlü Yönler</div>
                     <div class="tswal-dim" style="font-size:12px;">${buildStrengthsHTML(totalWordsViewed, examsCompleted.length, karmaAccuracy, mevcutSeviye)}</div>
@@ -10164,7 +10555,7 @@ window.openPlayerProfile = async function(targetUid) {
         }
         
         Swal.fire({
-            title: `👤 ${targetName}`,
+            title: `👤 ${targetName}${window.__pidTag(targetData.publicId)}`,
             html: `
                 <div style="text-align:left;">
                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 4px;">
@@ -10459,7 +10850,7 @@ function __notifChatListHTML(data) {
             <div style="flex:1; min-width:0;">
                 <div style="display:flex; justify-content:space-between; gap:6px;">
                     <span style="font-size:13.5px; font-weight:700;">${c.name}</span>
-                    <span style="font-size:10.5px; opacity:0.5; flex-shrink:0;">${__notifTimeLabel(c.lastAt)}</span>
+                    <span style="display:flex; align-items:center; gap:6px; flex-shrink:0;"><span style="font-size:10.5px; opacity:0.5;">${__notifTimeLabel(c.lastAt)}</span><button data-del-chat="${c.uid}" data-del-name="${String(c.name || '').replace(/"/g, '&quot;')}" title="Sohbeti sil" style="background:rgba(239,68,68,0.12); border:none; color:#ef4444; border-radius:8px; padding:3px 7px; cursor:pointer; font-size:11px;"><i class="fas fa-trash"></i></button></span>
                 </div>
                 <div style="display:flex; justify-content:space-between; gap:6px; align-items:center;">
                     <span style="font-size:12px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.lastMine ? 'Sen: ' : ''}${c.lastText}</span>
@@ -10523,6 +10914,7 @@ function __notifChatThreadHTML(data, contactUid) {
                         ${__notifPresenceLabel(c.lastActive)}
                     </div>
                 </div>
+                <button data-del-chat="${contactUid}" data-del-name="${String(c.name || '').replace(/"/g, '&quot;')}" title="Tüm sohbeti sil" style="background:rgba(239,68,68,0.12); border:none; color:#ef4444; border-radius:10px; padding:7px 10px; cursor:pointer; font-size:12px; flex-shrink:0;"><i class="fas fa-trash"></i> Sohbeti Sil</button>
             </div>
             <div id="chatBubbleArea" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding:4px 2px;">
                 ${bubbles || '<div class="tswal-dim" style="text-align:center; padding:24px; font-size:12px;">Henüz mesaj yok, ilk mesajı sen gönder! 👋</div>'}
@@ -10630,6 +11022,12 @@ window.__notifWireRequests = function() {
 };
 
 window.__notifWireDeleteButtons = function() {
+    document.querySelectorAll('[data-del-chat]').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            window.deleteConversation(btn.dataset.delChat, btn.dataset.delName);
+        };
+    });
     document.querySelectorAll('[data-delete-msg]').forEach(btn => {
         btn.onclick = () => {
             const msgId = btn.dataset.deleteMsg;
@@ -10832,6 +11230,32 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsg
 };
 
 // ===== BİR MESAJI GELEN KUTUSUNDAN SİL (id yoksa sentAt'e göre bulur - eski mesajlar için) =====
+// ===== BİR KİŞİYLE OLAN TÜM SOHBETİ SİL (sadece KENDİ tarafında; karşı tarafın kopyası durur) =====
+window.deleteConversation = async function(uid, name) {
+    if (!currentUser || !uid) return;
+    if (!confirm(`"${name || 'Bu kişi'}" ile olan TÜM mesajlar silinsin mi?\n\nBu sadece sizdeki kopyayı siler, geri alınamaz.`)) return;
+    try {
+        const myRef = doc(db, 'users', currentUser.uid);
+        const mySnap = await getDoc(myRef);
+        const d = mySnap.exists() ? mySnap.data() : {};
+        const inbox = (d.inboxMessages || []).filter(m => m.fromUid !== uid);
+        const outbox = (d.outboxMessages || []).filter(m => m.toUid !== uid);
+        await updateDoc(myRef, { inboxMessages: inbox, outboxMessages: outbox });
+        showTinyWarning('Sohbet silindi.', 'fa-trash');
+        window.__notifState.activeContactUid = null;
+        window.__activeChatContactUid = null;
+        if (window.__notifState.open) {
+            await window.__notifRefreshData();
+            window.__notifRenderAll();
+        } else {
+            window.__notifUpdateBellBadgeFromServer();
+        }
+    } catch (e) {
+        console.log('deleteConversation hata:', e.message);
+        showTinyWarning('Sohbet silinemedi: ' + e.message, 'fa-triangle-exclamation');
+    }
+};
+
 window.deleteInboxMessage = async function(msgId, fallbackSentAt) {
     if (!currentUser) return;
     try {

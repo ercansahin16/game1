@@ -234,6 +234,11 @@ main{max-width:980px;margin:0 auto;padding:18px 14px}
   <!-- Toplu -->
   <section id="tab-bulk" class="hidden">
     <div class="grid">
+      <div class="card tool">
+        <div class="big">🆔</div><h3>Eksik ID'leri Ata</h3>
+        <p>ID'si olmayan tüm kullanıcılara benzersiz 8 haneli ID verir. Zaten ID'si olanlara dokunmaz. Güvenle tekrar çalıştırılabilir.</p>
+        <button class="btn green block" id="bulkIds"><i class="fas fa-id-badge"></i> ID'leri Ata</button>
+      </div>
       <div class="card danger tool">
         <div class="big">📦</div><h3>Tüm Sandıkları Sıfırla</h3>
         <p>Bütün kullanıcıların sandığındaki kelimeler silinir. Puanlar korunur.</p>
@@ -276,7 +281,7 @@ main{max-width:980px;margin:0 auto;padding:18px 14px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, updateDoc, deleteDoc, query, where, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -368,7 +373,7 @@ function renderUsers(){
   const list=users.filter(u=>!q||`${u.name||''} ${u.email||''} ${u.publicId||''}`.toLocaleLowerCase('tr').includes(q));
   if(!list.length){$('userList').innerHTML='<div class="empty">Sonuç yok.</div>';return;}
   $('userList').innerHTML=list.slice(0,200).map(u=>`
-    <div class="row"><div class="info"><strong>👤 ${esc(u.name||u.email?.split('@')[0]||'İsimsiz')}</strong>
+    <div class="row"><div class="info"><strong>👤 ${esc(u.name||u.email?.split('@')[0]||'İsimsiz')}${u.publicId?` <span style="opacity:.5;font-weight:300;font-size:.75em">(#${esc(u.publicId)})</span>`:''}</strong>
       <small>${esc(u.email||'e-posta yok')} · 📦 ${u.quizSandik?.length||0} sandık · 🏆 ${Math.round(u.quizScore||0)} puan · 📝 ${u.examsCompleted?.length||0} sınav</small></div>
       <div class="acts">
         <button class="btn sm amber" data-a="sandik" data-id="${esc(u.id)}"><i class="fas fa-box-open"></i> Sandık</button>
@@ -495,6 +500,37 @@ async function bulkUsers({emoji,title,msg,word,okText,okClass,fields,doneTxt}){
     p.close(); toast(`✅ ${s.size} ${doneTxt}`); loadUsers();
   }catch(e){p.close();toast('❌ '+e.message,true);}
 }
+$('bulkIds').onclick=async()=>{
+  if(!await confirmBox({emoji:'🆔',title:'ID Ata',msg:'ID\'si olmayan tüm kullanıcılara 8 haneli benzersiz ID verilecek.',okText:'Ata',okClass:'green'})) return;
+  const p=progressBox('ID atanıyor');
+  try{
+    const us=await getDocs(collection(db,'users'));
+    const todo=us.docs.filter(d=>!d.data().publicId);
+    const taken=new Set(us.docs.map(d=>d.data().publicId).filter(Boolean));
+    let done=0, fail=0;
+    for(const d of todo){
+      let ok=false;
+      for(let i=0;i<15&&!ok;i++){
+        const b=new Uint32Array(1); crypto.getRandomValues(b);
+        const cand=String(10000000+(b[0]%90000000));
+        if(taken.has(cand)) continue;
+        try{
+          const r=await runTransaction(db,async tx=>{
+            const reg=doc(db,'publicIds',cand);
+            const [rs,us2]=[await tx.get(reg),await tx.get(d.ref)];
+            if(us2.exists()&&us2.data().publicId) return us2.data().publicId;
+            if(rs.exists()) return null;
+            tx.set(reg,{uid:d.id}); tx.update(d.ref,{publicId:cand}); return cand;
+          });
+          if(r){ taken.add(r); ok=true; }
+        }catch(e){ console.log(e.code||e.message); if(e.code==='resource-exhausted'||e.code==='permission-denied'){ throw e; } }
+      }
+      ok?done++:fail++;
+      p.set(done+fail,todo.length,`${done+fail}/${todo.length}`);
+    }
+    p.close(); toast(`✅ ${done} kullanıcıya ID verildi`+(fail?` (${fail} başarısız)`:'')+(todo.length===0?' — herkesin ID\'si zaten var':''), fail>0); loadUsers();
+  }catch(e){p.close();toast('❌ '+(e.code||e.message),true);}
+};
 $('bulkSandik').onclick=()=>bulkUsers({emoji:'📦',title:'Tüm Sandıklar',msg:'<b>TÜM</b> kullanıcıların sandığı boşaltılacak.',word:SIFIRLA,okText:'Sıfırla',okClass:'amber',fields:()=>({quizSandik:[]}),doneTxt:'kullanıcının sandığı sıfırlandı'});
 $('bulkScore').onclick=()=>bulkUsers({emoji:'🏆',title:'Tüm Puanlar',msg:'<b>TÜM</b> kullanıcıların puanı, sınav geçmişi ve karma istatistikleri sıfırlanacak.',word:SIFIRLA,okText:'Sıfırla',okClass:'amber',fields:()=>({quizScore:0,averageScore:0,examsCompleted:[],karmaStats:{total:0,correct:0,wrong:0}}),doneTxt:'kullanıcının puanı sıfırlandı'});
 $('bulkAll').onclick=()=>bulkUsers({emoji:'☢️',title:'Her Şeyi Sıfırla',msg:'<b>TÜM</b> kullanıcıların sandığı, puanı, sınav geçmişi, kelime sayısı, sıralaması ve son aktifliği silinecek. <b>Geri alınamaz!</b><br>Önce yedek almanız önerilir.',word:SIFIRLA,okText:'TAMAMEN SIFIRLA',okClass:'red',fields:()=>({quizSandik:[],quizScore:0,averageScore:0,examsCompleted:[],totalWordsViewed:0,karmaStats:{total:0,correct:0,wrong:0},lastActive:null}),doneTxt:'kullanıcının tüm verisi sıfırlandı'});
