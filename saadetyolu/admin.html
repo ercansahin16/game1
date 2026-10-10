@@ -1625,8 +1625,8 @@ window.deleteAnnouncementHistoryItem = async function (id) {
 
 // ===== DUYURU DÜZENLE =====
 // Yazım/anlatım hatasını düzeltmek için. id ve yayın tarihi DEĞİŞMEZ; böylece
-// kullanıcılara "yeni duyuru var" bildirimi yeniden gitmez, okuyanların okundu
-// durumu bozulmaz. Düzeltilmiş metin hem geçmiş listesinde hem aktif duyuruda güncellenir.
+// kullanıcılara bildirim varsayılan olarak gitmez. "Tekrar bildir" işaretlenirse
+// renotifyAt alanı yazılır ve duyuru herkes için yeniden okunmamış olur. Düzeltilmiş metin hem geçmiş listesinde hem aktif duyuruda güncellenir.
 window.editAnnouncement = async function (id) {
     if (!id) return;
     let current;
@@ -1649,7 +1649,10 @@ window.editAnnouncement = async function (id) {
                 <input id="editAnnTitle" class="swal2-input" style="margin:0 0 12px 0; width:100%;" value="${escapeHtml(current.title || '')}">
                 <label style="font-size:12px; opacity:0.8; display:block; margin-bottom:6px;">Duyuru Metni</label>
                 <textarea id="editAnnMessage" class="swal2-textarea" rows="6" style="margin:0; width:100%;">${escapeHtml(current.message || '')}</textarea>
-                <div style="font-size:11px; opacity:0.65; margin-top:8px;">Not: Düzeltme kullanıcılara yeni bir bildirim göndermez; sadece metin güncellenir.</div>
+                <label style="display:flex; align-items:flex-start; gap:8px; margin-top:12px; font-size:13px; cursor:pointer;">
+                    <input type="checkbox" id="editAnnRenotify" style="margin-top:3px;">
+                    <span><b>Kullanıcılara tekrar bildir</b><br><span style="font-size:11px; opacity:0.7;">İşaretlersen duyuru herkes için tekrar "okunmamış" olur (GÜNCELLENDİ rozeti). İşaretlemezsen sessizce güncellenir; listede sadece "düzenlendi" etiketi görünür.</span></span>
+                </label>
             </div>`,
         showCancelButton: true,
         confirmButtonText: 'Kaydet',
@@ -1659,18 +1662,20 @@ window.editAnnouncement = async function (id) {
             const title = document.getElementById('editAnnTitle').value.trim();
             const message = document.getElementById('editAnnMessage').value.trim();
             if (!message) { Swal.showValidationMessage('Duyuru metni boş olamaz'); return false; }
-            return { title, message };
+            return { title, message, renotify: document.getElementById('editAnnRenotify').checked };
         }
     });
     if (!result.isConfirmed) return;
-    const { title, message } = result.value;
+    const { title, message, renotify } = result.value;
     const editedAt = Date.now();
+    const upd = { title, message, editedAt };
+    if (renotify) upd.renotifyAt = editedAt;
     try {
-        await updateDoc(doc(db, 'announcements', id), { title, message, editedAt });
+        await updateDoc(doc(db, 'announcements', id), upd);
         // Aktif duyuru da bu ise, kullanıcıların gördüğü kopya da güncellensin
         const activeSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
         if (activeSnap.exists() && activeSnap.data().id === id) {
-            await updateDoc(doc(db, 'appConfig', 'announcement'), { title, message, editedAt });
+            await updateDoc(doc(db, 'appConfig', 'announcement'), upd);
         }
         Swal.fire({ icon: 'success', title: 'Duyuru güncellendi', timer: 1400, showConfirmButton: false });
         loadAnnouncements();
