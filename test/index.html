@@ -11233,27 +11233,38 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsg
 // ===== BİR KİŞİYLE OLAN TÜM SOHBETİ SİL (sadece KENDİ tarafında; karşı tarafın kopyası durur) =====
 window.deleteConversation = async function(uid, name) {
     if (!currentUser || !uid) return;
-    if (!confirm(`"${name || 'Bu kişi'}" ile olan TÜM mesajlar silinsin mi?\n\nBu sadece sizdeki kopyayı siler, geri alınamaz.`)) return;
-    try {
-        const myRef = doc(db, 'users', currentUser.uid);
-        const mySnap = await getDoc(myRef);
-        const d = mySnap.exists() ? mySnap.data() : {};
-        const inbox = (d.inboxMessages || []).filter(m => m.fromUid !== uid);
-        const outbox = (d.outboxMessages || []).filter(m => m.toUid !== uid);
-        await updateDoc(myRef, { inboxMessages: inbox, outboxMessages: outbox });
-        showTinyWarning('Sohbet silindi.', 'fa-trash');
-        window.__notifState.activeContactUid = null;
-        window.__activeChatContactUid = null;
-        if (window.__notifState.open) {
-            await window.__notifRefreshData();
-            window.__notifRenderAll();
-        } else {
-            window.__notifUpdateBellBadgeFromServer();
+    const safeName = String(name || 'Bu kişi').replace(/</g, '&lt;');
+    // Uygulamanın kendi Swal penceresi (bildirim penceresinin yerini alır; işlem bitince tekrar açılır)
+    const res = await Swal.fire({
+        title: 'Sohbet silinsin mi?',
+        html: `<div style="font-size:14px; opacity:0.85;"><b>${safeName}</b> ile olan mesajlar silinecek.</div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Tamam',
+        cancelButtonText: 'Vazgeç',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#374151',
+        reverseButtons: true,
+        width: '320px',
+        padding: '1.2rem',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
+    if (res.isConfirmed) {
+        try {
+            const myRef = doc(db, 'users', currentUser.uid);
+            const mySnap = await getDoc(myRef);
+            const d = mySnap.exists() ? mySnap.data() : {};
+            const inbox = (d.inboxMessages || []).filter(m => m.fromUid !== uid);
+            const outbox = (d.outboxMessages || []).filter(m => m.toUid !== uid);
+            await updateDoc(myRef, { inboxMessages: inbox, outboxMessages: outbox });
+            showTinyWarning('Sohbet silindi.', 'fa-trash');
+        } catch (e) {
+            console.log('deleteConversation hata:', e.message);
+            showTinyWarning('Sohbet silinemedi.', 'fa-triangle-exclamation');
         }
-    } catch (e) {
-        console.log('deleteConversation hata:', e.message);
-        showTinyWarning('Sohbet silinemedi: ' + e.message, 'fa-triangle-exclamation');
     }
+    window.__notifState.activeContactUid = null;
+    window.__activeChatContactUid = null;
+    window.openNotificationsModal('messages', null);
 };
 
 window.deleteInboxMessage = async function(msgId, fallbackSentAt) {
