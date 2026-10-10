@@ -3756,34 +3756,45 @@ body.light-theme .announcement-icon-btn .announcement-dot { border-color: #fffff
 .announcement-icon-btn.has-unread .announcement-dot { display: block; }
 .announcement-icon-btn .announcement-label { display: none; }
 
-/* 📢 Okunmamış duyuru şeridi (üç noktadan bağımsız, her zaman görünür) */
-.announcement-banner {
+/* 📢 Okunmamış duyuru baloncuğu (sadece mobilde: üç nokta düğmesinin altında) */
+.announcement-chip {
     display: none;
-    width: calc(100% - 24px);
-    max-width: 640px;
-    margin: 8px auto 0 auto;
-    padding: 10px 14px;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    border: 1px solid rgba(245,158,11,0.55);
-    border-radius: 12px;
-    background: linear-gradient(90deg, rgba(245,158,11,0.22), rgba(239,68,68,0.18));
-    color: #f59e0b;
-    font-size: 14px;
+    position: absolute;
+    top: calc(100% + 2px);
+    right: 8px;
+    z-index: 50;
+    padding: 4px 11px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fde68a, #fcd34d);
+    color: #92400e;
+    font-size: 11px;
     font-weight: 700;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
     cursor: pointer;
-    animation: announcementBannerPulse 2.2s ease-in-out infinite;
+    box-shadow: 0 3px 10px rgba(245,158,11,0.35);
+    animation: announcementChipFloat 2.4s ease-in-out infinite;
 }
-.announcement-banner.show { display: flex !important; }
-.announcement-banner-icon { font-size: 16px; }
-body.light-theme .announcement-banner { color: #b45309; }
-/* Giriş yapılmamışken (üst bar gizliyken) şerit de görünmesin */
-#mainHeader[style*="display: none"] + #announcementBanner { display: none !important; }
-@keyframes announcementBannerPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.45); }
-    50% { box-shadow: 0 0 0 7px rgba(245,158,11,0); }
+.announcement-chip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: var(--chip-arrow-right, 18px);
+    width: 10px;
+    height: 10px;
+    background: #fde68a;
+    transform: rotate(45deg);
+    border-radius: 2px;
 }
+.announcement-chip.show { display: block !important; }
+@keyframes announcementChipFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+@media (min-width: 769px) { .announcement-chip, .announcement-chip.show { display: none !important; } }
+/* Giriş yapılmamışken (üst bar gizliyken) baloncuk da görünmesin */
+#mainHeader[style*="display: none"] .announcement-chip, #mainHeader[style*="display: none"] .announcement-chip.show { display: none !important; }
 /* Üç nokta düğmesinin üzerinde okunmamış duyuru noktası */
 .header-more-btn { position: relative; }
 .header-more-btn.has-unread-ann::after {
@@ -4342,12 +4353,9 @@ body.light-theme #profileScreen .info-row button:hover {
             <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Çıkış</span>
         </div>
     </div>
+    <!-- 📢 Okunmamış duyuru baloncuğu: üç noktayı gösterir, duyuru okunana kadar kalır -->
+    <button type="button" id="announcementChip" class="announcement-chip" style="display:none;">📢 Yeni duyuru var</button>
 </div>
-<!-- 📢 OKUNMAMIŞ DUYURU ŞERİDİ: üç noktayı açmadan görünür, duyurular okunana kadar kalır -->
-<button type="button" id="announcementBanner" class="announcement-banner" style="display:none;">
-    <span class="announcement-banner-icon"><i class="fas fa-bullhorn"></i></span>
-    <span class="announcement-banner-text">Yeni bir duyuru var! <u>Oku</u></span>
-</button>
         <!-- Giriş Ekranı -->
         <div id="loginScreen" class="login-card">
             <div style="text-align: center; margin-bottom: 14px;">
@@ -6507,14 +6515,41 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     let __currentUserRef = null;
     let __latestAnnouncement = null;
 
+    // Baloncuğu üç nokta düğmesinin hemen altına hizala; üç nokta paneli açıkken gizle
+    function positionAnnouncementChip() {
+        const chip = document.getElementById('announcementChip');
+        const moreBtn = document.getElementById('headerMoreBtn');
+        const header = document.getElementById('mainHeader');
+        const extras = document.getElementById('headerExtras');
+        if (!chip || !moreBtn || !header) return;
+        const panelOpen = !!(extras && extras.classList.contains('open'));
+        chip.style.visibility = panelOpen ? 'hidden' : 'visible';
+        if (!moreBtn.offsetParent) return; // masaüstünde üç nokta yok
+        const hr = header.getBoundingClientRect();
+        const mr = moreBtn.getBoundingClientRect();
+        const btnCenterFromRight = hr.right - (mr.left + mr.width / 2);
+        const chipW = chip.offsetWidth || 120;
+        // Baloncuğun sağ kenarı, düğmeyle hizalı ama ekran dışına taşmasın
+        let right = Math.max(4, btnCenterFromRight - 24);
+        chip.style.right = right + 'px';
+        const arrowRight = Math.min(chipW - 18, Math.max(10, btnCenterFromRight - right - 5));
+        chip.style.setProperty('--chip-arrow-right', arrowRight + 'px');
+    }
+    window.addEventListener('resize', positionAnnouncementChip);
+    (function () {
+        const ex = document.getElementById('headerExtras');
+        if (ex) new MutationObserver(positionAnnouncementChip).observe(ex, { attributes: true, attributeFilter: ['class'] });
+    })();
+
     function setAnnouncementUnreadState(isUnread) {
         const iconBtn = document.getElementById('announcementIconBtn');
         if (iconBtn) iconBtn.classList.toggle('has-unread', isUnread);
         const tabDot = document.getElementById('announcementsTabDot');
         if (tabDot) tabDot.style.display = isUnread ? 'block' : 'none';
         // Üç noktayı açmadan görünen kalıcı şerit + üç nokta düğmesinde kırmızı nokta
-        const banner = document.getElementById('announcementBanner');
-        if (banner) banner.classList.toggle('show', !!isUnread);
+        const chip = document.getElementById('announcementChip');
+        if (chip) chip.classList.toggle('show', !!isUnread);
+        positionAnnouncementChip();
         const moreBtn = document.getElementById('headerMoreBtn');
         if (moreBtn) moreBtn.classList.toggle('has-unread-ann', !!isUnread);
     }
@@ -6574,8 +6609,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     document.getElementById('announcementIconBtn')?.addEventListener('click', () => {
         if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
     });
-    document.getElementById('announcementBanner')?.addEventListener('click', () => {
-        if (typeof window.openAnnouncementsTab === 'function') window.openAnnouncementsTab();
+    // Baloncuğa basınca üç nokta panelini açar (oyuncu Duyurular ikonunu kendisi görüp basar)
+    document.getElementById('announcementChip')?.addEventListener('click', () => {
+        document.getElementById('headerMoreBtn')?.click();
     });
 
     // Profil > Duyurular sekmesi: tüm geçmiş duyurular satır satır, tıklayınca modal
