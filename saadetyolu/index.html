@@ -5333,6 +5333,18 @@ const db = getFirestore(app);
 // ===== OYUNCU ID (8 haneli, rakam) =====
 // Her kullanıcıya benzersiz 8 haneli bir ID verilir (10.000.000 - 99.999.999).
 // İlk girişte otomatik üretilir; arkadaş bulmak ve arama için kullanılır.
+// İsmin ALTINDA gösterilen ince ID satırı
+window.__pidLine = function(pid) {
+    return pid ? `<div style="font-size:10px; font-weight:300; opacity:.55; letter-spacing:.4px; line-height:1.3;">#${pid}</div>` : '';
+};
+// ID'yi panoya kopyala (WhatsApp vb. için)
+window.__copyPid = async function(pid) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(String(pid));
+        else { const t = document.createElement('textarea'); t.value = pid; t.style.cssText = 'position:fixed;opacity:0;'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+        if (typeof showTinyWarning === 'function') showTinyWarning('ID kopyalandı: ' + pid, 'fa-copy');
+    } catch (e) { if (typeof showTinyWarning === 'function') showTinyWarning('Kopyalanamadı', 'fa-triangle-exclamation'); }
+};
 window.__pidTag = function(pid) {
     return pid ? ` <span style="opacity:.5; font-weight:300; font-size:.75em; letter-spacing:.3px;">(#${pid})</span>` : '';
 };
@@ -5425,7 +5437,8 @@ window.__focusPlayer = function(uid) {
             <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-uid="${esc(uid)}">
                 <div style="min-width:54px; text-align:center; padding:8px 6px; border-radius:12px; background:rgba(245,158,11,0.18); color:#fbbf24; font-weight:800; font-size:20px; line-height:1;">#${idx + 1}<div style="font-size:9px; font-weight:600; opacity:.7; margin-top:3px;">/ ${sorted.length}</div></div>
                 <div style="flex:1; min-width:0;">
-                    <div style="font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(u.name)}${window.__pidTag(u.publicId)}</div>
+                    <div style="font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(u.name)}</div>
+                    ${window.__pidLine(u.publicId)}
                     <div style="font-size:12px; opacity:.8; margin-top:3px;">🎓 Seviye ${u.mevcutSeviye}/${u.toplamSeviye} &nbsp; 🏆 ${u[field]} P (${modeLabel}) &nbsp; 📖 ${u.totalWords} &nbsp; 📦 ${u.sandikCount}</div>
                 </div>
                 <div style="font-size:12px; color:#fbbf24; white-space:nowrap;">Profil <i class="fas fa-chevron-right"></i></div>
@@ -10008,10 +10021,11 @@ function renderRankingUI(mode) {
                             <div class="social-avatar small">${lbInitials(user.name)}</div>
                             <div class="lb-name-wrap">
                                 <div class="lb-name-row">
-                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}${window.__pidTag(user.publicId)}</span>
+                                    <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}</span>
                                     ${isFriend ? '<i class="fas fa-user-friends" style="color:#10b981; font-size:11px;" title="Arkadaşınız"></i>' : ''}
                                     ${isCurrentUser ? '<span style="font-size: 9px; color: #10b981; font-weight: 700; background: rgba(16,185,129,0.15); padding: 1px 8px; border-radius: 10px;">SEN</span>' : ''}
                                 </div>
+                                ${window.__pidLine(user.publicId)}
                                 <div style="font-size: 9.5px; opacity: 0.6; margin-top: 2px;">
                                     🏆 ${user.mevcutSeviye}/${user.toplamSeviye} &nbsp; 📖 ${user.totalWords} &nbsp; 📦 ${user.sandikCount}
                                 </div>
@@ -10528,9 +10542,13 @@ window.openPlayerProfile = async function(targetUid) {
         }
         
         Swal.fire({
-            title: `👤 ${targetName}${window.__pidTag(targetData.publicId || window.__idFromUid(targetUid))}`,
+            title: `👤 ${targetName}`,
             html: `
                 <div style="text-align:left;">
+                    <div style="display:flex; justify-content:center; align-items:center; gap:6px; margin:-6px 0 8px; font-size:12px; opacity:.7;">
+                        <span style="font-weight:300; letter-spacing:.5px;">#${targetData.publicId || window.__idFromUid(targetUid)}</span>
+                        <button type="button" title="ID'yi kopyala" onclick="window.__copyPid('${targetData.publicId || window.__idFromUid(targetUid)}')" style="background:rgba(255,255,255,0.08); border:none; color:inherit; border-radius:7px; padding:3px 7px; cursor:pointer; font-size:11px;"><i class="fas fa-copy"></i></button>
+                    </div>
                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 4px;">
                         <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">🏆 ${totalScore.toFixed(2)} P</span>
                         <span class="tswal-panel-2" style="padding:4px 12px; border-radius:20px; font-size:12px;">Seviye ${mevcutSeviye}</span>
