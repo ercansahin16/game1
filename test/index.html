@@ -5434,19 +5434,6 @@ window.__focusPlayer = function(uid) {
         setTimeout(() => { row.style.boxShadow = ''; row.style.transform = ''; }, 2600);
     }
 };
-// 🧪 GEÇİCİ: Şampiyon kutlaması önizleme (onaydan sonra kaldırılacak)
-window.__previewSeasonCelebration = function(asWinner) {
-    const fake = [
-        { uid: 'x1', name: 'Ahmet Y.', publicId: '12345678', score: 42.5 },
-        { uid: 'x2', name: 'Fatma K.', publicId: '23456789', score: 31.2 },
-        { uid: 'x3', name: 'Mehmet S.', publicId: '34567890', score: 20.8 }
-    ];
-    if (asWinner && currentUser) {
-        const me = lastRankingUsers.find(u => u.id === currentUser.uid);
-        fake[1] = { uid: currentUser.uid, name: me?.name || 'Sen', publicId: window.__myPublicId || null, score: 31.2 };
-    }
-    window.__showSeasonPodium({ seasonId: window.__prevSeasonId(), winners: fake });
-};
 window.__runPlayerSearch = function(raw) {
     const v = String(raw || '').trim();
     if (/^\d{8}$/.test(v)) return window.searchPlayerById(v);
@@ -5487,13 +5474,6 @@ window.__ensureRankSearchBars = function() {
         found.className = 'rank-found';
         found.style.cssText = 'display:none; margin:0 0 10px 0; padding:10px 12px; border-radius:14px; background:linear-gradient(135deg,rgba(245,158,11,0.14),rgba(255,255,255,0.04)); border:1px solid rgba(245,158,11,0.45);';
         bar.after(found);
-        // 🧪 GEÇİCİ önizleme düğmeleri (onaydan sonra kaldırılacak)
-        const prev = document.createElement('div');
-        prev.className = 'preview-temp';
-        prev.style.cssText = 'display:flex; gap:8px; margin:0 0 10px 0; flex-wrap:wrap;';
-        prev.innerHTML = '<button type="button" data-w="1" style="flex:1; padding:8px; border-radius:10px; border:1px dashed #a855f7; background:rgba(168,85,247,0.12); color:#d8b4fe; font-weight:700; font-size:12px; cursor:pointer;">🧪 Kutlama: Kazanan görünümü</button><button type="button" data-w="0" style="flex:1; padding:8px; border-radius:10px; border:1px dashed #a855f7; background:rgba(168,85,247,0.12); color:#d8b4fe; font-weight:700; font-size:12px; cursor:pointer;">🧪 Kutlama: Kazanamayan görünümü</button>';
-        prev.querySelectorAll('button').forEach(b => b.onclick = () => window.__previewSeasonCelebration(b.dataset.w === '1'));
-        found.after(prev);
     });
 };
 // Profilde ID görünmüyorsa elle yeniden dene (hata nedenini de gösterir)
