@@ -16405,6 +16405,47 @@ enhanceAllDropdownSelects();
     document.getElementById('checkUpdateBtn')?.addEventListener('click', () => {
         window.checkForAppUpdate();
     });
+
+    // ===== 🔄 OTOMATİK GÜNCELLEME UYARISI =====
+    // Uygulama telefonda günlerce açık kalabildiği için eski sürüm hafızada takılı kalır.
+    // Sayfa açılırken sunucudaki index.html'in "imzasını" (ETag/Last-Modified/boyut) kaydeder;
+    // uygulamaya her dönüşte (en fazla 10 dakikada bir) değişmiş mi diye bakar, değiştiyse
+    // altta küçük bir "Yenile" bildirimi gösterir. Pencereleri kapatmaz, sayfayı kendiliğinden yenilemez.
+    (function () {
+        const url = window.location.href.split('#')[0].split('?')[0];
+        let baseSig = null, lastCheck = 0, shown = false;
+        async function sig() {
+            try {
+                const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                if (!r.ok) return null;
+                const v = [r.headers.get('etag'), r.headers.get('last-modified'), r.headers.get('content-length')].filter(Boolean).join('|');
+                return v || null;
+            } catch (e) { return null; }
+        }
+        function showBanner() {
+            if (shown) return;
+            shown = true;
+            const d = document.createElement('div');
+            d.style.cssText = 'position:fixed; left:12px; right:12px; bottom:14px; z-index:2147482000; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:14px; background:#1c1c20; color:#f3f4f6; border:1px solid rgba(245,158,11,.6); box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:14px; max-width:420px; margin:0 auto;';
+            d.innerHTML = '<span style="flex:1;">🔄 Yeni sürüm hazır</span><button type="button" style="padding:7px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;">Yenile</button><button type="button" aria-label="Kapat" style="border:none; background:none; color:#9ca3af; font-size:20px; line-height:1; cursor:pointer; padding:0 2px;">×</button>';
+            const [, go, x] = [d.children[0], d.children[1], d.children[2]];
+            go.addEventListener('click', () => window.checkForAppUpdate());
+            x.addEventListener('click', () => d.remove());
+            document.body.appendChild(d);
+        }
+        async function check() {
+            if (shown || Date.now() - lastCheck < 10 * 60 * 1000) return;
+            lastCheck = Date.now();
+            const now = await sig();
+            if (!now) return;
+            if (baseSig === null) { baseSig = now; return; }
+            if (now !== baseSig) showBanner();
+        }
+        // Açılışta imzayı kaydet
+        sig().then(v => { if (v) baseSig = v; });
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+        setInterval(() => { if (document.visibilityState === 'visible') check(); }, 15 * 60 * 1000);
+    })();
 </script>
 </body>
 </html>
