@@ -9079,11 +9079,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
                 }
                 
+                // ===== 🔥 ARKADAŞLIK SERİSİ RİSK KONTROLÜ (kullanıcı hatırlatmaları açtıysa) =====
+                // Günlük seri güncellemesini beklemeden, hemen ve ayrıca uygulamaya her dönüşte çalışır
+                checkFriendStreakReminders(data);
+
                 // ===== 🔥 GÜNLÜK SERİYİ KONTROL ET / GÜNCELLE =====
                 await updateGunlukSeri(userRef, data);
-
-                // ===== 🔥 ARKADAŞLIK SERİSİ RİSK KONTROLÜ (kullanıcı hatırlatmaları açtıysa) =====
-                checkFriendStreakReminders(data);
 
                 // ===== 🏆 AYLIK SEZON KONTROLÜ =====
                 // Toplam puan (Tüm Zamanlar) hiç silinmez. Ay değiştiyse, bu kullanıcının
@@ -10344,12 +10345,10 @@ const CANNED_MESSAGES = [
 // içinde birbirine en az bir mesaj/emoji gönderirse o günün serisi sayılır.
 // Bir gün atlanırsa seri 1'e sıfırlanır (Snapchat tarzı arkadaşlık serisi).
 function bugununTarihi() {
-    return new Date().toISOString().slice(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date());
 }
 function dununTarihi() {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() - 86400000));
 }
 
 // pair: { streak, longest, lastCompletedDate, myMsgDate, theirMsgDate }
@@ -10496,6 +10495,21 @@ async function checkFriendStreakReminders(data) {
         console.log('checkFriendStreakReminders hata:', e.message);
     }
 }
+
+// Uygulamaya geri dönüldüğünde (arka plandan öne gelince) seri riskini tekrar kontrol et (30 dk'da en fazla bir kez)
+(function () {
+    let last = Date.now();
+    document.addEventListener('visibilitychange', async () => {
+        try {
+            if (document.visibilityState !== 'visible' || !currentUser) return;
+            if (Date.now() - last < 30 * 60 * 1000) return;
+            if (localStorage.getItem('friendReminders') !== 'on') return;
+            last = Date.now();
+            const snap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (snap.exists()) checkFriendStreakReminders(snap.data());
+        } catch (e) {}
+    });
+})();
 
 // Günlük konuşmalara karşılık gelenler + maneviyata uygun olanlar karışık
 const EMOJI_REPLIES = [
