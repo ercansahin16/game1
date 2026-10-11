@@ -10555,9 +10555,47 @@ window.__getSeasonWinners = async function() {
     } catch (e) { window.__seasonWinnersCache = []; }
     return window.__seasonWinnersCache;
 };
-// Oyuncu profil penceresinin üstüne açılan küçük pencereler kapanınca profile geri dön
-window.__backUid = () => (window.__profileModalUid && window.Swal && Swal.isVisible()) ? window.__profileModalUid : null;
-window.__reopenProfile = (uid) => { if (uid) setTimeout(() => window.openPlayerProfile(uid), 120); };
+// ===== 🪟 ÜST PENCERE: açık olan pencerenin (ör. oyuncu profili) ÜSTÜNE açılır, onu kapatmaz =====
+// SweetAlert2 aynı anda tek pencere gösterdiği için rozet/yardım/arkadaş pencereleri bununla açılır.
+(function () {
+    const st = document.createElement('style');
+    st.textContent = `
+    .mm-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;animation:mmIn .15s ease}
+    @keyframes mmIn{from{opacity:0}to{opacity:1}}
+    .mm-box{width:100%;max-width:340px;max-height:86vh;display:flex;flex-direction:column;border-radius:18px;padding:18px 16px 14px;background:#1c1c20;color:#e5e7eb;border:1px solid rgba(245,158,11,.45);box-shadow:0 18px 50px rgba(0,0,0,.6);animation:mmPop .18s ease}
+    @keyframes mmPop{from{transform:scale(.94);opacity:.4}to{transform:scale(1);opacity:1}}
+    body.light-theme .mm-box{background:#fff;color:#1e1b4b;border-color:rgba(100,116,139,.45)}
+    .mm-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px;line-height:1.3}
+    .mm-body{overflow-y:auto;min-height:0;flex:1}
+    .mm-btn{display:block;margin:12px auto 0;padding:9px 26px;border:none;border-radius:10px;background:#f59e0b;color:#1a1a2e;font-weight:700;font-size:14px;cursor:pointer}`;
+    document.head.appendChild(st);
+})();
+window.__miniModal = function (o) {
+    o = o || {};
+    const ov = document.createElement('div');
+    ov.className = 'mm-overlay';
+    ov.innerHTML = `<div class="mm-box" role="dialog" style="${o.width ? 'max-width:' + o.width + ';' : ''}"><div class="mm-title"></div><div class="mm-body"></div><button type="button" class="mm-btn"></button></div>`;
+    const box = ov.firstChild, titleEl = box.querySelector('.mm-title'), bodyEl = box.querySelector('.mm-body'), btn = box.querySelector('.mm-btn');
+    titleEl.innerHTML = o.title || '';
+    bodyEl.innerHTML = o.html || '';
+    btn.textContent = o.confirmButtonText || 'Tamam';
+    let done;
+    const donePromise = new Promise(r => { done = r; });
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
+    function close() {
+        if (!ov.parentNode) return;
+        document.removeEventListener('keydown', onKey, true);
+        ov.remove();
+        done();
+    }
+    btn.addEventListener('click', close);
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(ov);
+    const api = { el: box, close, done: donePromise, setTitle: (t) => { titleEl.innerHTML = t; }, setHtml: (h) => { bodyEl.innerHTML = h; } };
+    if (typeof o.didOpen === 'function') o.didOpen(box);
+    return api;
+};
 // ===== ❓ PROFİL YARDIM PENCERELERİ =====
 window.__helpBtn = (kind) => `<button type="button" onclick="event.stopPropagation(); window.__profileHelp('${kind}')" title="Nasıl çalışır?" style="position:absolute; top:7px; right:7px; width:24px; height:24px; border-radius:50%; border:1px solid rgba(245,158,11,0.55); background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:800; font-size:13px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;">?</button>`;
 window.__badgeDetail = function(i) {
@@ -10566,8 +10604,7 @@ window.__badgeDetail = function(i) {
     const pct = Math.max(0, Math.min(100, Math.round(b.cur / b.goal * 100)));
     const stars = '⭐'.repeat(b.tier) + '<span style="opacity:.25;">' + '⭐'.repeat(4 - b.tier) + '</span>';
     const tierName = ['', 'Kolay', 'Orta', 'Zor', 'Efsane'][b.tier];
-    const back = window.__backUid();
-    Swal.fire({
+    window.__miniModal({
         title: `${b.e} ${b.name}`,
         html: `<div style="text-align:left; font-size:13px; line-height:1.5;">
             <div style="font-size:12px; margin-bottom:8px;">${stars} <b>${tierName}</b> <span style="opacity:.55;">· ${b.cat}</span></div>
@@ -10578,12 +10615,11 @@ window.__badgeDetail = function(i) {
         </div>`,
         confirmButtonText: 'Tamam', confirmButtonColor: '#f59e0b', width: '320px',
         customClass: { popup: 'compact-swal themed-swal' }
-    }).then(() => window.__reopenProfile(back));
+    });
 };
 
 window.__profileHelp = function(kind) {
     const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">✓ kazandın</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
-    const back = window.__backUid();
     let title = '', body = '';
     if (kind === 'badges') {
         title = '🎖️ Rozetler Nasıl Kazanılır?';
@@ -10616,11 +10652,11 @@ window.__profileHelp = function(kind) {
             + row('🟧', 'Renk', 'Turuncu çubuk o gün çalıştığın anlamına gelir. Gri küçük çizgi o gün hiç çalışmadığın demektir.')
             + row('🎯', 'Amaç', 'Her gün biraz çalışırsan günlük serin artar ve rozetler kazanırsın. Toplam sayı yazının yanında görünür.');
     }
-    Swal.fire({
+    window.__miniModal({
         title, html: `<div style="max-height:58vh; overflow-y:auto; padding:0 2px;">${body}</div>`,
         confirmButtonText: 'Anladım', confirmButtonColor: '#f59e0b', width: '350px',
         customClass: { popup: 'compact-swal themed-swal' }
-    }).then(() => window.__reopenProfile(back));
+    });
 };
 
 window.__profileExtrasHTML = async function(u, uid, st) {
@@ -10728,15 +10764,12 @@ window.__profileExtrasHTML = async function(u, uid, st) {
 // ===== 👥 BİR OYUNCUNUN ARKADAŞLARI (profildeki Arkadaş kutusuna basınca) =====
 window.__showFriendsOf = async function(uid) {
     if (!uid) return;
-    const back = window.__backUid();
-    let openedFriend = false;
+    const m = window.__miniModal({ title: '👥 Arkadaşlar', html: '<div style="text-align:center; padding:18px; opacity:.6;"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>', confirmButtonText: 'Kapat' });
     try {
-        showLoadingAlert('👥 Arkadaşlar yükleniyor...');
         const snap = await getDoc(doc(db, 'users', uid));
         const owner = snap.exists() ? snap.data() : {};
         const ids = (owner.following || []).slice(0, 60);
         const snaps = await Promise.all(ids.map(id => getDoc(doc(db, 'users', id)).catch(() => null)));
-        closeLoadingAlert();
         const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const rows = snaps.map((sn, i) => {
             if (!sn || !sn.exists()) return '';
@@ -10747,22 +10780,15 @@ window.__showFriendsOf = async function(uid) {
             return `<div class="fr-row" data-uid="${esc(ids[i])}" style="display:flex; align-items:center; gap:10px; padding:9px 10px; margin-bottom:6px; border-radius:12px; cursor:pointer; background:var(--panel-bg); border:1px solid rgba(148,163,184,0.25); text-align:left;"><span style="width:32px; height:32px; border-radius:50%; background:#f59e0b; color:#1a1a2e; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">${esc(nm.charAt(0).toUpperCase())}</span><span style="flex:1; min-width:0;"><div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(nm)}</div><div style="font-size:11px; opacity:.55;">#${esc(pid)}</div></span><span style="font-weight:700; color:#f59e0b; font-size:13px;">${total} P</span></div>`;
         }).join('');
         const isMe = currentUser && uid === currentUser.uid;
-        const title = isMe ? '👥 Arkadaşlarım' : `👥 ${esc(owner.name || 'Oyuncu')} — Arkadaşları`;
-        await Swal.fire({
-            title: title + ` (${ids.length})`,
-            html: rows ? `<div style="max-height:55vh; overflow-y:auto; padding:2px;">${rows}</div>` : '<div style="opacity:.6; padding:14px;">Henüz arkadaş yok.</div>',
-            showConfirmButton: true, confirmButtonText: 'Kapat', confirmButtonColor: '#374151',
-            width: '340px',
-            customClass: { popup: 'compact-swal themed-swal' },
-            didOpen: (el) => {
-                el.querySelectorAll('.fr-row').forEach(r => r.addEventListener('click', () => {
-                    const t = r.getAttribute('data-uid'); openedFriend = true; Swal.close();
-                    setTimeout(() => window.openPlayerProfile(t), 150);
-                }));
-            }
-        }).then(() => { if (!openedFriend) window.__reopenProfile(back); });
+        m.setTitle((isMe ? '👥 Arkadaşlarım' : `👥 ${esc(owner.name || 'Oyuncu')} — Arkadaşları`) + ` (${ids.length})`);
+        m.setHtml(rows ? `<div style="padding:2px;">${rows}</div>` : '<div style="opacity:.6; padding:14px; text-align:center;">Henüz arkadaş yok.</div>');
+        m.el.querySelectorAll('.fr-row').forEach(r => r.addEventListener('click', () => {
+            const t = r.getAttribute('data-uid');
+            m.close();
+            window.openPlayerProfile(t);   // arkadaşın profili, mevcut profilin yerine açılır
+        }));
     } catch (e) {
-        try { closeLoadingAlert(); } catch (_) {}
+        m.setHtml('<div style="opacity:.6; padding:14px; text-align:center;">Liste yüklenemedi.</div>');
         console.log('Arkadaş listesi hatası:', e.message);
     }
 };
@@ -10900,9 +10926,7 @@ window.openPlayerProfile = async function(targetUid) {
             confirmButtonText: 'Kapat',
             confirmButtonColor: '#374151',
             width: '420px',
-            customClass: { popup: 'compact-swal themed-swal' },
-            didOpen: () => { window.__profileModalUid = targetUid; },
-            didClose: () => { window.__profileModalUid = null; }
+            customClass: { popup: 'compact-swal themed-swal' }
         });
         
     } catch (e) {
