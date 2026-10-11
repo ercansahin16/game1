@@ -10555,6 +10555,57 @@ window.__getSeasonWinners = async function() {
     } catch (e) { window.__seasonWinnersCache = []; }
     return window.__seasonWinnersCache;
 };
+// ===== ❓ PROFİL YARDIM PENCERELERİ =====
+window.__helpBtn = (kind) => `<button type="button" onclick="event.stopPropagation(); window.__profileHelp('${kind}')" title="Nasıl çalışır?" style="position:absolute; top:7px; right:7px; width:24px; height:24px; border-radius:50%; border:1px solid rgba(245,158,11,0.55); background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:800; font-size:13px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;">?</button>`;
+window.__profileHelp = function(kind) {
+    const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">✓ kazandın</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
+    let title = '', body = '';
+    if (kind === 'badges') {
+        title = '🎖️ Rozetler Nasıl Kazanılır?';
+        const info = window.__badgeInfo || [];
+        const desc = [
+            'Uygulamada en az 1 kelime öğrenince kazanılır.',
+            'Toplam 100 kelime öğrenince kazanılır. Her kelimeyi "Kelime Öğren" bölümünde görmen yeterli.',
+            'Toplam 500 kelimeye ulaşınca kazanılır. Uzun soluklu çalışmanın göstergesi.',
+            'Günlük seriyi 7 güne çıkarınca kazanılır. Her gün uygulamaya girip çalışırsan seri artar; bir gün atlarsan sıfırlanır.',
+            'Günlük seriyi 30 güne çıkarınca kazanılır. En zor rozetlerden biri.',
+            'Toplam 10 sınav tamamlayınca kazanılır. "Sınava Gir" bölümünden sınav çözebilirsin.',
+            'Bir sınavdan en az 90 puan alınca kazanılır.',
+            'Yarışmada en az 30 soru cevaplayıp doğruluk oranını %70 ve üzerine çıkarınca kazanılır.',
+            'Seviye 5\'e ulaşınca kazanılır. Seviye, derslerdeki ilerlemenle yükselir.',
+            'En az 5 arkadaş edinince kazanılır. Sıralamadan oyuncu profiline girip arkadaş olabilirsin.',
+            'Bir ayın sonunda sıralamada ilk 3\'e girerek "Ayın Şampiyonu" olunca kazanılır.'
+        ];
+        body = info.map((b, i) => row(b.e, b.name, desc[i] || '', b.ok)).join('') +
+            '<div style="font-size:11px; opacity:.6; margin-top:10px;">Kazanılan rozetler renkli, kazanılmayanlar soluk görünür. Rozetin üzerine basılı tutarak adını görebilirsin.</div>';
+    } else if (kind === 'stats') {
+        title = '📊 Genel Durum Ne Demek?';
+        body = row('📖', 'Kelime', 'Şimdiye kadar öğrendiğin (gördüğün) toplam kelime sayısı. Her kelime +0,01 puan kazandırır.')
+            + row('📝', 'Sınav', 'Tamamladığın sınav sayısı.')
+            + row('🎯', 'Yarışma', 'Yarışmada verdiğin cevapların doğruluk yüzdesi.')
+            + row('📦', 'Sandık', 'Yanlış cevapladığın veya bilemediğin kelimeler sandığa düşer. Sandıktaki her kelime puanından 1 düşer; tekrar edip doğru bilince sandıktan çıkar.')
+            + row('📅', 'Bu Ay', 'Bu ay kazandığın puan ve aylık sıran. Her ayın başında sıfırlanır, ayın ilk 3\'ü "Ayın Şampiyonu" olur.')
+            + row('🔥', 'Seri', 'Üst üste kaç gün uygulamaya girdiğin. Altta senin en uzun serin yazar.')
+            + row('💯', 'En İyi Sınav', 'Sınavlarda aldığın en yüksek puan.')
+            + row('👥', 'Arkadaş', 'Arkadaş sayın. Kutuya basarak arkadaşlarını görebilirsin.');
+    } else if (kind === 'months') {
+        title = '🏅 Ay Başarıları Nedir?';
+        body = row('🥇', 'Ayın Şampiyonları', 'Her ay sonunda sıralamada bu ayın puanına göre ilk 3 kişi madalya kazanır: 🥇 1., 🥈 2., 🥉 3. Madalyalar profilinde kalıcı olarak görünür.')
+            + row('📅', 'Geçmiş Aylar', 'Son aylarda topladığın puan burada küçük etiketlerle görünür. Böylece ay ay gelişimini takip edebilirsin.')
+            + row('🔄', 'Ay Nasıl Sıfırlanır?', '"Bu Ay" puanı her ayın başında sıfırlanır. Tüm Zamanlar puanın ise hiç silinmez.');
+    } else if (kind === 'week') {
+        title = '📈 Son 7 Gün Nedir?';
+        body = row('📊', 'Çubuklar', 'Son 7 günde her gün kaç kelime öğrendiğini ve kaç yarışma sorusu cevapladığını gösterir (kelime + soru toplamı).')
+            + row('🟧', 'Renk', 'Turuncu çubuk o gün çalıştığın anlamına gelir. Gri küçük çizgi o gün hiç çalışmadığın demektir.')
+            + row('🎯', 'Amaç', 'Her gün biraz çalışırsan günlük serin artar ve rozetler kazanırsın. Toplam sayı yazının yanında görünür.');
+    }
+    Swal.fire({
+        title, html: `<div style="max-height:58vh; overflow-y:auto; padding:0 2px;">${body}</div>`,
+        confirmButtonText: 'Anladım', confirmButtonColor: '#f59e0b', width: '350px',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
+};
+
 window.__profileExtrasHTML = async function(u, uid, st) {
     const curId = getCurrentSeasonId();
     const seasonNow = (u.seasonId === curId) ? Math.max(0, Math.round((st.totalScore - (u.seasonBaselineScore || 0)) * 100) / 100) : 0;
@@ -10591,13 +10642,15 @@ window.__profileExtrasHTML = async function(u, uid, st) {
         { e: '👥', t: 'Sosyal (5+ arkadaş)', ok: friends >= 5 },
         { e: '🏆', t: 'Ayın Şampiyonu', ok: medals.length > 0 }
     ];
+    window.__badgeInfo = badges.map(b => ({ e: b.e, name: b.t.replace(/\s*\(.*\)\s*$/, ''), ok: b.ok }));
     const earned = badges.filter(b => b.ok).length;
     const badgeHTML = badges.map(b => `<span title="${b.t}" style="display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:8px; font-size:15px; ${b.ok ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); filter:grayscale(1); opacity:.35;'}">${b.e}</span>`).join('');
     const chip = (txt, gold) => `<span style="display:inline-block; padding:3px 9px; border-radius:99px; font-size:11px; ${gold ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); opacity:.85;'}">${txt}</span>`;
     const chips = medals.map(m => chip(`${['🥇','🥈','🥉'][m.place - 1]} ${getSeasonLabel(m.seasonId)}`, true)).join(' ')
         + ' ' + history.map(h => chip(`📅 ${short(h.seasonId)} · ${h.score} P`, false)).join(' ');
     return `
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px;">
+        <div style="position:relative; margin-top:10px; padding-right:30px; min-height:24px; font-size:11px; font-weight:600; color:#f59e0b; line-height:24px;">📊 Genel Durum${window.__helpBtn('stats').replace('top:7px; right:7px;', 'top:0; right:0;')}</div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:4px;">
             ${cell(st.words, '📖 Kelime', '16,185,129')}
             ${cell(st.examCount, '📝 Sınav', '59,130,246')}
             ${cell(acc + '%', '🎯 Yarışma', '245,158,11')}
@@ -10607,10 +10660,10 @@ window.__profileExtrasHTML = async function(u, uid, st) {
             ${cell(bestExam || '-', '💯 En İyi Sınav', '59,130,246')}
             <div onclick="window.__showFriendsOf('${uid}')" style="cursor:pointer; min-width:0;" title="Arkadaşlarını gör">${cell(friends, '👥 Arkadaş ›', '236,72,153')}</div>
         </div>
-        <div style="margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;">
-            <div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:6px;">🏅 Ay Başarıları</div>
+        <div style="position:relative; margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;">
+            <div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:6px; padding-right:30px;">🏅 Ay Başarıları${window.__helpBtn('months').replace('top:7px; right:7px;', 'top:-1px; right:-1px;')}</div>
             <div style="display:flex; flex-wrap:wrap; gap:5px;">${chips.trim() ? chips : '<span style="font-size:11px; opacity:.55;">Henüz kayıt yok</span>'}</div>
-            <div style="font-size:11px; font-weight:600; color:#f59e0b; margin:10px 0 6px;">🎖️ Rozetler <span style="opacity:.6; font-weight:400;">(${earned}/${badges.length})</span></div>
+            <div style="position:relative; font-size:11px; font-weight:600; color:#f59e0b; margin:10px 0 6px; padding-right:30px; min-height:24px; line-height:24px;">🎖️ Rozetler <span style="opacity:.6; font-weight:400;">(${earned}/${badges.length})</span>${window.__helpBtn('badges').replace('top:7px; right:7px;', 'top:0; right:-1px;')}</div>
             <div style="display:flex; flex-wrap:nowrap; justify-content:space-between; gap:3px;">${badgeHTML}</div>
         </div>
         ${joined ? `<div style="text-align:center; font-size:10px; opacity:.45; margin-top:8px;">🗓️ ${joined} tarihinden beri aramızda</div>` : ''}`;
@@ -10682,7 +10735,7 @@ window.__renderMyProfileExtras = async function() {
         const max = Math.max(1, ...days.map(x => x.n));
         const total7 = days.reduce((a, x) => a + x.n, 0);
         const bars = days.map(x => `<div style="flex:1; text-align:center; min-width:0;"><div style="height:46px; display:flex; align-items:flex-end; justify-content:center;"><div title="${x.n}" style="width:70%; max-width:22px; height:${Math.max(3, Math.round(x.n / max * 46))}px; border-radius:5px 5px 2px 2px; background:${x.n ? '#f59e0b' : 'rgba(148,163,184,0.35)'};"></div></div><div style="font-size:10px; opacity:.7; margin-top:3px;">${x.lbl}</div><div style="font-size:10px; font-weight:700;">${x.n}</div></div>`).join('');
-        const activity = `<div style="margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;"><div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:8px;">📈 Son 7 Gün <span style="opacity:.6; font-weight:400;">(kelime + soru · toplam ${total7})</span></div><div style="display:flex; gap:4px;">${bars}</div></div>`;
+        const activity = `<div style="position:relative; margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;">${window.__helpBtn('week')}<div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:8px; padding-right:30px;">📈 Son 7 Gün <span style="opacity:.6; font-weight:400;">(kelime + soru · toplam ${total7})</span></div><div style="display:flex; gap:4px;">${bars}</div></div>`;
         box.innerHTML = `<div style="margin:2px 0 14px;">${extras}${activity}</div>`;
     } catch (e) { console.log('Profil ek bilgileri hatası:', e.message); }
 };
