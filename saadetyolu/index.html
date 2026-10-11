@@ -4287,6 +4287,9 @@ body.light-theme #profileScreen .info-row button:hover {
     .profile-tabs-row { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; }
     .profile-tabs-row .tab-btn { width: 100%; padding: 10px 6px !important; font-size: 14px !important; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 }
+
+body:not(.light-theme) #profilePublicId { color: #e5e7eb !important; }
+body.light-theme #profilePublicId { color: #1a1a2e !important; }
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -7141,18 +7144,22 @@ async function loadUserStats() {
             }
         } catch (e) {}
         if (!data.myWords) {
-            await updateDoc(userRef, { myWords: [] });
-            console.log('✅ myWords alanı eklendi');
-            // Veriyi yeniden oku
-            const updatedDoc = await getDoc(userRef);
-            // updatedDoc ile devam et
+            // Beklemeden arka planda yaz (kota/ağ yavaşsa ekran takılmasın)
+            updateDoc(userRef, { myWords: [] }).then(() => console.log('✅ myWords alanı eklendi')).catch(() => {});
         }
 
         // ===== OYUNCU ID (yoksa üret) =====
-        let myPublicId = data.publicId || null;
-        try { myPublicId = await window.__ensurePublicId(userRef, myPublicId); } catch (e) { console.log('ID üretilemedi:', e.message); }
-        if (!myPublicId) myPublicId = window.__idFromUid(currentUser.uid);
+        let myPublicId = data.publicId || window.__idFromUid(currentUser.uid);
         window.__myPublicId = myPublicId;
+        // ID kaydı arka planda yapılır; ekranı beklettirmez
+        if (!data.publicId) {
+            Promise.resolve().then(() => window.__ensurePublicId(userRef, null)).then((pid) => {
+                if (pid) {
+                    window.__myPublicId = pid;
+                    const el = document.getElementById('profilePublicId'); if (el) el.textContent = pid;
+                }
+            }).catch((e) => console.log('ID üretilemedi:', e && e.message));
+        }
 
         // ===== KONSOLA YAZDIR =====
         console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
