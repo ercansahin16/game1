@@ -4420,7 +4420,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.1 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -4496,7 +4496,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
                 <button id="showRegisterBtn" class="btn auth-tab" style="flex:1; background:#3b82f6; color:white;"><span class="at-main">🆕 Kayıt Ol</span><span class="at-sub">İlk kez giriyorum</span></button>
             </div>
             <div id="loginForm">
-    <div class="auth-banner" style="--c:#f59e0b"><b>🔑 GİRİŞ EKRANI</b><br>Daha önce kayıt olduysanız <u>burayı</u> kullanın.</div>
+    <div class="auth-banner" style="--c:#f59e0b"><b>🔑 GİRİŞ EKRANI</b><br>Daha önce kayıt olduysanız burayı kullanın.</div>
     <div class="input-wrapper">
         <input type="email" id="loginEmail" placeholder="E-posta" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
         <button type="button" id="loginEmailPasteBtn" class="toggle-password" title="Yapıştır" style="display:none" onclick="window.__pasteInto('loginEmail')"><i class="fas fa-paste"></i></button>
@@ -4546,7 +4546,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
     <div class="auth-swap" onclick="document.getElementById('showRegisterBtn').click()">Hesabınız yok mu? <b style="color:#60a5fa">Kayıt Ol</b></div>
 </div>
             <div id="registerForm" style="display: none;">
-                <div class="auth-banner" style="--c:#3b82f6"><b>🆕 KAYIT EKRANI</b><br>Sadece <u>ilk defa</u> giriyorsanız burayı kullanın.</div>
+                <div class="auth-banner" style="--c:#3b82f6"><b>🆕 KAYIT EKRANI</b><br>Sadece ilk defa giriyorsanız burayı kullanın.</div>
                 <div class="input-wrapper">
                     <input type="text" id="regName" placeholder="Adınız Soyadınız" autocomplete="name">
                 </div>
@@ -8767,12 +8767,6 @@ document.getElementById('doLoginBtn').onclick = async () => {
     console.log('  Password length:', password.length);
     
     // ===== BOŞ ALAN KONTROLÜ =====
-    if (!name) {
-        showWarning('❌ Lütfen adınızı soyadınızı girin!');
-       
-        return;
-    }
-    
     if (!email) {
         showWarning('❌ Lütfen e-posta adresinizi girin!');
         return;
@@ -8796,6 +8790,21 @@ document.getElementById('doLoginBtn').onclick = async () => {
         return;
     }
     
+    // ===== İSİM BOŞSA: ÖNCE KAYITLI HESAP MI DİYE BAK (e-posta + şifre doğruysa direkt giriş) =====
+    if (!name) {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
+            showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
+            nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
+        } catch (siErr) {
+            if (siErr && siErr.code === 'auth/too-many-requests') showWarning('⏰ Çok fazla deneme yaptınız. Lütfen biraz bekleyin.');
+            else if (siErr && siErr.code === 'auth/network-request-failed') showWarning('⚠️ İnternet bağlantınızı kontrol edin.');
+            else showWarning('❌ Yeni kayıt için adınızı soyadınızı yazın. Daha önce kayıt olduysanız şifrenizi kontrol edin veya "Login" sekmesini kullanın.');
+        }
+        return;
+    }
+
     // ===== KAYIT İŞLEMİ =====
     try {
         console.log('🔥 Firebase kayıt başlatılıyor...');
