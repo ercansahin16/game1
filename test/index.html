@@ -7121,6 +7121,17 @@ async function loadUserStats() {
 
         // ===== Eğer myWords yoksa oluştur (BURASI DOĞRU YER) =====
         const data = userDoc.data();
+        // İsmi hemen göster (myWords yazımı / ID işlemi beklemeden) ve önbelleğe al
+        try {
+            const __n = data.name || currentUser.displayName;
+            if (__n) {
+                localStorage.setItem('sy_name_' + currentUser.uid, __n);
+                const __s = document.getElementById('sidebarUserName');
+                if (__s) __s.innerHTML = '<i class="fas fa-user"></i> ' + String(__n).replace(/[<>&]/g, '');
+                const __h = document.getElementById('userNameDisplay');
+                if (__h) __h.textContent = __n;
+            }
+        } catch (e) {}
         if (!data.myWords) {
             await updateDoc(userRef, { myWords: [] });
             console.log('✅ myWords alanı eklendi');
@@ -8885,8 +8896,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
 
         // ===== HEADER VE SIDEBAR'DAKİ İSİMLERİ BOŞ BIRAK =====
         // loadUserStats bunları dolduracak (Firestore'dan)
-        document.getElementById('userNameDisplay').textContent = '';
-        document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> Yükleniyor';
+        // Hızlı gösterim: önce önbellekteki / Auth'taki isim, Firestore gelince güncellenir
+        let __quickName = '';
+        try { __quickName = localStorage.getItem('sy_name_' + user.uid) || ''; } catch (e) {}
+        if (!__quickName) __quickName = user.displayName || '';
+        document.getElementById('userNameDisplay').textContent = __quickName;
+        document.getElementById('sidebarUserName').innerHTML = '<i class="fas fa-user"></i> ' + (__quickName ? __quickName.replace(/[<>&]/g, '') : 'Yükleniyor');
         
         // userBadge'i gizle (loadUserStats sonunda gösterilecek)
         const userBadge = document.getElementById('userBadge');
@@ -8899,8 +8914,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
         const rankingScreen = document.getElementById('rankingScreen');
         if (rankingScreen) rankingScreen.style.display = 'none';
         
-        await loadBooks();
-        await loadUserStats();  // Burada header ve sidebar doldurulacak
+        // Kitaplar ve kullanıcı bilgisi aynı anda yüklensin (eskiden sırayla bekliyordu)
+        await Promise.all([loadBooks(), loadUserStats()]);  // loadUserStats header ve sidebar'ı doldurur
         await loadLessonsList();
         await loadUserExamHistory();
         
