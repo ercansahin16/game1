@@ -2274,7 +2274,7 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             
             .result-card { padding: 20px; }
             .score { font-size: 42px; margin: 15px 0; }
-            .menu-btn { top: calc(3px + env(safe-area-inset-top, 0px)); left: 10px; width: 35px; height: 35px; font-size: 16px; }
+            .menu-btn { top: calc(3px + env(safe-area-inset-top, 0px)); left: 10px; width: 38px; height: 38px; font-size: 16px; }
             .sidebar { width: 260px; padding: 70px 15px 20px; }
             .login-card img { width: 180px !important; height: 180px !important; border-radius: 28px !important; }
             .logo-badge { padding: 12px 26px !important; }
@@ -5945,6 +5945,23 @@ async function markLessonPassedIfNeeded(lessonId, percent) {
     const nextBtn = document.getElementById('nextBtn');
 
     const menuBtn = document.getElementById('menuBtn');
+    // ===== Mobil: hamburger düğmesini üst satırdaki diğer düğmelerle (geri, ⋮, çıkış) AYNI hizaya getir =====
+    function alignMenuBtn() {
+        try {
+            if (!menuBtn) return;
+            if (!window.matchMedia('(max-width: 768px)').matches) { menuBtn.style.top = ''; return; }
+            if (window.scrollY > 2) return; // kaydırılmışken son hizada kalsın
+            const ref = document.getElementById('headerMoreBtn') || document.getElementById('homeLogo');
+            if (!ref || ref.offsetParent === null) return;
+            const r = ref.getBoundingClientRect();
+            if (!r.height) return;
+            menuBtn.style.top = Math.round(r.top + r.height / 2 - (menuBtn.offsetHeight || 38) / 2) + 'px';
+        } catch (e) {}
+    }
+    window.addEventListener('resize', alignMenuBtn);
+    window.addEventListener('orientationchange', () => setTimeout(alignMenuBtn, 300));
+    window.addEventListener('load', alignMenuBtn);
+    setInterval(alignMenuBtn, 600);
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     
