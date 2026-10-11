@@ -5018,6 +5018,8 @@ body.light-theme #profileScreen input { border: 1px solid rgba(100,116,139,0.30)
                     </div>
                 </div>
                 
+                <div id="myProfileExtras"></div>
+
                 <!-- Sınav Geçmişi -->
                 <div style="margin-top: 5px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -10541,6 +10543,37 @@ window.__profileExtrasHTML = async function(u, uid, st) {
         ${joined ? `<div style="text-align:center; font-size:10px; opacity:.45; margin-top:8px;">🗓️ ${joined} tarihinden beri aramızda</div>` : ''}`;
 };
 
+// ===== KENDİ PROFİLİM > İSTATİSTİKLER: rozetler, ay başarıları, son 7 gün =====
+window.__renderMyProfileExtras = async function() {
+    const box = document.getElementById('myProfileExtras');
+    if (!box || !currentUser) return;
+    try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (!snap.exists()) return;
+        const u = snap.data();
+        const mevcutSeviye = u.mevcutSeviye || 1;
+        const words = u.totalWordsViewed || 0;
+        const sandikCount = u.quizSandik?.length || 0;
+        const totalScore = Math.max(0, Math.round(((u.quizScore || 0) + (u.averageScore || 0) + (mevcutSeviye - 1) * 2 + words * 0.01 - sandikCount) * 100) / 100);
+        const extras = await window.__profileExtrasHTML(u, currentUser.uid, { totalScore, mevcutSeviye, words, examCount: (u.examsCompleted || []).length, sandikCount });
+        // Son 7 gün hareketi (kelime + soru)
+        const log = u.dailyLog || {};
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000);
+            const k = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(d).replace(/-/g, '');
+            const lbl = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', weekday: 'short' }).format(d);
+            const e = log['d' + k] || {};
+            days.push({ lbl, n: (e.w || 0) + (e.q || 0) });
+        }
+        const max = Math.max(1, ...days.map(x => x.n));
+        const total7 = days.reduce((a, x) => a + x.n, 0);
+        const bars = days.map(x => `<div style="flex:1; text-align:center; min-width:0;"><div style="height:46px; display:flex; align-items:flex-end; justify-content:center;"><div title="${x.n}" style="width:70%; max-width:22px; height:${Math.max(3, Math.round(x.n / max * 46))}px; border-radius:5px 5px 2px 2px; background:${x.n ? '#f59e0b' : 'rgba(148,163,184,0.35)'};"></div></div><div style="font-size:10px; opacity:.7; margin-top:3px;">${x.lbl}</div><div style="font-size:10px; font-weight:700;">${x.n}</div></div>`).join('');
+        const activity = `<div style="margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;"><div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:8px;">📈 Son 7 Gün <span style="opacity:.6; font-weight:400;">(kelime + soru · toplam ${total7})</span></div><div style="display:flex; gap:4px;">${bars}</div></div>`;
+        box.innerHTML = `<div style="margin:2px 0 14px;">${extras}${activity}</div>`;
+    } catch (e) { console.log('Profil ek bilgileri hatası:', e.message); }
+};
+
 // ===== OYUNCU PROFİLİ (Liderlik Tablosunda bir oyuncuya tıklayınca) =====
 window.openPlayerProfile = async function(targetUid) {
     if (!currentUser || !targetUid) return;
@@ -14172,6 +14205,9 @@ if (titleText.includes('📦 Sandıktaki Kelimeler')) {
             const tabId = activeTab.dataset.tab;
             if (contents[tabId]) {
                 contents[tabId].style.display = 'block';
+            }
+            if (tabId === 'tab2' && typeof window.__renderMyProfileExtras === 'function') {
+                window.__renderMyProfileExtras();
             }
             if (tabId === 'tab4' && typeof window.loadAnnouncementsTab === 'function') {
                 window.loadAnnouncementsTab();
