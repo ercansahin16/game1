@@ -10557,27 +10557,17 @@ window.__getSeasonWinners = async function() {
 };
 // ===== ❓ PROFİL YARDIM PENCERELERİ =====
 window.__helpBtn = (kind) => `<button type="button" onclick="event.stopPropagation(); window.__profileHelp('${kind}')" title="Nasıl çalışır?" style="position:absolute; top:7px; right:7px; width:24px; height:24px; border-radius:50%; border:1px solid rgba(245,158,11,0.55); background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:800; font-size:13px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;">?</button>`;
-window.__badgeDesc = [
-            'Uygulamada en az 1 kelime öğrenince kazanılır.',
-            'Toplam 100 kelime öğrenince kazanılır. Her kelimeyi "Kelime Öğren" bölümünde görmen yeterli.',
-            'Toplam 500 kelimeye ulaşınca kazanılır. Uzun soluklu çalışmanın göstergesi.',
-            'Günlük seriyi 7 güne çıkarınca kazanılır. Her gün uygulamaya girip çalışırsan seri artar; bir gün atlarsan sıfırlanır.',
-            'Günlük seriyi 30 güne çıkarınca kazanılır. En zor rozetlerden biri.',
-            'Toplam 10 sınav tamamlayınca kazanılır. "Sınava Gir" bölümünden sınav çözebilirsin.',
-            'En az 5 soruluk bir sınavda doğru cevap oranını %90 ve üzerine çıkarınca kazanılır. Örneğin 20 sorunun 18\'ini doğru bilmek yeterli.',
-            'Yarışmada en az 30 soru cevaplayıp doğruluk oranını %70 ve üzerine çıkarınca kazanılır.',
-            'Seviye 5\'e ulaşınca kazanılır. Seviye, derslerdeki ilerlemenle yükselir.',
-            'En az 5 arkadaş edinince kazanılır. Sıralamadan oyuncu profiline girip arkadaş olabilirsin.',
-            'Bir ayın sonunda sıralamada ilk 3\'e girerek "Ayın Şampiyonu" olunca kazanılır.'
-];
 window.__badgeDetail = function(i) {
     const b = (window.__badgeInfo || [])[i];
     if (!b) return;
     const pct = Math.max(0, Math.min(100, Math.round(b.cur / b.goal * 100)));
+    const stars = '⭐'.repeat(b.tier) + '<span style="opacity:.25;">' + '⭐'.repeat(4 - b.tier) + '</span>';
+    const tierName = ['', 'Kolay', 'Orta', 'Zor', 'Efsane'][b.tier];
     Swal.fire({
         title: `${b.e} ${b.name}`,
         html: `<div style="text-align:left; font-size:13px; line-height:1.5;">
-            <div style="margin-bottom:10px; opacity:.85;">${window.__badgeDesc[i] || ''}</div>
+            <div style="font-size:12px; margin-bottom:8px;">${stars} <b>${tierName}</b> <span style="opacity:.55;">· ${b.cat}</span></div>
+            <div style="margin-bottom:10px; opacity:.85;">${b.desc || ''}</div>
             <div style="font-weight:700; margin-bottom:5px; color:${b.ok ? '#10b981' : '#f59e0b'};">${b.ok ? '✓ Bu rozeti kazandın!' : 'İlerleme: ' + b.cur + ' / ' + b.goal + ' ' + b.unit}</div>
             <div style="height:9px; border-radius:99px; background:rgba(148,163,184,0.3); overflow:hidden;"><div style="height:100%; width:${b.ok ? 100 : pct}%; background:${b.ok ? '#10b981' : '#f59e0b'}; border-radius:99px;"></div></div>
             ${b.ok ? '' : `<div style="font-size:11px; opacity:.6; margin-top:6px;">%${pct} tamamlandı</div>`}
@@ -10593,10 +10583,13 @@ window.__profileHelp = function(kind) {
     if (kind === 'badges') {
         title = '🎖️ Rozetler Nasıl Kazanılır?';
         const info = window.__badgeInfo || [];
-        const desc = window.__badgeDesc;
-        
-        body = info.map((b, i) => row(b.e, b.name, desc[i] || '', b.ok)).join('') +
-            '<div style="font-size:11px; opacity:.6; margin-top:10px;">Kazanılan rozetler renkli, kazanılmayanlar soluk görünür. Rozetin üzerine basılı tutarak adını görebilirsin.</div>';
+        let lastCat = '';
+        body = '<div style="font-size:11px; opacity:.7; text-align:left; margin-bottom:6px;">⭐ Kolay · ⭐⭐ Orta · ⭐⭐⭐ Zor · ⭐⭐⭐⭐ Efsane — bazı rozetler yıllar alır. Rozete basarak ilerlemeni görebilirsin.</div>' +
+            info.map(b => {
+                const head = b.cat !== lastCat ? `<div style="text-align:left; font-weight:800; font-size:12px; color:#f59e0b; margin:12px 0 2px;">${b.cat}</div>` : '';
+                lastCat = b.cat;
+                return head + row(b.e, `${b.name} <span style="opacity:.6; font-weight:400; font-size:11px;">${'⭐'.repeat(b.tier)}</span>`, b.desc, b.ok);
+            }).join('');
     } else if (kind === 'stats') {
         title = '📊 Genel Durum Ne Demek?';
         body = row('📖', 'Kelime', 'Şimdiye kadar öğrendiğin (gördüğün) toplam kelime sayısı. Her kelime +0,01 puan kazandırır.')
@@ -10648,29 +10641,61 @@ window.__profileExtrasHTML = async function(u, uid, st) {
     const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : '';
     const short = id => { const l = getSeasonLabel(id).split(' '); return (l[0] || '').slice(0, 3) + ' ' + String(l[1] || '').slice(2); };
     const cell = (v, l, c, sub) => `<div style="background:rgba(${c},0.10); padding:7px 2px; border-radius:10px; text-align:center; min-width:0;"><div style="font-size:15px; font-weight:700; line-height:1.2;">${v}</div><div style="font-size:9.5px; opacity:.72; margin-top:1px;">${l}</div>${sub ? `<div style="font-size:9px; opacity:.55;">${sub}</div>` : ''}</div>`;
+    // ===== 🎖️ ROZET TANIMLARI (kolaydan efsaneye; uzun yıllar sürecek hedefler dahil) =====
+    const best = Math.max(streak, bestStreak);
+    const ageDays = u.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(u.createdAt).getTime()) / 86400000)) : 0;
+    const firstPlaces = medals.filter(m => m.place === 1).length;
+    const perfectCount = exams.filter(e => e.total >= 10 && e.correct === e.total).length;
+    const bestPct10 = exams.reduce((m, e) => (e.total >= 10 ? Math.max(m, Math.round((e.correct || 0) / e.total * 100)) : m), 0);
+    const maxLevel = window.toplamSeviye || 87;
+    const kmProg = (n, a) => Math.min(100, Math.round(Math.min(km.total / n, acc / a) * 100));
+    // B(kategori, emoji, ad, zorluk 1-4, mevcut, hedef, birim, açıklama)
+    const B = (cat, e, name, tier, cur, goal, unit, desc) => ({ cat, e, name, tier, cur, goal, unit, desc, ok: cur >= goal });
     const badges = [
-        { e: '🌱', t: 'Yeni Başlayan', ok: st.words >= 1 },
-        { e: '📚', t: 'Kelime Avcısı (100+ kelime)', ok: st.words >= 100 },
-        { e: '🧠', t: 'Kelime Ustası (500+ kelime)', ok: st.words >= 500 },
-        { e: '🔥', t: '7 Gün Seri', ok: Math.max(streak, bestStreak) >= 7 },
-        { e: '🌋', t: '30 Gün Seri', ok: Math.max(streak, bestStreak) >= 30 },
-        { e: '📝', t: 'Sınav Ustası (10+ sınav)', ok: exams.length >= 10 },
-        { e: '💯', t: 'Sınavda %90+ başarı', ok: bestExam >= 90 },
-        { e: '🎯', t: 'Keskin Nişancı (%70+, 30+ soru)', ok: km.total >= 30 && acc >= 70 },
-        { e: '🏔️', t: 'Seviye 5+', ok: st.mevcutSeviye >= 5 },
-        { e: '👥', t: 'Sosyal (5+ arkadaş)', ok: friends >= 5 },
-        { e: '🏆', t: 'Ayın Şampiyonu', ok: medals.length > 0 }
+        B('📖 Kelime', '🌱', 'Yeni Başlayan', 1, st.words, 1, 'kelime', 'Uygulamada ilk kelimeni öğrenince kazanılır.'),
+        B('📖 Kelime', '📚', 'Kelime Avcısı', 1, st.words, 100, 'kelime', 'Toplam 100 kelime öğrenince kazanılır.'),
+        B('📖 Kelime', '🧠', 'Kelime Ustası', 2, st.words, 500, 'kelime', 'Toplam 500 kelimeye ulaşınca kazanılır.'),
+        B('📖 Kelime', '🎓', 'Bin Kelime', 2, st.words, 1000, 'kelime', 'Toplam 1.000 kelime öğrenince kazanılır. Günde birkaç kelimeyle bile aylar içinde ulaşılır.'),
+        B('📖 Kelime', '🏛️', 'Kelime Âlimi', 3, st.words, 2500, 'kelime', 'Toplam 2.500 kelimeye ulaşınca kazanılır. Kur\'an kelimelerinin büyük kısmına hâkim olmak demektir.'),
+        B('📖 Kelime', '👑', 'Kelime Sultanı', 4, st.words, 5000, 'kelime', 'Toplam 5.000 kelimeye ulaşınca kazanılır. Yıllara yayılan düzenli çalışma ister.'),
+        B('📖 Kelime', '🌌', 'Kelime Efsanesi', 4, st.words, 10000, 'kelime', 'Toplam 10.000 kelimeye ulaşınca kazanılır. Çok az kişinin ulaşabileceği bir hedef.'),
+        B('🔥 Seri', '🔥', '7 Gün Seri', 1, best, 7, 'gün', 'Günlük seriyi 7 güne çıkarınca kazanılır. Her gün girip çalışırsan seri artar, bir gün atlarsan sıfırlanır.'),
+        B('🔥 Seri', '🌋', '30 Gün Seri', 2, best, 30, 'gün', 'Günlük seriyi 30 güne çıkarınca kazanılır. Tam bir ay boyunca hiç ara vermemelisin.'),
+        B('🔥 Seri', '☄️', '100 Gün Seri', 3, best, 100, 'gün', 'Günlük seriyi 100 güne çıkarınca kazanılır. Üç ayı aşan kesintisiz çalışma.'),
+        B('🔥 Seri', '🌞', 'Bir Yıl Seri', 4, best, 365, 'gün', 'Günlük seriyi 365 güne çıkarınca kazanılır. Bir yıl boyunca tek gün bile ara vermemek gerekir.'),
+        B('🔥 Seri', '♾️', '1000 Gün Seri', 4, best, 1000, 'gün', 'Günlük seriyi 1.000 güne çıkarınca kazanılır. Yaklaşık 2,7 yıl kesintisiz. Efsanevi bir bağlılık.'),
+        B('📝 Sınav', '📝', 'Sınav Çırağı', 1, exams.length, 10, 'sınav', 'Toplam 10 sınav tamamlayınca kazanılır. "Sınava Gir" bölümünden sınav çözebilirsin.'),
+        B('📝 Sınav', '💯', 'Sınavda %90+', 2, bestExam, 90, '% doğruluk', 'En az 5 soruluk bir sınavda doğru oranını %90 ve üzerine çıkarınca kazanılır.'),
+        B('📝 Sınav', '📜', 'Sınav Ustası', 2, exams.length, 50, 'sınav', 'Toplam 50 sınav tamamlayınca kazanılır.'),
+        B('📝 Sınav', '✨', 'Kusursuz Sınav', 3, bestPct10, 100, '% doğruluk', 'En az 10 soruluk bir sınavda tüm soruları doğru cevaplayınca kazanılır. Tek yanlış bile yasak.'),
+        B('📝 Sınav', '🏫', 'Sınav Kahramanı', 3, exams.length, 200, 'sınav', 'Toplam 200 sınav tamamlayınca kazanılır.'),
+        B('📝 Sınav', '💎', 'Mükemmeliyetçi', 4, perfectCount, 10, 'kusursuz sınav', 'En az 10 soruluk sınavlarda toplam 10 kez hatasız (%100) sonuç alınca kazanılır.'),
+        B('🎯 Yarışma', '🎯', 'Keskin Nişancı', 2, kmProg(30, 70), 100, '% ilerleme', 'Yarışmada en az 30 soru cevaplayıp doğruluğunu %70 ve üzerinde tutunca kazanılır.'),
+        B('🎯 Yarışma', '🏹', 'Usta Okçu', 3, kmProg(500, 80), 100, '% ilerleme', 'Yarışmada en az 500 soru cevaplayıp doğruluğunu %80 ve üzerinde tutunca kazanılır.'),
+        B('🎯 Yarışma', '🦅', 'Yarışma Kartalı', 4, kmProg(2000, 85), 100, '% ilerleme', 'Yarışmada en az 2.000 soru cevaplayıp doğruluğunu %85 ve üzerinde tutunca kazanılır.'),
+        B('🏔️ Seviye', '🏔️', 'Seviye 5', 1, st.mevcutSeviye, 5, 'seviye', 'Seviye 5\'e ulaşınca kazanılır. Seviye, ders ilerlemene göre yükselir.'),
+        B('🏔️ Seviye', '🧗', 'Seviye 20', 2, st.mevcutSeviye, 20, 'seviye', 'Seviye 20\'ye ulaşınca kazanılır.'),
+        B('🏔️ Seviye', '🚀', 'Seviye 50', 3, st.mevcutSeviye, 50, 'seviye', 'Seviye 50\'ye ulaşınca kazanılır.'),
+        B('🏔️ Seviye', '🌠', 'Zirve', 4, st.mevcutSeviye, maxLevel, 'seviye', `Son seviyeye (${maxLevel}) ulaşınca kazanılır. Tüm dersleri bitirmek demektir.`),
+        B('👥 Sosyal', '👥', 'Sosyal', 1, friends, 5, 'arkadaş', 'En az 5 arkadaş edinince kazanılır. Sıralamadan bir oyuncunun profiline girip arkadaş olabilirsin.'),
+        B('👥 Sosyal', '🤝', 'Kalabalık Dost', 2, friends, 15, 'arkadaş', 'En az 15 arkadaş edinince kazanılır.'),
+        B('👥 Sosyal', '🌍', 'Kervan Başı', 3, friends, 30, 'arkadaş', 'En az 30 arkadaş edinince kazanılır.'),
+        B('🏆 Şampiyonluk', '🏆', 'Ayın Şampiyonu', 3, medals.length, 1, 'şampiyonluk', 'Bir ayın sonunda sıralamada ilk 3\'e girince kazanılır.'),
+        B('🏆 Şampiyonluk', '🥇', 'Ayın Birincisi', 3, firstPlaces, 1, 'birincilik', 'Bir ayı sıralamada 1. bitirince kazanılır.'),
+        B('🏆 Şampiyonluk', '🏅', 'Seri Şampiyon', 4, medals.length, 5, 'şampiyonluk', 'Toplam 5 ayda ilk 3\'e girince kazanılır. İstikrarın ödülü.'),
+        B('🕰️ Sadakat', '🌿', '6 Aylık Yol', 2, ageDays, 180, 'gün', 'Uygulamada 6 ay geçirince kazanılır.'),
+        B('🕰️ Sadakat', '🌳', '1 Yıllık Yol', 3, ageDays, 365, 'gün', 'Uygulamayla 1 yıl geçirince kazanılır.'),
+        B('🕰️ Sadakat', '🏺', '3 Yıllık Yol', 4, ageDays, 1095, 'gün', 'Uygulamayla 3 yıl geçirince kazanılır.'),
+        B('🕰️ Sadakat', '🗿', '5 Yıllık Yol', 4, ageDays, 1825, 'gün', 'Uygulamayla 5 yıl geçirince kazanılır.'),
+        B('🕰️ Sadakat', '🏯', '10 Yıllık Yol', 4, ageDays, 3650, 'gün', 'Uygulamayla 10 yıl geçirince kazanılır. Gerçek bir yol arkadaşlığı.')
     ];
-    const prog = [
-        [Math.min(st.words, 1), 1, 'kelime'], [st.words, 100, 'kelime'], [st.words, 500, 'kelime'],
-        [Math.max(streak, bestStreak), 7, 'gün seri'], [Math.max(streak, bestStreak), 30, 'gün seri'],
-        [exams.length, 10, 'sınav'], [bestExam, 90, '% (en iyi sınav doğruluğu)'],
-        [km.total >= 30 ? acc : km.total, km.total >= 30 ? 70 : 30, km.total >= 30 ? '% doğruluk' : 'soru (önce 30 soru çöz)'],
-        [st.mevcutSeviye, 5, 'seviye'], [friends, 5, 'arkadaş'], [medals.length, 1, 'şampiyonluk']
-    ];
-    window.__badgeInfo = badges.map((b, i) => ({ e: b.e, name: b.t.replace(/\s*\(.*\)\s*$/, ''), ok: b.ok, cur: prog[i][0], goal: prog[i][1], unit: prog[i][2] }));
+    // Son rozet: diğer tüm rozetlerin toplanması
+    const allOthers = badges.every(b => b.ok);
+    badges.push(B('🌟 Final', '🌟', 'Hepsini Topladın', 4, badges.filter(b => b.ok).length, badges.length, 'rozet', 'Diğer tüm rozetleri kazanınca verilir. Sahip olması mümkün en nadir rozet.'));
+    window.__badgeInfo = badges.map(b => ({ cat: b.cat, e: b.e, name: b.name, tier: b.tier, ok: b.ok, cur: b.cur, goal: b.goal, unit: b.unit, desc: b.desc }));
     const earned = badges.filter(b => b.ok).length;
-    const badgeHTML = badges.map((b, bi) => `<span onclick="window.__badgeDetail(${bi})" title="${b.t}" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:8px; font-size:15px; ${b.ok ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); filter:grayscale(1); opacity:.35;'}">${b.e}</span>`).join('');
+    const tierC = { 1: '16,185,129', 2: '59,130,246', 3: '168,85,247', 4: '245,158,11' };
+    const badgeHTML = badges.map((b, bi) => `<span onclick="window.__badgeDetail(${bi})" title="${b.name}" style="cursor:pointer; display:flex; align-items:center; justify-content:center; height:31px; border-radius:9px; font-size:16px; ${b.ok ? `background:rgba(${tierC[b.tier]},0.20); border:1px solid rgba(${tierC[b.tier]},0.7);` : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(148,163,184,0.45); filter:grayscale(1); opacity:.4;'}">${b.e}</span>`).join('');
     const chip = (txt, gold) => `<span style="display:inline-block; padding:3px 9px; border-radius:99px; font-size:11px; ${gold ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); opacity:.85;'}">${txt}</span>`;
     const chips = medals.map(m => chip(`${['🥇','🥈','🥉'][m.place - 1]} ${getSeasonLabel(m.seasonId)}`, true)).join(' ')
         + ' ' + history.map(h => chip(`📅 ${short(h.seasonId)} · ${h.score} P`, false)).join(' ');
@@ -10690,7 +10715,7 @@ window.__profileExtrasHTML = async function(u, uid, st) {
             <div style="position:relative; font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:6px; padding-right:30px; min-height:24px; line-height:24px;">🏅 Ay Başarıları${window.__helpBtn('months').replace('top:7px; right:7px;', 'top:0; right:0;')}</div>
             <div style="display:flex; flex-wrap:wrap; gap:5px;">${chips.trim() ? chips : '<span style="font-size:11px; opacity:.55;">Henüz kayıt yok</span>'}</div>
             <div style="position:relative; font-size:11px; font-weight:600; color:#f59e0b; margin:10px 0 6px; padding-right:30px; min-height:24px; line-height:24px;">🎖️ Rozetler <span style="opacity:.6; font-weight:400;">(${earned}/${badges.length})</span>${window.__helpBtn('badges').replace('top:7px; right:7px;', 'top:0; right:-1px;')}</div>
-            <div style="display:flex; flex-wrap:nowrap; justify-content:space-between; gap:3px;">${badgeHTML}</div>
+            <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:5px;">${badgeHTML}</div>
         </div>
         ${joined ? `<div style="text-align:center; font-size:10px; opacity:.45; margin-top:8px;">🗓️ ${joined} tarihinden beri aramızda</div>` : ''}`;
 };
