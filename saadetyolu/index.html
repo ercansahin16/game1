@@ -7583,7 +7583,21 @@ async function saveExamResult(examTitle, score, correct, total) {
         return;
     }
     
-    const newName = prompt('Yeni kullanıcı adınızı girin:', document.getElementById('profileName').textContent);
+    const { value: newName } = await Swal.fire({
+        title: '✏️ Kullanıcı Adı',
+        input: 'text',
+        inputValue: document.getElementById('profileName').textContent,
+        inputPlaceholder: 'Yeni kullanıcı adınız',
+        inputAttributes: { maxlength: 30, autocapitalize: 'words' },
+        showCancelButton: true,
+        confirmButtonText: 'Kaydet',
+        cancelButtonText: 'Vazgeç',
+        reverseButtons: true,
+        confirmButtonColor: '#f59e0b',
+        width: '320px',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
+    if (newName === undefined) return; // Vazgeç
     if (!newName || !newName.trim()) {
         showWarning('❌ Kullanıcı adı boş olamaz!');
         return;
@@ -7643,7 +7657,19 @@ window.editEmail = async () => {
         return;
     }
     
-    const newEmail = prompt('Yeni e-posta adresinizi girin:', currentUser.email);
+    const { value: newEmail } = await Swal.fire({
+        title: '📧 E-posta Adresi',
+        input: 'email',
+        inputValue: currentUser.email,
+        inputPlaceholder: 'Yeni e-posta adresiniz',
+        showCancelButton: true,
+        confirmButtonText: 'Devam',
+        cancelButtonText: 'Vazgeç',
+        reverseButtons: true,
+        confirmButtonColor: '#f59e0b',
+        width: '320px',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
     if (!newEmail || newEmail === currentUser.email) return;
     
     if (!newEmail.includes('@') || !newEmail.includes('.')) {
