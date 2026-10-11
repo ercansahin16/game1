@@ -830,6 +830,13 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
             color: white;
             margin: 0;
         }
+        .auth-tab { display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 6px; line-height:1.2; border:3px solid transparent; transition:all .2s; }
+        .auth-tab .at-main { font-weight:800; font-size:15px; }
+        .auth-tab .at-sub { font-size:11px; font-weight:600; opacity:.85; }
+        .auth-tab.at-on { border-color:#fff; box-shadow:0 0 0 3px var(--c), 0 4px 16px rgba(0,0,0,.4); transform:scale(1.03); }
+        .auth-tab.at-off { opacity:.45; filter:saturate(.5); }
+        .auth-banner { text-align:center; font-size:13px; line-height:1.5; padding:9px 10px; margin:0 0 12px; border-radius:12px; border:2px solid var(--c); background:color-mix(in srgb, var(--c) 16%, transparent); }
+        .auth-swap { text-align:center; font-size:13px; margin-top:14px; cursor:pointer; opacity:.9; }
         .toggle-password {
             position: absolute;
             right: 12px;
@@ -4413,7 +4420,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.3.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.0 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -4485,10 +4492,11 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             </div>
             <p style="margin: 6px 0; font-size: 12px; text-align: center;">Rahman ve Rahim olan Allah'ın adıyla...</p>
             <div style="display: flex; gap: 10px; margin: 12px 0;">
-                <button id="showLoginBtn" class="btn" style="flex:1; background:#f59e0b; color:#121212;">Login</button>
-                <button id="showRegisterBtn" class="btn" style="flex:1; background:#3b82f6; color:white;">Kayıt Ol</button>
+                <button id="showLoginBtn" class="btn auth-tab" style="flex:1; background:#f59e0b; color:#121212;"><span class="at-main">🔑 Login (Giriş)</span><span class="at-sub">Hesabım var</span></button>
+                <button id="showRegisterBtn" class="btn auth-tab" style="flex:1; background:#3b82f6; color:white;"><span class="at-main">🆕 Kayıt Ol</span><span class="at-sub">İlk kez giriyorum</span></button>
             </div>
             <div id="loginForm">
+    <div class="auth-banner" style="--c:#f59e0b"><b>🔑 GİRİŞ EKRANI</b><br>Daha önce kayıt olduysanız <u>burayı</u> kullanın.</div>
     <div class="input-wrapper">
         <input type="email" id="loginEmail" placeholder="E-posta" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
         <button type="button" id="loginEmailPasteBtn" class="toggle-password" title="Yapıştır" style="display:none" onclick="window.__pasteInto('loginEmail')"><i class="fas fa-paste"></i></button>
@@ -4535,8 +4543,10 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
     </button>
     
     <div class="link" id="showForgotBtn">Şifremi unuttum?</div>
+    <div class="auth-swap" onclick="document.getElementById('showRegisterBtn').click()">Hesabınız yok mu? <b style="color:#60a5fa">Kayıt Ol</b></div>
 </div>
             <div id="registerForm" style="display: none;">
+                <div class="auth-banner" style="--c:#3b82f6"><b>🆕 KAYIT EKRANI</b><br>Sadece <u>ilk defa</u> giriyorsanız burayı kullanın.</div>
                 <div class="input-wrapper">
                     <input type="text" id="regName" placeholder="Adınız Soyadınız" autocomplete="name">
                 </div>
@@ -4549,7 +4559,8 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
-                <button id="doRegisterBtn" class="btn btn-primary">Kayıt Ol</button>
+                <button id="doRegisterBtn" class="btn btn-primary" style="background:#3b82f6;color:#fff">Kayıt Ol</button>
+                <div class="auth-swap" onclick="document.getElementById('showLoginBtn').click()">Zaten hesabınız var mı? <b style="color:#fbbf24">Giriş yapın</b></div>
             </div>
             <div id="forgotForm" style="display: none;">
                 <div class="input-wrapper">
@@ -8618,17 +8629,25 @@ window.checkAndCompleteExam = () => {
         modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
     }
 
+    window.__setAuthTab = function(w){
+        const l=document.getElementById('showLoginBtn'), r=document.getElementById('showRegisterBtn');
+        [[l,'login','#f59e0b'],[r,'register','#3b82f6']].forEach(([b,k,c])=>{ const on = (w===k); b.classList.toggle('at-on',on); b.classList.toggle('at-off',!on && w!=='forgot'); b.style.setProperty('--c',c); const m=b.querySelector('.at-main'); m.textContent=(on?'✓ ':'')+m.textContent.replace(/^✓ /,''); });
+    };
+    window.__setAuthTab('login');
     document.getElementById('showLoginBtn').onclick = () => {
+        window.__setAuthTab('login');
         document.getElementById('loginForm').style.display = 'block';
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('forgotForm').style.display = 'none';
     };
     document.getElementById('showRegisterBtn').onclick = () => {
+        window.__setAuthTab('register');
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').style.display = 'block';
         document.getElementById('forgotForm').style.display = 'none';
     };
     document.getElementById('showForgotBtn').onclick = () => {
+        window.__setAuthTab('forgot');
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('forgotForm').style.display = 'block';
