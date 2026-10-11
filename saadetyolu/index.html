@@ -4413,7 +4413,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.1.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.1.1 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -8785,6 +8785,18 @@ document.getElementById('doLoginBtn').onclick = async () => {
         }
         
     } catch(error) {
+        // E-posta zaten kayıtlıysa: şifre doğruysa kullanıcıyı otomatik giriş yaptır
+        if (error.code === 'auth/email-already-in-use') {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
+                nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
+                return;
+            } catch (siErr) {
+                showWarning('⚠️ Bu e-posta ile zaten kayıt var. Şifre uyuşmadı — lütfen "Login" sekmesinden doğru şifreyle giriş yapın veya "Şifremi unuttum"u kullanın.');
+                return;
+            }
+        }
         console.error('❌ Kayıt hatası:', error);
         console.error('  Hata kodu:', error.code);
         console.error('  Hata mesajı:', error.message);
