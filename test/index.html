@@ -4413,7 +4413,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.1.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.2.0 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -4491,6 +4491,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div id="loginForm">
     <div class="input-wrapper">
         <input type="email" id="loginEmail" placeholder="E-posta">
+        <button type="button" id="loginEmailPasteBtn" class="toggle-password" title="Yapıştır" style="display:none" onclick="window.__pasteInto('loginEmail')"><i class="fas fa-paste"></i></button>
     </div>
     <div class="input-wrapper">
         <input type="password" id="loginPassword" placeholder="Şifre">
@@ -8636,6 +8637,35 @@ window.checkAndCompleteExam = () => {
 
 
 
+
+// ===== E-POSTA YAZIM HATASI ÖNERİLERİ =====
+window.__emailSuggestions = function(raw){
+    const out = [];
+    let e = String(raw||'').trim().toLowerCase().replace(/\s+/g,'');
+    const fold = {'ü':'u','ı':'i','ö':'o','ş':'s','ç':'c','ğ':'g','â':'a','î':'i','û':'u','İ':'i'};
+    let f = e.replace(/[üıöşçğâîû]/g, c => fold[c]);
+    const add = v => { if (v && v !== e && !out.includes(v)) out.push(v); };
+    add(f);
+    const dm = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gmaill.com':'gmail.com','gmal.com':'gmail.com','gamil.com':'gmail.com','gnail.com':'gmail.com','gmail.con':'gmail.com','gmail.co':'gmail.com','gmail.cm':'gmail.com','gmail.com.tr':'gmail.com','gmeil.com':'gmail.com','hotmal.com':'hotmail.com','hotmial.com':'hotmail.com','hotmail.con':'hotmail.com','hotmai.com':'hotmail.com','outlok.com':'outlook.com','outlook.con':'outlook.com','yahooo.com':'yahoo.com','yaho.com':'yahoo.com','yahoo.con':'yahoo.com','icloud.con':'icloud.com'};
+    const at = f.lastIndexOf('@');
+    if (at > 0) { const d = f.slice(at+1); if (dm[d]) add(f.slice(0,at+1)+dm[d]); }
+    return out.slice(0,3);
+};
+window.__pasteInto = async function(id){
+    const el = document.getElementById(id);
+    try { const t = await navigator.clipboard.readText(); if (t) { el.value = t.trim(); el.dispatchEvent(new Event('input',{bubbles:true})); } }
+    catch(e){ el.focus(); showWarning('📋 Yapıştırmak için kutuya uzun basıp "Yapıştır"ı seçin.'); }
+};
+window.__showEmailSuggest = function(list, inputId){
+    const btn = document.getElementById(inputId+'PasteBtn'); if (btn) btn.style.display = 'flex';
+    const rows = list.map(m => '<div style="display:flex;align-items:center;gap:8px;background:rgba(128,128,128,.14);border:1px solid rgba(128,128,128,.35);border-radius:10px;padding:8px 10px;margin:6px 0;text-align:left"><span style="flex:1;word-break:break-all;font-weight:700">'+m.replace(/</g,'&lt;')+'</span><button type="button" class="__sgCopy" data-m="'+m.replace(/"/g,'')+'" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 11px;cursor:pointer"><i class="fas fa-copy"></i></button><button type="button" class="__sgUse" data-m="'+m.replace(/"/g,'')+'" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 11px;cursor:pointer;font-weight:700">Kullan</button></div>').join('');
+    Swal.fire({ title:'E-postayı kontrol edin', icon:'question', confirmButtonText:'Kapat', customClass:{popup:'compact-swal themed-swal'},
+        html:'<div style="font-size:14px;margin-bottom:6px">Yazdığınız e-posta bulunamadı. Şunu mu demek istediniz?</div>'+rows+'<div style="font-size:12px;opacity:.7;margin-top:8px">Kopyala simgesiyle kopyalayıp e-posta kutusuna yapıştırabilir ya da "Kullan"a basabilirsiniz.</div>',
+        didOpen:(pop)=>{
+            pop.querySelectorAll('.__sgCopy').forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.m); b.innerHTML='<i class="fas fa-check"></i>'; }catch(e){ b.innerHTML='!'; } });
+            pop.querySelectorAll('.__sgUse').forEach(b=>b.onclick=()=>{ document.getElementById(inputId).value=b.dataset.m; Swal.close(); const pw=document.getElementById('loginPassword'); if(pw) pw.focus(); });
+        }});
+};
 document.getElementById('doLoginBtn').onclick = async () => {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
@@ -8686,7 +8716,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
             errorMessage += 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
         }
         
-        showWarning(errorMessage);
+        const __sg = (['auth/user-not-found','auth/invalid-login-credentials','auth/invalid-credential','auth/invalid-email'].includes(error.code)) ? window.__emailSuggestions(email) : [];
+        if (__sg.length) { window.__showEmailSuggest(__sg, 'loginEmail'); }
+        else showWarning(errorMessage);
     }
 };
     
