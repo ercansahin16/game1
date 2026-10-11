@@ -10557,13 +10557,7 @@ window.__getSeasonWinners = async function() {
 };
 // ===== ❓ PROFİL YARDIM PENCERELERİ =====
 window.__helpBtn = (kind) => `<button type="button" onclick="event.stopPropagation(); window.__profileHelp('${kind}')" title="Nasıl çalışır?" style="position:absolute; top:7px; right:7px; width:24px; height:24px; border-radius:50%; border:1px solid rgba(245,158,11,0.55); background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:800; font-size:13px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;">?</button>`;
-window.__profileHelp = function(kind) {
-    const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">✓ kazandın</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
-    let title = '', body = '';
-    if (kind === 'badges') {
-        title = '🎖️ Rozetler Nasıl Kazanılır?';
-        const info = window.__badgeInfo || [];
-        const desc = [
+window.__badgeDesc = [
             'Uygulamada en az 1 kelime öğrenince kazanılır.',
             'Toplam 100 kelime öğrenince kazanılır. Her kelimeyi "Kelime Öğren" bölümünde görmen yeterli.',
             'Toplam 500 kelimeye ulaşınca kazanılır. Uzun soluklu çalışmanın göstergesi.',
@@ -10575,7 +10569,32 @@ window.__profileHelp = function(kind) {
             'Seviye 5\'e ulaşınca kazanılır. Seviye, derslerdeki ilerlemenle yükselir.',
             'En az 5 arkadaş edinince kazanılır. Sıralamadan oyuncu profiline girip arkadaş olabilirsin.',
             'Bir ayın sonunda sıralamada ilk 3\'e girerek "Ayın Şampiyonu" olunca kazanılır.'
-        ];
+];
+window.__badgeDetail = function(i) {
+    const b = (window.__badgeInfo || [])[i];
+    if (!b) return;
+    const pct = Math.max(0, Math.min(100, Math.round(b.cur / b.goal * 100)));
+    Swal.fire({
+        title: `${b.e} ${b.name}`,
+        html: `<div style="text-align:left; font-size:13px; line-height:1.5;">
+            <div style="margin-bottom:10px; opacity:.85;">${window.__badgeDesc[i] || ''}</div>
+            <div style="font-weight:700; margin-bottom:5px; color:${b.ok ? '#10b981' : '#f59e0b'};">${b.ok ? '✓ Bu rozeti kazandın!' : 'İlerleme: ' + b.cur + ' / ' + b.goal + ' ' + b.unit}</div>
+            <div style="height:9px; border-radius:99px; background:rgba(148,163,184,0.3); overflow:hidden;"><div style="height:100%; width:${b.ok ? 100 : pct}%; background:${b.ok ? '#10b981' : '#f59e0b'}; border-radius:99px;"></div></div>
+            ${b.ok ? '' : `<div style="font-size:11px; opacity:.6; margin-top:6px;">%${pct} tamamlandı</div>`}
+        </div>`,
+        confirmButtonText: 'Tamam', confirmButtonColor: '#f59e0b', width: '320px',
+        customClass: { popup: 'compact-swal themed-swal' }
+    });
+};
+
+window.__profileHelp = function(kind) {
+    const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">✓ kazandın</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
+    let title = '', body = '';
+    if (kind === 'badges') {
+        title = '🎖️ Rozetler Nasıl Kazanılır?';
+        const info = window.__badgeInfo || [];
+        const desc = window.__badgeDesc;
+        
         body = info.map((b, i) => row(b.e, b.name, desc[i] || '', b.ok)).join('') +
             '<div style="font-size:11px; opacity:.6; margin-top:10px;">Kazanılan rozetler renkli, kazanılmayanlar soluk görünür. Rozetin üzerine basılı tutarak adını görebilirsin.</div>';
     } else if (kind === 'stats') {
@@ -10642,9 +10661,16 @@ window.__profileExtrasHTML = async function(u, uid, st) {
         { e: '👥', t: 'Sosyal (5+ arkadaş)', ok: friends >= 5 },
         { e: '🏆', t: 'Ayın Şampiyonu', ok: medals.length > 0 }
     ];
-    window.__badgeInfo = badges.map(b => ({ e: b.e, name: b.t.replace(/\s*\(.*\)\s*$/, ''), ok: b.ok }));
+    const prog = [
+        [Math.min(st.words, 1), 1, 'kelime'], [st.words, 100, 'kelime'], [st.words, 500, 'kelime'],
+        [Math.max(streak, bestStreak), 7, 'gün seri'], [Math.max(streak, bestStreak), 30, 'gün seri'],
+        [exams.length, 10, 'sınav'], [bestExam, 90, 'puan (en iyi sınav)'],
+        [km.total >= 30 ? acc : km.total, km.total >= 30 ? 70 : 30, km.total >= 30 ? '% doğruluk' : 'soru (önce 30 soru çöz)'],
+        [st.mevcutSeviye, 5, 'seviye'], [friends, 5, 'arkadaş'], [medals.length, 1, 'şampiyonluk']
+    ];
+    window.__badgeInfo = badges.map((b, i) => ({ e: b.e, name: b.t.replace(/\s*\(.*\)\s*$/, ''), ok: b.ok, cur: prog[i][0], goal: prog[i][1], unit: prog[i][2] }));
     const earned = badges.filter(b => b.ok).length;
-    const badgeHTML = badges.map(b => `<span title="${b.t}" style="display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:8px; font-size:15px; ${b.ok ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); filter:grayscale(1); opacity:.35;'}">${b.e}</span>`).join('');
+    const badgeHTML = badges.map((b, bi) => `<span onclick="window.__badgeDetail(${bi})" title="${b.t}" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:8px; font-size:15px; ${b.ok ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); filter:grayscale(1); opacity:.35;'}">${b.e}</span>`).join('');
     const chip = (txt, gold) => `<span style="display:inline-block; padding:3px 9px; border-radius:99px; font-size:11px; ${gold ? 'background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.5);' : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); opacity:.85;'}">${txt}</span>`;
     const chips = medals.map(m => chip(`${['🥇','🥈','🥉'][m.place - 1]} ${getSeasonLabel(m.seasonId)}`, true)).join(' ')
         + ' ' + history.map(h => chip(`📅 ${short(h.seasonId)} · ${h.score} P`, false)).join(' ');
@@ -10661,7 +10687,7 @@ window.__profileExtrasHTML = async function(u, uid, st) {
             <div onclick="window.__showFriendsOf('${uid}')" style="cursor:pointer; min-width:0;" title="Arkadaşlarını gör">${cell(friends, '👥 Arkadaş ›', '236,72,153')}</div>
         </div>
         <div style="position:relative; margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;">
-            <div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:6px; padding-right:30px;">🏅 Ay Başarıları${window.__helpBtn('months').replace('top:7px; right:7px;', 'top:-1px; right:-1px;')}</div>
+            <div style="position:relative; font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:6px; padding-right:30px; min-height:24px; line-height:24px;">🏅 Ay Başarıları${window.__helpBtn('months').replace('top:7px; right:7px;', 'top:0; right:0;')}</div>
             <div style="display:flex; flex-wrap:wrap; gap:5px;">${chips.trim() ? chips : '<span style="font-size:11px; opacity:.55;">Henüz kayıt yok</span>'}</div>
             <div style="position:relative; font-size:11px; font-weight:600; color:#f59e0b; margin:10px 0 6px; padding-right:30px; min-height:24px; line-height:24px;">🎖️ Rozetler <span style="opacity:.6; font-weight:400;">(${earned}/${badges.length})</span>${window.__helpBtn('badges').replace('top:7px; right:7px;', 'top:0; right:-1px;')}</div>
             <div style="display:flex; flex-wrap:nowrap; justify-content:space-between; gap:3px;">${badgeHTML}</div>
