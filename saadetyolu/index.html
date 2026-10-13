@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v40">
+    <meta name="app-build" content="saadetyolu-shell-v41">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4443,7 +4443,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.5 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -5038,7 +5038,13 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
                 <div style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px;">
                     <h4 style="color: #f59e0b; font-size: 15px; margin-bottom: 12px;"><i class="fas fa-lock"></i> Şifre Değiştir</h4>
                     <div class="password-wrapper" style="position: relative;">
-                        <input type="password" id="newPassword" placeholder="Yeni Şifre (6+ karakter)" style="width: 100%; padding: 12px; padding-right: 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
+                        <input type="password" id="currentPasswordField" autocomplete="current-password" placeholder="Mevcut Şifre" style="width: 100%; padding: 12px; padding-right: 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
+                        <button type="button" class="toggle-profile-password" onclick="toggleProfilePassword('currentPasswordField', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-wrapper" style="position: relative;">
+                        <input type="password" id="newPassword" autocomplete="new-password" placeholder="Yeni Şifre (6+ karakter)" style="width: 100%; padding: 12px; padding-right: 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
                         <button type="button" class="toggle-profile-password" onclick="toggleProfilePassword('newPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px;">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -9048,84 +9054,24 @@ document.getElementById('doLoginBtn').onclick = async () => {
 
     
     document.getElementById('updatePasswordBtn').onclick = async () => {
+    const currentPassword = document.getElementById('currentPasswordField').value;
     const newPass = document.getElementById('newPassword').value;
     const confirmPass = document.getElementById('confirmPassword').value;
-    
-    if (newPass.length < 6) { 
-        showWarning('⚠️ Şifre en az 6 karakter olmalı!'); 
-        return; 
+
+    if (!currentPassword) {
+        showWarning('⚠️ Önce mevcut şifrenizi yazın.');
+        return;
     }
-    if (newPass !== confirmPass) { 
-        showWarning('⚠️ Şifreler eşleşmiyor!'); 
-        return; 
+    if (newPass.length < 6) {
+        showWarning('⚠️ Yeni şifre en az 6 karakter olmalı!');
+        return;
     }
-    
+    if (newPass !== confirmPass) {
+        showWarning('⚠️ Yeni şifreler birbiriyle aynı değil!');
+        return;
+    }
+
     try {
-        // ===== KULLANICIDAN MEVCUT ŞİFRESİNİ İSTE =====
-        const { value: currentPassword } = await Swal.fire({
-            title: '🔒 Güvenlik Doğrulaması',
-            html: `
-                <div style="text-align: left; padding: 5px 0;">
-                    <p style="margin-bottom: 12px; font-size: 14px; color: #e5e7eb;">Şifrenizi değiştirmek için mevcut şifrenizi girin:</p>
-                    <div style="position: relative;">
-                        <input type="password" id="swalCurrentPassword" placeholder="Mevcut şifreniz" 
-                               style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #374151; 
-                                      background: #1f2937; color: #ffffff; font-size: 14px; outline: none;">
-                        <button type="button" id="swalToggleCurrentPassword" 
-                                style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-                                       background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 16px;">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Doğrula ✅',
-            cancelButtonText: 'İptal',
-            confirmButtonColor: '#10b981',
-            cancelButtonColor: '#6b7280',
-            width: '420px',
-            padding: '1.5rem',
-            background: '#1a1a1a',
-            backdrop: 'rgba(0,0,0,0.8)',
-            didOpen: () => {
-                const input = document.getElementById('swalCurrentPassword');
-                const toggleBtn = document.getElementById('swalToggleCurrentPassword');
-                if (input) {
-                    setTimeout(() => input.focus(), 100);
-                    input.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter' && input.value.trim()) {
-                            Swal.clickConfirm();
-                        }
-                    });
-                }
-                if (toggleBtn && input) {
-                    toggleBtn.addEventListener('click', () => {
-                        if (input.type === 'password') {
-                            input.type = 'text';
-                            toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                        } else {
-                            input.type = 'password';
-                            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
-                        }
-                    });
-                }
-            },
-            preConfirm: () => {
-                const input = document.getElementById('swalCurrentPassword');
-                if (!input || !input.value.trim()) {
-                    Swal.showValidationMessage('❌ Lütfen şifrenizi girin!');
-                    return false;
-                }
-                return input.value.trim();
-            }
-        });
-        
-        if (!currentPassword) {
-            showWarning('❌ Şifre girilmedi, işlem iptal edildi.');
-            return;
-        }
-        
         // ===== KULLANICIYI YENİDEN DOĞRULA =====
         const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
         await reauthenticateWithCredential(currentUser, credential);
@@ -9136,6 +9082,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         __dbg('✅ Şifre güncellendi');
         
         showWarning('✅ Şifre başarıyla güncellendi!');
+        document.getElementById('currentPasswordField').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
         
