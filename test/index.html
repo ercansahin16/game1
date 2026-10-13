@@ -3,6 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
+    <meta name="app-build" content="test-v16">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4425,7 +4426,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.4 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -16561,37 +16562,42 @@ enhanceAllDropdownSelects();
     // uygulamaya her dönüşte (en fazla 10 dakikada bir) değişmiş mi diye bakar, değiştiyse
     // altta küçük bir "Yenile" bildirimi gösterir. Pencereleri kapatmaz, sayfayı kendiliğinden yenilemez.
     (function () {
+        // Çalışan kodun "yapı numarası" HTML'in içindeki <meta name="app-build"> etiketinde yazar.
+        // Sunucudaki index.html'in numarasıyla farklıysa → yeni sürüm vardır. Bu yüzden çıkış/giriş
+        // ya da yeniden yükleme eski kodu getirdiyse bile, gerçekten güncellenene kadar uyarı kalır.
         const url = window.location.href.split('#')[0].split('?')[0];
-        let baseSig = null, lastCheck = 0, shown = false;
-        async function sig() {
+        const myBuild = document.querySelector('meta[name="app-build"]')?.content || null;
+        let lastCheck = 0, shown = false;
+        async function serverBuild() {
             try {
-                const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-                if (!r.ok) return null;
-                const v = [r.headers.get('etag'), r.headers.get('last-modified'), r.headers.get('content-length')].filter(Boolean).join('|');
-                return v || null;
+                const r = await fetch(url + '?_b=' + Date.now(), { cache: 'no-store', headers: { Range: 'bytes=0-12287' } });
+                if (!r.ok && r.status !== 206) return null;
+                const t = await r.text();
+                const m = t.match(/<meta\s+name="app-build"\s+content="([^"]+)"/);
+                return m ? m[1] : null;
             } catch (e) { return null; }
         }
         function showBanner() {
-            if (shown) return;
+            if (shown || document.getElementById('updateBanner')) return;
             shown = true;
             const d = document.createElement('div');
+            d.id = 'updateBanner';
             d.style.cssText = 'position:fixed; left:12px; right:12px; bottom:14px; z-index:2147482000; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:14px; background:#1c1c20; color:#f3f4f6; border:1px solid rgba(245,158,11,.6); box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:14px; max-width:420px; margin:0 auto;';
             d.innerHTML = '<span style="flex:1;">🔄 Yeni sürüm hazır</span><button type="button" style="padding:7px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;">Yenile</button><button type="button" aria-label="Kapat" style="border:none; background:none; color:#9ca3af; font-size:20px; line-height:1; cursor:pointer; padding:0 2px;">×</button>';
             const [, go, x] = [d.children[0], d.children[1], d.children[2]];
             go.addEventListener('click', () => window.checkForAppUpdate());
-            x.addEventListener('click', () => d.remove());
+            // Kapatılsa bile güncellenmediği sürece bir sonraki kontrolde / açılışta yeniden gelir
+            x.addEventListener('click', () => { d.remove(); shown = false; lastCheck = Date.now(); });
             document.body.appendChild(d);
         }
-        async function check() {
-            if (shown || Date.now() - lastCheck < 10 * 60 * 1000) return;
+        async function check(force) {
+            if (!myBuild) return;
+            if (!force && Date.now() - lastCheck < 10 * 60 * 1000) return;
             lastCheck = Date.now();
-            const now = await sig();
-            if (!now) return;
-            if (baseSig === null) { baseSig = now; return; }
-            if (now !== baseSig) showBanner();
+            const now = await serverBuild();
+            if (now && now !== myBuild) showBanner();
         }
-        // Açılışta imzayı kaydet
-        sig().then(v => { if (v) baseSig = v; });
+        setTimeout(() => check(true), 4000);   // açılışta hemen denetle
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
         setInterval(() => { if (document.visibilityState === 'visible') check(); }, 15 * 60 * 1000);
     })();
