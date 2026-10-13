@@ -1451,6 +1451,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
    import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"; // ✅ YENİ
     const firebaseConfig = {
@@ -1463,6 +1464,24 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     };
 
     const app = initializeApp(firebaseConfig);
+    // Şifre sıfırlama e-postası: yalnızca kullanıcının KAYITLI e-posta adresine gider
+    window.adminSendReset = async function (email, name) {
+        if (!email) { Swal.fire('Uyarı', 'Bu kullanıcının kayıtlı e-postası yok.', 'warning'); return; }
+        const r = await Swal.fire({
+            title: 'Şifre sıfırlama e-postası',
+            html: '<b></b> adlı kullanıcının kayıtlı adresine (<span id="rstMail"></span>) şifre sıfırlama bağlantısı gönderilecek. Devam edilsin mi?',
+            icon: 'question', showCancelButton: true, confirmButtonText: 'Gönder', cancelButtonText: 'Vazgeç',
+            didOpen: (p) => { p.querySelector('b').textContent = name || 'Bu'; p.querySelector('#rstMail').textContent = email; }
+        });
+        if (!r.isConfirmed) return;
+        try {
+            await sendPasswordResetEmail(getAuth(app), email);
+            Swal.fire('Gönderildi ✅', email + ' adresine sıfırlama bağlantısı gönderildi. Gelen kutusu ve istenmeyen (spam) klasörüne bakmasını söyleyin.', 'success');
+        } catch (e) {
+            const m = { 'auth/user-not-found': 'Bu e-posta ile kayıtlı hesap bulunamadı.', 'auth/too-many-requests': 'Çok fazla deneme yapıldı, biraz bekleyin.', 'auth/invalid-email': 'E-posta adresi geçersiz.', 'auth/network-request-failed': 'İnternet bağlantısını kontrol edin.' };
+            Swal.fire('Gönderilemedi', m[e.code] || 'Bir sorun oluştu, daha sonra tekrar deneyin.', 'error');
+        }
+    };
     const db = getFirestore(app);
     // Oyuncu cihazlarındaki içerik önbelleği (kitap/ders/kelime/sınav) bu sürüm numarası değişince yenilenir.
     window.bumpContentVersion = async function () {
@@ -2801,6 +2820,9 @@ function renderUsersList(users) {
                 </small>
             </div>
             <div class="item-actions">
+                <button class="btn btn-warning icon-btn" onclick="event.stopPropagation(); adminSendReset(${JSON.stringify(user.email || '').replace(/"/g, '&quot;')}, ${JSON.stringify(user.name || '').replace(/"/g, '&quot;')})" title="Şifre sıfırlama e-postası gönder">
+                    <i class="fas fa-key"></i>
+                </button>
                 <button class="btn btn-info icon-btn" onclick="event.stopPropagation(); showUserDetail(${JSON.stringify(user).replace(/"/g, '&quot;')})" title="Detay">
                     <i class="fas fa-eye"></i>
                 </button>
