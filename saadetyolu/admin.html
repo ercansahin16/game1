@@ -940,6 +940,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="header" id="mainHeader" style="display: none;">
         <div class="logo" onclick="showSection('dashboard'); closeMenu();" style="cursor: pointer;">🔐 AnaSayfa</div>
         <div class="header-right">
+            <button class="theme-icon-btn" id="contentRefreshBtn" title="Oyuncu önbelleğini yenile (kelime/ders/sınav)" onclick="window.bumpContentVersion().then(()=>Swal.fire({icon:'success',title:'Yenilendi',text:'Oyuncuların cihazındaki kelime/ders/sınav önbelleği bir sonraki açılışta yenilenecek.',timer:2600,showConfirmButton:false}))"><i class="fas fa-rotate"></i></button>
             <button class="theme-icon-btn" id="themeIconBtn"><i class="fas fa-moon"></i></button>
             <div class="user-info hidden" id="logoutIconBtn">
                 <i class="fas fa-sign-out-alt"></i> Çıkış
@@ -1460,6 +1461,11 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    // Oyuncu cihazlarındaki içerik önbelleği (kitap/ders/kelime/sınav) bu sürüm numarası değişince yenilenir.
+    window.bumpContentVersion = async function () {
+        try { await setDoc(doc(db, 'appConfig', 'announcement'), { contentVersion: Date.now() }, { merge: true }); }
+        catch (e) { console.warn('İçerik sürümü güncellenemedi:', e && e.message); }
+    };
     const functions = getFunctions(app); // ✅ YENİ
 
     let books = [];
@@ -1664,7 +1670,7 @@ async function publishAnnouncement() {
     const data = { id, title, message, publishedAt };
 
     try {
-        await setDoc(doc(db, 'appConfig', 'announcement'), data);
+        await setDoc(doc(db, 'appConfig', 'announcement'), { ...data, contentVersion: Date.now() }, { merge: true });
         await setDoc(doc(db, 'announcements', id), data);
         titleInput.value = '';
         messageInput.value = '';
@@ -1687,7 +1693,7 @@ async function clearAnnouncement() {
     if (!result.isConfirmed) return;
 
     try {
-        await setDoc(doc(db, 'appConfig', 'announcement'), { id: null, title: '', message: '', publishedAt: null });
+        await setDoc(doc(db, 'appConfig', 'announcement'), { id: null, title: '', message: '', publishedAt: null, contentVersion: Date.now() }, { merge: true });
         loadAnnouncements();
     } catch (e) {
         Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
@@ -1706,6 +1712,7 @@ window.deleteAnnouncementHistoryItem = async function (id) {
     if (!result.isConfirmed) return;
     try {
         await deleteDoc(doc(db, 'announcements', id));
+        await window.bumpContentVersion();
         loadAnnouncements();
     } catch (e) {
         Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
@@ -1766,6 +1773,7 @@ window.editAnnouncement = async function (id) {
         if (activeSnap.exists() && activeSnap.data().id === id) {
             await updateDoc(doc(db, 'appConfig', 'announcement'), upd);
         }
+        await window.bumpContentVersion();
         Swal.fire({ icon: 'success', title: 'Duyuru güncellendi', timer: 1400, showConfirmButton: false });
         loadAnnouncements();
     } catch (e) {
@@ -1874,6 +1882,7 @@ if (addBookBtn) {
         // ✅ DOĞRU
         await setDoc(doc(collection(db, 'books')), data);
     }
+        await window.bumpContentVersion();
     
     closeModal('bookModal');
     loadBooks();
@@ -1982,6 +1991,7 @@ if (addBookBtn) {
         data.createdAt = new Date().toISOString();
         await setDoc(doc(collection(db, 'lessons')), data);
     }
+        await window.bumpContentVersion();
     
     closeModal('lessonModal');
     document.getElementById('lessonBookSelect').dispatchEvent(new Event('change'));
@@ -2382,6 +2392,7 @@ document.getElementById('saveWordBtn').onclick = async () => {
         // ✅ DOĞRU KULLANIM
         await setDoc(doc(collection(db, 'words')), data);
     }
+        await window.bumpContentVersion();
     
     closeModal('wordModal');
     document.getElementById('wordLessonSelect').dispatchEvent(new Event('change'));
@@ -2637,6 +2648,7 @@ async function loadExamBookSelect() {
         } else {
             await setDoc(doc(collection(db, 'exams')), data);
         }
+        await window.bumpContentVersion();
         
         // ✅ Son girilen sınav adını hatırla
         localStorage.setItem('lastExamTitle', title);
@@ -3608,6 +3620,7 @@ document.getElementById('bulkUploadBtn').onclick = async () => {
             }
         }
         
+        await window.bumpContentVersion();
         resultDiv.style.display = 'block';
         resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
         resultDiv.style.border = '1px solid #10b981';
