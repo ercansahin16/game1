@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+<script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
@@ -4424,7 +4425,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.4 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -5487,7 +5488,7 @@ window.__ensurePublicId = async function(userRef, existing) {
                 continue;
             } catch (e) {
                 if (e && e.code === 'permission-denied') { atomicOk = false; }
-                else { window.__pidError = e.code || e.message; console.log('ID işlemi hatası:', e.code, e.message); continue; }
+                else { window.__pidError = e.code || e.message; __dbg('ID işlemi hatası:', e.code, e.message); continue; }
             }
         }
         // Yedek yol (kurallar henüz 'publicIds' için açık değilse): sorgu ile kontrol
@@ -5514,7 +5515,7 @@ window.searchPlayerById = async function(raw) {
         }
         window.__focusPlayer(snap.docs[0].id);
     } catch (e) {
-        console.log('ID arama hatası:', e.message);
+        __dbg('ID arama hatası:', e.message);
         if (window.showWarning) window.showWarning('Arama yapılamadı, lütfen tekrar deneyin.');
     }
 };
@@ -5773,7 +5774,7 @@ window.__checkSeasonCelebration = async function() {
         if (!data || !data.winners || !data.winners.length) return;
         window.__showSeasonPodium(data);
         try { localStorage.setItem(key, '1'); } catch (e) {}
-    } catch (e) { console.log('Şampiyon kutlaması hatası:', e.message); }
+    } catch (e) { __dbg('Şampiyon kutlaması hatası:', e.message); }
 };
 // Geçmiş şampiyonlar (Sıralama ekranındaki "Şampiyonlar" düğmesi)
 window.openSeasonHallOfFame = async function() {
@@ -5851,7 +5852,7 @@ async function getPassedLessonIds() {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         return userDoc.exists() ? (userDoc.data().passedLessonIds || []) : [];
     } catch (e) {
-        console.log('getPassedLessonIds hata:', e.message);
+        __dbg('getPassedLessonIds hata:', e.message);
         return [];
     }
 }
@@ -5880,7 +5881,7 @@ async function getLessonWordViewPercent(lessonId) {
         const viewedIds = viewedMap[lessonId] || [];
         return Math.min(100, Math.round((viewedIds.length / totalWords) * 100));
     } catch (e) {
-        console.log('getLessonWordViewPercent hata:', e.message);
+        __dbg('getLessonWordViewPercent hata:', e.message);
         return 0;
     }
 }
@@ -5910,7 +5911,7 @@ async function markWordAsViewedForLesson(lessonId, wordId) {
             [`viewedWordsByLesson.${lessonId}`]: arrayUnion(wordId)
         });
     } catch (e) {
-        console.log('markWordAsViewedForLesson hata:', e.message);
+        __dbg('markWordAsViewedForLesson hata:', e.message);
     }
 }
 
@@ -5938,7 +5939,7 @@ async function addWordToReviewQueue(word, lessonId) {
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { [`reviewQueue.${word.id}`]: kayit });
     } catch (e) {
-        console.log('addWordToReviewQueue hata:', e.message);
+        __dbg('addWordToReviewQueue hata:', e.message);
     }
 }
 
@@ -5979,7 +5980,7 @@ async function advanceReviewWord(wordId, dogruMu) {
             delete reviewQueueCache[wordId];
             if (userRef) {
                 try { await updateDoc(userRef, { [`reviewQueue.${wordId}`]: deleteField() }); }
-                catch (e) { console.log('advanceReviewWord (mezuniyet) hata:', e.message); }
+                catch (e) { __dbg('advanceReviewWord (mezuniyet) hata:', e.message); }
             }
             updateReviewBadge();
             return { mezunOldu: true };
@@ -5993,7 +5994,7 @@ async function advanceReviewWord(wordId, dogruMu) {
 
     if (userRef) {
         try { await updateDoc(userRef, { [`reviewQueue.${wordId}`]: kayit }); }
-        catch (e) { console.log('advanceReviewWord hata:', e.message); }
+        catch (e) { __dbg('advanceReviewWord hata:', e.message); }
     }
     updateReviewBadge();
     return { mezunOldu: false };
@@ -6034,7 +6035,7 @@ async function markLessonPassedIfNeeded(lessonId, percent) {
             showTinyWarning(`🎉 Tebrikler! Yarışmada ${yeniMevcutSeviye}. seviye açıldı!`);
         }
     } catch (e) {
-        console.log('markLessonPassedIfNeeded hata:', e.message);
+        __dbg('markLessonPassedIfNeeded hata:', e.message);
     }
 }
 
@@ -6476,7 +6477,7 @@ async function ensureWordHintsCache() {
             const snap = await getDoc(doc(db, 'users', currentUser.uid));
             wordHintsCache = (snap.exists() && snap.data().wordHints) || {};
         } catch (e) {
-            console.log('ensureWordHintsCache hata:', e.message);
+            __dbg('ensureWordHintsCache hata:', e.message);
             wordHintsCache = {};
         }
         return wordHintsCache;
@@ -6557,7 +6558,7 @@ async function saveWordHint(wordId, hintTextOrNull) {
         }
         renderWordHintForCurrentWord();
     } catch (e) {
-        console.log('saveWordHint hata:', e.message);
+        __dbg('saveWordHint hata:', e.message);
     }
 }
 document.getElementById('wordHintToggleBtn')?.addEventListener('click', (e) => {
@@ -6857,7 +6858,7 @@ window.goToNextLessonMobile = async function() {
         showTinyWarning(`📖 "${nextLesson.name}" dersine geçtin!`, 'fa-book');
     } catch (e) {
         closeLoadingAlert();
-        console.log('goToNextLessonMobile hata:', e.message);
+        __dbg('goToNextLessonMobile hata:', e.message);
     }
 };
 document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => window.goToNextLessonMobile());
@@ -6936,7 +6937,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                 updateDoc(userRef, { lastSeenAnnouncementId: ann.id }).catch(() => {});
             }
         } catch (e) {
-            console.log('Duyuru kontrol hatası:', e.message);
+            __dbg('Duyuru kontrol hatası:', e.message);
         }
     }
 
@@ -7019,7 +7020,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                 }
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;">Duyurular yüklenirken hata oluştu.</div>';
-                console.log('loadAnnouncementsTab hata:', e.message);
+                __dbg('loadAnnouncementsTab hata:', e.message);
             }
         }
 
@@ -7091,9 +7092,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             gunlukSeri = seri;
             enUzunSeri = enUzun;
             updateStreakDisplay();
-            console.log('🔥 Günlük seri güncellendi:', gunlukSeri, '(en uzun:', enUzunSeri, ')');
+            __dbg('🔥 Günlük seri güncellendi:', gunlukSeri, '(en uzun:', enUzunSeri, ')');
         } catch (error) {
-            console.log('⚠️ Günlük seri güncelleme hatası:', error);
+            __dbg('⚠️ Günlük seri güncelleme hatası:', error);
         }
     }
     
@@ -7201,7 +7202,7 @@ async function loadUserStats() {
     try {
         // ===== 0. OTURUMU YENİLE (güncel bilgileri al) =====
         await currentUser.reload();
-        console.log('🔄 Oturum yenilendi');
+        __dbg('🔄 Oturum yenilendi');
         
         // ===== 1. FIRESTORE'DAN VERİYİ AL =====
         const userRef = doc(db, 'users', currentUser.uid);
@@ -7243,7 +7244,7 @@ async function loadUserStats() {
         } catch (e) {}
         if (!data.myWords) {
             // Beklemeden arka planda yaz (kota/ağ yavaşsa ekran takılmasın)
-            updateDoc(userRef, { myWords: [] }).then(() => console.log('✅ myWords alanı eklendi')).catch(() => {});
+            updateDoc(userRef, { myWords: [] }).then(() => __dbg('✅ myWords alanı eklendi')).catch(() => {});
         }
 
         // ===== OYUNCU ID (yoksa üret) =====
@@ -7256,16 +7257,16 @@ async function loadUserStats() {
                     window.__myPublicId = pid;
                     const el = document.getElementById('profilePublicId'); if (el) el.textContent = pid;
                 }
-            }).catch((e) => console.log('ID üretilemedi:', e && e.message));
+            }).catch((e) => __dbg('ID üretilemedi:', e && e.message));
         }
 
         // ===== KONSOLA YAZDIR =====
-        console.log('🔍 ===== KULLANICI BİLGİLERİ =====');
-        console.log('📧 Email:', currentUser.email);
-        console.log('👤 Auth displayName:', currentUser.displayName);
-        console.log('📁 Firestore name:', userDoc.data().name);
-        console.log('📁 Firestore tüm veri:', userDoc.data());
-        console.log('🔍 ===== BİTTİ =====');
+        __dbg('🔍 ===== KULLANICI BİLGİLERİ =====');
+        __dbg('📧 Email:', currentUser.email);
+        __dbg('👤 Auth displayName:', currentUser.displayName);
+        __dbg('📁 Firestore name:', userDoc.data().name);
+        __dbg('📁 Firestore tüm veri:', userDoc.data());
+        __dbg('🔍 ===== BİTTİ =====');
         
         // ===== 2. KULLANICI ADINI FIRESTORE'DAN AL =====
         let userName = currentUser.email?.split('@')[0] || 'Kullanıcı';
@@ -7564,10 +7565,10 @@ async function saveExamResult(examTitle, score, correct, total) {
         }
         const averageScore = Math.round((totalScore / examsCompleted.length) * 100) / 100;
         
-        console.log('📊 Sınav puanı:', score);
-        console.log('📊 Toplam sınav puanı:', totalScore);
-        console.log('📊 Sınav sayısı:', examsCompleted.length);
-        console.log('📊 Ortalama puan:', averageScore);
+        __dbg('📊 Sınav puanı:', score);
+        __dbg('📊 Toplam sınav puanı:', totalScore);
+        __dbg('📊 Sınav sayısı:', examsCompleted.length);
+        __dbg('📊 Ortalama puan:', averageScore);
         
         // ===== quizScore'u DEĞİŞTİRME (Sadece yarışma puanı) =====
         // Sınav puanı quizScore'a eklenmez, sadece averageScore olarak kaydedilir
@@ -7578,8 +7579,8 @@ async function saveExamResult(examTitle, score, correct, total) {
             // quizScore: newQuizScore  // ❌ BU SATIRI SİL - Sınav puanı yarışma puanına karışmasın
         });
         
-        console.log('✅ Sınav sonucu kaydedildi!');
-        console.log('✅ Yeni ortalama:', averageScore);
+        __dbg('✅ Sınav sonucu kaydedildi!');
+        __dbg('✅ Yeni ortalama:', averageScore);
         
         // Ekranı güncelle
         loadUserStats();
@@ -7635,14 +7636,14 @@ async function saveExamResult(examTitle, score, correct, total) {
             name: newName.trim(),
             updatedAt: new Date().toISOString()  // Ne zaman güncellendiğini de kaydet
         });
-        console.log('✅ Firestore güncellendi:', newName.trim());
+        __dbg('✅ Firestore güncellendi:', newName.trim());
         
         // ===== 2. AUTH DISPLAYNAME'I GÜNCELLE =====
         try {
             await updateProfile(currentUser, {
                 displayName: newName.trim()
             });
-            console.log('✅ Auth displayName güncellendi');
+            __dbg('✅ Auth displayName güncellendi');
         } catch (authError) {
             console.warn('⚠️ Auth displayName güncellenemedi:', authError.message);
         }
@@ -7771,7 +7772,7 @@ window.editEmail = async () => {
         // ===== 2. KULLANICIYI YENİDEN DOĞRULA =====
         const credential = EmailAuthProvider.credential(currentUser.email, password);
         await reauthenticateWithCredential(currentUser, credential);
-        console.log('✅ Kullanıcı yeniden doğrulandı');
+        __dbg('✅ Kullanıcı yeniden doğrulandı');
         
         // ===== 3. EMAİL DOĞRULAMA BAĞLANTISI GÖNDER (YENİ EMAİLE) =====
         // Not: Firebase doğrudan yeni email'e doğrulama göndermiyor.
@@ -7780,7 +7781,7 @@ window.editEmail = async () => {
         try {
             // Email'i güncelle
             await updateEmail(currentUser, newEmail);
-            console.log('✅ Auth email güncellendi:', newEmail);
+            __dbg('✅ Auth email güncellendi:', newEmail);
         } catch (updateError) {
             if (updateError.code === 'auth/operation-not-allowed') {
                 // Email doğrulama gerekiyor
@@ -7797,7 +7798,7 @@ window.editEmail = async () => {
             email: newEmail,
             updatedAt: new Date().toISOString()
         });
-        console.log('✅ Firestore email güncellendi');
+        __dbg('✅ Firestore email güncellendi');
         
         // ===== 5. PROFİL EMAİL'İNİ GÜNCELLE =====
         const profileEmailEl = document.getElementById('profileEmail');
@@ -8721,7 +8722,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         // Sadece geliştirme ortamında konsola yaz
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.error('Giriş hatası:', error);
-            console.log('Hata kodu:', error.code);
+            __dbg('Hata kodu:', error.code);
         }
         
         let errorMessage = '❌ Giriş başarısız! ';
@@ -8765,10 +8766,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
     const email = emailInput.value.trim().toLowerCase(); // Küçük harfe çevir
     const password = passwordInput.value;
     
-    console.log('📝 Kayıt olunuyor...');
-    console.log('  Name:', name);
-    console.log('  Email:', email);
-    console.log('  Password length:', password.length);
+    __dbg('📝 Kayıt olunuyor...');
+    __dbg('  Name:', name);
+    __dbg('  Email:', email);
+    __dbg('  Password length:', password.length);
     
     // ===== BOŞ ALAN KONTROLÜ =====
     if (!email) {
@@ -8811,9 +8812,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
 
     // ===== KAYIT İŞLEMİ =====
     try {
-        console.log('🔥 Firebase kayıt başlatılıyor...');
+        __dbg('🔥 Firebase kayıt başlatılıyor...');
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        console.log('✅ Firebase kayıt başarılı! UID:', cred.user.uid);
+        __dbg('✅ Firebase kayıt başarılı! UID:', cred.user.uid);
         
         // ===== KULLANICI VERİLERİNİ FIRESTORE'A KAYDET =====
         await setDoc(doc(db, 'users', cred.user.uid), { 
@@ -8829,7 +8830,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             tourCompleted: false,
             createdAt: new Date().toISOString() 
         });
-        console.log('✅ Firestore\'a kullanıcı verileri kaydedildi!');
+        __dbg('✅ Firestore\'a kullanıcı verileri kaydedildi!');
         
         showWarning('✅ Kayıt başarılı! Hoş geldin ' + name + '!');
         
@@ -8849,9 +8850,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
         // ===== OTOMATİK GİRİŞ YAP =====
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            console.log('✅ Otomatik giriş başarılı!');
+            __dbg('✅ Otomatik giriş başarılı!');
         } catch (loginError) {
-            console.log('⚠️ Otomatik giriş başarısız, manuel giriş yapın.');
+            __dbg('⚠️ Otomatik giriş başarısız, manuel giriş yapın.');
             showWarning('✅ Kayıt başarılı! Lütfen giriş yapın.');
         }
         
@@ -9026,11 +9027,11 @@ document.getElementById('doLoginBtn').onclick = async () => {
         // ===== KULLANICIYI YENİDEN DOĞRULA =====
         const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
         await reauthenticateWithCredential(currentUser, credential);
-        console.log('✅ Kullanıcı yeniden doğrulandı');
+        __dbg('✅ Kullanıcı yeniden doğrulandı');
         
         // ===== ŞİFREYİ GÜNCELLE =====
         await updatePassword(currentUser, newPass);
-        console.log('✅ Şifre güncellendi');
+        __dbg('✅ Şifre güncellendi');
         
         showWarning('✅ Şifre başarıyla güncellendi!');
         document.getElementById('newPassword').value = '';
@@ -9059,10 +9060,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
     }
 };
     function logout() {
-    console.log('🚪 Çıkış yapılıyor...');
+    __dbg('🚪 Çıkış yapılıyor...');
     
     if (!currentUser) {
-        console.log('⚠️ Zaten çıkış yapılmış.');
+        __dbg('⚠️ Zaten çıkış yapılmış.');
         closeMenu();
         return;
     }
@@ -9075,7 +9076,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         if (result.isConfirmed) {
             signOut(auth)
                 .then(() => {
-                    console.log('✅ Çıkış başarılı!');
+                    __dbg('✅ Çıkış başarılı!');
                     showSuccess('Başarıyla çıkış yaptınız. Görüşmek üzere! 👋', '👋 Güle güle');
                     closeMenu();
                 })
@@ -9151,20 +9152,20 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 const data = userDoc.data();
                 if (data.mevcutSeviye && data.mevcutSeviye > 0) {
                     mevcutSeviye = data.mevcutSeviye;
-                    console.log('📌 Girişte seviye yüklendi:', mevcutSeviye);
+                    __dbg('📌 Girişte seviye yüklendi:', mevcutSeviye);
                 } else {
                     mevcutSeviye = 1;
-                    console.log('📌 Girişte seviye yok, 1 olarak ayarlandı');
+                    __dbg('📌 Girişte seviye yok, 1 olarak ayarlandı');
                 }
                 // Puanı da yükle
                 if (data.quizScore !== undefined) {
                     quizScore = data.quizScore;
-                    console.log('💰 Girişte puan yüklendi:', quizScore);
+                    __dbg('💰 Girişte puan yüklendi:', quizScore);
                 }
                 // Sandığı da yükle
                 if (data.quizSandik) {
                     quizSandik = data.quizSandik;
-                    console.log('📦 Girişte sandık yüklendi:', quizSandik.length);
+                    __dbg('📦 Girişte sandık yüklendi:', quizSandik.length);
                 }
                 
                 // ===== 🔥 ARKADAŞLIK SERİSİ RİSK KONTROLÜ (kullanıcı hatırlatmaları açtıysa) =====
@@ -9195,10 +9196,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
                             guncelleme.seasonHistory = yeniGecmis;
                         }
                         await updateDoc(userRef, guncelleme);
-                        console.log('🏆 Yeni sezon başladı:', yeniSezonId);
+                        __dbg('🏆 Yeni sezon başladı:', yeniSezonId);
                     }
                 } catch (e) {
-                    console.log('⚠️ Sezon kontrolü hatası:', e.message);
+                    __dbg('⚠️ Sezon kontrolü hatası:', e.message);
                 }
 
                 // ===== 🏅 GEÇEN AYIN ŞAMPİYONLARINI KUTLA (ayın ilk 7 günü, bir kez) =====
@@ -9224,7 +9225,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1200);
             }
         } catch (error) {
-            console.log('⚠️ Seviye yükleme hatası:', error);
+            __dbg('⚠️ Seviye yükleme hatası:', error);
         }
         
         // Zoom başlangıç durumu
@@ -9234,7 +9235,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         
     } else {
         // ===== KULLANICI ÇIKIŞ YAPTIĞINDA =====
-        console.log('👤 Kullanıcı çıkış yaptı, giriş ekranına yönlendiriliyor...');
+        __dbg('👤 Kullanıcı çıkış yaptı, giriş ekranına yönlendiriliyor...');
 
         currentUser = null;
 
@@ -9326,7 +9327,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         words = [];
         updateWordDisplay();
         
-        console.log('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
+        __dbg('✅ Çıkış işlemleri tamamlandı, giriş ekranı gösteriliyor.');
     }
 });
         
@@ -9716,30 +9717,30 @@ function updateOnlineStatus() {
 async function refreshData() {
     try {
         if (!navigator.onLine) {
-            console.log('⚠️ İnternet yok, veri yenilenemiyor.');
+            __dbg('⚠️ İnternet yok, veri yenilenemiyor.');
             return;
         }
         
-        console.log('🔄 Veriler yenileniyor...');
+        __dbg('🔄 Veriler yenileniyor...');
         
         if (currentUser) {
             // Sadece mevcut fonksiyonları çağır
             try {
                 if (typeof loadUserStats === 'function') await loadUserStats();
-            } catch (e) { console.log('loadUserStats hatası:', e.message); }
+            } catch (e) { __dbg('loadUserStats hatası:', e.message); }
             
             try {
                 if (typeof loadUserExamHistory === 'function') await loadUserExamHistory();
-            } catch (e) { console.log('loadUserExamHistory hatası:', e.message); }
+            } catch (e) { __dbg('loadUserExamHistory hatası:', e.message); }
             
             try {
                 if (typeof loadBooks === 'function') await loadBooks();
-            } catch (e) { console.log('loadBooks hatası:', e.message); }
+            } catch (e) { __dbg('loadBooks hatası:', e.message); }
         }
         
-        console.log('✅ Veriler yenilendi!');
+        __dbg('✅ Veriler yenilendi!');
     } catch (error) {
-        console.log('⚠️ Veri yenileme hatası:', error.message);
+        __dbg('⚠️ Veri yenileme hatası:', error.message);
     }
 }
 
@@ -9808,7 +9809,7 @@ window.addEventListener('online', function() {
                 if (typeof loadUserExamHistory === 'function') loadUserExamHistory();
             }
         } catch (e) {
-            console.log('Veri yenileme hatası:', e.message);
+            __dbg('Veri yenileme hatası:', e.message);
         }
         
         setTimeout(() => {
@@ -10503,7 +10504,7 @@ async function bumpFriendshipOnSend(myUid, myRef, otherUid, otherRef, isEmoji) {
         if (isEmoji) otherUpdate[`emojiStats.${myUid}`] = otherPairEmoji;
         await updateDoc(otherRef, otherUpdate);
     } catch (e) {
-        console.log('bumpFriendshipOnSend hata:', e.message);
+        __dbg('bumpFriendshipOnSend hata:', e.message);
     }
     return { streakBumped, newStreak };
 }
@@ -10580,7 +10581,7 @@ async function checkFriendStreakReminders(data) {
             }
         } catch (e) { /* önemli değil */ }
     } catch (e) {
-        console.log('checkFriendStreakReminders hata:', e.message);
+        __dbg('checkFriendStreakReminders hata:', e.message);
     }
 }
 
@@ -10877,7 +10878,7 @@ window.__showFriendsOf = async function(uid) {
         }));
     } catch (e) {
         m.setHtml('<div style="opacity:.6; padding:14px; text-align:center;">Liste yüklenemedi.</div>');
-        console.log('Arkadaş listesi hatası:', e.message);
+        __dbg('Arkadaş listesi hatası:', e.message);
     }
 };
 
@@ -10909,7 +10910,7 @@ window.__renderMyProfileExtras = async function() {
         const bars = days.map(x => `<div style="flex:1; text-align:center; min-width:0;"><div style="height:46px; display:flex; align-items:flex-end; justify-content:center;"><div title="${x.n}" style="width:70%; max-width:22px; height:${Math.max(3, Math.round(x.n / max * 46))}px; border-radius:5px 5px 2px 2px; background:${x.n ? '#f59e0b' : 'rgba(148,163,184,0.35)'};"></div></div><div style="font-size:10px; opacity:.7; margin-top:3px;">${x.lbl}</div><div style="font-size:10px; font-weight:700;">${x.n}</div></div>`).join('');
         const activity = `<div style="position:relative; margin-top:8px; background: var(--panel-bg); border-radius:10px; padding:10px;">${window.__helpBtn('week')}<div style="font-size:11px; font-weight:600; color:#f59e0b; margin-bottom:8px; padding-right:30px;">📈 Son 7 Gün <span style="opacity:.6; font-weight:400;">(kelime + soru · toplam ${total7})</span></div><div style="display:flex; gap:4px;">${bars}</div></div>`;
         box.innerHTML = `<div style="margin:2px 0 14px;">${extras}${activity}</div>`;
-    } catch (e) { console.log('Profil ek bilgileri hatası:', e.message); }
+    } catch (e) { __dbg('Profil ek bilgileri hatası:', e.message); }
 };
 
 // ===== OYUNCU PROFİLİ (Liderlik Tablosunda bir oyuncuya tıklayınca) =====
@@ -10949,7 +10950,7 @@ window.openPlayerProfile = async function(targetUid) {
         let extrasHTML = '';
         try {
             extrasHTML = await window.__profileExtrasHTML(targetData, targetUid, { totalScore, mevcutSeviye, words: totalWordsViewed, examCount: examsCompleted.length, sandikCount });
-        } catch (e) { console.log('Profil ek bilgileri hatası:', e.message); }
+        } catch (e) { __dbg('Profil ek bilgileri hatası:', e.message); }
         
         let actionButtonsHTML = '';
         if (!isSelf) {
@@ -11019,7 +11020,7 @@ window.openPlayerProfile = async function(targetUid) {
         
     } catch (e) {
         closeLoadingAlert();
-        console.log('openPlayerProfile hata:', e.message);
+        __dbg('openPlayerProfile hata:', e.message);
     }
 };
 
@@ -11041,7 +11042,7 @@ window.sendFollowRequest = async function(targetUid, targetName) {
         Swal.close();
         showTinyWarning(`${targetName} kullanıcısına arkadaşlık isteği gönderildi! 📨`, 'fa-paper-plane');
     } catch (e) {
-        console.log('sendFollowRequest hata:', e.message);
+        __dbg('sendFollowRequest hata:', e.message);
     }
 };
 
@@ -11077,7 +11078,7 @@ window.acceptFollowRequest = async function(fromUid, fromName) {
         }
         if (typeof window.loadRanking === 'function') window.loadRanking();
     } catch (e) {
-        console.log('acceptFollowRequest hata:', e.message);
+        __dbg('acceptFollowRequest hata:', e.message);
     }
 };
 
@@ -11102,7 +11103,7 @@ window.declineFollowRequest = async function(fromUid, fromName) {
             window.updateNotifBadge();
         }
     } catch (e) {
-        console.log('declineFollowRequest hata:', e.message);
+        __dbg('declineFollowRequest hata:', e.message);
     }
 };
 
@@ -11150,7 +11151,7 @@ window.unfollowUser = async function(targetUid, targetName) {
             });
         } catch (e) {
             targetTarafiBasarili = false;
-            console.log('unfollowUser: karşı taraf güncellenemedi (muhtemelen güvenlik kuralları):', e.message);
+            __dbg('unfollowUser: karşı taraf güncellenemedi (muhtemelen güvenlik kuralları):', e.message);
         }
         
         // Bu kişiyle bir sohbet ekranı açıksa listeye geri dön
@@ -11165,7 +11166,7 @@ window.unfollowUser = async function(targetUid, targetName) {
         if (typeof window.loadRanking === 'function') window.loadRanking();
         window.updateNotifBadge();
     } catch (e) {
-        console.log('unfollowUser hata:', e.message);
+        __dbg('unfollowUser hata:', e.message);
     }
 };
 
@@ -11608,7 +11609,7 @@ window.sendCannedMessage = async function(targetUid, targetName, text) {
             window.__notifUpdateBellBadgeFromServer();
         }
     } catch (e) {
-        console.log('sendCannedMessage hata:', e.message);
+        __dbg('sendCannedMessage hata:', e.message);
     }
 };
 
@@ -11669,7 +11670,7 @@ window.sendEmojiReply = async function(targetUid, targetName, emoji, originalMsg
             window.__notifUpdateBellBadgeFromServer();
         }
     } catch (e) {
-        console.log('sendEmojiReply hata:', e.message);
+        __dbg('sendEmojiReply hata:', e.message);
     }
 };
 
@@ -11702,7 +11703,7 @@ window.deleteConversation = async function(uid, name) {
             await updateDoc(myRef, { inboxMessages: inbox, outboxMessages: outbox });
             showTinyWarning('Sohbet silindi.', 'fa-trash');
         } catch (e) {
-            console.log('deleteConversation hata:', e.message);
+            __dbg('deleteConversation hata:', e.message);
             showTinyWarning('Sohbet silinemedi.', 'fa-triangle-exclamation');
         }
     }
@@ -11730,7 +11731,7 @@ window.deleteInboxMessage = async function(msgId, fallbackSentAt) {
             window.__notifUpdateBellBadgeFromServer();
         }
     } catch (e) {
-        console.log('deleteInboxMessage hata:', e.message);
+        __dbg('deleteInboxMessage hata:', e.message);
     }
 };
 
@@ -11756,7 +11757,7 @@ window.deleteInboxReply = async function(msgId, replyIdx) {
             window.__notifUpdateBellBadgeFromServer();
         }
     } catch (e) {
-        console.log('deleteInboxReply hata:', e.message);
+        __dbg('deleteInboxReply hata:', e.message);
     }
 };
 
@@ -11780,7 +11781,7 @@ window.openNotificationsModal = async function(initialTab, activeContactUid) {
             await window.__notifRefreshData();
             window.__notifRenderAll();
         } catch (e) {
-            console.log('openNotificationsModal (güncelleme) hata:', e.message);
+            __dbg('openNotificationsModal (güncelleme) hata:', e.message);
         }
         return;
     }
@@ -11794,7 +11795,7 @@ window.openNotificationsModal = async function(initialTab, activeContactUid) {
         closeLoadingAlert();
     } catch (e) {
         closeLoadingAlert();
-        console.log('openNotificationsModal hata:', e.message);
+        __dbg('openNotificationsModal hata:', e.message);
         return;
     }
 
@@ -11860,7 +11861,7 @@ window.__notifUpdateBellBadgeFromServer = async function() {
         const unreadMsgCount = (myData.inboxMessages || []).filter(m => !m.read).length;
         window.__notifUpdateBellBadge(reqCount, unreadMsgCount);
     } catch (e) {
-        console.log('updateNotifBadge hata:', e.message);
+        __dbg('updateNotifBadge hata:', e.message);
     }
 };
 window.updateNotifBadge = window.__notifUpdateBellBadgeFromServer;
@@ -11929,7 +11930,7 @@ window.__notifBgTick = async function() {
             window.__notifRenderAll();
         }
     } catch (e) {
-        console.log('__notifBgTick hata:', e.message);
+        __dbg('__notifBgTick hata:', e.message);
     }
 };
 
@@ -12103,7 +12104,7 @@ window.openFriendsListModal = async function() {
         });
     } catch (e) {
         closeLoadingAlert();
-        console.log('openFriendsListModal hata:', e.message);
+        __dbg('openFriendsListModal hata:', e.message);
     }
 };
 
@@ -12135,7 +12136,7 @@ async function getDersListesi(forceRefresh) {
 
 // Rastgele şık seçenekleri oluştur
 window.startQuizWords = async () => {
-    console.log('🏁 Yarışma başlatılıyor...');
+    __dbg('🏁 Yarışma başlatılıyor...');
     
     try {
         // ===== 1. EKRANLARI GİZLE =====
@@ -12174,7 +12175,7 @@ window.startQuizWords = async () => {
         // ===== 3. TÜM DERSLERİ TARİHE GÖRE SIRALA =====
         const dersler = await getDersListesi();
         toplamSeviye = dersler.length;
-        console.log('📚 Toplam ders (seviye):', toplamSeviye);
+        __dbg('📚 Toplam ders (seviye):', toplamSeviye);
         
         if (toplamSeviye === 0) {
             showWarning('⚠️ Yarışma yükleniyor, bekleyin!  😊');
@@ -12203,7 +12204,7 @@ window.startQuizWords = async () => {
         }
         
         window.mevcutSeviye = mevcutSeviye;
-        console.log('🎯 KULLANILACAK SEVİYE:', mevcutSeviye, '/', toplamSeviye);
+        __dbg('🎯 KULLANILACAK SEVİYE:', mevcutSeviye, '/', toplamSeviye);
         
         // ===== 5. SEVİYEYE AİT DERSİ BUL =====
         const ders = dersler[mevcutSeviye - 1];
@@ -12212,7 +12213,7 @@ window.startQuizWords = async () => {
             return;
         }
         
-        console.log(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - Ders: ${ders.name} (ID: ${ders.id})`);
+        __dbg(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - Ders: ${ders.name} (ID: ${ders.id})`);
         
         // ===== 6. O DERSE AİT KELİMELERİ GETİR =====
         const wordsSnapshot = await getDocs(query(
@@ -12229,7 +12230,7 @@ window.startQuizWords = async () => {
             id: doc.id, 
             ...doc.data() 
         }));
-        console.log(`📝 ${seviyeKelimeListesi.length} kelime yüklendi`);
+        __dbg(`📝 ${seviyeKelimeListesi.length} kelime yüklendi`);
         
         // ===== 7. DEĞİŞKENLERİ SIFIRLA =====
         quizCorrectCount = 0;
@@ -12268,8 +12269,8 @@ window.startQuizWords = async () => {
             seviyeEl.innerHTML = `📚 Seviye ${mevcutSeviye}/${toplamSeviye} | 📝 ${seviyeKelimeListesi.length} kelime | 📦 ${quizSandik.length} sandık`;
         }
         
-        console.log('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
-        console.log('🎯 SON DURUM - MEVCUT SEVİYE:', mevcutSeviye, '/', toplamSeviye);
+        __dbg('📌 Başlangıç index:', baslangicIndex, 'Bitiş index:', bitisIndex);
+        __dbg('🎯 SON DURUM - MEVCUT SEVİYE:', mevcutSeviye, '/', toplamSeviye);
         
         // ===== 10. İLK KELİMEYİ YÜKLE =====
         if (seviyeKelimeListesi.length > 0) {
@@ -12338,7 +12339,7 @@ function sandiktaSifirla(wordId) {
 
 // Sonraki kelimeyi yükle
 async function loadNextQuizWord() {
-    console.log('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
+    __dbg('🔄 loadNextQuizWord - Başlangıç:', baslangicIndex, 'Bitiş:', bitisIndex);
     
     quizAnswered = false;
     
@@ -12346,15 +12347,15 @@ async function loadNextQuizWord() {
     let isFromSandik = false;
     
     const normalGosterilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
-    console.log('📊 Normal gösterilen:', normalGosterilen);
-    console.log('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
+    __dbg('📊 Normal gösterilen:', normalGosterilen);
+    __dbg('📦 Sandık içeriği:', quizSandik.map(w => w.arabic));
     
     // Normal kelimeler bitti mi?
     if (baslangicIndex > bitisIndex) {
         if (quizSandik.length > 0) {
             word = pickFromSandik();
             isFromSandik = true;
-            console.log('📦 Normal bitti, sandıktan alındı (SRS):', word.arabic);
+            __dbg('📦 Normal bitti, sandıktan alındı (SRS):', word.arabic);
         } else {
             finishQuizWords();
             return;
@@ -12366,7 +12367,7 @@ async function loadNextQuizWord() {
         isFromSandik = true;
         sandikAktif = true;
         sandikAlmaSayaci++;
-        console.log('📦 10 kelimede bir sandıktan alındı (SRS):', word.arabic);
+        __dbg('📦 10 kelimede bir sandıktan alındı (SRS):', word.arabic);
     }
     
     // Normal kelime al
@@ -12375,11 +12376,11 @@ async function loadNextQuizWord() {
             if (siraSoldan) {
                 word = quizWordsAll[baslangicIndex];
                 baslangicIndex++;
-                console.log('📖 Eski kelime:', word.arabic);
+                __dbg('📖 Eski kelime:', word.arabic);
             } else {
                 word = quizWordsAll[bitisIndex];
                 bitisIndex--;
-                console.log('📖 Yeni kelime:', word.arabic);
+                __dbg('📖 Yeni kelime:', word.arabic);
             }
             siraSoldan = !siraSoldan;
             sandikAktif = false;
@@ -12411,7 +12412,7 @@ async function loadNextQuizWord() {
 function displayQuizWord(word) {
     // Eğer sandıktan geliyorsa ve sandıkta yoksa, sandığa ekle (güvenlik)
     if (word.isFromSandik && !quizSandik.some(w => w.id === word.id)) {
-        console.log('⚠️ Sandıktan gelen kelime sandıkta bulunamadı, ekleniyor:', word.arabic);
+        __dbg('⚠️ Sandıktan gelen kelime sandıkta bulunamadı, ekleniyor:', word.arabic);
         quizSandik.push(sandikaEkleSRS(word));
         saveSandikToFirestore();
         updateSandikDisplay();
@@ -12425,7 +12426,7 @@ function displayQuizWord(word) {
     
     // Sandıktan geliyorsa sandık işareti göster
     if (word.isFromSandik) {
-        console.log('📦 SANDIK KELİMESİ GÖSTERİLİYOR:', word.arabic, 'ID:', word.id);
+        __dbg('📦 SANDIK KELİMESİ GÖSTERİLİYOR:', word.arabic, 'ID:', word.id);
     }
     
     // ===== DOĞRU SORU NUMARASI =====
@@ -12435,7 +12436,7 @@ function displayQuizWord(word) {
     let toplamSoru = quizWordsAll.length + quizSandik.length;
     if (toplamSoru < soruNo) toplamSoru = soruNo; // SRS nedeniyle bir kelime birden çok kez sorulabilir
     
-    console.log('📊 Soru No:', soruNo, '| Toplam:', toplamSoru);
+    __dbg('📊 Soru No:', soruNo, '| Toplam:', toplamSoru);
     
     document.getElementById('karmaCurrent').textContent = Math.min(soruNo, toplamSoru);
     document.getElementById('karmaTotal').textContent = toplamSoru;
@@ -12503,9 +12504,9 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         if (word.isFromSandik) {
             const { mezunOldu } = sandiktaIlerlet(word.id);
             if (mezunOldu) {
-                console.log('🎓 Kelime SRS\'ten mezun oldu, sandıktan çıktı:', word.arabic);
+                __dbg('🎓 Kelime SRS\'ten mezun oldu, sandıktan çıktı:', word.arabic);
             } else {
-                console.log('📦 Kutu ilerledi:', word.arabic);
+                __dbg('📦 Kutu ilerledi:', word.arabic);
             }
             await saveSandikToFirestore();
             updateSandikDisplay();
@@ -12527,11 +12528,11 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
             const alreadyInSandik = quizSandik.some(w => w.id === word.id);
             if (!alreadyInSandik) {
                 quizSandik.push(sandikaEkleSRS(word));
-                console.log('📦 Sandığa eklendi:', word.arabic);
+                __dbg('📦 Sandığa eklendi:', word.arabic);
             }
         } else {
             sandiktaSifirla(word.id);
-            console.log('🔁 Kutu sıfırlandı, yakında tekrar sorulacak:', word.arabic);
+            __dbg('🔁 Kutu sıfırlandı, yakında tekrar sorulacak:', word.arabic);
         }
         await saveSandikToFirestore();
         updateSandikDisplay();
@@ -12644,7 +12645,7 @@ async function saveSandikToFirestore() {
             quizSandik: quizSandik, 
             quizScore: quizScore 
         });
-        console.log('✅ Sandık Firestore\'a kaydedildi:', quizSandik.length);
+        __dbg('✅ Sandık Firestore\'a kaydedildi:', quizSandik.length);
     } catch (error) {
         console.error('❌ Sandık kaydetme hatası:', error);
     }
@@ -12652,8 +12653,8 @@ async function saveSandikToFirestore() {
 
 // Testi bitir
 async function finishQuizWords() {
-    console.log('🎯 finishQuizWords çağrıldı!');
-    console.log('📌 Mevcut seviye:', mevcutSeviye, '/', toplamSeviye);
+    __dbg('🎯 finishQuizWords çağrıldı!');
+    __dbg('📌 Mevcut seviye:', mevcutSeviye, '/', toplamSeviye);
     
     const container = document.getElementById('karmaOptions');
     
@@ -12692,7 +12693,7 @@ async function finishQuizWords() {
             quizSandik: quizSandik, 
             quizScore: quizScore
         });
-        console.log('✅ Tur sonucu kaydedildi (seviye değişmedi):', mevcutSeviye);
+        __dbg('✅ Tur sonucu kaydedildi (seviye değişmedi):', mevcutSeviye);
     }
     
     // Seviye kontrolü
@@ -12770,7 +12771,7 @@ window.sonrakiSeviye = function() {
 
 // Sandıktan devam et
 window.devamEt = function() {
-    console.log('📦 Sandıktan devam ediliyor...');
+    __dbg('📦 Sandıktan devam ediliyor...');
     // Sandıktaki kelimelerle devam et
     if (quizSandik.length > 0) {
         // Sandıktan rastgele bir kelime al
@@ -12884,7 +12885,7 @@ window.openReviewMode = async function () {
             reviewAllWordsPool = wordsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
     } catch (e) {
-        console.log('Tekrar modu kelime havuzu yüklenemedi:', e.message);
+        __dbg('Tekrar modu kelime havuzu yüklenemedi:', e.message);
     }
 
     // Karıştır, oturumu başlat
@@ -13041,27 +13042,27 @@ window.showLeaderboard = async () => {
 
     // YARIŞMA TEST KODU
 (async function testYarisma() {
-    console.log('🔍 YARIŞMA TEST BAŞLIYOR...');
+    __dbg('🔍 YARIŞMA TEST BAŞLIYOR...');
     
     // 1. Kelimeleri kontrol et
     const wordsSnap = await getDocs(collection(db, 'words'));
     const words = wordsSnap.docs.map(doc => doc.data());
-    console.log(`📝 Toplam kelime: ${words.length}`);
+    __dbg(`📝 Toplam kelime: ${words.length}`);
     
     if (words.length === 0) {
-        console.log('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
+        __dbg('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
         return;
     }
     
     // 2. Örnek kelime göster
-    console.log('📖 Örnek kelime:', words[0]);
+    __dbg('📖 Örnek kelime:', words[0]);
     
     // 3. startQuizWords fonksiyonunu manuel çalıştır
     if (typeof startQuizWords === 'function') {
-        console.log('✅ startQuizWords fonksiyonu bulundu, çalıştırılıyor...');
+        __dbg('✅ startQuizWords fonksiyonu bulundu, çalıştırılıyor...');
         //await startQuizWords();
     } else {
-        console.log('❌ startQuizWords fonksiyonu bulunamadı!');
+        __dbg('❌ startQuizWords fonksiyonu bulunamadı!');
         
         // Manuel olarak yarışma ekranını aç
         document.getElementById('mainContent').style.display = 'none';
@@ -13071,10 +13072,10 @@ window.showLeaderboard = async () => {
         const firstWord = words[0];
         document.getElementById('karmaArabicWord').textContent = firstWord.arabic;
         document.getElementById('karmaTotal').textContent = words.length;
-        console.log('📖 İlk kelime manuel yüklendi:', firstWord.arabic);
+        __dbg('📖 İlk kelime manuel yüklendi:', firstWord.arabic);
     }
     
-    console.log('✅ TEST TAMAMLANDI');
+    __dbg('✅ TEST TAMAMLANDI');
 })();
 
 
@@ -13082,119 +13083,119 @@ window.showLeaderboard = async () => {
 
 // YARIŞMA DETAYLI TEST KODU (GÜNCELLENMİŞ)
 (function yarismaDetayliTest() {
-    console.log('========== YARIŞMA DETAYLI TEST BAŞLADI ==========');
-    console.log('🕐 Test zamanı:', new Date().toLocaleTimeString());
+    __dbg('========== YARIŞMA DETAYLI TEST BAŞLADI ==========');
+    __dbg('🕐 Test zamanı:', new Date().toLocaleTimeString());
     
     // 1. MEVCUT DURUM BİLGİLERİ
-    console.log('\n📊 MEVCUT DURUM:');
-    console.log('├─ Toplam normal kelime:', quizWordsAll?.length || 0);
-    console.log('├─ Toplam sandık kelimesi:', quizSandik?.length || 0);
-    console.log('├─ Sandık içeriği:', quizSandik?.map(w => w.arabic).join(', ') || 'Boş');
-    console.log('├─ Mevcut puan:', quizScore);
-    console.log('├─ Doğru sayısı:', quizCorrectCount);
-    console.log('├─ Toplam soru hedefi:', quizTotalQuestions);
-    console.log('├─ Başlangıç index (eski):', baslangicIndex);
-    console.log('├─ Bitiş index (yeni):', bitisIndex);
-    console.log('├─ Sıra (true=eski/false=yeni):', siraSoldan);
+    __dbg('\n📊 MEVCUT DURUM:');
+    __dbg('├─ Toplam normal kelime:', quizWordsAll?.length || 0);
+    __dbg('├─ Toplam sandık kelimesi:', quizSandik?.length || 0);
+    __dbg('├─ Sandık içeriği:', quizSandik?.map(w => w.arabic).join(', ') || 'Boş');
+    __dbg('├─ Mevcut puan:', quizScore);
+    __dbg('├─ Doğru sayısı:', quizCorrectCount);
+    __dbg('├─ Toplam soru hedefi:', quizTotalQuestions);
+    __dbg('├─ Başlangıç index (eski):', baslangicIndex);
+    __dbg('├─ Bitiş index (yeni):', bitisIndex);
+    __dbg('├─ Sıra (true=eski/false=yeni):', siraSoldan);
     
     // 2. MEVCUT KELİME BİLGİSİ
-    console.log('\n📖 MEVCUT KELİME:');
+    __dbg('\n📖 MEVCUT KELİME:');
     if (currentQuizWord) {
-        console.log('├─ Arapça:', currentQuizWord.arabic);
-        console.log('├─ Türkçe:', currentQuizWord.turkish);
-        console.log('├─ Sandıktan mı?:', currentQuizWord.isFromSandik ? 'Evet' : 'Hayır');
+        __dbg('├─ Arapça:', currentQuizWord.arabic);
+        __dbg('├─ Türkçe:', currentQuizWord.turkish);
+        __dbg('├─ Sandıktan mı?:', currentQuizWord.isFromSandik ? 'Evet' : 'Hayır');
     } else {
-        console.log('├─ Mevcut kelime yok!');
+        __dbg('├─ Mevcut kelime yok!');
     }
     
     // 3. EKRANDA GÖRÜNEN BİLGİLER
-    console.log('\n🖥️ EKRAN BİLGİLERİ:');
-    console.log('├─ Gösterilen soru no:', document.getElementById('karmaCurrent')?.textContent);
-    console.log('├─ Toplam soru:', document.getElementById('karmaTotal')?.textContent);
-    console.log('├─ Puan:', document.getElementById('karmaScore')?.textContent);
-    console.log('├─ Başarı %:', document.getElementById('karmaPercent')?.textContent);
-    console.log('├─ Sandık sayısı:', document.getElementById('sandikCount')?.textContent);
-    console.log('├─ Arapça kelime:', document.getElementById('karmaArabicWord')?.textContent);
+    __dbg('\n🖥️ EKRAN BİLGİLERİ:');
+    __dbg('├─ Gösterilen soru no:', document.getElementById('karmaCurrent')?.textContent);
+    __dbg('├─ Toplam soru:', document.getElementById('karmaTotal')?.textContent);
+    __dbg('├─ Puan:', document.getElementById('karmaScore')?.textContent);
+    __dbg('├─ Başarı %:', document.getElementById('karmaPercent')?.textContent);
+    __dbg('├─ Sandık sayısı:', document.getElementById('sandikCount')?.textContent);
+    __dbg('├─ Arapça kelime:', document.getElementById('karmaArabicWord')?.textContent);
     
     // 4. ŞIK BİLGİLERİ
-    console.log('\n🔘 ŞIKLAR:');
+    __dbg('\n🔘 ŞIKLAR:');
     const options = document.querySelectorAll('.option-quiz');
     if (options.length === 0) {
-        console.log('├─ Şık bulunamadı!');
+        __dbg('├─ Şık bulunamadı!');
     } else {
         options.forEach((opt, i) => {
             const letter = opt.querySelector('.option-letter')?.textContent;
             const text = opt.querySelector('.option-text')?.textContent;
             const isCorrect = opt.dataset.isCorrect === 'true';
-            console.log(`├─ ${letter} ${text} ${isCorrect ? '✅ DOĞRU' : ''}`);
+            __dbg(`├─ ${letter} ${text} ${isCorrect ? '✅ DOĞRU' : ''}`);
         });
     }
     
     // 5. FONKSİYON KONTROLLERİ
-    console.log('\n⚙️ FONKSİYON KONTROLLERİ:');
-    console.log('├─ startQuizWords:', typeof startQuizWords);
-    console.log('├─ loadNextQuizWord:', typeof loadNextQuizWord);
-    console.log('├─ displayQuizWord:', typeof displayQuizWord);
-    console.log('├─ selectQuizOption:', typeof selectQuizOption);
-    console.log('├─ saveSandikToFirestore:', typeof saveSandikToFirestore);
-    console.log('├─ generateQuizOptions:', typeof generateQuizOptions);
+    __dbg('\n⚙️ FONKSİYON KONTROLLERİ:');
+    __dbg('├─ startQuizWords:', typeof startQuizWords);
+    __dbg('├─ loadNextQuizWord:', typeof loadNextQuizWord);
+    __dbg('├─ displayQuizWord:', typeof displayQuizWord);
+    __dbg('├─ selectQuizOption:', typeof selectQuizOption);
+    __dbg('├─ saveSandikToFirestore:', typeof saveSandikToFirestore);
+    __dbg('├─ generateQuizOptions:', typeof generateQuizOptions);
     
     // 6. MANTIK KONTROLÜ (YENİ - quizNormalIndex OLMADAN)
-    console.log('\n🧠 MANTIK KONTROLÜ:');
+    __dbg('\n🧠 MANTIK KONTROLÜ:');
     const ekrandakiSoru = parseInt(document.getElementById('karmaCurrent')?.textContent);
     const gidilenSoru = (baslangicIndex || 0) + ((quizWordsAll?.length || 0) - 1 - (bitisIndex || 0));
     const hesaplananSoru = gidilenSoru + 1;
-    console.log('├─ Ekrandaki soru:', ekrandakiSoru);
-    console.log('├─ Hesaplanan soru (baslangic + bitis):', hesaplananSoru);
+    __dbg('├─ Ekrandaki soru:', ekrandakiSoru);
+    __dbg('├─ Hesaplanan soru (baslangic + bitis):', hesaplananSoru);
     
     if (ekrandakiSoru !== hesaplananSoru && !isNaN(ekrandakiSoru)) {
-        console.log('⚠️ UYARI: Soru numarası uyuşmuyor!');
+        __dbg('⚠️ UYARI: Soru numarası uyuşmuyor!');
     }
     
     const toplamGosterilen = parseInt(document.getElementById('karmaTotal')?.textContent);
     const beklenenToplam = (quizWordsAll?.length || 0) + (quizSandik?.length || 0);
-    console.log('├─ Gösterilen toplam:', toplamGosterilen);
-    console.log('├─ Beklenen toplam:', beklenenToplam);
+    __dbg('├─ Gösterilen toplam:', toplamGosterilen);
+    __dbg('├─ Beklenen toplam:', beklenenToplam);
     
     if (toplamGosterilen !== beklenenToplam && !isNaN(toplamGosterilen)) {
-        console.log('⚠️ UYARI: Toplam soru sayısı uyuşmuyor!');
+        __dbg('⚠️ UYARI: Toplam soru sayısı uyuşmuyor!');
     }
     
     // 7. SANDIK KONTROLÜ
-    console.log('\n📦 SANDIK KONTROLÜ:');
+    __dbg('\n📦 SANDIK KONTROLÜ:');
     if (quizSandik && quizSandik.length > 0) {
         const unique = new Set(quizSandik.map(w => w.arabic));
         if (unique.size !== quizSandik.length) {
-            console.log('⚠️ UYARI: Sandıkta tekrar eden kelimeler var!');
+            __dbg('⚠️ UYARI: Sandıkta tekrar eden kelimeler var!');
         } else {
-            console.log('✅ Sandıkta tekrar eden kelime yok');
+            __dbg('✅ Sandıkta tekrar eden kelime yok');
         }
     } else {
-        console.log('✅ Sandık boş');
+        __dbg('✅ Sandık boş');
     }
     
     // 8. İLERLEME DURUMU
-    console.log('\n📈 İLERLEME DURUMU:');
+    __dbg('\n📈 İLERLEME DURUMU:');
     const toplamKelime = quizWordsAll?.length || 0;
     const kalanNormal = Math.max(0, bitisIndex - baslangicIndex + 1);
-    console.log('├─ Toplam kelime:', toplamKelime);
-    console.log('├─ Kalan normal kelime:', kalanNormal);
-    console.log('├─ Sandıktaki kelime:', quizSandik?.length || 0);
-    console.log('├─ Toplam kalan:', kalanNormal + (quizSandik?.length || 0));
+    __dbg('├─ Toplam kelime:', toplamKelime);
+    __dbg('├─ Kalan normal kelime:', kalanNormal);
+    __dbg('├─ Sandıktaki kelime:', quizSandik?.length || 0);
+    __dbg('├─ Toplam kalan:', kalanNormal + (quizSandik?.length || 0));
     
     // 9. TAVSİYELER
-    console.log('\n💡 TAVSİYELER:');
+    __dbg('\n💡 TAVSİYELER:');
     if (quizSandik && quizSandik.length > 0) {
-        console.log('├─ Sandıkta ' + quizSandik.length + ' kelime var. Bunları doğru cevaplamaya çalış!');
+        __dbg('├─ Sandıkta ' + quizSandik.length + ' kelime var. Bunları doğru cevaplamaya çalış!');
     }
     if (kalanNormal === 0 && (quizSandik?.length || 0) === 0) {
-        console.log('├─ 🎉 TEBRİKLER! Tüm kelimeleri tamamladınız!');
+        __dbg('├─ 🎉 TEBRİKLER! Tüm kelimeleri tamamladınız!');
     } else if (kalanNormal === 0) {
-        console.log('├─ Normal kelimeler bitti, sadece sandıktaki kelimeler kaldı!');
+        __dbg('├─ Normal kelimeler bitti, sadece sandıktaki kelimeler kaldı!');
     }
     
-    console.log('\n========== TEST TAMAMLANDI ==========');
-    console.log('📌 Şimdi soruyu cevapla ve tekrar bu kodu çalıştır!');
+    __dbg('\n========== TEST TAMAMLANDI ==========');
+    __dbg('📌 Şimdi soruyu cevapla ve tekrar bu kodu çalıştır!');
 })();
 
 
@@ -13202,7 +13203,7 @@ window.showLeaderboard = async () => {
 // Mevcut soru numarasını düzelt
 const gidilen = baslangicIndex + (quizWordsAll.length - 1 - bitisIndex);
 document.getElementById('karmaCurrent').textContent = gidilen;
-console.log('Düzeltilmiş soru no:', gidilen);
+__dbg('Düzeltilmiş soru no:', gidilen);
 
 
 
@@ -13219,21 +13220,21 @@ console.log('Düzeltilmiş soru no:', gidilen);
 // ===== GLOBAL SANDIK KONTROL FONKSİYONLARI (KONSOL İÇİN) =====
 window.getKarmaStatus = function() {
     const ekranKelime = document.getElementById('karmaArabicWord')?.textContent || 'Yükleniyor';
-    console.log('===== KARMA DURUM =====');
-    console.log('1. Ekrandaki kelime:', ekranKelime);
-    console.log('2. Sandık sayısı:', quizSandik?.length || 0);
-    console.log('3. Sandık kelimeleri:', quizSandik?.map(w => w.arabic) || []);
-    console.log('4. Normal index:', baslangicIndex, 'Bitiş index:', bitisIndex);
-    console.log('5. Seviye:', mevcutSeviye, '/', toplamSeviye);
-    console.log('6. Puan:', quizScore);
-    console.log('7. Doğru sayısı:', quizCorrectCount);
+    __dbg('===== KARMA DURUM =====');
+    __dbg('1. Ekrandaki kelime:', ekranKelime);
+    __dbg('2. Sandık sayısı:', quizSandik?.length || 0);
+    __dbg('3. Sandık kelimeleri:', quizSandik?.map(w => w.arabic) || []);
+    __dbg('4. Normal index:', baslangicIndex, 'Bitiş index:', bitisIndex);
+    __dbg('5. Seviye:', mevcutSeviye, '/', toplamSeviye);
+    __dbg('6. Puan:', quizScore);
+    __dbg('7. Doğru sayısı:', quizCorrectCount);
     
     const sandiktaVar = quizSandik?.some(w => w.arabic === ekranKelime) || false;
-    console.log('8. Ekrandaki kelime sandıkta var mı?', sandiktaVar);
+    __dbg('8. Ekrandaki kelime sandıkta var mı?', sandiktaVar);
     
     if (sandiktaVar) {
         const kelime = quizSandik.find(w => w.arabic === ekranKelime);
-        console.log('9. Sandıktaki kelime detayı:', { 
+        __dbg('9. Sandıktaki kelime detayı:', { 
             id: kelime?.id, 
             arabic: kelime?.arabic, 
             turkish: kelime?.turkish 
@@ -13255,7 +13256,7 @@ window.sandikTemizle = async function() {
         quizSandik = [];
         await saveSandikToFirestore();
         updateSandikDisplay();
-        console.log('✅ Sandık sıfırlandı!');
+        __dbg('✅ Sandık sıfırlandı!');
         showWarning('✅ Sandık başarıyla sıfırlandı!');
         // Seviye bilgisini güncelle
         const seviyeEl = document.getElementById('seviyeBilgi');
@@ -13271,8 +13272,8 @@ window.sandikTemizle = async function() {
 
     // Global erişim için (script içine ekle)
 window.getSandik = () => {
-    console.log('Sandık içeriği:', quizSandik);
-    console.log('Sandık ID\'leri:', quizSandik.map(w => w.id));
+    __dbg('Sandık içeriği:', quizSandik);
+    __dbg('Sandık ID\'leri:', quizSandik.map(w => w.id));
     return quizSandik;
 };
 
@@ -13281,7 +13282,7 @@ window.clearSandik = async () => {
         quizSandik = [];
         await saveSandikToFirestore();
         updateSandikDisplay();
-        console.log('✅ Sandık sıfırlandı!');
+        __dbg('✅ Sandık sıfırlandı!');
     }
 };
 
@@ -13383,28 +13384,28 @@ async function safeOperation(operation) {
 
 // Sınav sıralama testi
 (async function testSiralama() {
-    console.log('===== SINAV SIRALAMA TESTİ =====');
+    __dbg('===== SINAV SIRALAMA TESTİ =====');
     
     // 1. Mevcut sınavları getir
     const snapshot = await getDocs(collection(db, 'exams'));
     const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    console.log('📝 Toplam sınav:', exams.length);
-    console.log('\n📋 MEVCUT SIRALAMA:');
-    exams.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
+    __dbg('📝 Toplam sınav:', exams.length);
+    __dbg('\n📋 MEVCUT SIRALAMA:');
+    exams.forEach((e, i) => __dbg(`  ${i+1}. ${e.title}`));
     
     // 2. Alfabetik sırala
     const sorted = [...exams].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    console.log('\n📋 ALFABETİK SIRALAMA:');
-    sorted.forEach((e, i) => console.log(`  ${i+1}. ${e.title}`));
+    __dbg('\n📋 ALFABETİK SIRALAMA:');
+    sorted.forEach((e, i) => __dbg(`  ${i+1}. ${e.title}`));
     
     // 3. Fark var mı?
     const isSorted = exams.every((e, i) => e.title === sorted[i].title);
-    console.log('\n✅ Zaten sıralı mı?', isSorted ? 'EVET' : 'HAYIR');
+    __dbg('\n✅ Zaten sıralı mı?', isSorted ? 'EVET' : 'HAYIR');
     
     // 4. Eğer sıralı değilse manuel sırala (geçici)
     if (!isSorted) {
-        console.log('\n🔄 Sınavlar alfabetik sıralanıyor...');
+        __dbg('\n🔄 Sınavlar alfabetik sıralanıyor...');
         const container = document.getElementById('examsList');
         if (container) {
             container.innerHTML = '';
@@ -13418,7 +13419,7 @@ async function safeOperation(operation) {
                 `;
                 container.appendChild(examCard);
             });
-            console.log('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
+            __dbg('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
         }
     }
 })();
@@ -13431,93 +13432,93 @@ async function safeOperation(operation) {
 
     // ===== SEVİYE KONTROL FONKSİYONU =====
 window.seviyeKontrol = async function() {
-    console.log('========== SEVİYE KONTROL BAŞLADI ==========');
+    __dbg('========== SEVİYE KONTROL BAŞLADI ==========');
     
     // 1. MEVCUT DURUM
-    console.log('\n📌 1. MEVCUT DURUM:');
-    console.log('   ├─ mevcutSeviye değişkeni:', mevcutSeviye);
-    console.log('   ├─ toplamSeviye değişkeni:', toplamSeviye);
-    console.log('   ├─ seviyedekiKelimeSayisi:', seviyedekiKelimeSayisi);
-    console.log('   ├─ quizWordsAll uzunluğu:', quizWordsAll?.length || 0);
-    console.log('   ├─ quizSandik uzunluğu:', quizSandik?.length || 0);
+    __dbg('\n📌 1. MEVCUT DURUM:');
+    __dbg('   ├─ mevcutSeviye değişkeni:', mevcutSeviye);
+    __dbg('   ├─ toplamSeviye değişkeni:', toplamSeviye);
+    __dbg('   ├─ seviyedekiKelimeSayisi:', seviyedekiKelimeSayisi);
+    __dbg('   ├─ quizWordsAll uzunluğu:', quizWordsAll?.length || 0);
+    __dbg('   ├─ quizSandik uzunluğu:', quizSandik?.length || 0);
     
     // 2. FIRESTORE'DAN OKU
     if (currentUser) {
-        console.log('\n📌 2. FIRESTORE OKUMA:');
+        __dbg('\n📌 2. FIRESTORE OKUMA:');
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
             const data = userDoc.data();
-            console.log('   ├─ Firestore mevcutSeviye:', data.mevcutSeviye);
-            console.log('   ├─ Firestore quizScore:', data.quizScore);
-            console.log('   ├─ Firestore quizSandik:', data.quizSandik?.length || 0);
-            console.log('   ├─ Firestore tüm veri:', data);
+            __dbg('   ├─ Firestore mevcutSeviye:', data.mevcutSeviye);
+            __dbg('   ├─ Firestore quizScore:', data.quizScore);
+            __dbg('   ├─ Firestore quizSandik:', data.quizSandik?.length || 0);
+            __dbg('   ├─ Firestore tüm veri:', data);
         } else {
-            console.log('   ❌ Kullanıcı belgesi bulunamadı!');
+            __dbg('   ❌ Kullanıcı belgesi bulunamadı!');
         }
     } else {
-        console.log('   ❌ Kullanıcı giriş yapmamış!');
+        __dbg('   ❌ Kullanıcı giriş yapmamış!');
     }
     
     // 3. TOPLAM KELİME SAYISI
-    console.log('\n📌 3. TOPLAM KELİME:');
+    __dbg('\n📌 3. TOPLAM KELİME:');
     const wordsSnapshot = await getDocs(collection(db, 'words'));
     const totalWords = wordsSnapshot.docs.length;
     const hesaplananSeviye = Math.ceil(totalWords / 15);
-    console.log('   ├─ Toplam kelime sayısı:', totalWords);
-    console.log('   ├─ Hesaplanan toplam seviye (15 kelime):', hesaplananSeviye);
-    console.log('   ├─ Mevcut toplamSeviye değişkeni:', toplamSeviye);
+    __dbg('   ├─ Toplam kelime sayısı:', totalWords);
+    __dbg('   ├─ Hesaplanan toplam seviye (15 kelime):', hesaplananSeviye);
+    __dbg('   ├─ Mevcut toplamSeviye değişkeni:', toplamSeviye);
     
     if (hesaplananSeviye !== toplamSeviye) {
-        console.log('   ⚠️ UYARI: Hesaplanan seviye ile mevcut seviye uyuşmuyor!');
-        console.log('   ├─ Hesaplanan:', hesaplananSeviye);
-        console.log('   ├─ Mevcut:', toplamSeviye);
+        __dbg('   ⚠️ UYARI: Hesaplanan seviye ile mevcut seviye uyuşmuyor!');
+        __dbg('   ├─ Hesaplanan:', hesaplananSeviye);
+        __dbg('   ├─ Mevcut:', toplamSeviye);
     }
     
     // 4. SEVİYE KELİMELERİ
-    console.log('\n📌 4. SEVİYE KELİMELERİ:');
+    __dbg('\n📌 4. SEVİYE KELİMELERİ:');
     const KELIME_SAYISI = 15;
     const baslangic = (mevcutSeviye - 1) * KELIME_SAYISI;
     const bitis = Math.min(baslangic + KELIME_SAYISI, totalWords);
-    console.log('   ├─ Başlangıç index:', baslangic);
-    console.log('   ├─ Bitiş index:', bitis);
-    console.log('   ├─ Seviyedeki kelime sayısı:', bitis - baslangic);
+    __dbg('   ├─ Başlangıç index:', baslangic);
+    __dbg('   ├─ Bitiş index:', bitis);
+    __dbg('   ├─ Seviyedeki kelime sayısı:', bitis - baslangic);
     
     // 5. HTML ELEMENTLERİ
-    console.log('\n📌 5. HTML ELEMENTLERİ:');
+    __dbg('\n📌 5. HTML ELEMENTLERİ:');
     const karmaSeviye = document.getElementById('karmaSeviye');
     const karmaToplam = document.getElementById('karmaToplamSeviye');
     const seviyeNo = document.getElementById('seviyeNo');
     const toplamSeviyeNo = document.getElementById('toplamSeviyeNo');
     const seviyeBilgi = document.getElementById('seviyeBilgi');
     
-    console.log('   ├─ karmaSeviye:', karmaSeviye?.textContent);
-    console.log('   ├─ karmaToplamSeviye:', karmaToplam?.textContent);
-    console.log('   ├─ seviyeNo:', seviyeNo?.textContent);
-    console.log('   ├─ toplamSeviyeNo:', toplamSeviyeNo?.textContent);
-    console.log('   ├─ seviyeBilgi:', seviyeBilgi?.innerHTML);
+    __dbg('   ├─ karmaSeviye:', karmaSeviye?.textContent);
+    __dbg('   ├─ karmaToplamSeviye:', karmaToplam?.textContent);
+    __dbg('   ├─ seviyeNo:', seviyeNo?.textContent);
+    __dbg('   ├─ toplamSeviyeNo:', toplamSeviyeNo?.textContent);
+    __dbg('   ├─ seviyeBilgi:', seviyeBilgi?.innerHTML);
     
     // 6. TAVSİYE
-    console.log('\n📌 6. TAVSİYE:');
+    __dbg('\n📌 6. TAVSİYE:');
     if (mevcutSeviye !== parseInt(karmaSeviye?.textContent || '1')) {
-        console.log('   ⚠️ EKRANDAKİ SEVİYE İLE DEĞİŞKEN UYUŞMUYOR!');
-        console.log('   ├─ Değişken:', mevcutSeviye);
-        console.log('   ├─ Ekran:', karmaSeviye?.textContent);
-        console.log('   💡 Çözüm: startQuizWords() çağrıldığında ekran güncellenmiyor.');
+        __dbg('   ⚠️ EKRANDAKİ SEVİYE İLE DEĞİŞKEN UYUŞMUYOR!');
+        __dbg('   ├─ Değişken:', mevcutSeviye);
+        __dbg('   ├─ Ekran:', karmaSeviye?.textContent);
+        __dbg('   💡 Çözüm: startQuizWords() çağrıldığında ekran güncellenmiyor.');
     }
     
     if (currentUser && userDoc?.exists()) {
         const firestoreSeviye = userDoc.data().mevcutSeviye;
         if (firestoreSeviye && firestoreSeviye !== mevcutSeviye) {
-            console.log('   ⚠️ FIRESTORE İLE DEĞİŞKEN UYUŞMUYOR!');
-            console.log('   ├─ Değişken:', mevcutSeviye);
-            console.log('   ├─ Firestore:', firestoreSeviye);
-            console.log('   💡 Çözüm: mevcutSeviye = firestoreSeviye yapmalısın.');
+            __dbg('   ⚠️ FIRESTORE İLE DEĞİŞKEN UYUŞMUYOR!');
+            __dbg('   ├─ Değişken:', mevcutSeviye);
+            __dbg('   ├─ Firestore:', firestoreSeviye);
+            __dbg('   💡 Çözüm: mevcutSeviye = firestoreSeviye yapmalısın.');
         }
     }
     
-    console.log('\n========== SEVİYE KONTROL BİTTİ ==========');
+    __dbg('\n========== SEVİYE KONTROL BİTTİ ==========');
     
     // Sonuç özeti
     return {
@@ -13808,8 +13809,8 @@ window.showStatInfo = function(type) {
     });
 };
 
-console.log('✅ Profil bilgi modalı yüklendi!');
-console.log('📊 İstatistik kartlarına tıklayarak detaylı bilgi alabilirsiniz.');
+__dbg('✅ Profil bilgi modalı yüklendi!');
+__dbg('📊 İstatistik kartlarına tıklayarak detaylı bilgi alabilirsiniz.');
 
 
 
@@ -14269,7 +14270,7 @@ async function addWordLearningPoint() {
             // Puanları yeniden yükle
             await loadUserStats();
             
-            console.log('✅ Kelime sayısı arttı:', newTotal);
+            __dbg('✅ Kelime sayısı arttı:', newTotal);
         }
     } catch (error) {
         console.error('❌ Puan ekleme hatası:', error);
@@ -14331,7 +14332,7 @@ window.refreshRankingProfile = async function() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     
-    console.log('🚀 DOM yükleniyor...');
+    __dbg('🚀 DOM yükleniyor...');
     
     // ============================================================
     // 1. İNTERNET BAĞLANTISI KONTROLÜ
@@ -15130,7 +15131,7 @@ if (examLessonSelect) {
             const mevcut = (snap.exists() && snap.data().count) ? snap.data().count : 0;
             if (numberEl) numberEl.textContent = mevcut.toLocaleString('tr-TR');
         }).catch(err => {
-            console.log('⚠️ Dua sayacı okunamadı:', err);
+            __dbg('⚠️ Dua sayacı okunamadı:', err);
             if (numberEl) numberEl.textContent = '—';
         });
 
@@ -15138,7 +15139,7 @@ if (examLessonSelect) {
             if (duaEtti) {
                 // Sayaç Firestore'da +1 artırılır (belge yoksa otomatik oluşur)
                 setDoc(duaRef, { count: increment(1) }, { merge: true })
-                    .catch(err => console.log('⚠️ Dua sayacı güncellenemedi:', err));
+                    .catch(err => __dbg('⚠️ Dua sayacı güncellenemedi:', err));
                 if (numberEl) {
                     const guncelSayi = parseInt((numberEl.textContent || '0').replace(/\D/g, '')) || 0;
                     numberEl.textContent = (guncelSayi + 1).toLocaleString('tr-TR');
@@ -15351,7 +15352,7 @@ if (examLessonSelect) {
 
         if (markCompleted && currentUser) {
             setDoc(doc(db, 'users', currentUser.uid), { tourCompleted: true }, { merge: true })
-                .catch(err => console.log('⚠️ Tur durumu kaydedilemedi:', err));
+                .catch(err => __dbg('⚠️ Tur durumu kaydedilemedi:', err));
         }
     }
 
@@ -15411,7 +15412,7 @@ if (examLessonSelect) {
         };
     }
     
-    console.log('✅ DOM yüklendi - Tüm olaylar bağlandı!');
+    __dbg('✅ DOM yüklendi - Tüm olaylar bağlandı!');
 });
 
 
@@ -16459,7 +16460,7 @@ enhanceAllDropdownSelects();
                     if (document.visibilityState === 'visible') reg.update();
                 });
             }).catch((err) => {
-                console.log('Service worker kaydı başarısız:', err);
+                __dbg('Service worker kaydı başarısız:', err);
             });
 
             // Yeni service worker devreye girince (yeni sürüm indirilip aktif olunca)
@@ -16510,7 +16511,7 @@ enhanceAllDropdownSelects();
             yeniUrl.searchParams.set('_v', Date.now());
             window.location.replace(yeniUrl.toString());
         } catch (e) {
-            console.log('Güncelleme kontrolü hatası:', e.message);
+            __dbg('Güncelleme kontrolü hatası:', e.message);
             window.location.reload();
         }
     };
