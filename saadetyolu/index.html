@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v32">
+    <meta name="app-build" content="saadetyolu-shell-v33">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4426,7 +4426,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.5 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -16582,14 +16582,23 @@ enhanceAllDropdownSelects();
             shown = true;
             const d = document.createElement('div');
             d.id = 'updateBanner';
-            d.style.cssText = 'position:fixed; left:12px; right:12px; bottom:14px; z-index:2147482000; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:14px; background:#1c1c20; color:#f3f4f6; border:1px solid rgba(245,158,11,.6); box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:14px; max-width:420px; margin:0 auto;';
-            d.innerHTML = '<span style="flex:1;">🔄 Yeni sürüm hazır</span><button type="button" style="padding:7px 16px; border:none; border-radius:10px; background:#f59e0b; color:#1a1a2e; font-weight:700; cursor:pointer;">Yenile</button><button type="button" aria-label="Kapat" style="border:none; background:none; color:#9ca3af; font-size:20px; line-height:1; cursor:pointer; padding:0 2px;">×</button>';
+            d.style.cssText = 'position:fixed; left:50%; transform:translateX(-50%); bottom:14px; z-index:2147482000; display:flex; align-items:center; gap:8px; padding:6px 8px 6px 12px; border-radius:12px; background:#1c1c20; color:#f3f4f6; border:1px solid rgba(245,158,11,.5); box-shadow:0 6px 18px rgba(0,0,0,.4); font-size:12px; width:max-content; max-width:calc(100vw - 56px);';
+            d.innerHTML = '<span>🔄 Yeni sürüm hazır</span><button type="button" style="padding:4px 11px; border:none; border-radius:8px; background:#f59e0b; color:#1a1a2e; font-weight:700; font-size:12px; cursor:pointer;">Yenile</button><button type="button" aria-label="Kapat" style="border:none; background:none; color:#9ca3af; font-size:17px; line-height:1; cursor:pointer; padding:0 2px;">×</button>';
             const [, go, x] = [d.children[0], d.children[1], d.children[2]];
             go.addEventListener('click', () => window.checkForAppUpdate());
             // Kapatılsa bile güncellenmediği sürece bir sonraki kontrolde / açılışta yeniden gelir
             x.addEventListener('click', () => { d.remove(); shown = false; lastCheck = Date.now(); });
             document.body.appendChild(d);
+            syncBanner();
         }
+        // Giriş ekranındayken gösterme; yalnızca giriş yapılmışken göster
+        function syncBanner() {
+            const d = document.getElementById('updateBanner'); if (!d) return;
+            const ls = document.getElementById('loginScreen');
+            const onLogin = !!ls && getComputedStyle(ls).display !== 'none';
+            d.style.display = onLogin ? 'none' : 'flex';
+        }
+        setInterval(syncBanner, 800);
         async function check(force) {
             if (!myBuild) return;
             if (!force && Date.now() - lastCheck < 10 * 60 * 1000) return;
