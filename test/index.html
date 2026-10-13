@@ -4425,7 +4425,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.4.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.0 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -5810,13 +5810,104 @@ let siraSoldan = true;           // true: soldan (eski), false: sağdan (yeni)
 const WORD_LEARN_UNLOCK_PERCENT = 80;   // Dersin sınavının açılması için kelime öğrenme yüzdesi
 const EXAM_PASS_PERCENT = 80;           // Bir sonraki ders / yarışma seviyesinin açılması için sınav başarı yüzdesi
 
+
+// ============================================================
+// ===== 💾 İÇERİK ÖNBELLEĞİ (IndexedDB) =====
+// Kitap / ders / kelime / sınav gibi SABİT içerik, oyuncunun cihazında saklanır;
+// Firestore'dan her açılışta yeniden çekilmez (okuma kotasını korur).
+// Puan, ilerleme, arkadaşlık, mesaj, sıralama gibi canlı veriler ASLA burada tutulmaz.
+// Güncellik: appConfig/announcement belgesindeki "contentVersion" alanı (admin her içerik
+// değişikliğinde artırır). Sürüm değişince yerel kopya silinir ve gerektiğinde yeniden indirilir.
+// ============================================================
+const __CC = (() => {
+    const DB_NAME = 'sy_content_cache', STORE = 'kv';
+    const mem = new Map();
+    let dbp = null, readyP = null, lastCheck = 0;
+    function openDb() {
+        if (dbp) return dbp;
+        dbp = new Promise((resolve) => {
+            try {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            } catch (e) { resolve(null); }
+        });
+        return dbp;
+    }
+    async function idb(mode, fn) {
+        const db_ = await openDb(); if (!db_) return undefined;
+        return new Promise((resolve) => {
+            try {
+                const tx = db_.transaction(STORE, mode); const st = tx.objectStore(STORE);
+                const r = fn(st);
+                tx.oncomplete = () => resolve(r && r.result);
+                tx.onerror = tx.onabort = () => resolve(undefined);
+            } catch (e) { resolve(undefined); }
+        });
+    }
+    const idbGet = (k) => idb('readonly', (st) => st.get(k));
+    const idbSet = (k, v) => idb('readwrite', (st) => st.put(v, k));
+    const idbClear = () => idb('readwrite', (st) => st.clear());
+
+    // Sunucudaki içerik sürümünü bir kez oku (1 okuma); farklıysa yerel kopyayı sil.
+    async function checkVersion() {
+        lastCheck = Date.now();
+        let serverV = null;
+        try {
+            const snap = await getDoc(doc(db, 'appConfig', 'announcement'));
+            serverV = snap.exists() ? (snap.data().contentVersion || 0) : 0;
+        } catch (e) { return; }                 // ağ yoksa eldeki kopya kullanılır
+        const localV = await idbGet('__ver');
+        if (localV !== serverV) {
+            await idbClear(); mem.clear();
+            await idbSet('__ver', serverV);
+            __dbg('💾 İçerik sürümü değişti, yerel kopya temizlendi:', localV, '→', serverV);
+        }
+    }
+    function ready() { if (!readyP) readyP = checkVersion(); return readyP; }
+    // Uygulama uzun süre arka planda kaldıysa dönüşte sürümü tekrar denetle (en çok 10 dakikada bir)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && Date.now() - lastCheck > 10 * 60 * 1000) { mem.clear(); readyP = checkVersion(); }
+    });
+
+    function fakeSnap(arr) {
+        const docs = arr.map((o) => { const { id, ...rest } = o; return { id, data: () => ({ ...rest }), exists: () => true }; });
+        return { docs, size: docs.length, empty: docs.length === 0, forEach: (fn) => docs.forEach(fn) };
+    }
+    // key: önbellek anahtarı, loader: önbellekte yoksa çalışacak Firestore sorgusu
+    async function docsOf(key, loader) {
+        await ready();
+        let arr = mem.get(key);
+        if (!arr) arr = await idbGet(key);
+        if (!arr) {
+            const snap = await loader();
+            arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            await idbSet(key, arr);
+        }
+        mem.set(key, arr);
+        return fakeSnap(arr);
+    }
+    async function clearAll() { mem.clear(); await idbClear(); }
+    return { docsOf, clearAll, checkVersion };
+})();
+window.__ccClear = () => __CC.clearAll();
+const __ccDocs = (key, loader) => __CC.docsOf(key, loader);
+// Toplam kelime sayısı (seviye hesabı için)
+async function __ccWordCount() {
+    try {
+        const snap = await __CC.docsOf('words:all', () => getDocs(collection(db, 'words')));
+        return snap.size;
+    } catch (e) { return 0; }
+}
+
 let globalLessonSequenceCache = null;   // [{id, name, bookId, bookName}, ...] -> tüm kitaplardaki dersler, sıralı
 
 // Tüm kitap + dersleri tek bir global sıraya diz (kitap adına, sonra ders numarasına göre)
 async function getGlobalLessonSequence(forceRefresh) {
     if (globalLessonSequenceCache && !forceRefresh) return globalLessonSequenceCache;
 
-    const booksSnap = await getDocs(collection(db, 'books'));
+    const booksSnap = await __ccDocs('books', () => getDocs(collection(db, 'books')));
     let allBooks = booksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     allBooks.sort((a, b) => {
         const orderDiff = (a.order || 0) - (b.order || 0);
@@ -5826,7 +5917,7 @@ async function getGlobalLessonSequence(forceRefresh) {
 
     const sequence = [];
     for (const book of allBooks) {
-        const lessonsSnap = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', book.id)));
+        const lessonsSnap = await __ccDocs('lessons:' + book.id, () => getDocs(query(collection(db, 'lessons'), where('bookId', '==', book.id))));
         let bookLessons = lessonsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         bookLessons.sort((a, b) => {
             const orderDiff = (a.order || 0) - (b.order || 0);
@@ -5873,7 +5964,7 @@ async function isLessonWordsUnlocked(lessonId) {
 // Bir dersteki kelimelerin yüzde kaçı görüntülenmiş (Göster'e basılmış)?
 async function getLessonWordViewPercent(lessonId) {
     try {
-        const wordsSnap = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+        const wordsSnap = await __ccDocs('words:' + lessonId, () => getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId))));
         const totalWords = wordsSnap.size;
         if (totalWords === 0 || !currentUser) return 0;
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -6276,7 +6367,7 @@ window.showProfile = function() {
 };
 
 async function loadBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
+    const snapshot = await __ccDocs('books', () => getDocs(collection(db, 'books')));
     books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // JavaScript ile isme göre sırala
@@ -6318,11 +6409,11 @@ bookSelect.onchange = async () => {
     
     try {
         // ===== DERSLERİ GETİR (orderBy ile) =====
-        const snapshot = await getDocs(query(
+        const snapshot = await __ccDocs('lessons:' + bookId, () => getDocs(query(
             collection(db, 'lessons'), 
             where('bookId', '==', bookId),
             orderBy('order', 'asc') // 'order' alanına göre sırala
-        ));
+        )));
         lessons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         // ===== SAYISAL SIRALA (Ders-1, Ders-2, Ders-3...) =====
@@ -6439,7 +6530,7 @@ function sortLessonsByName(lessons) {
             updateWordDisplay();
             return;
         }
-        const snapshot = await getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId)));
+        const snapshot = await __ccDocs('words:' + lessonId, () => getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId))));
         words = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         currentWordIndex = 0;
         updateWordDisplay();
@@ -7300,8 +7391,7 @@ async function loadUserStats() {
         }
         
         // ===== 4. DİĞER VERİLERİ AL =====
-        const wordsSnapshot = await getDocs(collection(db, 'words'));
-        const totalWords = wordsSnapshot.docs.length;
+        const totalWords = await __ccWordCount();
         const toplamSeviye = Math.max(1, Math.ceil(totalWords / 15));
         
         if (userDoc.exists()) {
@@ -8023,7 +8113,7 @@ function fixArabicText(text) {
 
 
 async function loadLessonsList() {
-    const snapshot = await getDocs(collection(db, 'lessons'));
+    const snapshot = await __ccDocs('lessons:all', () => getDocs(collection(db, 'lessons')));
     lessonsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
 }
@@ -9388,7 +9478,7 @@ document.getElementById('goHelp').onclick = () => {
     // Kitapları yükle (Sınavlar için)
 // Kitapları yükle (Sınavlar için)
 async function loadExamBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
+    const snapshot = await __ccDocs('books', () => getDocs(collection(db, 'books')));
     const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // ===== ALFABETİK SIRALA =====
@@ -9450,7 +9540,7 @@ if (examLessonSelect) {
 // Kitaba göre sınavları getir
 async function loadExamsByBook(bookId) {
     if (!bookId) return;
-    const snapshot = await getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId)));
+    const snapshot = await __ccDocs('exams:book:' + bookId, () => getDocs(query(collection(db, 'exams'), where('bookId', '==', bookId))));
     let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Kullanıcının puanlarını ekle
@@ -9475,7 +9565,7 @@ async function loadExamsByLesson(lessonId) {
         // ===== YÜKLENİYOR ALERT =====
         showLoadingAlert('📝 Sınavlar yükleniyor...');
         
-        const snapshot = await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId)));
+        const snapshot = await __ccDocs('exams:lesson:' + lessonId, () => getDocs(query(collection(db, 'exams'), where('lessonId', '==', lessonId))));
         let exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         // ===== SINAVLARI SAYISAL SIRALA (Sınav-1, Sınav-2, Sınav-3...) =====
@@ -9954,7 +10044,7 @@ document.getElementById('goKarma').onclick = () => {
 
 // Karma kelimeleri yükle
 async function loadKarmaWords() {
-    const snapshot = await getDocs(collection(db, 'words'));
+    const snapshot = await __ccDocs('words:all', () => getDocs(collection(db, 'words')));
     karmaWords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
    
     nextKarmaWord();
@@ -10119,7 +10209,7 @@ window.loadRanking = async function() {
     document.querySelectorAll('.rank-found').forEach(el => { el.style.display = 'none'; });
     try {
         // ===== TOPLAM DERS SAYISINI AL (SEVİYE SAYISI) =====
-        const lessonsSnapshot = await getDocs(collection(db, 'lessons'));
+        const lessonsSnapshot = await __ccDocs('lessons:all', () => getDocs(collection(db, 'lessons')));
         const toplamDers = lessonsSnapshot.docs.length;
         const toplamSeviye = Math.max(1, toplamDers);
 
@@ -12216,10 +12306,10 @@ window.startQuizWords = async () => {
         __dbg(`📚 Seviye ${mevcutSeviye}/${toplamSeviye} - Ders: ${ders.name} (ID: ${ders.id})`);
         
         // ===== 6. O DERSE AİT KELİMELERİ GETİR =====
-        const wordsSnapshot = await getDocs(query(
+        const wordsSnapshot = await __ccDocs('words:' + ders.id, () => getDocs(query(
             collection(db, 'words'),
             where('lessonId', '==', ders.id)
-        ));
+        )));
         
         if (wordsSnapshot.empty) {
             showWarning(`⚠️ "${ders.name}" dersine ait henüz kelime eklenmemiş!`);
@@ -12881,7 +12971,7 @@ window.openReviewMode = async function () {
     // Şıklar için geniş bir kelime havuzu lazım - tüm kelimeleri bir kez çek
     try {
         if (reviewAllWordsPool.length === 0) {
-            const wordsSnap = await getDocs(collection(db, 'words'));
+            const wordsSnap = await __ccDocs('words:all', () => getDocs(collection(db, 'words')));
             reviewAllWordsPool = wordsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
     } catch (e) {
@@ -13040,43 +13130,8 @@ window.showLeaderboard = async () => {
 
 
 
-    // YARIŞMA TEST KODU
-(async function testYarisma() {
-    __dbg('🔍 YARIŞMA TEST BAŞLIYOR...');
-    
-    // 1. Kelimeleri kontrol et
-    const wordsSnap = await getDocs(collection(db, 'words'));
-    const words = wordsSnap.docs.map(doc => doc.data());
-    __dbg(`📝 Toplam kelime: ${words.length}`);
-    
-    if (words.length === 0) {
-        __dbg('❌ HİÇ KELİME YOK! Admin panelinden kelime ekleyin.');
-        return;
-    }
-    
-    // 2. Örnek kelime göster
-    __dbg('📖 Örnek kelime:', words[0]);
-    
-    // 3. startQuizWords fonksiyonunu manuel çalıştır
-    if (typeof startQuizWords === 'function') {
-        __dbg('✅ startQuizWords fonksiyonu bulundu, çalıştırılıyor...');
-        //await startQuizWords();
-    } else {
-        __dbg('❌ startQuizWords fonksiyonu bulunamadı!');
-        
-        // Manuel olarak yarışma ekranını aç
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('karmaScreen').style.display = 'block';
-        
-        // İlk kelimeyi göster
-        const firstWord = words[0];
-        document.getElementById('karmaArabicWord').textContent = firstWord.arabic;
-        document.getElementById('karmaTotal').textContent = words.length;
-        __dbg('📖 İlk kelime manuel yüklendi:', firstWord.arabic);
-    }
-    
-    __dbg('✅ TEST TAMAMLANDI');
-})();
+    // (Eski yarışma test kodu kaldırıldı: her açılışta tüm kelimeleri okuyordu)
+
 
 
 
@@ -13382,47 +13437,8 @@ async function safeOperation(operation) {
 
 
 
-// Sınav sıralama testi
-(async function testSiralama() {
-    __dbg('===== SINAV SIRALAMA TESTİ =====');
-    
-    // 1. Mevcut sınavları getir
-    const snapshot = await getDocs(collection(db, 'exams'));
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    __dbg('📝 Toplam sınav:', exams.length);
-    __dbg('\n📋 MEVCUT SIRALAMA:');
-    exams.forEach((e, i) => __dbg(`  ${i+1}. ${e.title}`));
-    
-    // 2. Alfabetik sırala
-    const sorted = [...exams].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    __dbg('\n📋 ALFABETİK SIRALAMA:');
-    sorted.forEach((e, i) => __dbg(`  ${i+1}. ${e.title}`));
-    
-    // 3. Fark var mı?
-    const isSorted = exams.every((e, i) => e.title === sorted[i].title);
-    __dbg('\n✅ Zaten sıralı mı?', isSorted ? 'EVET' : 'HAYIR');
-    
-    // 4. Eğer sıralı değilse manuel sırala (geçici)
-    if (!isSorted) {
-        __dbg('\n🔄 Sınavlar alfabetik sıralanıyor...');
-        const container = document.getElementById('examsList');
-        if (container) {
-            container.innerHTML = '';
-            sorted.forEach(exam => {
-                const examCard = document.createElement('div');
-                examCard.className = 'exam-card';
-                examCard.onclick = () => startExam(exam);
-                examCard.innerHTML = `
-                    <div class="exam-title">📚 ${exam.title}</div>
-                    <div class="exam-info">📝 ${exam.questions?.length || 0} soru</div>
-                `;
-                container.appendChild(examCard);
-            });
-            __dbg('✅ Sınavlar alfabetik olarak yeniden sıralandı!');
-        }
-    }
-})();
+// (Eski sınav sıralama test kodu kaldırıldı: her açılışta tüm sınavları okuyordu)
+
 
 
 
@@ -13463,8 +13479,7 @@ window.seviyeKontrol = async function() {
     
     // 3. TOPLAM KELİME SAYISI
     __dbg('\n📌 3. TOPLAM KELİME:');
-    const wordsSnapshot = await getDocs(collection(db, 'words'));
-    const totalWords = wordsSnapshot.docs.length;
+    const totalWords = await __ccWordCount();
     const hesaplananSeviye = Math.ceil(totalWords / 15);
     __dbg('   ├─ Toplam kelime sayısı:', totalWords);
     __dbg('   ├─ Hesaplanan toplam seviye (15 kelime):', hesaplananSeviye);
@@ -14644,14 +14659,14 @@ if (examBookSelect) {
         
         try {
             // ===== 1. DERSLERİ GETİR =====
-            const snapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const snapshot = await __ccDocs('lessons:' + bookId, () => getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId))));
             let dersler = snapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data() 
             }));
             
             // ===== 2. TÜM SINAVLARI TEK SEFERDE AL =====
-            const allExams = await getDocs(collection(db, 'exams'));
+            const allExams = await __ccDocs('exams:all', () => getDocs(collection(db, 'exams')));
             const examCounts = {};
             const questionCounts = {};
             allExams.docs.forEach(doc => {
@@ -15820,7 +15835,7 @@ window.showMyWordsList = async function() {
 // Kitapları yükle
 // Kitapları yükle
 async function loadMyWordsBooks() {
-    const snapshot = await getDocs(collection(db, 'books'));
+    const snapshot = await __ccDocs('books', () => getDocs(collection(db, 'books')));
     const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     books.sort((a, b) => a.name.localeCompare(b.name));
     
@@ -15899,7 +15914,7 @@ async function loadMyWordsList() {
         
         // Kitap filtresi
         if (bookId) {
-            const lessonsSnapshot = await getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId)));
+            const lessonsSnapshot = await __ccDocs('lessons:' + bookId, () => getDocs(query(collection(db, 'lessons'), where('bookId', '==', bookId))));
             const lessonIds = lessonsSnapshot.docs.map(d => d.id);
             // allWords üzerinden filtrele (myWords değil)
             const filteredWords = [];
@@ -16492,6 +16507,9 @@ enhanceAllDropdownSelects();
                     didOpen: () => Swal.showLoading()
                 });
             }
+
+            // 0) İçerik önbelleğini (kelime/ders/sınav kopyası) temizle → yeniden indirilecek
+            try { if (window.__ccClear) await window.__ccClear(); } catch (e) {}
 
             // 1) Tüm service worker önbelleklerini temizle
             if ('caches' in window) {
