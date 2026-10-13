@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v23">
+    <meta name="app-build" content="test-v24">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4443,7 +4443,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.4 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -5039,11 +5039,16 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
                     <h4 style="color: #f59e0b; font-size: 15px; margin-bottom: 12px;"><i class="fas fa-lock"></i> Şifre Değiştir</h4>
                     <div class="password-wrapper" style="position: relative;">
                         <input type="password" id="newPassword" placeholder="Yeni Şifre (6+ karakter)" style="width: 100%; padding: 12px; padding-right: 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
-                        <button type="button" class="toggle-profile-password" onclick="toggleProfilePassword()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px;">
+                        <button type="button" class="toggle-profile-password" onclick="toggleProfilePassword('newPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px;">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <input type="password" id="confirmPassword" placeholder="Yeni Şifre Tekrar" style="width: 100%; padding: 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
+                    <div class="password-wrapper" style="position: relative;">
+                        <input type="password" id="confirmPassword" placeholder="Yeni Şifre Tekrar" style="width: 100%; padding: 12px; padding-right: 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: white; margin: 6px 0;">
+                        <button type="button" class="toggle-profile-password" onclick="toggleProfilePassword('confirmPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                     <button id="updatePasswordBtn" class="btn btn-primary" style="width: 100%; padding: 10px; margin-top: 8px;">
                         <i class="fas fa-save"></i> Şifreyi Güncelle
                     </button>
@@ -7793,7 +7798,7 @@ async function saveExamResult(examTitle, score, correct, total) {
         
     } catch (error) {
         console.error('❌ Kullanıcı adı güncelleme hatası:', error);
-        showWarning('❌ Kullanıcı adı güncellenemedi: ' + error.message);
+        showWarning('❌ Kullanıcı adı güncellenemedi. ' + window.__authMsg(error));
     }
 };
 
@@ -7938,26 +7943,7 @@ window.editEmail = async () => {
     } catch(error) {
         console.error('❌ E-posta güncelleme hatası:', error);
         
-        let errorMessage = '❌ E-posta değiştirilemedi: ';
-        switch(error.code) {
-            case 'auth/wrong-password':
-                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
-                break;
-            case 'auth/requires-recent-login':
-                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
-                break;
-            case 'auth/invalid-email':
-                errorMessage += '❌ Geçersiz e-posta adresi.';
-                break;
-            case 'auth/email-already-in-use':
-                errorMessage += '❌ Bu e-posta zaten kullanılıyor.';
-                break;
-            case 'auth/operation-not-allowed':
-                errorMessage += '📧 Yeni e-posta adresinize doğrulama bağlantısı gönderildi. Lütfen bağlantıya tıklayarak adresinizi doğrulayın.';
-                break;
-            default:
-                errorMessage += error.message;
-        }
+        const errorMessage = '❌ E-posta değiştirilemedi. ' + window.__authMsg(error);
         showWarning(errorMessage);
     }
 };
@@ -8444,9 +8430,30 @@ window.checkAndCompleteExam = () => {
         }
     };
     
-    window.toggleProfilePassword = () => {
-        const input = document.getElementById('newPassword');
-        const button = input.nextElementSibling;
+    // Firebase hata kodlarını sade Türkçe cümleye çevirir (teknik metin göstermez)
+    window.__authMsg = (error) => {
+        const c = (error && error.code) || '';
+        const map = {
+            'auth/wrong-password': 'Mevcut şifrenizi yanlış girdiniz. Lütfen kontrol edip tekrar deneyin.',
+            'auth/invalid-login-credentials': 'Mevcut şifrenizi yanlış girdiniz. Lütfen kontrol edip tekrar deneyin.',
+            'auth/invalid-credential': 'Mevcut şifrenizi yanlış girdiniz. Lütfen kontrol edip tekrar deneyin.',
+            'auth/missing-password': 'Lütfen şifrenizi yazın.',
+            'auth/weak-password': 'Yeni şifre çok kolay. En az 6 karakterli bir şifre yazın.',
+            'auth/requires-recent-login': 'Güvenlik için lütfen çıkış yapıp tekrar giriş yapın, sonra yeniden deneyin.',
+            'auth/too-many-requests': 'Çok fazla deneme yaptınız. Biraz bekleyip tekrar deneyin.',
+            'auth/network-request-failed': 'İnternet bağlantınızı kontrol edip tekrar deneyin.',
+            'auth/user-disabled': 'Bu hesap devre dışı bırakılmış. Lütfen yönetici ile görüşün.',
+            'auth/user-not-found': 'Bu bilgilerle kayıtlı bir hesap bulunamadı.',
+            'auth/invalid-email': 'E-posta adresi geçersiz görünüyor. Lütfen kontrol edin.',
+            'auth/email-already-in-use': 'Bu e-posta adresi başka bir hesapta kullanılıyor.',
+            'auth/operation-not-allowed': 'Bu işlem şu an kullanılamıyor. Lütfen yönetici ile görüşün.',
+            'auth/user-token-expired': 'Oturumunuzun süresi dolmuş. Lütfen çıkış yapıp tekrar giriş yapın.'
+        };
+        return map[c] || 'Bir sorun oluştu. Lütfen biraz sonra tekrar deneyin.';
+    };
+    window.toggleProfilePassword = (id, button) => {
+        const input = document.getElementById(id || 'newPassword');
+        button = button || input.nextElementSibling;
         if (input.type === 'password') {
             input.type = 'text';
             button.innerHTML = '<i class="fas fa-eye-slash"></i>';
@@ -8992,7 +8999,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 errorMessage += 'Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
                 break;
             default:
-                errorMessage += error.message;
+                errorMessage += window.__authMsg(error);
         }
         
         showWarning(errorMessage);
@@ -9135,22 +9142,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
     } catch(error) {
         console.error('❌ Şifre güncelleme hatası:', error);
         
-        let errorMessage = '❌ Şifre güncellenemedi: ';
-        
-        switch(error.code) {
-            case 'auth/wrong-password':
-                errorMessage += '❌ Hatalı şifre! Lütfen tekrar deneyin.';
-                break;
-            case 'auth/requires-recent-login':
-                errorMessage += '🔒 Lütfen önce çıkış yapıp tekrar giriş yapın, sonra tekrar deneyin.';
-                break;
-            case 'auth/too-many-requests':
-                errorMessage += '⏰ Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
-                break;
-            default:
-                errorMessage += error.message;
-        }
-        
+        const errorMessage = '❌ Şifre güncellenemedi. ' + window.__authMsg(error);
         showWarning(errorMessage);
     }
 };
