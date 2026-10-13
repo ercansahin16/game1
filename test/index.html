@@ -4425,7 +4425,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.5.1 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -5819,6 +5819,15 @@ const EXAM_PASS_PERCENT = 80;           // Bir sonraki ders / yarışma seviyesi
 // Güncellik: appConfig/announcement belgesindeki "contentVersion" alanı (admin her içerik
 // değişikliğinde artırır). Sürüm değişince yerel kopya silinir ve gerektiğinde yeniden indirilir.
 // ============================================================
+// appConfig/announcement belgesi: hem sürüm kontrolü hem duyuru kontrolü kullanır → 20 sn içinde tek okuma
+let __annDocMemo = null;
+function __getAnnDoc() {
+    if (__annDocMemo && Date.now() - __annDocMemo.at < 20000) return __annDocMemo.p;
+    const p = getDoc(doc(db, 'appConfig', 'announcement'));
+    __annDocMemo = { at: Date.now(), p };
+    p.catch(() => { __annDocMemo = null; });
+    return p;
+}
 const __CC = (() => {
     const DB_NAME = 'sy_content_cache', STORE = 'kv';
     const mem = new Map();
@@ -5855,7 +5864,7 @@ const __CC = (() => {
         lastCheck = Date.now();
         let serverV = null;
         try {
-            const snap = await getDoc(doc(db, 'appConfig', 'announcement'));
+            const snap = await __getAnnDoc();
             serverV = snap.exists() ? (snap.data().contentVersion || 0) : 0;
         } catch (e) { return; }                 // ağ yoksa eldeki kopya kullanılır
         const localV = await idbGet('__ver');
@@ -7012,7 +7021,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     async function checkAndShowAnnouncement(userRef, userData) {
         try {
             __currentUserRef = userRef;
-            const annSnap = await getDoc(doc(db, 'appConfig', 'announcement'));
+            const annSnap = await __getAnnDoc();
             if (!annSnap.exists()) return;
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
@@ -7080,7 +7089,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;">Yükleniyor...</div>';
             try {
                 const q = query(collection(db, 'announcements'), orderBy('publishedAt', 'desc'));
-                const snapshot = await getDocs(q);
+                const snapshot = await __ccDocs('announcements:list', () => getDocs(q));
                 if (snapshot.empty) {
                     listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#6b7280;"><div style="font-size:36px; margin-bottom:10px;">📭</div><p>Henüz duyuru yok.</p></div>';
                 } else {

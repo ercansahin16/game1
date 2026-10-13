@@ -1670,7 +1670,7 @@ async function publishAnnouncement() {
     const data = { id, title, message, publishedAt };
 
     try {
-        await setDoc(doc(db, 'appConfig', 'announcement'), data, { merge: true });
+        await setDoc(doc(db, 'appConfig', 'announcement'), { ...data, contentVersion: Date.now() }, { merge: true });
         await setDoc(doc(db, 'announcements', id), data);
         titleInput.value = '';
         messageInput.value = '';
@@ -1693,7 +1693,7 @@ async function clearAnnouncement() {
     if (!result.isConfirmed) return;
 
     try {
-        await setDoc(doc(db, 'appConfig', 'announcement'), { id: null, title: '', message: '', publishedAt: null }, { merge: true });
+        await setDoc(doc(db, 'appConfig', 'announcement'), { id: null, title: '', message: '', publishedAt: null, contentVersion: Date.now() }, { merge: true });
         loadAnnouncements();
     } catch (e) {
         Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
@@ -1712,6 +1712,7 @@ window.deleteAnnouncementHistoryItem = async function (id) {
     if (!result.isConfirmed) return;
     try {
         await deleteDoc(doc(db, 'announcements', id));
+        await window.bumpContentVersion();
         loadAnnouncements();
     } catch (e) {
         Swal.fire({ icon: 'error', title: 'Hata', text: e.message, confirmButtonText: 'Tamam' });
@@ -1772,6 +1773,7 @@ window.editAnnouncement = async function (id) {
         if (activeSnap.exists() && activeSnap.data().id === id) {
             await updateDoc(doc(db, 'appConfig', 'announcement'), upd);
         }
+        await window.bumpContentVersion();
         Swal.fire({ icon: 'success', title: 'Duyuru güncellendi', timer: 1400, showConfirmButton: false });
         loadAnnouncements();
     } catch (e) {
