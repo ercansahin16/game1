@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v50">
+    <meta name="app-build" content="saadetyolu-shell-v51">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,7 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.5 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -5803,13 +5803,13 @@ window.__celebrateTop3 = function() {
     box.style.cssText = 'position:fixed; left:0; right:0; top:18%; z-index:99998; display:flex; flex-direction:column; align-items:center; gap:10px; pointer-events:none;';
     names.forEach((n, i) => {
         const b = document.createElement('div');
-        b.style.cssText = 'padding:9px 16px; border-radius:14px; background:#1c1c20; color:#fbbf24; border:1px solid rgba(245,158,11,.6); font-weight:800; font-size:15px; max-width:88vw; box-shadow:0 6px 18px rgba(0,0,0,.45); opacity:0; animation:celebFall 1s ease-out ' + (i * 0.12) + 's both;';
+        b.style.cssText = 'padding:9px 16px; border-radius:14px; background:#1c1c20; color:#fbbf24; border:1px solid rgba(245,158,11,.6); font-weight:800; font-size:15px; max-width:88vw; box-shadow:0 6px 18px rgba(0,0,0,.45); opacity:0; animation:celebFall 1.5s ease-out ' + (i * 0.12) + 's both;';
         b.innerHTML = medals[i] + ' Tebrikler <span style="color:#fff;">' + esc(n) + '</span>! 🎉';
         box.appendChild(b);
     });
     document.body.appendChild(box);
-    window.__launchConfetti(1000, 160);
-    setTimeout(() => box.remove(), 1400);
+    window.__launchConfetti(1500, 170);
+    setTimeout(() => box.remove(), 2000);
 };
 window.__showSeasonPodium = function(data, opts = {}) {
     const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -5828,7 +5828,7 @@ window.__showSeasonPodium = function(data, opts = {}) {
         : `<div style="margin-top:14px; font-size:13px; opacity:.8;">Bu ay sıra sende olabilir. Bol bol çalış, zirveye oyna! 💪</div>`);
     Swal.fire({
         title: `🏅 ${getSeasonLabel(data.seasonId)} Şampiyonları`,
-        html: `<div style="display:flex; gap:8px; align-items:flex-end; margin-top:8px;">${col(1, 70, '🥈', 'linear-gradient(180deg,#e5e7eb,#9ca3af)')}${col(0, 100, '🥇', 'linear-gradient(180deg,#fde68a,#f59e0b)')}${col(2, 50, '🥉', 'linear-gradient(180deg,#fdba74,#c2762f)')}</div>${msg}`,
+        html: `<div style="display:flex; gap:8px; align-items:flex-end; margin-top:8px;">${col(1, 70, '🥈', 'linear-gradient(180deg,#e5e7eb,#9ca3af)')}${col(0, 100, '🥇', 'linear-gradient(180deg,#fde68a,#f59e0b)')}${col(2, 50, '🥉', 'linear-gradient(180deg,#fdba74,#c2762f)')}</div>${msg}${opts.extraHtml || ''}`,
         confirmButtonText: opts.review ? 'Kapat' : 'Tebrikler! 👏',
         confirmButtonColor: '#f59e0b',
         width: 420
@@ -5853,16 +5853,19 @@ window.__checkSeasonCelebration = async function() {
 window.openSeasonHallOfFame = async function() {
     try {
         const snap = await getDocs(collection(db, 'seasonWinners'));
-        const list = snap.docs.map(d => d.data()).sort((a, b) => String(b.seasonId).localeCompare(String(a.seasonId)));
-        if (!list.length) { if (window.showWarning) window.showWarning('Henüz şampiyon ilan edilmiş bir ay yok. İlk şampiyonlar ay sonunda belli olacak!'); return; }
+        const list = snap.docs.map(d => d.data()).filter(d => d.winners && d.winners.length)
+            .sort((a, b) => String(b.seasonId).localeCompare(String(a.seasonId)));
+        // Henüz şampiyon yoksa hiçbir pencere açma (tebrik animasyonu zaten gösterildi)
+        if (!list.length) return;
         const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-        const rows = list.map(d => `
-            <div style="text-align:left; padding:10px 12px; margin-bottom:8px; border-radius:12px; background:rgba(255,255,255,0.05);">
-                <div style="font-weight:800; color:#fbbf24; margin-bottom:4px;">📅 ${getSeasonLabel(d.seasonId)}</div>
-                ${(d.winners || []).map((x, i) => `<div style="font-size:13px; display:flex; justify-content:space-between; gap:8px;"><span>${['🥇','🥈','🥉'][i]} ${esc(x.name)}</span><span style="opacity:.7;">${x.score} P</span></div>`).join('')}
-            </div>`).join('');
-        Swal.fire({ title: '🏅 Ayın Şampiyonları', html: `<div style="max-height:55vh; overflow:auto;">${rows}</div>`, confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', width: 420 });
-    } catch (e) { if (window.showWarning) window.showWarning('Şampiyonlar yüklenemedi: ' + e.message); }
+        const older = list.slice(1, 7);
+        const extraHtml = older.length ? `
+            <div style="margin-top:16px; padding-top:10px; border-top:1px solid rgba(255,255,255,.1); text-align:left;">
+                <div style="font-size:12px; opacity:.6; margin-bottom:6px;">Önceki aylar</div>
+                ${older.map(d => `<div style="font-size:12px; margin-bottom:5px; line-height:1.5;"><b style="color:#fbbf24;">${getSeasonLabel(d.seasonId)}</b><br>${(d.winners || []).map((x, i) => ['🥇','🥈','🥉'][i] + ' ' + esc(x.name)).join(' &nbsp;·&nbsp; ')}</div>`).join('')}
+            </div>` : '';
+        window.__showSeasonPodium(list[0], { review: true, extraHtml });
+    } catch (e) { console.warn('Şampiyonlar yüklenemedi', e); }
 };
 
 // ========== GÜNLÜK SERİ (STREAK) ==========
