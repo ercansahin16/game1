@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v36">
+    <meta name="app-build" content="test-v37">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,7 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.6 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.8.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -6024,11 +6024,23 @@ function getLessonPositionInSequence(sequence, lessonId) {
     return sequence.findIndex(l => l.id === lessonId); // 0-based, bulunamazsa -1
 }
 
+// Kendi kullanıcı belgem: 3 sn içinde aynı belge birden çok kez istenirse (ders kilit döngüleri) TEK okuma yapılır
+let __myDocMemo = null;
+function __getMyUserDoc() {
+    if (!currentUser) return Promise.reject(new Error('no user'));
+    if (__myDocMemo && __myDocMemo.uid === currentUser.uid && Date.now() - __myDocMemo.at < 3000) return __myDocMemo.p;
+    const p = getDoc(doc(db, 'users', currentUser.uid));
+    __myDocMemo = { uid: currentUser.uid, at: Date.now(), p };
+    p.catch(() => { __myDocMemo = null; });
+    return p;
+}
+window.__invalidateMyDoc = () => { __myDocMemo = null; };
+
 // Kullanıcının %80+ ile geçtiği derslerin id listesi
 async function getPassedLessonIds() {
     if (!currentUser) return [];
     try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userDoc = await __getMyUserDoc();
         return userDoc.exists() ? (userDoc.data().passedLessonIds || []) : [];
     } catch (e) {
         __dbg('getPassedLessonIds hata:', e.message);
@@ -6055,7 +6067,7 @@ async function getLessonWordViewPercent(lessonId) {
         const wordsSnap = await __ccDocs('words:' + lessonId, () => getDocs(query(collection(db, 'words'), where('lessonId', '==', lessonId))));
         const totalWords = wordsSnap.size;
         if (totalWords === 0 || !currentUser) return 0;
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userDoc = await __getMyUserDoc();
         const viewedMap = userDoc.exists() ? (userDoc.data().viewedWordsByLesson || {}) : {};
         const viewedIds = viewedMap[lessonId] || [];
         return Math.min(100, Math.round((viewedIds.length / totalWords) * 100));
@@ -6089,6 +6101,7 @@ async function markWordAsViewedForLesson(lessonId, wordId) {
         await updateDoc(userRef, {
             [`viewedWordsByLesson.${lessonId}`]: arrayUnion(wordId)
         });
+        if (window.__invalidateMyDoc) window.__invalidateMyDoc();
     } catch (e) {
         __dbg('markWordAsViewedForLesson hata:', e.message);
     }
@@ -10207,7 +10220,7 @@ let lastRankingUsers = [];
 let lastRankingFollowingSet = new Set();
 let rankingActiveMode = 'all'; // 'all' = Tüm Zamanlar, 'season' = Bu Ay
 
-window.loadRanking = async function() {
+window.loadRanking = async function(force) {
     // ===== YÜKLENİYOR GÖSTERGESİ (oyuncu beklediğini bilsin) =====
     document.querySelectorAll('#rankingList').forEach(el => {
         el.innerHTML = `<div style="text-align:center; padding:34px 10px;">
@@ -10224,51 +10237,67 @@ window.loadRanking = async function() {
         const toplamDers = lessonsSnapshot.docs.length;
         const toplamSeviye = Math.max(1, toplamDers);
 
-        const snapshot = await getDocs(collection(db, 'users'));
-        const users = [];
         const currentSeasonId = getCurrentSeasonId();
-
-        // ===== ARKADAŞ (takip edilen) İKONUNU GÖSTEREBİLMEK İÇİN TAKİP LİSTEMİ AL =====
-        let myFollowingSet = new Set();
-        if (currentUser) {
-            try {
-                const mySnapForFollow = await getDoc(doc(db, 'users', currentUser.uid));
-                if (mySnapForFollow.exists()) {
-                    myFollowingSet = new Set(mySnapForFollow.data().following || []);
-                }
-            } catch (e) { /* önemli değil */ }
-        }
-
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
+        const mkEntry = (id, data) => {
             const s = computeTotalScoreFromUserData(data, toplamSeviye);
-
             // ===== 🏆 BU AY (SEZON) PUANI =====
             // Kullanıcı bu ay hiç giriş yapıp sezon kaydını güncellemediyse
             // (seasonId bu ayla eşleşmiyorsa) bu ay için 0 puanı vardır demektir.
             const seasonBaseline = (data.seasonId === currentSeasonId) ? (data.seasonBaselineScore || 0) : s.totalScore;
             const seasonScore = Math.max(0, Math.round((s.totalScore - seasonBaseline) * 100) / 100);
+            if (!(s.totalScore > 0 || seasonScore > 0)) return null;
+            return {
+                id: id,
+                name: data.name || data.email?.split('@')[0] || 'İsimsiz',
+                email: data.email,
+                publicId: data.publicId || window.__idFromUid(id),
+                totalScore: s.totalScore,
+                seasonScore: seasonScore,
+                quizScore: s.quizScore,
+                averageScore: s.averageScore,
+                seviyePuani: s.seviyePuani,
+                kelimePuani: s.kelimePuani,
+                sandikCezasi: s.sandikCezasi,
+                sandikCount: s.sandikCount,
+                totalWords: s.totalWordsViewed,
+                mevcutSeviye: s.mevcutSeviye,
+                toplamSeviye: toplamSeviye
+            };
+        };
 
-            if (s.totalScore > 0 || seasonScore > 0) {
-                users.push({
-                    id: docSnap.id,
-                    name: data.name || data.email?.split('@')[0] || 'İsimsiz',
-                    email: data.email,
-                    publicId: data.publicId || window.__idFromUid(docSnap.id),
-                    totalScore: s.totalScore,
-                    seasonScore: seasonScore,
-                    quizScore: s.quizScore,
-                    averageScore: s.averageScore,
-                    seviyePuani: s.seviyePuani,
-                    kelimePuani: s.kelimePuani,
-                    sandikCezasi: s.sandikCezasi,
-                    sandikCount: s.sandikCount,
-                    totalWords: s.totalWordsViewed,
-                    mevcutSeviye: s.mevcutSeviye,
-                    toplamSeviye: toplamSeviye
-                });
-            }
-        });
+        // ===== ARKADAŞ (takip edilen) İKONU + KENDİ SATIRIM: kendi belgem HER ZAMAN güncel okunur (1 okuma) =====
+        let myFollowingSet = new Set();
+        let myEntry = null;
+        if (currentUser) {
+            try {
+                const mySnap = await getDoc(doc(db, 'users', currentUser.uid));
+                if (mySnap.exists()) {
+                    myFollowingSet = new Set(mySnap.data().following || []);
+                    myEntry = mkEntry(mySnap.id, mySnap.data());
+                }
+            } catch (e) { /* önemli değil */ }
+        }
+
+        // ===== 5 DAKİKALIK ÖNBELLEK: diğer oyuncular en fazla 5 dk eski olabilir; Yenile düğmesi (force) hepsini yeniler =====
+        const RANK_TTL = 5 * 60 * 1000;
+        let users = null;
+        if (!force) {
+            try {
+                const c = JSON.parse(localStorage.getItem('sy_rank_cache') || 'null');
+                if (c && Array.isArray(c.users) && Date.now() - c.at < RANK_TTL && c.toplamSeviye === toplamSeviye && c.season === currentSeasonId) users = c.users;
+            } catch (e) {}
+        }
+        if (!users) {
+            const snapshot = await getDocs(collection(db, 'users'));
+            users = [];
+            snapshot.forEach(docSnap => { const e = mkEntry(docSnap.id, docSnap.data()); if (e) users.push(e); });
+            try { localStorage.setItem('sy_rank_cache', JSON.stringify({ at: Date.now(), users, toplamSeviye, season: currentSeasonId })); } catch (e) {}
+        }
+        // Kendi puanım her zaman güncel: listedeki satırımı taze veriyle değiştir
+        if (currentUser) {
+            users = users.filter(u => u.id !== currentUser.uid);
+            if (myEntry) users.push(myEntry);
+        }
 
         lastRankingUsers = users;
         lastRankingFollowingSet = myFollowingSet;
@@ -14193,7 +14222,7 @@ window.refreshRanking = async function() {
     
     try {
         // Sıralamayı yeniden yükle (loadRanking zaten tüm #rankingList'leri güncelliyor)
-        await window.loadRanking();
+        await window.loadRanking(true);
         
         // Başarılı mesajı
         btn.style.background = 'rgba(16, 185, 129, 0.25)';
@@ -14320,7 +14349,7 @@ window.refreshRankingProfile = async function() {
     
     try {
         // Sıralamayı yeniden yükle
-        await window.loadRanking();
+        await window.loadRanking(true);
         
         // Başarılı mesajı (aynı ana sayfadaki gibi)
         btn.style.background = 'rgba(16, 185, 129, 0.25)';
