@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v42">
+    <meta name="app-build" content="saadetyolu-shell-v43">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4443,7 +4443,7 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.6 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.7 · 12 Eki 2026</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -14735,7 +14735,7 @@ if (examLessonSelect) {
         
         const examUnlocked = await isLessonExamUnlocked(lessonId);
         if (!examUnlocked) {
-            showTinyWarning(`🔒 Bu dersin sınavı kilitli. Önce kelimelerin %${WORD_LEARN_UNLOCK_PERCENT}'ini öğrenmelisin.`);
+            showTinyWarning(`🔒 Sınav kilitli. Önce bu dersin kelimelerinin %${WORD_LEARN_UNLOCK_PERCENT}'ini öğren.`);
             this.value = '';
             if (container) {
                 container.innerHTML = '<div style="text-align:center; padding:40px;">📗 Lütfen bir ders seçin</div>';
@@ -16304,7 +16304,33 @@ function enhanceSelectAsDropdown(selectEl) {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (opt.disabled) {
-                    if (typeof showTinyWarning === 'function') {
+                    if (selectEl.id === 'examLessonSelect' && typeof Swal !== 'undefined') {
+                        // Sınav kilitli: kısa açıklama + doğrudan kelime öğrenmeye yönlendirme
+                        const lessonName = (opt.textContent || '').replace('🔒', '').trim();
+                        const bookVal = (document.getElementById('examBookSelect') || {}).value;
+                        closePanel();
+                        Swal.fire({
+                            icon: 'info',
+                            title: '🔒 Sınav henüz kilitli',
+                            html: '<div style="font-size:14px; line-height:1.5;">Bu sınavı açmak için önce <b>' + lessonName + '</b> kelimelerinin <b>%' + WORD_LEARN_UNLOCK_PERCENT + '</b>\'ini öğrenmelisin.</div>',
+                            showCancelButton: true,
+                            confirmButtonText: '📖 Kelime Öğren\'e git',
+                            cancelButtonText: 'Tamam',
+                            confirmButtonColor: '#f59e0b',
+                            width: '340px',
+                            customClass: { popup: 'compact-swal themed-swal' }
+                        }).then(async (r) => {
+                            if (!r.isConfirmed) return;
+                            try { if (typeof goWordsLearning === 'function') await goWordsLearning(); } catch (e) {}
+                            try {
+                                const bs = document.getElementById('bookSelect'), ls = document.getElementById('lessonSelect');
+                                if (bs && bookVal && bs.value !== bookVal) { bs.value = bookVal; if (bs.onchange) await bs.onchange(); }
+                                if (ls && opt.value && Array.from(ls.options).some(o => o.value === opt.value)) {
+                                    ls.value = opt.value; ls.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            } catch (e) {}
+                        });
+                    } else if (typeof showTinyWarning === 'function') {
                         showTinyWarning('🔒 Bu seçenek kilitli.', 'fa-lock');
                     }
                     return;
