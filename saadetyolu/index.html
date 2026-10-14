@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v49">
+    <meta name="app-build" content="saadetyolu-shell-v50">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,7 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.4 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -5623,7 +5623,7 @@ window.__ensureRankSearchBars = function() {
             inp.placeholder = '🔎 Oyuncu ara (isim veya 8 haneli ID)';
             try { localStorage.setItem('oyuncu_ara_ipucu', '1'); } catch (e) {}
         }
-        bar.querySelector('.hof-btn').addEventListener('click', () => window.openSeasonHallOfFame());
+        bar.querySelector('.hof-btn').addEventListener('click', () => { try { window.__celebrateTop3(); } catch (e) {} window.openSeasonHallOfFame(); });
         const hide = () => { box.style.display = 'none'; };
         const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         inp.addEventListener('input', () => {
@@ -5769,14 +5769,14 @@ window.__finalizeSeasonWinners = async function(prevId) {
     });
     return result;
 };
-window.__launchConfetti = function() {
+window.__launchConfetti = function(durMs, count) {
     const c = document.createElement('canvas');
     c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:99999;pointer-events:none;';
     c.width = innerWidth; c.height = innerHeight;
     document.body.appendChild(c);
     const g = c.getContext('2d');
     const colors = ['#fbbf24', '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#ec4899'];
-    const P = Array.from({ length: 140 }, () => ({
+    const P = Array.from({ length: count || 140 }, () => ({
         x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.6,
         w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, vy: 2 + Math.random() * 3.5, vx: -1.5 + Math.random() * 3,
         r: Math.random() * 6, vr: -0.2 + Math.random() * 0.4, col: colors[(Math.random() * colors.length) | 0]
@@ -5785,8 +5785,31 @@ window.__launchConfetti = function() {
     (function frame(t) {
         g.clearRect(0, 0, c.width, c.height);
         P.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.col; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
-        if (t - t0 < 5500) requestAnimationFrame(frame); else c.remove();
+        if (t - t0 < (durMs || 5500)) requestAnimationFrame(frame); else c.remove();
     })(t0);
+};
+window.__celebrateTop3 = function() {
+    const names = Array.from(document.querySelectorAll('.lb-row .lb-name')).filter(e => e.offsetParent !== null)
+        .slice(0, 3).map(e => e.textContent.replace(/^\s*\d+\.\s*/, '').trim());
+    if (!names.length) return;
+    const esc = x => String(x).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const medals = ['🥇', '🥈', '🥉'];
+    if (!document.getElementById('celebStyle')) {
+        const st = document.createElement('style'); st.id = 'celebStyle';
+        st.textContent = '@keyframes celebFall { 0% { transform: translateY(-60px) scale(.9); opacity: 0; } 25% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(40px) scale(1); opacity: 0; } }';
+        document.head.appendChild(st);
+    }
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed; left:0; right:0; top:18%; z-index:99998; display:flex; flex-direction:column; align-items:center; gap:10px; pointer-events:none;';
+    names.forEach((n, i) => {
+        const b = document.createElement('div');
+        b.style.cssText = 'padding:9px 16px; border-radius:14px; background:#1c1c20; color:#fbbf24; border:1px solid rgba(245,158,11,.6); font-weight:800; font-size:15px; max-width:88vw; box-shadow:0 6px 18px rgba(0,0,0,.45); opacity:0; animation:celebFall 1s ease-out ' + (i * 0.12) + 's both;';
+        b.innerHTML = medals[i] + ' Tebrikler <span style="color:#fff;">' + esc(n) + '</span>! 🎉';
+        box.appendChild(b);
+    });
+    document.body.appendChild(box);
+    window.__launchConfetti(1000, 160);
+    setTimeout(() => box.remove(), 1400);
 };
 window.__showSeasonPodium = function(data, opts = {}) {
     const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
