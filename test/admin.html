@@ -919,6 +919,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
+    <div class="sidebar-item" id="goBugs"><i class="fas fa-bug"></i> Hata Bildirimleri</div>
     <div class="sidebar-item" id="goDataManagement"><i class="fas fa-database"></i> Veri Yönetimi</div>
     <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
     <div class="sidebar-item" id="goBulkExamUpload"><i class="fas fa-upload"></i> Toplu Soru Yükleme</div>
@@ -1172,6 +1173,14 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         <!-- ============================================================ -->
         <!-- KULLANICILAR BÖLÜMÜ (GÜNCELLENMİŞ) -->
         <!-- ============================================================ -->
+        <div id="bugsSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-bug"></i> Hata Bildirimleri</h2>
+                <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadBugs()"><i class="fas fa-sync"></i> Yenile</button>
+            </div>
+            <div id="bugsList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
+        </div>
+
         <div id="usersSection" class="section-card hidden">
             <div class="section-header">
                 <h2><i class="fas fa-users"></i> Kullanıcılar</h2>
@@ -1452,7 +1461,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"; // ✅ YENİ
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -1522,6 +1531,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
     document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
     document.getElementById('goUsers').onclick = () => { showSection('users'); loadUsers(); closeMenu(); };
+    document.getElementById('goBugs').onclick = () => { showSection('bugs'); loadBugs(); closeMenu(); };
     document.querySelector('.logo').onclick = () => { showSection('dashboard'); closeMenu(); };
     
     document.getElementById('logoutBtnSidebar').onclick = () => { logout(); closeMenu(); };
@@ -1551,6 +1561,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('wordsSection').classList.add('hidden');
     document.getElementById('examsSection').classList.add('hidden');
     document.getElementById('usersSection').classList.add('hidden');
+    document.getElementById('bugsSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
     document.getElementById('bulkExamUploadSection').classList.add('hidden');
      document.getElementById('dataManagementSection').classList.add('hidden'); // YENİ
@@ -1569,6 +1580,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         document.getElementById('examsSection').classList.remove('hidden');
     } else if (section === 'users') {
         document.getElementById('usersSection').classList.remove('hidden');
+    } else if (section === 'bugs') {
+        document.getElementById('bugsSection').classList.remove('hidden');
     } else if (section === 'bulkUpload') {
         document.getElementById('bulkUploadSection').classList.remove('hidden');
     } else if (section === 'bulkExamUpload') {
@@ -2736,6 +2749,63 @@ window.loadUsers = async function() {
     }
 };
 
+
+
+// ===== HATA BİLDİRİMLERİ (kullanıcıların gönderdiği ekran görüntülü bildirimler) =====
+window.loadBugs = async function () {
+    const box = document.getElementById('bugsList');
+    if (!box) return;
+    box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div>';
+    try {
+        const snap = await getDocs(query(collection(db, 'bugReports'), orderBy('createdAtIso', 'desc'), limit(30)));
+        if (snap.empty) { box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Henüz bildirim yok.</div>'; return; }
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        box.innerHTML = '';
+        snap.forEach(d => {
+            const b = d.data();
+            const when = b.createdAtIso ? new Date(b.createdAtIso).toLocaleString('tr-TR') : '';
+            const done = b.status === 'done';
+            const dev = /iPhone|iPad/.test(b.device || '') ? 'iPhone/iPad' : /Android/.test(b.device || '') ? 'Android' : /Windows|Macintosh|Linux/.test(b.device || '') ? 'Bilgisayar' : 'Bilinmiyor';
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;' + (done ? 'opacity:.55;' : '');
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                    <strong><i class="fas fa-user"></i> ${esc(b.name || 'İsimsiz')} <span style="font-weight:400; opacity:.7; font-size:12px;">${esc(b.email)}</span></strong>
+                    <span style="font-size:12px; opacity:.7;">${esc(when)}</span>
+                </div>
+                <div style="white-space:pre-wrap; font-size:14px;">${esc(b.text)}</div>
+                <small style="opacity:.6;">${esc(dev)} · sürüm ${esc(b.appVersion || '?')} ${done ? '· ✅ çözüldü' : ''}</small>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    ${b.hasImage ? `<button class="btn btn-info" style="padding:6px 12px; font-size:12px;" data-act="img">🖼 Görüntü</button>` : ''}
+                    <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" data-act="done">${done ? 'Yeniden aç' : '✅ Çözüldü'}</button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-act="del">🗑 Sil</button>
+                </div>`;
+            div.querySelector('[data-act="img"]')?.addEventListener('click', async () => {
+                try {
+                    const im = await getDoc(doc(db, 'bugReportImages', d.id));
+                    if (!im.exists()) { Swal.fire('Görüntü yok', '', 'info'); return; }
+                    Swal.fire({ imageUrl: im.data().data, imageAlt: 'Ekran görüntüsü', width: 'min(92vw, 520px)', confirmButtonText: 'Kapat' });
+                } catch (e) { Swal.fire('Hata', 'Görüntü yüklenemedi.', 'error'); }
+            });
+            div.querySelector('[data-act="done"]').addEventListener('click', async () => {
+                await updateDoc(doc(db, 'bugReports', d.id), { status: done ? 'new' : 'done' });
+                loadBugs();
+            });
+            div.querySelector('[data-act="del"]').addEventListener('click', async () => {
+                const r = await Swal.fire({ title: 'Silinsin mi?', text: 'Bu bildirim ve görüntüsü silinecek.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç' });
+                if (!r.isConfirmed) return;
+                try { await deleteDoc(doc(db, 'bugReportImages', d.id)); } catch (e) {}
+                await deleteDoc(doc(db, 'bugReports', d.id));
+                loadBugs();
+            });
+            box.appendChild(div);
+        });
+    } catch (e) {
+        console.warn(e);
+        box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Bildirimler yüklenemedi. Firestore kurallarında "bugReports" için admin okuma izni gerekebilir.</div>';
+    }
+};
 
 // ===== GİRİŞ LİSTESİ: Ad Soyad + E-posta (şifresini unutan oyuncuya e-postasını bulmak için) =====
 window.showLoginList = async function () {
