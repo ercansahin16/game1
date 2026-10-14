@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v31">
+    <meta name="app-build" content="test-v32">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,7 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.2 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -4547,6 +4547,10 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <i class="fas fa-eye"></i>
         </button>
     </div>
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; opacity:.85; margin:2px 2px 10px; cursor:pointer; text-align:left;">
+        <input type="checkbox" id="rememberPass" checked style="width:18px; height:18px; margin:0; flex:none;">
+        <span>Şifremi bu cihazda hatırla <small style="opacity:.7">(ortak telefonsa işareti kaldırın)</small></span>
+    </label>
     <button type="button" id="doLoginBtn" class="btn btn-primary">Giriş Yap</button>
     
     <!-- ===== AYIRICI ===== -->
@@ -8824,6 +8828,7 @@ window.__wrongPassDialog = function(email, msg){
     .then(async r=>{ if(r.isConfirmed){ try{ await sendPasswordResetEmail(auth, email); Swal.fire({icon:'success',title:'Gönderildi',text:email+' adresine şifre sıfırlama bağlantısı gönderildi. Spam/Gereksiz klasörüne de bakın.',customClass:{popup:'compact-swal themed-swal'}}); }catch(e){ showWarning('❌ Sıfırlama e-postası gönderilemedi. Birazdan tekrar deneyin.'); } } });
 };
 try { const __le = localStorage.getItem('sy_lastEmail'); const __el = document.getElementById('loginEmail'); if (__le && __el && !__el.value) __el.value = __le; } catch(e){}
+try { const __lp = localStorage.getItem('sy_lastPass'); const __pl = document.getElementById('loginPassword'); if (__lp && __pl && !__pl.value) __pl.value = decodeURIComponent(escape(atob(__lp))); } catch(e){}
 document.getElementById('doLoginBtn').onclick = async () => {
     const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
@@ -8843,6 +8848,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
         try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
         try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
+        try { const __rc = document.getElementById('rememberPass'); if (__rc && __rc.checked) localStorage.setItem('sy_lastPass', btoa(unescape(encodeURIComponent(password)))); else localStorage.removeItem('sy_lastPass'); } catch(e){}
         closeMenu();
         
         // Formları temizle
@@ -8931,6 +8937,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
         try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
             try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
+        try { const __rc = document.getElementById('rememberPass'); if (__rc && __rc.checked) localStorage.setItem('sy_lastPass', btoa(unescape(encodeURIComponent(password)))); else localStorage.removeItem('sy_lastPass'); } catch(e){}
             showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
             nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
         } catch (siErr) {
@@ -8997,6 +9004,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
         try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
                 try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
+        try { const __rc = document.getElementById('rememberPass'); if (__rc && __rc.checked) localStorage.setItem('sy_lastPass', btoa(unescape(encodeURIComponent(password)))); else localStorage.removeItem('sy_lastPass'); } catch(e){}
                 showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
                 nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
                 return;
@@ -9109,6 +9117,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         __dbg('✅ Şifre güncellendi');
         
         showWarning('✅ Şifre başarıyla güncellendi!');
+        try { if (localStorage.getItem('sy_lastPass')) localStorage.setItem('sy_lastPass', btoa(unescape(encodeURIComponent(newPass)))); } catch(e){}
         document.getElementById('currentPasswordField').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
