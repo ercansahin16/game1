@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v27">
+    <meta name="app-build" content="test-v28">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4443,7 +4443,8 @@ body.light-theme .rank-suggest > div:hover { background: rgba(245,158,11,0.12); 
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.7 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.6.8 · 12 Eki 2026</div>
+            <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -16524,14 +16525,25 @@ enhanceAllDropdownSelects();
         const url = window.location.href.split('#')[0].split('?')[0];
         const myBuild = document.querySelector('meta[name="app-build"]')?.content || null;
         let lastCheck = 0, shown = false;
+        let lastStatus = '';
+        function setStatus(t) {
+            lastStatus = t;
+            const el = document.getElementById('updStatus');
+            if (el) el.textContent = t;
+        }
+        async function fetchBuild(opts) {
+            const r = await fetch(url + '?_b=' + Date.now(), Object.assign({ cache: 'no-store' }, opts));
+            if (!r.ok && r.status !== 206) throw new Error('HTTP ' + r.status);
+            const t = await r.text();
+            const m = t.match(/<meta\s+name=["']app-build["']\s+content=["']([^"']+)["']/);
+            if (!m) throw new Error('etiket yok');
+            return m[1];
+        }
         async function serverBuild() {
-            try {
-                const r = await fetch(url + '?_b=' + Date.now(), { cache: 'no-store', headers: { Range: 'bytes=0-12287' } });
-                if (!r.ok && r.status !== 206) return null;
-                const t = await r.text();
-                const m = t.match(/<meta\s+name="app-build"\s+content="([^"]+)"/);
-                return m ? m[1] : null;
-            } catch (e) { return null; }
+            // 1) küçük (Range'li) istek, 2) olmazsa tam sayfa
+            try { return await fetchBuild({ headers: { Range: 'bytes=0-12287' } }); } catch (e1) {
+                try { return await fetchBuild({}); } catch (e2) { setStatus('denetim hatası: ' + (e2 && e2.message || e2)); return null; }
+            }
         }
         function showBanner() {
             if (shown || document.getElementById('updateBanner')) return;
@@ -16556,10 +16568,14 @@ enhanceAllDropdownSelects();
         }
         setInterval(syncBanner, 800);
         async function check(force) {
-            if (!myBuild) return;
+            if (!myBuild) { setStatus('denetim kapalı (yapı no yok)'); return; }
             if (!force && Date.now() - lastCheck < 10 * 60 * 1000) return;
             lastCheck = Date.now();
             const now = await serverBuild();
+            if (now) {
+                const hh = new Date().toTimeString().slice(0, 5);
+                setStatus('güncelleme denetimi ' + hh + (now === myBuild ? ' ✓ güncel' : ' · yeni sürüm var'));
+            }
             if (now && now !== myBuild) showBanner();
         }
         setTimeout(() => check(true), 4000);   // açılışta hemen denetle
