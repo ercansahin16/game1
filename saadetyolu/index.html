@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v46">
+    <meta name="app-build" content="saadetyolu-shell-v47">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,7 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.7.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -4536,7 +4536,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
                 <button id="showLoginBtn" class="btn auth-tab" style="flex:1; background:#f59e0b; color:#121212;"><span class="at-main">🔑 Login (Giriş)</span><span class="at-sub">Hesabım var</span></button>
                 <button id="showRegisterBtn" class="btn auth-tab" style="flex:1; background:#3b82f6; color:white;"><span class="at-main">🆕 Kayıt Ol</span><span class="at-sub">İlk kez giriyorum</span></button>
             </div>
-            <div id="loginForm">
+            <form id="loginForm" action="#" method="post" onsubmit="return false;" autocomplete="on">
     <div class="auth-banner" style="--c:#f59e0b"><b>🔑 GİRİŞ EKRANI</b><br>Daha önce kayıt olduysanız burayı kullanın.</div>
     <div class="input-wrapper">
         <input type="email" id="loginEmail" placeholder="E-posta" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
@@ -4547,7 +4547,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <i class="fas fa-eye"></i>
         </button>
     </div>
-    <button id="doLoginBtn" class="btn btn-primary">Giriş Yap</button>
+    <button type="button" id="doLoginBtn" class="btn btn-primary">Giriş Yap</button>
     
     <!-- ===== AYIRICI ===== -->
     <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
@@ -4557,7 +4557,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     </div>
     
     <!-- ===== GOOGLE İLE GİRİŞ BUTONU ===== -->
-    <button id="googleLoginBtn" onclick="googleLogin()" style="
+    <button type="button" id="googleLoginBtn" onclick="googleLogin()" style="
         width: 100%; 
         padding: 12px; 
         border-radius: 10px; 
@@ -4584,7 +4584,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     
     <div class="link" id="showForgotBtn">Şifremi unuttum?</div>
     <div class="auth-swap" onclick="document.getElementById('showRegisterBtn').click()">Hesabınız yok mu? <b style="color:#60a5fa">Kayıt Ol</b></div>
-</div>
+</form>
             <div id="registerForm" style="display: none;">
                 <div class="auth-banner" style="--c:#3b82f6"><b>🆕 KAYIT EKRANI</b><br>Sadece ilk defa giriyorsanız burayı kullanın.</div>
                 <div class="input-wrapper">
@@ -8841,6 +8841,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
     try {
         await signInWithEmailAndPassword(auth, email, password);
         { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
+        try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
         try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
         closeMenu();
         
@@ -8928,6 +8929,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
+        try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
             try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
             showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
             nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
@@ -8980,6 +8982,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
+        try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
             __dbg('✅ Otomatik giriş başarılı!');
         } catch (loginError) {
             __dbg('⚠️ Otomatik giriş başarısız, manuel giriş yapın.');
@@ -8992,6 +8995,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 { const __cp = document.getElementById('currentPasswordField'); if (__cp) __cp.value = password; }
+        try { if (window.PasswordCredential && navigator.credentials && email) navigator.credentials.store(new PasswordCredential({ id: email, password: password, name: email })); } catch (e) {}
                 try { localStorage.setItem('sy_lastEmail', email); } catch(e){}
                 showWarning('✅ Zaten kayıtlısınız, giriş yapıldı! Bundan sonra "Login" sekmesini kullanın.');
                 nameInput.value = ''; emailInput.value = ''; passwordInput.value = '';
