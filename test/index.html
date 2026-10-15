@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v43">
+    <meta name="app-build" content="test-v44">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.10.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.11.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -4589,6 +4589,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     </button>
     
     <div class="link" id="showForgotBtn">Şifremi unuttum?</div>
+    <div class="link" id="loginHelpBtn" style="font-size:13px; margin-top:6px;">Giriş yapamıyorum, yardım istiyorum</div>
     <div class="auth-swap" onclick="document.getElementById('showRegisterBtn').click()">Hesabınız yok mu? <b style="color:#60a5fa">Kayıt Ol</b></div>
 </form>
             <div id="registerForm" style="display: none;">
@@ -9448,6 +9449,53 @@ document.getElementById('doLoginBtn').onclick = async () => {
 });
         
 
+
+    // ===== 🆘 GİRİŞ YARDIMI (giriş yapamayan kursiyer yöneticiye ulaşır) =====
+    (function () {
+        const btn = document.getElementById('loginHelpBtn');
+        if (!btn) return;
+        btn.onclick = async () => {
+            const last = Number(localStorage.getItem('sy_lh_last') || 0);
+            const r = await Swal.fire({
+                title: '🆘 Giriş Yardımı',
+                width: 380, showCancelButton: true, confirmButtonText: 'Gönder', cancelButtonText: 'Vazgeç', confirmButtonColor: '#f59e0b',
+                customClass: { popup: 'compact-swal themed-swal' },
+                html: `<div style="text-align:left; font-size:13px;">
+                    <div style="opacity:.8; margin-bottom:8px;">Bilgilerinizi bırakın, size ulaşıp yardımcı olalım.</div>
+                    <input id="lhName" maxlength="60" placeholder="Ad Soyad" class="swal2-input" style="width:100%; margin:6px 0; box-sizing:border-box;">
+                    <input id="lhEmail" maxlength="80" type="email" placeholder="Giriş yapmaya çalıştığınız e-posta" class="swal2-input" style="width:100%; margin:6px 0; box-sizing:border-box;">
+                    <input id="lhPhone" maxlength="20" type="tel" placeholder="Telefon (isteğe bağlı)" class="swal2-input" style="width:100%; margin:6px 0; box-sizing:border-box;">
+                    <select id="lhKind" class="swal2-select" style="width:100%; margin:6px 0; box-sizing:border-box;">
+                        <option>Şifremi unuttum</option><option>E-postam geçersiz / ulaşamıyorum</option><option>Giriş hatası alıyorum</option><option>Başka bir sorun</option>
+                    </select>
+                    <textarea id="lhNote" maxlength="300" rows="3" placeholder="Eklemek istedikleriniz (isteğe bağlı)" style="width:100%; margin-top:6px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:inherit; resize:none; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
+                    <input id="lhHp" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px; opacity:0;">
+                </div>`,
+                preConfirm: () => {
+                    const v = id => (document.getElementById(id).value || '').trim();
+                    const o = { name: v('lhName'), email: v('lhEmail'), phone: v('lhPhone'), kind: v('lhKind'), note: v('lhNote'), hp: v('lhHp') };
+                    if (o.name.length < 3) { Swal.showValidationMessage('Lütfen adınızı ve soyadınızı yazın.'); return false; }
+                    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)) { Swal.showValidationMessage('Lütfen geçerli bir e-posta yazın.'); return false; }
+                    if (Date.now() - last < 60000) { Swal.showValidationMessage('Az önce bir talep gönderdiniz. Lütfen biraz bekleyin.'); return false; }
+                    return o;
+                }
+            });
+            if (!r.isConfirmed || !r.value) return;
+            const o = r.value;
+            if (o.hp) { window.showSuccess && showSuccess('Talebiniz alındı.'); return; }
+            try {
+                const id = 'lh' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                await setDoc(doc(db, 'loginHelp', id), {
+                    name: o.name, email: o.email, phone: o.phone, kind: o.kind, note: o.note,
+                    status: 'new', createdAtIso: new Date().toISOString(), appVersion: (document.querySelector('meta[name="app-build"]') || {}).content || ''
+                });
+                try { localStorage.setItem('sy_lh_last', String(Date.now())); } catch (e) {}
+                Swal.fire({ icon: 'success', title: 'Talebiniz alındı', text: 'En kısa sürede sizinle iletişime geçeceğiz.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Lütfen internetinizi kontrol edip tekrar deneyin.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
+            }
+        };
+    })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
     // qaPosts/{id}            : herkese açık soru (ad, metin, yanıt sayısı...). E-POSTA/CİHAZ BURADA YOK.
