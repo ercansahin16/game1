@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v41">
+    <meta name="app-build" content="test-v42">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4461,7 +4461,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.9.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.10.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -5301,7 +5301,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField, serverTimestamp, limit, startAfter } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -9448,12 +9448,29 @@ document.getElementById('doLoginBtn').onclick = async () => {
         
 
 
-    // ===== 🐞 HATA BİLDİR (ekran görüntüsü + açıklama → Firestore: bugReports / bugReportImages) =====
-    // Okuma YOK (kullanıcı sadece yazar). Görüntü telefonda küçültülür (~100-250 KB) ve ayrı belgede tutulur.
+    // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
+    // qaPosts/{id}            : herkese açık soru (ad, metin, yanıt sayısı...). E-POSTA/CİHAZ BURADA YOK.
+    // qaPosts/{id}/replies/*  : yanıtlar (kursiyer veya yönetici)
+    // qaPrivate/{id}          : e-posta + cihaz (sadece yönetici okur)
+    // qaImages/{id}           : ekran görüntüsü (sadece soru sahibi + yönetici okur)
     (function () {
         const btn = document.getElementById('goBugReport');
         if (!btn) return;
-        const esc = (t) => String(t).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        btn.innerHTML = '<i class="fas fa-bug"></i> Soru / Hata Bildir';
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const myName = () => (document.getElementById('userNameDisplay')?.textContent || currentUser?.displayName || 'Kursiyer').trim() || 'Kursiyer';
+        const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        function ago(iso) {
+            if (!iso) return '';
+            const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+            if (m < 1) return 'az önce';
+            if (m < 60) return m + ' dk önce';
+            const h = Math.floor(m / 60);
+            if (h < 24) return h + ' sa önce';
+            const d = Math.floor(h / 24);
+            if (d < 30) return d + ' gün önce';
+            return new Date(iso).toLocaleDateString('tr-TR');
+        }
         async function compressImage(file) {
             const url = URL.createObjectURL(file);
             try {
@@ -9470,91 +9487,205 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 return null;
             } finally { URL.revokeObjectURL(url); }
         }
-        function checkRate() {
+        // Gönderim sınırları: soru dakikada 1 / günde 5; yanıt 15 sn'de 1 / günde 30
+        function rate(kind, commit) {
+            const key = 'sy_qa_' + kind;
+            const gap = kind === 'q' ? 60000 : 15000, max = kind === 'q' ? 5 : 30;
             let t = [];
-            try { t = JSON.parse(localStorage.getItem('sy_bug_times') || '[]'); } catch (e) {}
+            try { t = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) {}
             const now = Date.now();
             t = t.filter(x => now - x < 24 * 3600 * 1000);
-            if (t.length && now - t[t.length - 1] < 60 * 1000) return 'Çok hızlı gönderiyorsunuz. Lütfen bir dakika bekleyin.';
-            if (t.length >= 5) return 'Bugün en fazla 5 bildirim gönderebilirsiniz. Yarın tekrar deneyin.';
-            return null;
+            if (!commit) {
+                if (t.length && now - t[t.length - 1] < gap) return kind === 'q' ? 'Çok hızlı gönderiyorsunuz. Lütfen bir dakika bekleyin.' : 'Biraz yavaş. Birkaç saniye bekleyin.';
+                if (t.length >= max) return 'Bugünlük gönderim sınırına ulaştınız. Yarın tekrar deneyin.';
+                return null;
+            }
+            t.push(now);
+            try { localStorage.setItem(key, JSON.stringify(t.slice(-40))); } catch (e) {}
         }
-        function markRate() {
-            let t = [];
-            try { t = JSON.parse(localStorage.getItem('sy_bug_times') || '[]'); } catch (e) {}
-            t.push(Date.now());
-            try { localStorage.setItem('sy_bug_times', JSON.stringify(t.slice(-10))); } catch (e) {}
+
+        // ---------- ekran (tam sayfa katman) ----------
+        let posts = [], cursor = null, hasMore = false, loadingList = false;
+        const light = () => document.body.classList.contains('light-theme');
+        const C = () => light()
+            ? { bg: '#f5f6f8', card: '#ffffff', text: '#1f2937', sub: '#6b7280', line: 'rgba(0,0,0,.12)', input: '#ffffff' }
+            : { bg: '#121214', card: '#1c1c20', text: '#f3f4f6', sub: '#9ca3af', line: 'rgba(255,255,255,.12)', input: 'rgba(255,255,255,.06)' };
+        function ensureOverlay() {
+            let o = document.getElementById('qaOverlay');
+            if (o) o.remove();
+            const c = C();
+            o = document.createElement('div');
+            o.id = 'qaOverlay';
+            o.style.cssText = `position:fixed; inset:0; z-index:100000; background:${c.bg}; color:${c.text}; display:flex; flex-direction:column; font-family:inherit;`;
+            o.innerHTML = `<div id="qaHead" style="display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top, 0px) + 12px) 14px 10px; border-bottom:1px solid ${c.line};"></div><div id="qaBody" style="flex:1; overflow-y:auto; padding:12px 14px 24px; -webkit-overflow-scrolling:touch;"></div>`;
+            document.body.appendChild(o);
+            return o;
         }
-        btn.onclick = async () => {
-            closeMenu();
-            if (!currentUser) { showWarning('Hata bildirmek için önce giriş yapın.'); return; }
+        const head = (title, onBack) => {
+            const h = document.getElementById('qaHead'), c = C();
+            h.innerHTML = `<button type="button" id="qaBack" style="border:none; background:rgba(245,158,11,.15); color:#f59e0b; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer;"><i class="fas fa-arrow-left"></i></button><div style="font-weight:800; font-size:16px; flex:1;">${esc(title)}</div>`;
+            document.getElementById('qaBack').onclick = onBack;
+        };
+        const closeAll = () => { document.getElementById('qaOverlay')?.remove(); };
+
+        async function loadPosts(reset) {
+            if (loadingList) return;
+            loadingList = true;
+            try {
+                if (reset) { posts = []; cursor = null; }
+                let q = query(collection(db, 'qaPosts'), orderBy('lastIso', 'desc'), limit(10));
+                if (cursor) q = query(collection(db, 'qaPosts'), orderBy('lastIso', 'desc'), startAfter(cursor), limit(10));
+                const snap = await getDocs(q);
+                snap.docs.forEach(d => posts.push({ id: d.id, ...d.data() }));
+                if (snap.docs.length) cursor = snap.docs[snap.docs.length - 1];
+                hasMore = snap.docs.length === 10;
+            } finally { loadingList = false; }
+        }
+
+        async function showList(reset) {
+            const c = C();
+            ensureOverlay();
+            head('Soru / Hata Bildir', closeAll);
+            const body = document.getElementById('qaBody');
+            body.innerHTML = `<div style="text-align:center; padding:30px; color:${c.sub};"><i class="fas fa-spinner fa-spin"></i> Yükleniyor…</div>`;
+            try { await loadPosts(reset !== false); }
+            catch (e) { body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Liste yüklenemedi. Lütfen daha sonra tekrar deneyin.</div>`; return; }
+            renderList();
+        }
+        function renderList() {
+            const c = C(), body = document.getElementById('qaBody');
+            if (!body) return;
+            let html = `<button type="button" id="qaNew" style="width:100%; padding:12px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; font-size:14px; cursor:pointer; margin-bottom:12px;">➕ Yeni soru / hata bildir</button>`;
+            if (!posts.length) html += `<div style="text-align:center; padding:30px; color:${c.sub};">Henüz soru yok. İlk soruyu siz sorun.</div>`;
+            posts.forEach(p => {
+                const n = p.replyCount || 0;
+                html += `<div class="qa-card" data-id="${esc(p.id)}" style="background:${c.card}; border:1px solid ${c.line}; border-radius:14px; padding:12px; margin-bottom:10px; cursor:pointer;">
+                    <div style="font-size:14px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap;">${esc(p.text)}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; font-size:12px; color:${c.sub};">
+                        <span>👤 ${esc(p.name || 'Kursiyer')}</span><span>· ${esc(ago(p.createdAtIso))}</span>
+                        <span style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+                            ${p.status === 'done' ? '<span style="color:#10b981; font-weight:700;">✅ Çözüldü</span>' : ''}
+                            ${p.adminAnswered && p.status !== 'done' ? '<span style="color:#60a5fa; font-weight:700;">Yanıtlandı</span>' : ''}
+                            <span style="background:rgba(245,158,11,.15); color:#f59e0b; font-weight:800; padding:2px 9px; border-radius:10px;">💬 ${n} yanıt</span>
+                        </span>
+                    </div></div>`;
+            });
+            if (hasMore) html += `<button type="button" id="qaMore" style="width:100%; padding:11px; border-radius:12px; border:1px solid ${c.line}; background:transparent; color:${c.text}; font-weight:700; cursor:pointer;">Daha fazla göster</button>`;
+            body.innerHTML = html;
+            document.getElementById('qaNew').onclick = askNew;
+            body.querySelectorAll('.qa-card').forEach(el => { el.onclick = () => showThread(el.dataset.id); });
+            const more = document.getElementById('qaMore');
+            if (more) more.onclick = async () => { more.textContent = 'Yükleniyor…'; try { await loadPosts(false); } catch (e) {} renderList(); };
+        }
+
+        async function showThread(id) {
+            const c = C();
+            let p = posts.find(x => x.id === id);
+            ensureOverlay();
+            head('Soru', () => showList(false) && undefined);
+            document.getElementById('qaBack').onclick = () => { ensureOverlay(); head('Soru / Hata Bildir', closeAll); renderList(); };
+            const body = document.getElementById('qaBody');
+            body.innerHTML = `<div style="text-align:center; padding:30px; color:${c.sub};"><i class="fas fa-spinner fa-spin"></i></div>`;
+            let replies = [];
+            try {
+                if (!p) { const d = await getDoc(doc(db, 'qaPosts', id)); if (!d.exists()) { body.textContent = 'Bu soru bulunamadı.'; return; } p = { id, ...d.data() }; }
+                const rs = await getDocs(query(collection(db, 'qaPosts', id, 'replies'), orderBy('createdAtIso', 'asc'), limit(100)));
+                replies = rs.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (e) { body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Yüklenemedi. Lütfen daha sonra tekrar deneyin.</div>`; return; }
+            const mine = currentUser && p.uid === currentUser.uid;
+            let html = `<div style="background:${c.card}; border:1px solid ${c.line}; border-radius:14px; padding:14px; margin-bottom:12px;">
+                <div style="font-size:12px; color:${c.sub}; margin-bottom:6px;">👤 ${esc(p.name || 'Kursiyer')} · ${esc(ago(p.createdAtIso))} ${p.status === 'done' ? '· <span style="color:#10b981; font-weight:700;">✅ Çözüldü</span>' : ''}</div>
+                <div style="font-size:15px; line-height:1.5; white-space:pre-wrap;">${esc(p.text)}</div>
+                ${p.hasImage ? (mine ? `<button type="button" id="qaImg" style="margin-top:10px; padding:7px 12px; border-radius:10px; border:1px solid rgba(245,158,11,.5); background:transparent; color:#f59e0b; font-weight:700; cursor:pointer;">🖼 Ekran görüntümü göster</button>` : `<div style="margin-top:8px; font-size:11px; color:${c.sub};">🖼 Ekran görüntüsü ekli (yalnızca soru sahibi ve yönetici görür)</div>`) : ''}
+            </div>
+            <div style="font-weight:800; margin:6px 2px 8px;">💬 ${replies.length} yanıt</div>`;
+            replies.forEach(r => {
+                html += `<div style="background:${c.card}; border:1px solid ${r.isAdmin ? 'rgba(245,158,11,.6)' : c.line}; border-radius:12px; padding:10px 12px; margin-bottom:8px;">
+                    <div style="font-size:12px; color:${c.sub}; margin-bottom:4px;">${r.isAdmin ? '<b style="color:#f59e0b;">🛡 Yönetici</b>' : '👤 ' + esc(r.name || 'Kursiyer')} · ${esc(ago(r.createdAtIso))}</div>
+                    <div style="font-size:14px; line-height:1.45; white-space:pre-wrap;">${esc(r.text)}</div></div>`;
+            });
+            html += `<textarea id="qaReplyText" maxlength="500" rows="3" placeholder="Yanıtınızı yazın…" style="width:100%; box-sizing:border-box; margin-top:6px; padding:10px; border-radius:12px; border:1px solid ${c.line}; background:${c.input}; color:${c.text}; font-family:inherit; font-size:14px; resize:none;"></textarea>
+                <button type="button" id="qaSend" style="width:100%; margin-top:8px; padding:11px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; cursor:pointer;">Yanıtla</button>`;
+            body.innerHTML = html;
+            document.getElementById('qaImg')?.addEventListener('click', async () => {
+                try {
+                    const im = await getDoc(doc(db, 'qaImages', id));
+                    if (im.exists()) Swal.fire({ imageUrl: im.data().data, width: 'min(92vw, 520px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b' });
+                } catch (e) { showWarning('Görüntü açılamadı.'); }
+            });
+            document.getElementById('qaSend').onclick = async () => {
+                const ta = document.getElementById('qaReplyText');
+                const text = (ta.value || '').trim();
+                if (text.length < 2) { showWarning('Lütfen yanıtınızı yazın.'); return; }
+                const err = rate('r'); if (err) { showWarning(err); return; }
+                const bt = document.getElementById('qaSend'); bt.disabled = true; bt.textContent = 'Gönderiliyor…';
+                try {
+                    const rid = newId(), nowIso = new Date().toISOString();
+                    await setDoc(doc(db, 'qaPosts', id, 'replies', rid), { uid: currentUser.uid, name: myName(), text, isAdmin: false, createdAtIso: nowIso });
+                    await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(1), lastIso: nowIso });
+                    rate('r', true);
+                    p.replyCount = (p.replyCount || 0) + 1; p.lastIso = nowIso;
+                    showThread(id);
+                } catch (e) { bt.disabled = false; bt.textContent = 'Yanıtla'; showWarning('Yanıt gönderilemedi. Lütfen tekrar deneyin.'); }
+            };
+        }
+
+        async function askNew() {
             let imageData = null;
             const r = await Swal.fire({
-                title: '🐞 Hata Bildir',
-                width: 380,
-                showCancelButton: true,
-                confirmButtonText: 'Gönder',
-                cancelButtonText: 'Vazgeç',
-                confirmButtonColor: '#f59e0b',
+                title: '🐞 Yeni soru / hata bildir',
+                width: 380, showCancelButton: true, confirmButtonText: 'Gönder', cancelButtonText: 'Vazgeç', confirmButtonColor: '#f59e0b',
                 customClass: { popup: 'compact-swal themed-swal' },
                 html: `<div style="text-align:left; font-size:13px;">
-                    <div style="opacity:.8; margin-bottom:8px;">Hatayı gördüğünüz ekranın görüntüsünü alıp buradan seçin, sonra kısaca anlatın.</div>
-                    <button type="button" id="bugPick" style="width:100%; padding:10px; border-radius:10px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü seç</button>
+                    <div style="opacity:.8; margin-bottom:8px;">Sorunuzu ya da hatayı yazın. İsterseniz ekran görüntüsü ekleyin (yalnızca siz ve yönetici görür).</div>
+                    <button type="button" id="bugPick" style="width:100%; padding:10px; border-radius:10px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü seç (isteğe bağlı)</button>
                     <input type="file" id="bugFile" accept="image/*" style="display:none;">
-                    <img id="bugPrev" style="display:none; width:100%; max-height:180px; object-fit:contain; margin-top:8px; border-radius:8px; background:#000;">
-                    <textarea id="bugText" maxlength="600" rows="4" placeholder="Ne oldu? Hangi sayfada? (kısaca yazın)" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:inherit; resize:none; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
-                    <div style="font-size:11px; opacity:.55; margin-top:6px;">Görüntüde başkasına ait bilgi varsa kapatın.</div>
+                    <img id="bugPrev" style="display:none; width:100%; max-height:170px; object-fit:contain; margin-top:8px; border-radius:8px; background:#000;">
+                    <textarea id="bugText" maxlength="600" rows="4" placeholder="Soru veya hata… (herkes görebilir, kişisel bilgi yazmayın)" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:inherit; resize:none; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
                 </div>`,
                 didOpen: (pop) => {
                     const file = pop.querySelector('#bugFile'), prev = pop.querySelector('#bugPrev'), pick = pop.querySelector('#bugPick');
                     pick.onclick = () => file.click();
                     file.onchange = async () => {
-                        const f0 = file.files && file.files[0];
-                        if (!f0) return;
+                        const f0 = file.files && file.files[0]; if (!f0) return;
                         pick.textContent = 'Hazırlanıyor…';
                         try { imageData = await compressImage(f0); } catch (e) { imageData = null; }
                         if (imageData) { prev.src = imageData; prev.style.display = 'block'; pick.textContent = '📷 Başka görüntü seç'; }
-                        else { pick.textContent = '📷 Görüntü okunamadı, tekrar seç'; }
+                        else pick.textContent = '📷 Görüntü okunamadı, tekrar seç';
                     };
                 },
                 preConfirm: () => {
                     const txt = (document.getElementById('bugText').value || '').trim();
-                    if (txt.length < 5) { Swal.showValidationMessage('Lütfen hatayı kısaca yazın.'); return false; }
-                    const rate = checkRate();
-                    if (rate) { Swal.showValidationMessage(rate); return false; }
+                    if (txt.length < 5) { Swal.showValidationMessage('Lütfen sorunuzu kısaca yazın.'); return false; }
+                    const err = rate('q'); if (err) { Swal.showValidationMessage(err); return false; }
                     return txt;
                 }
             });
             if (!r.isConfirmed) return;
-            const text = r.value;
             try {
                 if (typeof showLoadingAlert === 'function') showLoadingAlert('Gönderiliyor…');
-                const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+                const id = newId(), nowIso = new Date().toISOString();
                 let hasImage = false;
-                if (imageData) {
-                    try { await setDoc(doc(db, 'bugReportImages', id), { data: imageData, uid: currentUser.uid }); hasImage = true; } catch (e) { hasImage = false; }
-                }
-                const name = (document.getElementById('userNameDisplay')?.textContent || currentUser.displayName || '').trim();
-                await setDoc(doc(db, 'bugReports', id), {
-                    uid: currentUser.uid,
-                    name: name,
-                    email: currentUser.email || '',
-                    text: text,
-                    hasImage: hasImage,
-                    status: 'new',
-                    createdAt: serverTimestamp(),
-                    createdAtIso: new Date().toISOString(),
-                    appVersion: document.querySelector('meta[name="app-build"]')?.content || '',
-                    device: String(navigator.userAgent || '').slice(0, 200)
+                if (imageData) { try { await setDoc(doc(db, 'qaImages', id), { data: imageData, uid: currentUser.uid }); hasImage = true; } catch (e) {} }
+                await setDoc(doc(db, 'qaPrivate', id), { uid: currentUser.uid, email: currentUser.email || '', device: String(navigator.userAgent || '').slice(0, 200) });
+                await setDoc(doc(db, 'qaPosts', id), {
+                    uid: currentUser.uid, name: myName(), text: r.value, hasImage, status: 'new', replyCount: 0, adminAnswered: false,
+                    createdAtIso: nowIso, lastIso: nowIso, appVersion: document.querySelector('meta[name="app-build"]')?.content || ''
                 });
-                markRate();
+                rate('q', true);
                 if (typeof closeLoadingAlert === 'function') closeLoadingAlert();
-                Swal.fire({ icon: 'success', title: 'Teşekkürler!', text: hasImage || !imageData ? 'Bildiriminiz bize ulaştı.' : 'Bildiriminiz ulaştı ama görüntü eklenemedi.', confirmButtonColor: '#f59e0b', confirmButtonText: 'Tamam', width: 320, customClass: { popup: 'compact-swal themed-swal' } });
+                showList(true);
             } catch (e) {
                 if (typeof closeLoadingAlert === 'function') closeLoadingAlert();
-                console.warn('Hata bildirimi gönderilemedi', e);
+                console.warn('Soru gönderilemedi', e);
                 Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Şu an gönderilemedi. İnternetinizi kontrol edip biraz sonra tekrar deneyin.', confirmButtonColor: '#f59e0b', confirmButtonText: 'Tamam', width: 320, customClass: { popup: 'compact-swal themed-swal' } });
             }
+        }
+
+        btn.onclick = () => {
+            closeMenu();
+            if (!currentUser) { showWarning('Önce giriş yapın.'); return; }
+            showList(true);
         };
     })();
 
