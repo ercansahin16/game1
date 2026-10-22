@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v47">
+    <meta name="app-build" content="test-v48">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.2 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -9621,7 +9621,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         function renderList() {
             const c = C(), body = document.getElementById('qaBody');
             if (!body) return;
-            let html = `<button type="button" id="qaNew" style="width:100%; padding:12px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; font-size:14px; cursor:pointer; margin-bottom:12px;">➕ Yeni soru / hata bildir</button>`;
+            let html = `<div style="display:flex; gap:8px; margin-bottom:12px;"><button type="button" id="qaNew" style="flex:1; padding:12px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; font-size:14px; cursor:pointer;">➕ Yeni soru / hata bildir</button><button type="button" id="qaRefresh" aria-label="Yenile" title="Yenile" style="width:46px; border:1px solid ${c.line}; border-radius:12px; background:${c.card}; color:#f59e0b; font-size:16px; cursor:pointer;"><i class="fas fa-sync-alt"></i></button></div>`;
             if (!posts.length) html += `<div style="text-align:center; padding:30px; color:${c.sub};">Henüz soru yok. İlk soruyu siz sorun.</div>`;
             posts.forEach(p => {
                 const n = p.replyCount || 0;
@@ -9639,6 +9639,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
             if (hasMore) html += `<button type="button" id="qaMore" style="width:100%; padding:11px; border-radius:12px; border:1px solid ${c.line}; background:transparent; color:${c.text}; font-weight:700; cursor:pointer;">Daha fazla göster</button>`;
             body.innerHTML = html;
             document.getElementById('qaNew').onclick = askNew;
+            document.getElementById('qaRefresh').onclick = () => {
+                const now = Date.now();
+                if (now - (window.__qaLastRefresh || 0) < 5000) { showWarning('Liste zaten güncel. Birkaç saniye sonra tekrar deneyin.'); return; }
+                window.__qaLastRefresh = now;
+                showList(true);
+            };
             body.querySelectorAll('.qa-card').forEach(el => { el.onclick = () => showThread(el.dataset.id); });
             const more = document.getElementById('qaMore');
             if (more) more.onclick = async () => { more.textContent = 'Yükleniyor…'; try { await loadPosts(false); } catch (e) {} renderList(); };
