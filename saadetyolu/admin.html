@@ -2884,6 +2884,7 @@ window.openBugThread = async function (id) {
         const dev = /iPhone|iPad/.test(priv.device || '') ? 'iPhone/iPad' : /Android/.test(priv.device || '') ? 'Android' : /Windows|Macintosh|Linux/.test(priv.device || '') ? 'Bilgisayar' : 'Bilinmiyor';
         const done = p.status === 'done';
         window.__bugReplyDel = async (rid) => {
+            try { await deleteDoc(doc(db, 'qaImages', id + '__' + rid)); } catch (e) {}
             await deleteDoc(doc(db, 'qaPosts', id, 'replies', rid));
             await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(-1) });
             Swal.close(); openBugThread(id);
@@ -2891,11 +2892,15 @@ window.openBugThread = async function (id) {
         window.__bugPostDel = async () => {
             const ok = await Swal.fire({ title: 'Soru silinsin mi?', text: 'Soru, tüm yanıtlar ve görüntü silinecek.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç' });
             if (!ok.isConfirmed) return;
-            for (const r of replies) { try { await deleteDoc(doc(db, 'qaPosts', id, 'replies', r.id)); } catch (e) {} }
+            for (const r of replies) { try { await deleteDoc(doc(db, 'qaImages', id + '__' + r.id)); } catch (e) {} try { await deleteDoc(doc(db, 'qaPosts', id, 'replies', r.id)); } catch (e) {} }
             try { await deleteDoc(doc(db, 'qaImages', id)); } catch (e) {}
             try { await deleteDoc(doc(db, 'qaPrivate', id)); } catch (e) {}
             await deleteDoc(doc(db, 'qaPosts', id));
             loadBugs();
+        };
+        window.__bugShowReplyImg = async (rid) => {
+            const im = await getDoc(doc(db, 'qaImages', id + '__' + rid));
+            if (im.exists()) Swal.fire({ imageUrl: im.data().data, width: 'min(92vw, 520px)', confirmButtonText: 'Kapat' });
         };
         window.__bugShowImg = async () => {
             const im = await getDoc(doc(db, 'qaImages', id));
@@ -2903,7 +2908,7 @@ window.openBugThread = async function (id) {
         };
         const repliesHtml = replies.map(r => `<div style="text-align:left; padding:8px 10px; margin-bottom:6px; border-radius:10px; background:${r.isAdmin ? 'rgba(245,158,11,.12)' : 'rgba(128,128,128,.12)'};">
             <div style="font-size:11px; opacity:.7; display:flex; justify-content:space-between;"><span>${r.isAdmin ? '🛡 Yönetici' : '👤 ' + esc(r.name)} · ${esc(new Date(r.createdAtIso).toLocaleString('tr-TR'))}</span><a href="#" onclick="event.preventDefault(); __bugReplyDel('${r.id}')" style="color:#ef4444; text-decoration:none;">sil</a></div>
-            <div style="font-size:13px; white-space:pre-wrap;">${esc(r.text)}</div></div>`).join('');
+            <div style="font-size:13px; white-space:pre-wrap;">${esc(r.text)}</div>${r.hasImage ? `<button type="button" class="btn btn-info" style="padding:4px 9px; font-size:11px; margin-top:6px;" onclick="__bugShowReplyImg('${esc(r.id)}')">🖼 Görüntü</button>` : ''}</div>`).join('');
         const res = await Swal.fire({
             title: esc(p.name || 'İsimsiz'),
             width: 'min(94vw, 560px)',

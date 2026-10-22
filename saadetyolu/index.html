@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v59">
+    <meta name="app-build" content="saadetyolu-shell-v60">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -9541,6 +9541,18 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 return null;
             } finally { URL.revokeObjectURL(url); }
         }
+        // Yalnızca ekran görüntüsü: resim türü + en fazla 12 MB seçilebilir; yüklenen hâli küçültülüp ~330 KB altına indirilir
+        const IMG_OK = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+        async function prepareImage(f) {
+            if (!f) return { err: 'Dosya seçilmedi.' };
+            const t = (f.type || '').toLowerCase();
+            if (!IMG_OK.includes(t)) return { err: 'Yalnızca ekran görüntüsü (resim) eklenebilir. Video, belge ya da müzik yüklenemez.' };
+            if (f.size > 12 * 1024 * 1024) return { err: 'Resim çok büyük (en fazla 12 MB). Daha küçük bir ekran görüntüsü seçin.' };
+            let data = null;
+            try { data = await compressImage(f); } catch (e) { data = null; }
+            if (!data) return { err: 'Resim okunamadı. Başka bir ekran görüntüsü deneyin.' };
+            return { data };
+        }
         // Gönderim sınırları: soru dakikada 1 / günde 5; yanıt 15 sn'de 1 / günde 30
         function rate(kind, commit) {
             const key = 'sy_qa_' + kind;
@@ -9656,8 +9668,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
             replies.forEach(r => {
                 html += `<div style="background:${c.card}; border:1px solid ${r.isAdmin ? 'rgba(245,158,11,.6)' : c.line}; border-radius:12px; padding:10px 12px; margin-bottom:8px;">
                     <div style="font-size:12px; color:${c.sub}; margin-bottom:4px;">${r.isAdmin ? '<b style="color:#f59e0b;">🛡 Yönetici</b>' : '👤 ' + esc(r.name || 'Kursiyer')} · ${esc(ago(r.createdAtIso))}</div>
-                    <div style="font-size:14px; line-height:1.45; white-space:pre-wrap;">${esc(r.text)}</div></div>`;
+                    <div style="font-size:14px; line-height:1.45; white-space:pre-wrap;">${esc(r.text)}</div>
+                    ${r.hasImage ? (mine ? `<button type="button" class="qaRImg" data-rid="${esc(r.id)}" style="margin-top:8px; padding:6px 10px; border-radius:10px; border:1px solid rgba(245,158,11,.5); background:transparent; color:#f59e0b; font-weight:700; cursor:pointer; font-size:12px;">🖼 Eki göster</button>` : `<div style="margin-top:6px; font-size:11px; color:${c.sub};">🖼 Ekran görüntüsü ekli</div>`) : ''}</div>`;
             });
+            if (mine) html += `<button type="button" id="qaRPick" style="width:100%; margin-top:8px; padding:9px; border-radius:12px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü ekle (isteğe bağlı)</button>
+                <input type="file" id="qaRFile" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none;">
+                <img id="qaRPrev" style="display:none; width:100%; max-height:170px; object-fit:contain; margin-top:8px; border-radius:8px; background:#000;">`;
             html += `<textarea id="qaReplyText" maxlength="500" rows="3" placeholder="Yanıtınızı yazın…" style="width:100%; box-sizing:border-box; margin-top:6px; padding:10px; border-radius:12px; border:1px solid ${c.line}; background:${c.input}; color:${c.text}; font-family:inherit; font-size:14px; resize:none;"></textarea>
                 <button type="button" id="qaSend" style="width:100%; margin-top:8px; padding:11px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; cursor:pointer;">Yanıtla</button>`;
             body.innerHTML = html;
@@ -9667,6 +9683,26 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     if (im.exists()) Swal.fire({ imageUrl: im.data().data, width: 'min(92vw, 520px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b' });
                 } catch (e) { showWarning('Görüntü açılamadı.'); }
             });
+            let replyImg = null;
+            document.querySelectorAll('.qaRImg').forEach(b => b.addEventListener('click', async () => {
+                try {
+                    const im = await getDoc(doc(db, 'qaImages', id + '__' + b.dataset.rid));
+                    if (im.exists()) Swal.fire({ imageUrl: im.data().data, width: 'min(92vw, 520px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b' });
+                } catch (e) { showWarning('Görüntü açılamadı.'); }
+            }));
+            const rPick = document.getElementById('qaRPick');
+            if (rPick) {
+                const rFile = document.getElementById('qaRFile'), rPrev = document.getElementById('qaRPrev');
+                rPick.onclick = () => rFile.click();
+                rFile.onchange = async () => {
+                    const f0 = rFile.files && rFile.files[0]; if (!f0) return;
+                    rPick.textContent = 'Hazırlanıyor…';
+                    const pr = await prepareImage(f0);
+                    rFile.value = '';
+                    if (pr.data) { replyImg = pr.data; rPrev.src = replyImg; rPrev.style.display = 'block'; rPick.textContent = '📷 Başka görüntü seç'; }
+                    else { replyImg = null; rPrev.style.display = 'none'; rPick.textContent = '📷 Ekran görüntüsü ekle (isteğe bağlı)'; showWarning(pr.err); }
+                };
+            }
             document.getElementById('qaSend').onclick = async () => {
                 const ta = document.getElementById('qaReplyText');
                 const text = (ta.value || '').trim();
@@ -9675,7 +9711,9 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 const bt = document.getElementById('qaSend'); bt.disabled = true; bt.textContent = 'Gönderiliyor…';
                 try {
                     const rid = newId(), nowIso = new Date().toISOString();
-                    await setDoc(doc(db, 'qaPosts', id, 'replies', rid), { uid: currentUser.uid, name: myName(), text, isAdmin: false, createdAtIso: nowIso });
+                    let hasImg = false;
+                    if (replyImg) { try { await setDoc(doc(db, 'qaImages', id + '__' + rid), { data: replyImg, uid: currentUser.uid }); hasImg = true; } catch (e) {} }
+                    await setDoc(doc(db, 'qaPosts', id, 'replies', rid), { uid: currentUser.uid, name: myName(), text, isAdmin: false, hasImage: hasImg, createdAtIso: nowIso });
                     await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(1), lastIso: nowIso });
                     rate('r', true);
                     p.replyCount = (p.replyCount || 0) + 1; p.lastIso = nowIso;
@@ -9693,7 +9731,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 html: `<div style="text-align:left; font-size:13px;">
                     <div style="opacity:.8; margin-bottom:8px;">Sorunuzu ya da hatayı yazın. İsterseniz ekran görüntüsü ekleyin (yalnızca siz ve yönetici görür).</div>
                     <button type="button" id="bugPick" style="width:100%; padding:10px; border-radius:10px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü seç (isteğe bağlı)</button>
-                    <input type="file" id="bugFile" accept="image/*" style="display:none;">
+                    <input type="file" id="bugFile" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none;">
                     <img id="bugPrev" style="display:none; width:100%; max-height:170px; object-fit:contain; margin-top:8px; border-radius:8px; background:#000;">
                     <textarea id="bugText" maxlength="600" rows="4" placeholder="Soru veya hata… (herkes görebilir, kişisel bilgi yazmayın)" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:inherit; resize:none; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
                 </div>`,
@@ -9703,9 +9741,10 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     file.onchange = async () => {
                         const f0 = file.files && file.files[0]; if (!f0) return;
                         pick.textContent = 'Hazırlanıyor…';
-                        try { imageData = await compressImage(f0); } catch (e) { imageData = null; }
-                        if (imageData) { prev.src = imageData; prev.style.display = 'block'; pick.textContent = '📷 Başka görüntü seç'; }
-                        else pick.textContent = '📷 Görüntü okunamadı, tekrar seç';
+                        const pr = await prepareImage(f0);
+                        file.value = '';
+                        if (pr.data) { imageData = pr.data; prev.src = imageData; prev.style.display = 'block'; pick.textContent = '📷 Başka görüntü seç'; }
+                        else { imageData = null; prev.style.display = 'none'; pick.textContent = '📷 Ekran görüntüsü seç (isteğe bağlı)'; Swal.showValidationMessage(pr.err); }
                     };
                 },
                 preConfirm: () => {
