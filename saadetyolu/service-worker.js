@@ -4,7 +4,7 @@
 // Firestore/Firebase istekleri önbelleğe ALINMAZ (her zaman ağdan gider),
 // çünkü kullanıcı verisi (puan, mesajlar, arkadaşlar) her zaman güncel olmalı.
 
-const CACHE_NAME = 'saadetyolu-shell-v61';
+const CACHE_NAME = 'saadetyolu-shell-v62';
 const APP_SHELL = [
     './index.html',
     './manifest.json',

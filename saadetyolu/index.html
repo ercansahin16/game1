@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v61">
+    <meta name="app-build" content="saadetyolu-shell-v62">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.2 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.12.3 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -9639,10 +9639,21 @@ document.getElementById('doLoginBtn').onclick = async () => {
             if (hasMore) html += `<button type="button" id="qaMore" style="width:100%; padding:11px; border-radius:12px; border:1px solid ${c.line}; background:transparent; color:${c.text}; font-weight:700; cursor:pointer;">Daha fazla göster</button>`;
             body.innerHTML = html;
             document.getElementById('qaNew').onclick = askNew;
-            document.getElementById('qaRefresh').onclick = () => {
-                const now = Date.now();
-                if (now - (window.__qaLastRefresh || 0) < 5000) { showWarning('Liste zaten güncel. Birkaç saniye sonra tekrar deneyin.'); return; }
-                window.__qaLastRefresh = now;
+            const rBtn = document.getElementById('qaRefresh');
+            const COOL = 5 * 60 * 1000;
+            const lastR = () => { try { return Number(localStorage.getItem('sy_qa_refresh') || 0); } catch (e) { return window.__qaLastRefresh || 0; } };
+            const leftMs = () => Math.max(0, COOL - (Date.now() - lastR()));
+            const paint = () => {
+                const l = leftMs();
+                rBtn.style.opacity = l ? '.4' : '1';
+                rBtn.title = l ? ('Yenileme için ' + Math.ceil(l / 60000) + ' dk bekleyin') : 'Yenile';
+            };
+            paint();
+            rBtn.onclick = () => {
+                const l = leftMs();
+                if (l) { showWarning('Liste en fazla 5 dakikada bir yenilenebilir. ' + Math.ceil(l / 60000) + ' dk sonra tekrar deneyin.'); return; }
+                window.__qaLastRefresh = Date.now();
+                try { localStorage.setItem('sy_qa_refresh', String(Date.now())); } catch (e) {}
                 showList(true);
             };
             body.querySelectorAll('.qa-card').forEach(el => { el.onclick = () => showThread(el.dataset.id); });
