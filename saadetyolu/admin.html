@@ -920,6 +920,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
     <div class="sidebar-item" id="goBugs"><i class="fas fa-bug"></i> Hata Bildirimleri</div>
+    <div class="sidebar-item" id="goLoginHelp"><i class="fas fa-life-ring"></i> Giriş Yardımı</div>
     <div class="sidebar-item" id="goDataManagement"><i class="fas fa-database"></i> Veri Yönetimi</div>
     <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
     <div class="sidebar-item" id="goBulkExamUpload"><i class="fas fa-upload"></i> Toplu Soru Yükleme</div>
@@ -1179,6 +1180,14 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadBugs()"><i class="fas fa-sync"></i> Yenile</button>
             </div>
             <div id="bugsList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
+        </div>
+
+        <div id="loginHelpSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-life-ring"></i> Giriş Yardımı Talepleri</h2>
+                <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadLoginHelp()"><i class="fas fa-sync"></i> Yenile</button>
+            </div>
+            <div id="loginHelpList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
         </div>
 
         <div id="usersSection" class="section-card hidden">
@@ -1531,6 +1540,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
     document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
     document.getElementById('goUsers').onclick = () => { showSection('users'); loadUsers(); closeMenu(); };
+    document.getElementById('goLoginHelp').onclick = () => { showSection('loginHelp'); loadLoginHelp(); closeMenu(); };
     document.getElementById('goBugs').onclick = () => { showSection('bugs'); loadBugs(); closeMenu(); };
     document.querySelector('.logo').onclick = () => { showSection('dashboard'); closeMenu(); };
     
@@ -1562,6 +1572,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('examsSection').classList.add('hidden');
     document.getElementById('usersSection').classList.add('hidden');
     document.getElementById('bugsSection').classList.add('hidden');
+    document.getElementById('loginHelpSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
     document.getElementById('bulkExamUploadSection').classList.add('hidden');
      document.getElementById('dataManagementSection').classList.add('hidden'); // YENİ
@@ -1580,6 +1591,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         document.getElementById('examsSection').classList.remove('hidden');
     } else if (section === 'users') {
         document.getElementById('usersSection').classList.remove('hidden');
+    } else if (section === 'loginHelp') {
+        document.getElementById('loginHelpSection').classList.remove('hidden');
     } else if (section === 'bugs') {
         document.getElementById('bugsSection').classList.remove('hidden');
     } else if (section === 'bulkUpload') {
@@ -2752,6 +2765,47 @@ window.loadUsers = async function() {
 
 
 // ===== HATA BİLDİRİMLERİ (kullanıcıların gönderdiği ekran görüntülü bildirimler) =====
+window.loadLoginHelp = async function () {
+    const box = document.getElementById('loginHelpList');
+    if (!box) return;
+    box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div>';
+    try {
+        const snap = await getDocs(query(collection(db, 'loginHelp'), orderBy('createdAtIso', 'desc'), limit(50)));
+        if (snap.empty) { box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Henüz talep yok.</div>'; return; }
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        box.innerHTML = '';
+        snap.forEach(d => {
+            const p = d.data();
+            const done = p.status === 'done';
+            const when = p.createdAtIso ? new Date(p.createdAtIso).toLocaleString('tr-TR') : '';
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.style.cssText = 'flex-direction:column; align-items:stretch; gap:6px;' + (done ? 'opacity:.55;' : '');
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                    <strong><i class="fas fa-user"></i> ${esc(p.name)}</strong>
+                    <span style="font-size:12px; opacity:.7;">${esc(when)}</span>
+                </div>
+                <div style="font-size:13px;"><i class="fas fa-envelope"></i> ${esc(p.email)}${p.phone ? ' &nbsp; <i class="fas fa-phone"></i> ' + esc(p.phone) : ''}</div>
+                <div style="font-size:13px;"><b>${esc(p.kind)}</b>${p.note ? ' — ' + esc(p.note) : ''}</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn ${done ? 'btn-info' : 'btn-success'}" style="padding:6px 12px; font-size:12px;" data-act="toggle">${done ? 'Yeniden aç' : '✓ Çözüldü'}</button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-act="del"><i class="fas fa-trash"></i></button>
+                </div>`;
+            div.querySelector('[data-act="toggle"]').onclick = async () => {
+                await updateDoc(doc(db, 'loginHelp', d.id), { status: done ? 'new' : 'done' });
+                loadLoginHelp();
+            };
+            div.querySelector('[data-act="del"]').onclick = async () => {
+                if (!confirm('Bu talep silinsin mi?')) return;
+                await deleteDoc(doc(db, 'loginHelp', d.id));
+                loadLoginHelp();
+            };
+            box.appendChild(div);
+        });
+    } catch (e) { box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Talepler yüklenemedi.</div>'; }
+};
+
 window.loadBugs = async function () {
     const box = document.getElementById('bugsList');
     if (!box) return;
