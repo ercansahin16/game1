@@ -1470,7 +1470,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch, limit, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"; // ✅ YENİ
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
@@ -2764,7 +2764,34 @@ window.loadUsers = async function() {
 
 
 
-// ===== HATA BİLDİRİMLERİ (kullanıcıların gönderdiği ekran görüntülü bildirimler) =====
+// ===== SORU / HATA BİLDİRİMLERİ (herkese açık soru-cevap; yönetici yanıtlar) =====
+// Eski "bugReports" kayıtlarını yeni soru-cevap yapısına taşır (bir kez; zaten taşınmış olanı atlar)
+window.migrateOldBugReports = async function () {
+    try {
+        if (localStorage.getItem('qa_migrated_v1') === '1') return 0;
+        const old = await getDocs(collection(db, 'bugReports'));
+        let moved = 0;
+        for (const d of old.docs) {
+            const o = d.data();
+            const exists = await getDoc(doc(db, 'qaPosts', d.id));
+            if (exists.exists()) continue;
+            const iso = o.createdAtIso || new Date().toISOString();
+            if (o.hasImage) {
+                try { const im = await getDoc(doc(db, 'bugReportImages', d.id)); if (im.exists()) await setDoc(doc(db, 'qaImages', d.id), { data: im.data().data, uid: o.uid || '' }); } catch (e) {}
+            }
+            await setDoc(doc(db, 'qaPrivate', d.id), { uid: o.uid || '', email: o.email || '', device: o.device || '' });
+            await setDoc(doc(db, 'qaPosts', d.id), {
+                uid: o.uid || '', name: o.name || 'Kursiyer', text: o.text || '', hasImage: !!o.hasImage,
+                status: o.status === 'done' ? 'done' : 'new', replyCount: 0, adminAnswered: false,
+                createdAtIso: iso, lastIso: iso, appVersion: o.appVersion || ''
+            });
+            moved++;
+        }
+        localStorage.setItem('qa_migrated_v1', '1');
+        return moved;
+    } catch (e) { console.warn('Eski bildirimler taşınamadı', e); return 0; }
+};
+
 window.loadLoginHelp = async function () {
     const box = document.getElementById('loginHelpList');
     if (!box) return;
@@ -2809,55 +2836,105 @@ window.loadLoginHelp = async function () {
 window.loadBugs = async function () {
     const box = document.getElementById('bugsList');
     if (!box) return;
+    await window.migrateOldBugReports();
     box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div>';
     try {
-        const snap = await getDocs(query(collection(db, 'bugReports'), orderBy('createdAtIso', 'desc'), limit(30)));
-        if (snap.empty) { box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Henüz bildirim yok.</div>'; return; }
+        const snap = await getDocs(query(collection(db, 'qaPosts'), orderBy('lastIso', 'desc'), limit(30)));
+        if (snap.empty) { box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Henüz soru yok.</div>'; return; }
         const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         box.innerHTML = '';
         snap.forEach(d => {
-            const b = d.data();
-            const when = b.createdAtIso ? new Date(b.createdAtIso).toLocaleString('tr-TR') : '';
-            const done = b.status === 'done';
-            const dev = /iPhone|iPad/.test(b.device || '') ? 'iPhone/iPad' : /Android/.test(b.device || '') ? 'Android' : /Windows|Macintosh|Linux/.test(b.device || '') ? 'Bilgisayar' : 'Bilinmiyor';
+            const p = d.data();
+            const when = p.createdAtIso ? new Date(p.createdAtIso).toLocaleString('tr-TR') : '';
+            const done = p.status === 'done';
+            const waiting = !done && !p.adminAnswered;
             const div = document.createElement('div');
             div.className = 'item';
-            div.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;' + (done ? 'opacity:.55;' : '');
+            div.style.cssText = 'flex-direction:column; align-items:stretch; gap:6px; cursor:pointer;' + (done ? 'opacity:.6;' : '');
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                    <strong><i class="fas fa-user"></i> ${esc(b.name || 'İsimsiz')} <span style="font-weight:400; opacity:.7; font-size:12px;">${esc(b.email)}</span></strong>
+                    <strong><i class="fas fa-user"></i> ${esc(p.name || 'İsimsiz')}</strong>
                     <span style="font-size:12px; opacity:.7;">${esc(when)}</span>
                 </div>
-                <div style="white-space:pre-wrap; font-size:14px;">${esc(b.text)}</div>
-                <small style="opacity:.6;">${esc(dev)} · sürüm ${esc(b.appVersion || '?')} ${done ? '· ✅ çözüldü' : ''}</small>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    ${b.hasImage ? `<button class="btn btn-info" style="padding:6px 12px; font-size:12px;" data-act="img">🖼 Görüntü</button>` : ''}
-                    <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" data-act="done">${done ? 'Yeniden aç' : '✅ Çözüldü'}</button>
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-act="del">🗑 Sil</button>
+                <div style="font-size:14px; white-space:pre-wrap; max-height:3.2em; overflow:hidden;">${esc(p.text)}</div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">
+                    <span style="background:rgba(245,158,11,.15); color:#f59e0b; font-weight:800; padding:2px 9px; border-radius:10px;">💬 ${p.replyCount || 0} yanıt</span>
+                    ${p.hasImage ? '<span>🖼 görüntü var</span>' : ''}
+                    ${done ? '<span style="color:#10b981;">✅ çözüldü</span>' : (waiting ? '<span style="color:#ef4444; font-weight:700;">● yanıt bekliyor</span>' : '<span style="color:#60a5fa;">yanıtlandı</span>')}
                 </div>`;
-            div.querySelector('[data-act="img"]')?.addEventListener('click', async () => {
-                try {
-                    const im = await getDoc(doc(db, 'bugReportImages', d.id));
-                    if (!im.exists()) { Swal.fire('Görüntü yok', '', 'info'); return; }
-                    Swal.fire({ imageUrl: im.data().data, imageAlt: 'Ekran görüntüsü', width: 'min(92vw, 520px)', confirmButtonText: 'Kapat' });
-                } catch (e) { Swal.fire('Hata', 'Görüntü yüklenemedi.', 'error'); }
-            });
-            div.querySelector('[data-act="done"]').addEventListener('click', async () => {
-                await updateDoc(doc(db, 'bugReports', d.id), { status: done ? 'new' : 'done' });
-                loadBugs();
-            });
-            div.querySelector('[data-act="del"]').addEventListener('click', async () => {
-                const r = await Swal.fire({ title: 'Silinsin mi?', text: 'Bu bildirim ve görüntüsü silinecek.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç' });
-                if (!r.isConfirmed) return;
-                try { await deleteDoc(doc(db, 'bugReportImages', d.id)); } catch (e) {}
-                await deleteDoc(doc(db, 'bugReports', d.id));
-                loadBugs();
-            });
+            div.onclick = () => openBugThread(d.id);
             box.appendChild(div);
         });
     } catch (e) {
         console.warn(e);
-        box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Bildirimler yüklenemedi. Firestore kurallarında "bugReports" için admin okuma izni gerekebilir.</div>';
+        box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Yüklenemedi. Firestore kurallarında "qaPosts" için okuma izni gerekebilir.</div>';
+    }
+};
+
+window.openBugThread = async function (id) {
+    const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    try {
+        const pd = await getDoc(doc(db, 'qaPosts', id));
+        if (!pd.exists()) { Swal.fire('Bulunamadı', '', 'info'); return loadBugs(); }
+        const p = pd.data();
+        let priv = {};
+        try { const pv = await getDoc(doc(db, 'qaPrivate', id)); if (pv.exists()) priv = pv.data(); } catch (e) {}
+        const rs = await getDocs(query(collection(db, 'qaPosts', id, 'replies'), orderBy('createdAtIso', 'asc'), limit(100)));
+        const replies = rs.docs.map(d => ({ id: d.id, ...d.data() }));
+        const dev = /iPhone|iPad/.test(priv.device || '') ? 'iPhone/iPad' : /Android/.test(priv.device || '') ? 'Android' : /Windows|Macintosh|Linux/.test(priv.device || '') ? 'Bilgisayar' : 'Bilinmiyor';
+        const done = p.status === 'done';
+        window.__bugReplyDel = async (rid) => {
+            await deleteDoc(doc(db, 'qaPosts', id, 'replies', rid));
+            await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(-1) });
+            Swal.close(); openBugThread(id);
+        };
+        window.__bugPostDel = async () => {
+            const ok = await Swal.fire({ title: 'Soru silinsin mi?', text: 'Soru, tüm yanıtlar ve görüntü silinecek.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç' });
+            if (!ok.isConfirmed) return;
+            for (const r of replies) { try { await deleteDoc(doc(db, 'qaPosts', id, 'replies', r.id)); } catch (e) {} }
+            try { await deleteDoc(doc(db, 'qaImages', id)); } catch (e) {}
+            try { await deleteDoc(doc(db, 'qaPrivate', id)); } catch (e) {}
+            await deleteDoc(doc(db, 'qaPosts', id));
+            loadBugs();
+        };
+        window.__bugShowImg = async () => {
+            const im = await getDoc(doc(db, 'qaImages', id));
+            if (im.exists()) Swal.fire({ imageUrl: im.data().data, width: 'min(92vw, 520px)', confirmButtonText: 'Kapat' });
+        };
+        const repliesHtml = replies.map(r => `<div style="text-align:left; padding:8px 10px; margin-bottom:6px; border-radius:10px; background:${r.isAdmin ? 'rgba(245,158,11,.12)' : 'rgba(128,128,128,.12)'};">
+            <div style="font-size:11px; opacity:.7; display:flex; justify-content:space-between;"><span>${r.isAdmin ? '🛡 Yönetici' : '👤 ' + esc(r.name)} · ${esc(new Date(r.createdAtIso).toLocaleString('tr-TR'))}</span><a href="#" onclick="event.preventDefault(); __bugReplyDel('${r.id}')" style="color:#ef4444; text-decoration:none;">sil</a></div>
+            <div style="font-size:13px; white-space:pre-wrap;">${esc(r.text)}</div></div>`).join('');
+        const res = await Swal.fire({
+            title: esc(p.name || 'İsimsiz'),
+            width: 'min(94vw, 560px)',
+            showCancelButton: true, showDenyButton: true,
+            confirmButtonText: 'Yönetici olarak yanıtla', denyButtonText: done ? 'Yeniden aç' : '✅ Çözüldü', cancelButtonText: 'Kapat',
+            html: `<div style="text-align:left; font-size:12px; opacity:.7; margin-bottom:6px;">${esc(priv.email || '')} · ${esc(dev)} · sürüm ${esc(p.appVersion || '?')} · ${esc(new Date(p.createdAtIso).toLocaleString('tr-TR'))}</div>
+                <div style="text-align:left; font-size:14px; white-space:pre-wrap; padding:10px; border-radius:10px; background:rgba(128,128,128,.12); margin-bottom:8px;">${esc(p.text)}</div>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    ${p.hasImage ? '<button type="button" class="btn btn-info" style="padding:5px 10px; font-size:12px;" onclick="__bugShowImg()">🖼 Görüntü</button>' : ''}
+                    <button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="Swal.close(); __bugPostDel()">🗑 Soruyu sil</button>
+                </div>
+                <div style="max-height:34vh; overflow-y:auto;">${repliesHtml || '<div style="opacity:.6; font-size:13px;">Henüz yanıt yok.</div>'}</div>
+                <textarea id="bugAdminReply" rows="3" maxlength="500" placeholder="Yanıtınız…" style="width:100%; margin-top:8px; padding:8px; border-radius:8px; border:1px solid rgba(128,128,128,.4); background:transparent; color:inherit; box-sizing:border-box; font-family:inherit;"></textarea>`,
+            preConfirm: () => {
+                const t = (document.getElementById('bugAdminReply').value || '').trim();
+                if (!t) { Swal.showValidationMessage('Yanıt yazın.'); return false; }
+                return t;
+            }
+        });
+        if (res.isConfirmed) {
+            const nowIso = new Date().toISOString();
+            await setDoc(doc(db, 'qaPosts', id, 'replies', Date.now().toString(36) + Math.random().toString(36).slice(2, 7)), { uid: 'admin', name: 'Yönetici', text: res.value, isAdmin: true, createdAtIso: nowIso });
+            await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(1), lastIso: nowIso, adminAnswered: true });
+            loadBugs();
+        } else if (res.isDenied) {
+            await updateDoc(doc(db, 'qaPosts', id), { status: done ? 'new' : 'done' });
+            loadBugs();
+        }
+    } catch (e) {
+        console.warn(e);
+        Swal.fire('Hata', 'İşlem yapılamadı: Firestore izinlerini kontrol edin.', 'error');
     }
 };
 
