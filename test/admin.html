@@ -1002,6 +1002,12 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div id="statAvgUserScore">0.00</div>
                     <div><i class="fas fa-star"></i> Ort. Kullanıcı Puanı</div>
                 </div>
+                <!-- Sınav doluluğu (kitap / ders / sınav) -->
+                <div class="stats-card" id="statCoverageCard" style="cursor: pointer;" onclick="showExamCoverage()">
+                    <div id="statCoverage">–</div>
+                    <div><i class="fas fa-clipboard-check"></i> Sınav Doluluğu</div>
+                    <div id="statCoverageSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
+                </div>
                 <!-- Duyurular -->
                 <div class="stats-card" id="statAnnouncementsCard" style="cursor: pointer;">
                     <div id="statAnnouncements">0</div>
@@ -3433,6 +3439,22 @@ function timeAgo(date) {
 
     // ===== YEDEKTEN GERİ YÜKLE =====
     
+    window.showExamCoverage = function () {
+        const rows = window.__examCoverage || [];
+        if (!rows.length) { Swal.fire({ icon: 'info', title: 'Veri yok', text: 'Önce ana sayfanın yüklenmesini bekleyin.', confirmButtonColor: '#f59e0b' }); return; }
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const html = rows.map(r => {
+            const pct = r.lessons ? Math.round(r.covered / r.lessons * 100) : 0;
+            const col = pct >= 100 ? '#10b981' : (pct >= 50 ? '#f59e0b' : '#ef4444');
+            const miss = r.empty.length ? `<div style="font-size:11px; opacity:.75; margin-top:4px;">Sınavı olmayan dersler: ${esc(r.empty.slice(0, 12).join(', '))}${r.empty.length > 12 ? ' … +' + (r.empty.length - 12) : ''}</div>` : '';
+            return `<div style="text-align:left; padding:10px 0; border-bottom:1px solid rgba(148,163,184,.25);">
+                <div style="display:flex; justify-content:space-between; gap:8px; font-weight:700; font-size:14px;"><span>${esc(r.name)}</span><span style="color:${col};">%${pct}</span></div>
+                <div style="height:7px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden; margin:6px 0;"><div style="height:100%; width:${pct}%; background:${col};"></div></div>
+                <div style="font-size:12px; opacity:.85;">${r.covered} / ${r.lessons} derste sınav var · ${r.exams} sınav · ${r.questions} soru</div>${miss}</div>`;
+        }).join('');
+        Swal.fire({ title: '📋 Sınav Doluluğu', html: `<div style="max-height:60vh; overflow:auto;">${html}</div>`, width: 'min(94vw, 480px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
+    };
+
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
         const lessons = await getDocs(collection(db, 'lessons'));
@@ -3445,6 +3467,36 @@ function timeAgo(date) {
         document.getElementById('statExams').innerHTML = exams.size;
         document.getElementById('statUsers').innerHTML = usersSnap.size;
         updateAnnouncementStat();
+
+        // ===== SINAV DOLULUĞU (ek okuma yok: mevcut kitap/ders/sınav sonuçlarından hesaplanır) =====
+        try {
+            const bookRows = books.docs.map(d => ({ id: d.id, name: d.data().name || d.id, lessons: 0, covered: 0, exams: 0, questions: 0, empty: [] }));
+            const byId = Object.fromEntries(bookRows.map(r => [r.id, r]));
+            const examsByLesson = {};
+            exams.docs.forEach(d => {
+                const e = d.data();
+                const q = (e.questions || []).length;
+                if (!examsByLesson[e.lessonId]) examsByLesson[e.lessonId] = { n: 0, q: 0 };
+                examsByLesson[e.lessonId].n++;
+                examsByLesson[e.lessonId].q += q;
+                const r = byId[e.bookId];
+                if (r) { r.exams++; r.questions += q; }
+            });
+            lessons.docs.forEach(d => {
+                const l = d.data();
+                const r = byId[l.bookId];
+                if (!r) return;
+                r.lessons++;
+                const info = examsByLesson[d.id];
+                if (info && info.q > 0) r.covered++;
+                else r.empty.push(l.name || l.title || d.id);
+            });
+            window.__examCoverage = bookRows.sort((a, b) => a.name.localeCompare(b.name, 'tr', { numeric: true }));
+            const totL = bookRows.reduce((t, r) => t + r.lessons, 0);
+            const totC = bookRows.reduce((t, r) => t + r.covered, 0);
+            document.getElementById('statCoverage').textContent = totL ? ('%' + Math.round(totC / totL * 100)) : '–';
+            document.getElementById('statCoverageSub').textContent = totC + ' / ' + totL + ' derste sınav var';
+        } catch (e) { console.error('Sınav doluluğu hesaplanamadı', e); }
 
         // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
         let sandikToplam = 0;
