@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v67">
+    <meta name="app-build" content="saadetyolu-shell-v68">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.5 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -9699,10 +9699,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     <div style="font-size:14px; line-height:1.45; white-space:pre-wrap;">${esc(r.text)}</div>
                     ${r.hasImage ? (mine ? `<button type="button" class="qaRImg" data-rid="${esc(r.id)}" style="margin-top:8px; padding:6px 10px; border-radius:10px; border:1px solid rgba(245,158,11,.5); background:transparent; color:#f59e0b; font-weight:700; cursor:pointer; font-size:12px;">🖼 Eki göster</button>` : `<div style="margin-top:6px; font-size:11px; color:${c.sub};">🖼 Ekran görüntüsü ekli</div>`) : ''}</div>`;
             });
-            if (mine) html += `<button type="button" id="qaRPick" style="width:100%; margin-top:8px; padding:9px; border-radius:12px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü ekle (isteğe bağlı)</button>
+            const closed = p.status === 'done';
+            if (closed) html += `<div style="margin-top:10px; padding:12px; border-radius:12px; border:1px solid rgba(16,185,129,.5); background:rgba(16,185,129,.08); color:#10b981; font-weight:700; text-align:center; font-size:13px;">✅ Bu konu çözüldü olarak işaretlendi. Yeni yanıt yazılamaz. Başka bir sorunuz varsa yeni bir soru açabilirsiniz.</div>`;
+            if (mine && !closed) html += `<button type="button" id="qaRPick" style="width:100%; margin-top:8px; padding:9px; border-radius:12px; border:1px dashed rgba(245,158,11,.7); background:rgba(245,158,11,.08); color:#fbbf24; font-weight:700; cursor:pointer;">📷 Ekran görüntüsü ekle (isteğe bağlı)</button>
                 <input type="file" id="qaRFile" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none;">
                 <img id="qaRPrev" style="display:none; width:100%; max-height:170px; object-fit:contain; margin-top:8px; border-radius:8px; background:#000;">`;
-            html += `<textarea id="qaReplyText" maxlength="500" rows="3" placeholder="Yanıtınızı yazın…" style="width:100%; box-sizing:border-box; margin-top:6px; padding:10px; border-radius:12px; border:1px solid ${c.line}; background:${c.input}; color:${c.text}; font-family:inherit; font-size:14px; resize:none;"></textarea>
+            if (!closed) html += `<textarea id="qaReplyText" maxlength="500" rows="3" placeholder="Yanıtınızı yazın…" style="width:100%; box-sizing:border-box; margin-top:6px; padding:10px; border-radius:12px; border:1px solid ${c.line}; background:${c.input}; color:${c.text}; font-family:inherit; font-size:14px; resize:none;"></textarea>
                 <button type="button" id="qaSend" style="width:100%; margin-top:8px; padding:11px; border:none; border-radius:12px; background:#f59e0b; color:#1a1a2e; font-weight:800; cursor:pointer;">Yanıtla</button>`;
             body.innerHTML = html;
             document.getElementById('qaImg')?.addEventListener('click', async () => {
@@ -9731,7 +9733,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     else { replyImg = null; rPrev.style.display = 'none'; rPick.textContent = '📷 Ekran görüntüsü ekle (isteğe bağlı)'; showWarning(pr.err); }
                 };
             }
-            document.getElementById('qaSend').onclick = async () => {
+            const __sendBtn = document.getElementById('qaSend');
+            if (__sendBtn) __sendBtn.onclick = async () => {
                 const ta = document.getElementById('qaReplyText');
                 const text = (ta.value || '').trim();
                 if (text.length < 2) { showWarning('Lütfen yanıtınızı yazın.'); return; }
