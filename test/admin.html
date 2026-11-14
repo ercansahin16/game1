@@ -1008,6 +1008,12 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div><i class="fas fa-clipboard-check"></i> Doluluk</div>
                     <div id="statCoverageSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">Kitap · Ders · Sınav</div>
                 </div>
+                <!-- Kilit açılma oranı -->
+                <div class="stats-card" id="statLocksCard" style="cursor: pointer;" onclick="showLockStats()">
+                    <div id="statLocks">–</div>
+                    <div><i class="fas fa-lock-open"></i> Kilit Açılma Oranı</div>
+                    <div id="statLocksSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
+                </div>
                 <!-- Duyurular -->
                 <div class="stats-card" id="statAnnouncementsCard" style="cursor: pointer;">
                     <div id="statAnnouncements">0</div>
@@ -3461,6 +3467,27 @@ function timeAgo(date) {
         Swal.fire({ title: '📋 Doluluk Durumu', html: `<div style="max-height:60vh; overflow:auto;">${html}</div>`, width: 'min(94vw, 480px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
     };
 
+    window.showLockStats = function () {
+        const st = window.__lockStats;
+        if (!st || !st.seq.length) { Swal.fire({ icon: 'info', title: 'Veri yok', text: 'Önce ana sayfanın yüklenmesini bekleyin.', confirmButtonColor: '#f59e0b' }); return; }
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        let lastBook = '';
+        const rows = st.seq.map((l, i) => {
+            const n = st.unlockCount[i], p = st.users ? Math.round(n / st.users * 100) : 0;
+            const col = p >= 66 ? '#10b981' : (p >= 33 ? '#f59e0b' : '#ef4444');
+            const head = l.bookName !== lastBook ? `<div style="text-align:left; font-weight:800; font-size:13px; color:#f59e0b; margin:12px 0 4px;">${esc(l.bookName)}</div>` : '';
+            lastBook = l.bookName;
+            const noWords = !(st.wc[l.id] > 0);
+            const warn = noWords ? ' <span style="color:#ef4444; font-size:11px;" title="Bu derste kelime yok; sonraki dersi kilitli tutar">⚠ kelime yok</span>' : '';
+            return head + `<div style="display:flex; align-items:center; gap:8px; font-size:12px; padding:3px 0;"><span style="flex:1; text-align:left; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(l.name)}${warn}</span><span style="width:70px; height:6px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden; flex-shrink:0;"><span style="display:block; height:100%; width:${p}%; background:${col};"></span></span><span style="width:78px; text-align:right; flex-shrink:0; color:${col}; font-weight:700;">%${p} <span style="opacity:.6; font-weight:400;">(${n})</span></span></div>`;
+        }).join('');
+        Swal.fire({
+            title: '🔓 Kilit Açılma Oranı',
+            html: `<div style="text-align:left; font-size:12px; opacity:.8; margin-bottom:6px;">Her dersin kilidini açan kullanıcı oranı (toplam ${st.users} kullanıcı). Bir ders, bir önceki dersin kelimelerinin %80'i görülünce açılır. Ortalama kullanıcı derslerin <b>%${st.avg}</b>'ini açmış.</div><div style="max-height:58vh; overflow:auto;">${rows}</div>`,
+            width: 'min(94vw, 520px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' }
+        });
+    };
+
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
         const lessons = await getDocs(collection(db, 'lessons'));
@@ -3508,6 +3535,44 @@ function timeAgo(date) {
             document.getElementById('statCoverage').innerHTML =
                 '📚 ' + pc(sum.books) + ' &nbsp;🎓 ' + pc(sum.lessons) + ' &nbsp;📝 ' + pc(sum.exams);
         } catch (e) { console.error('Sınav doluluğu hesaplanamadı', e); }
+
+        // ===== KİLİT AÇILMA ORANI (ek okuma yok: kitap/ders/kelime/kullanıcı sonuçlarından hesaplanır) =====
+        try {
+            const trc = (x, y) => (x || '').localeCompare(y || '', 'tr');
+            const bks = books.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ((a.order || 0) - (b.order || 0)) || trc(a.name, b.name));
+            const lsAll = lessons.docs.map(d => ({ id: d.id, ...d.data() }));
+            const seq = [];
+            bks.forEach(bk => {
+                lsAll.filter(l => l.bookId === bk.id).sort((a, b) => ((a.order || 0) - (b.order || 0)) || trc(a.name, b.name))
+                    .forEach(l => seq.push({ id: l.id, name: l.name, bookName: bk.name }));
+            });
+            const wc = {};
+            words.docs.forEach(w => { const l = w.data().lessonId; if (l) wc[l] = (wc[l] || 0) + 1; });
+            const unlockCount = new Array(seq.length).fill(0);
+            let ratioSum = 0;
+            const uDocs = usersSnap.docs;
+            uDocs.forEach(ud => {
+                const viewed = ud.data().viewedWordsByLesson || {};
+                let open = 0;
+                for (let i = 0; i < seq.length; i++) {
+                    let ok = i === 0;
+                    if (i > 0) {
+                        const prev = seq[i - 1].id;
+                        const tot = wc[prev] || 0;
+                        const pct = tot ? Math.min(100, Math.round(((viewed[prev] || []).length / tot) * 100)) : 0;
+                        ok = pct >= 80;
+                    }
+                    if (!ok) break; // kilitler sırayla açılır
+                    unlockCount[i]++; open++;
+                }
+                ratioSum += seq.length ? open / seq.length : 0;
+            });
+            const avg = uDocs.length && seq.length ? Math.round(ratioSum / uDocs.length * 100) : 0;
+            window.__lockStats = { seq, wc, unlockCount, users: uDocs.length, avg };
+            document.getElementById('statLocks').textContent = seq.length ? ('%' + avg) : '–';
+            const maxOpen = unlockCount.filter(n => n > 0).length;
+            document.getElementById('statLocksSub').textContent = 'Ort. kullanıcı · en ileri: ' + maxOpen + '/' + seq.length + '. ders';
+        } catch (e) { console.error('Kilit oranı hesaplanamadı', e); }
 
         // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
         let sandikToplam = 0;
