@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v66">
+    <meta name="app-build" content="saadetyolu-shell-v67">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.4 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -6528,10 +6528,11 @@ bookSelect.onchange = async () => {
             return numA - numB;
         });
         
-        closeLoadingAlert();
+        // Yükleme penceresi ve "yükleniyor" yazısı, ders listesi (kilit durumlarıyla) tamamen hazır olana kadar kalır
         
         // ===== DERS LİSTESİ KONTROLÜ =====
         if (lessons.length === 0) {
+            closeLoadingAlert();
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
             words = [];
@@ -6552,15 +6553,18 @@ bookSelect.onchange = async () => {
             return;
         }
         
-        lessonSelect.disabled = false;
-        lessonSelect.innerHTML = '<option value="">-- Ders Seçin --</option>';
-        
         // ✅ DÜZELTME: kilit durumları artık PARALEL (Promise.all) çekiliyor,
         // böylece dersler tek tek gecikmeli değil hepsi birden listeleniyor.
         const unlockedStatuses = await Promise.all(
             lessons.map(lesson => isLessonWordsUnlocked(lesson.id))
         );
         
+        // Liste önce hafızada hazırlanır, sonra TEK seferde yerleştirilir: oyuncu hiçbir an "boş liste" görmez
+        const frag = document.createDocumentFragment();
+        const first = document.createElement('option');
+        first.value = '';
+        first.textContent = '-- Ders Seçin --';
+        frag.appendChild(first);
         lessons.forEach((lesson, i) => {
             const unlocked = unlockedStatuses[i];
             const option = document.createElement('option');
@@ -6571,8 +6575,12 @@ bookSelect.onchange = async () => {
                 option.disabled = true;
                 option.dataset.locked = 'true';
             }
-            lessonSelect.appendChild(option);
+            frag.appendChild(option);
         });
+        lessonSelect.innerHTML = '';
+        lessonSelect.appendChild(frag);
+        lessonSelect.disabled = false;
+        closeLoadingAlert();
         
         // ✅ DÜZELTME: kitap seçilip dersler başarıyla yüklendiğinde ortadaki
         // mesaj hiç güncellenmiyordu, eski "ÖNCE KİTAP SEÇİNİZ." yazısı donuk
