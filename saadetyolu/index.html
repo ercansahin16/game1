@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v65">
+    <meta name="app-build" content="saadetyolu-shell-v66">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.2 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.3 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -13027,6 +13027,17 @@ async function selectQuizOption(selectedDiv, word, correctIndex) {
         await saveSandikToFirestore();
         updateSandikDisplay();
     }
+    
+    // ===== PROFİLDEKİ "YARIŞMA %" SAYACI (atomik; okuma-yazma yarışı yok) =====
+    try {
+        if (currentUser) {
+            updateDoc(doc(db, 'users', currentUser.uid), {
+                'karmaStats.total': increment(1),
+                'karmaStats.correct': increment(isCorrect ? 1 : 0),
+                'karmaStats.wrong': increment(isCorrect ? 0 : 1)
+            }).catch(() => {});
+        }
+    } catch (e) {}
     
     // ===== PUAN VE BAŞARI YÜZDESİNİ GÖSTER (2 HANELİ) =====
     document.getElementById('karmaScore').textContent = quizScore.toFixed(2);
