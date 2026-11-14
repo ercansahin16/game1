@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v53">
+    <meta name="app-build" content="test-v54">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.13.2 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -11187,7 +11187,7 @@ window.__badgeDetail = function(i) {
         html: `<div style="text-align:left; font-size:13px; line-height:1.5;">
             <div style="font-size:12px; margin-bottom:8px;">${stars} <b>${tierName}</b> <span style="opacity:.55;">· ${b.cat}</span></div>
             <div style="margin-bottom:10px; opacity:.85;">${b.desc || ''}</div>
-            <div style="font-weight:700; margin-bottom:5px; color:${b.ok ? '#10b981' : '#f59e0b'};">${b.ok ? '✓ Bu rozeti kazandın!' : 'İlerleme: ' + b.cur + ' / ' + b.goal + ' ' + b.unit}</div>
+            <div style="font-weight:700; margin-bottom:5px; color:${b.ok ? '#10b981' : '#f59e0b'};">${b.ok ? (window.__badgeSelf === false ? '✓ Bu rozeti kazandı' : '✓ Bu rozeti kazandın!') : 'İlerleme: ' + b.cur + ' / ' + b.goal + ' ' + b.unit}</div>
             <div style="height:9px; border-radius:99px; background:rgba(148,163,184,0.3); overflow:hidden;"><div style="height:100%; width:${b.ok ? 100 : pct}%; background:${b.ok ? '#10b981' : '#f59e0b'}; border-radius:99px;"></div></div>
             ${b.ok ? '' : `<div style="font-size:11px; opacity:.6; margin-top:6px;">%${pct} tamamlandı</div>`}
         </div>`,
@@ -11197,13 +11197,13 @@ window.__badgeDetail = function(i) {
 };
 
 window.__profileHelp = function(kind) {
-    const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">✓ kazandın</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
+    const row = (e, t, d, ok) => `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 4px; border-bottom:1px solid rgba(148,163,184,0.25); text-align:left;"><div style="font-size:20px; width:28px; text-align:center; flex-shrink:0; ${ok === false ? 'filter:grayscale(1); opacity:.5;' : ''}">${e}</div><div style="flex:1; min-width:0;"><div style="font-weight:700; font-size:13px;">${t}${ok === true ? ' <span style="color:#10b981;">' + (window.__badgeSelf === false ? '✓ kazandı' : '✓ kazandın') + '</span>' : ''}</div><div style="font-size:12px; opacity:.75; margin-top:2px; line-height:1.4;">${d}</div></div></div>`;
     let title = '', body = '';
     if (kind === 'badges') {
         title = '🎖️ Rozetler Nasıl Kazanılır?';
         const info = window.__badgeInfo || [];
         let lastCat = '';
-        body = '<div style="font-size:11px; opacity:.7; text-align:left; margin-bottom:6px;">⭐ Kolay · ⭐⭐ Orta · ⭐⭐⭐ Zor · ⭐⭐⭐⭐ Efsane — bazı rozetler yıllar alır. Rozete basarak ilerlemeni görebilirsin.</div>' +
+        body = '<div style="font-size:11px; opacity:.7; text-align:left; margin-bottom:6px;">⭐ Kolay · ⭐⭐ Orta · ⭐⭐⭐ Zor · ⭐⭐⭐⭐ Efsane — bazı rozetler yıllar alır. Rozete basarak ilerlemeyi görebilirsin.</div>' +
             info.map(b => {
                 const head = b.cat !== lastCat ? `<div style="text-align:left; font-weight:800; font-size:12px; color:#f59e0b; margin:12px 0 2px;">${b.cat}</div>` : '';
                 lastCat = b.cat;
@@ -11311,6 +11311,7 @@ window.__profileExtrasHTML = async function(u, uid, st) {
     // Son rozet: diğer tüm rozetlerin toplanması
     const allOthers = badges.every(b => b.ok);
     badges.push(B('🌟 Final', '🌟', 'Hepsini Topladın', 4, badges.filter(b => b.ok).length, badges.length, 'rozet', 'Diğer tüm rozetleri kazanınca verilir. Sahip olması mümkün en nadir rozet.'));
+    window.__badgeSelf = !!(currentUser && uid === currentUser.uid);
     window.__badgeInfo = badges.map(b => ({ cat: b.cat, e: b.e, name: b.name, tier: b.tier, ok: b.ok, cur: b.cur, goal: b.goal, unit: b.unit, desc: b.desc }));
     const earned = badges.filter(b => b.ok).length;
     const tierC = { 1: '16,185,129', 2: '59,130,246', 3: '168,85,247', 4: '245,158,11' };
