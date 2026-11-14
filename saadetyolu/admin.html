@@ -2874,6 +2874,7 @@ window.loadBugs = async function () {
                 <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">
                     <span style="background:rgba(245,158,11,.15); color:#f59e0b; font-weight:800; padding:2px 9px; border-radius:10px;">💬 ${p.replyCount || 0} yanıt</span>
                     ${p.hasImage ? '<span>🖼 görüntü var</span>' : ''}
+                    ${p.fb ? (p.fb.v === 'up' ? '<span title="Kursiyer son yanıtı beğendi">👍</span>' : '<span title="Kursiyer son yanıtı beğenmedi">👎</span>') : ''}
                     ${done ? '<span style="color:#10b981;">✅ çözüldü</span>' : (waiting ? '<span style="color:#ef4444; font-weight:700;">● yanıt bekliyor</span>' : '<span style="color:#60a5fa;">yanıtlandı</span>')}
                 </div>`;
             div.onclick = () => openBugThread(d.id);
@@ -2934,6 +2935,7 @@ window.openBugThread = async function (id) {
                     ${p.hasImage ? '<button type="button" class="btn btn-info" style="padding:5px 10px; font-size:12px;" onclick="__bugShowImg()">🖼 Görüntü</button>' : ''}
                     <button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="Swal.close(); __bugPostDel()">🗑 Soruyu sil</button>
                 </div>
+                ${p.fb ? `<div style="text-align:left; font-size:13px; margin-bottom:6px;">Kursiyerin tepkisi: <span style="font-size:20px;">${p.fb.v === 'up' ? '👍' : '👎'}</span> <span style="opacity:.6; font-size:11px;">${esc(new Date(p.fb.at).toLocaleString('tr-TR'))}${(replies.length && replies[replies.length-1].id !== p.fb.rid) ? ' · eski yanıta' : ''}</span></div>` : ''}
                 <div style="max-height:34vh; overflow-y:auto;">${repliesHtml || '<div style="opacity:.6; font-size:13px;">Henüz yanıt yok.</div>'}</div>
                 <textarea id="bugAdminReply" rows="3" maxlength="500" placeholder="Yanıtınız…" style="width:100%; margin-top:8px; padding:8px; border-radius:8px; border:1px solid rgba(128,128,128,.4); background:transparent; color:inherit; box-sizing:border-box; font-family:inherit;"></textarea>`,
             preConfirm: () => {
