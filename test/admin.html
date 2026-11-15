@@ -1017,6 +1017,12 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div><i class="fas fa-lock-open"></i> Kilit Açılma Oranı</div>
                     <div id="statLocksSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
                 </div>
+                <!-- Sınav açılma oranı -->
+                <div class="stats-card" id="statExamOpenCard" style="cursor: pointer;" onclick="showExamOpenStats()">
+                    <div id="statExamOpen">–</div>
+                    <div><i class="fas fa-pen"></i> Sınav Açılma Oranı</div>
+                    <div id="statExamOpenSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
+                </div>
                 <!-- Duyurular -->
                 <div class="stats-card" id="statAnnouncementsCard" style="cursor: pointer;">
                     <div id="statAnnouncements">0</div>
@@ -3595,6 +3601,27 @@ function timeAgo(date) {
         });
     };
 
+    window.showExamOpenStats = function () {
+        const st = window.__examOpenStats;
+        if (!st || !st.rows.length) { Swal.fire({ icon: 'info', title: 'Veri yok', text: 'Önce ana sayfanın yüklenmesini bekleyin.', confirmButtonColor: '#f59e0b' }); return; }
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        let lastBook = '';
+        const rows = st.rows.map(r => {
+            const p = st.users ? Math.round(r.open / st.users * 100) : 0;
+            const pp = st.users ? Math.round(r.passed / st.users * 100) : 0;
+            const col = p >= 66 ? '#10b981' : (p >= 33 ? '#f59e0b' : '#ef4444');
+            const head = r.bookName !== lastBook ? `<div style="text-align:left; font-weight:800; font-size:13px; color:#f59e0b; margin:12px 0 4px;">${esc(r.bookName)}</div>` : '';
+            lastBook = r.bookName;
+            const warn = r.hasExam ? '' : ' <span style="color:#ef4444; font-size:11px;">⚠ sınav yok</span>';
+            return head + `<div style="display:flex; align-items:center; gap:8px; font-size:12px; padding:3px 0;"><span style="flex:1; text-align:left; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(r.name)}${warn}</span><span style="width:60px; height:6px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden; flex-shrink:0;"><span style="display:block; height:100%; width:${p}%; background:${col};"></span></span><span style="width:70px; text-align:right; flex-shrink:0; color:${col}; font-weight:700;">%${p} <span style="opacity:.6; font-weight:400;">(${r.open})</span></span><span style="width:70px; text-align:right; flex-shrink:0; color:#3b82f6; font-weight:700;">%${pp} <span style="opacity:.6; font-weight:400;">(${r.passed})</span></span></div>`;
+        }).join('');
+        Swal.fire({
+            title: '📝 Sınav Açılma Oranı',
+            html: `<div style="text-align:left; font-size:12px; opacity:.8; margin-bottom:6px;">Toplam ${st.users} kullanıcı. Bir dersin sınavı, o dersin kelimelerinin %80'i görülünce açılır. <b style="color:#10b981;">Yeşil/turuncu/kırmızı</b>: sınavı açan oranı, <b style="color:#3b82f6;">mavi</b>: sınavı %80+ ile geçen oranı.</div><div style="max-height:55vh; overflow:auto;">${rows}</div>`,
+            width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' }
+        });
+    };
+
     async function updateStats() {
         const books = await getDocs(collection(db, 'books'));
         const lessons = await getDocs(collection(db, 'lessons'));
@@ -3680,6 +3707,39 @@ function timeAgo(date) {
             const maxOpen = unlockCount.filter(n => n > 0).length;
             document.getElementById('statLocksSub').textContent = 'Ort. kullanıcı · en ileri: ' + maxOpen + '/' + seq.length + '. ders';
         } catch (e) { console.error('Kilit oranı hesaplanamadı', e); }
+
+        // ===== SINAV AÇILMA ORANI (ek okuma yok) =====
+        try {
+            const trc = (x, y) => (x || '').localeCompare(y || '', 'tr');
+            const bks = books.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ((a.order || 0) - (b.order || 0)) || trc(a.name, b.name));
+            const lsAll = lessons.docs.map(d => ({ id: d.id, ...d.data() }));
+            const wc = {}; words.docs.forEach(w => { const l = w.data().lessonId; if (l) wc[l] = (wc[l] || 0) + 1; });
+            const hasExam = {}; exams.docs.forEach(d => { const e = d.data(); if ((e.questions || []).length > 0) hasExam[e.lessonId] = true; });
+            const rows = [];
+            bks.forEach(bk => {
+                lsAll.filter(l => l.bookId === bk.id).sort((a, b) => ((a.order || 0) - (b.order || 0)) || trc(a.name, b.name))
+                    .forEach(l => rows.push({ id: l.id, name: l.name, bookName: bk.name, hasExam: !!hasExam[l.id], open: 0, passed: 0 }));
+            });
+            const uDocs2 = usersSnap.docs;
+            let ratioSum = 0, ratioN = 0;
+            const examRows = rows.filter(r => r.hasExam).length;
+            uDocs2.forEach(ud => {
+                const u = ud.data(), viewed = u.viewedWordsByLesson || {}, passedIds = u.passedLessonIds || [];
+                let opened = 0;
+                rows.forEach(r => {
+                    const tot = wc[r.id] || 0;
+                    const pct = tot ? Math.round(((viewed[r.id] || []).length / tot) * 100) : 0;
+                    if (pct >= 80) { r.open++; if (r.hasExam) opened++; }
+                    if (passedIds.includes(r.id)) r.passed++;
+                });
+                if (examRows) { ratioSum += opened / examRows; ratioN++; }
+            });
+            const avg2 = ratioN ? Math.round(ratioSum / ratioN * 100) : 0;
+            window.__examOpenStats = { rows, users: uDocs2.length, avg: avg2 };
+            document.getElementById('statExamOpen').textContent = rows.length ? ('%' + avg2) : '–';
+            const maxO = rows.filter(r => r.open > 0).length;
+            document.getElementById('statExamOpenSub').textContent = 'Ort. kullanıcı · en ileri: ' + maxO + '/' + rows.length + '. ders';
+        } catch (e) { console.error('Sınav açılma oranı hesaplanamadı', e); }
 
         // ===== TOPLAM SANDIK + ORTALAMA PUAN (tüm kullanıcılar) =====
         let sandikToplam = 0;
