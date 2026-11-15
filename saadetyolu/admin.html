@@ -1578,21 +1578,85 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     // surveyResponses/{anketId}__{uid} : kursiyerin cevabı (ad/e-posta SAKLANMAZ → anonim)
     const svEsc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const SV_TYPES = { stars: '⭐ Yıldız (1-5)', choice: '🔘 Tek seçenek', text: '✍️ Serbest yazı' };
-    const svTemplate = () => ({
-        id: null, named: false, title: 'SaadetYolu Memnuniyet Anketi', intro: 'Görüşleriniz uygulamayı geliştirmemize yardımcı olur. Katkınız için teşekkür ederiz.',
-        questions: [
-            { type: 'stars', text: 'SaadetYolu\'ndan genel olarak ne kadar memnunsunuz?' },
-            { type: 'stars', text: 'Kelime öğrenme bölümünü nasıl buluyorsunuz?' },
-            { type: 'stars', text: 'Sınavlar öğrenmenize yardımcı oluyor mu?' },
-            { type: 'stars', text: 'Puan, sıralama ve rozet sistemi sizi motive ediyor mu?' },
-            { type: 'stars', text: 'Uygulamanın kullanım kolaylığını nasıl buluyorsunuz?' },
-            { type: 'choice', text: 'Uygulamayı ne sıklıkla kullanıyorsunuz?', options: ['Her gün', 'Haftada birkaç kez', 'Haftada bir', 'Ara sıra'] },
-            { type: 'choice', text: 'Uygulamayı en çok hangi cihazda kullanıyorsunuz?', options: ['Telefon', 'Bilgisayar', 'Tablet'] },
-            { type: 'choice', text: 'Uygulamayı arkadaşlarınıza tavsiye eder misiniz?', options: ['Kesinlikle', 'Muhtemelen', 'Emin değilim', 'Hayır'] },
-            { type: 'text', text: 'En çok sevdiğiniz özellik nedir?' },
-            { type: 'text', text: 'Eksik gördüğünüz veya geliştirilmesini istediğiniz şeyler nelerdir?' }
-        ]
-    });
+    const SV_TEMPLATES = [
+        { key: '📊 Memnuniyet Anketi', desc: 'Genel memnuniyet, anonim', t: {
+            named: false, title: 'SaadetYolu Memnuniyet Anketi', intro: 'Görüşleriniz uygulamayı geliştirmemize yardımcı olur. Katkınız için teşekkür ederiz.',
+            questions: [
+                { type: 'stars', text: 'SaadetYolu\'ndan genel olarak ne kadar memnunsunuz?' },
+                { type: 'stars', text: 'Kelime öğrenme bölümünü nasıl buluyorsunuz?' },
+                { type: 'stars', text: 'Sınavlar öğrenmenize yardımcı oluyor mu?' },
+                { type: 'stars', text: 'Puan, sıralama ve rozet sistemi sizi motive ediyor mu?' },
+                { type: 'stars', text: 'Uygulamanın kullanım kolaylığını nasıl buluyorsunuz?' },
+                { type: 'choice', text: 'Uygulamayı ne sıklıkla kullanıyorsunuz?', options: ['Her gün', 'Haftada birkaç kez', 'Haftada bir', 'Ara sıra'] },
+                { type: 'choice', text: 'Uygulamayı en çok hangi cihazda kullanıyorsunuz?', options: ['Telefon', 'Bilgisayar', 'Tablet'] },
+                { type: 'choice', text: 'Uygulamayı arkadaşlarınıza tavsiye eder misiniz?', options: ['Kesinlikle', 'Muhtemelen', 'Emin değilim', 'Hayır'] },
+                { type: 'text', text: 'En çok sevdiğiniz özellik nedir?' },
+                { type: 'text', text: 'Eksik gördüğünüz veya geliştirilmesini istediğiniz şeyler nelerdir?' }
+            ] } },
+        { key: '🛠 Geliştirme Anketi', desc: 'Sorun ve istekler, İSİMLİ', t: {
+            named: true, title: 'SaadetYolu Geliştirme Anketi', intro: 'SaadetYolu\'nu sizin ihtiyaçlarınıza göre geliştirmek istiyoruz. Yaşadığınız zorlukları ve isteklerinizi yazarsanız size dönüş yapıp sorunlarınızı çözebiliriz. Katkınız için teşekkür ederiz.',
+            questions: [
+                { type: 'choice', text: 'Uygulamayı kullanırken hiç zorlandığınız veya takıldığınız yer oldu mu?', options: ['Hayır, sorunsuz kullanıyorum', 'Evet, ara sıra', 'Evet, sık sık'] },
+                { type: 'text', text: 'Yaşadığınız sorun neydi? Nerede, ne zaman oldu?' },
+                { type: 'choice', text: 'Uygulama hangi cihazda en sorunsuz çalışıyor?', options: ['Telefon (iPhone)', 'Telefon (Android)', 'Bilgisayar', 'Tablet'] },
+                { type: 'stars', text: 'Kelime öğrenme bölümü sizin için ne kadar kullanışlı?' },
+                { type: 'stars', text: 'Sınavlar öğrenmenizi ne kadar destekliyor?' },
+                { type: 'stars', text: 'Puan ve sıralama sistemi sizi ne kadar motive ediyor?' },
+                { type: 'text', text: 'Uygulamaya hangi özelliğin eklenmesini isterdiniz? (Örn: yeni bir ders türü, hatırlatma, sesli okunuş, çalışma takibi)' },
+                { type: 'text', text: 'Şu an en çok neyi değiştirmemizi isterdiniz?' },
+                { type: 'choice', text: 'Size ulaşıp sorununuzu çözmemiz için uygun olur mu?', options: ['Evet, benimle iletişime geçebilirsiniz', 'Hayır, gerek yok'] },
+                { type: 'text', text: 'Eklemek istediğiniz başka bir şey var mı?' }
+            ] } },
+        { key: '📚 Ders ve İçerik Değerlendirme', desc: 'Dersler, kelimeler, sınavlar, anonim', t: {
+            named: false, title: 'Ders ve İçerik Değerlendirme Anketi', intro: 'Ders, kelime ve sınav içeriklerini daha iyi hâle getirmek için görüşlerinize ihtiyacımız var.',
+            questions: [
+                { type: 'stars', text: 'Derslerin sırası ve düzeni sizin için ne kadar uygun?' },
+                { type: 'choice', text: 'Bir dersteki kelime sayısı size nasıl geliyor?', options: ['Çok az', 'Uygun', 'Biraz fazla', 'Çok fazla'] },
+                { type: 'choice', text: 'Ders ilerledikçe zorluk seviyesi nasıl?', options: ['Çok kolay', 'Uygun', 'Zor', 'Çok zor'] },
+                { type: 'text', text: 'Hangi ders veya konularda zorlandınız?' },
+                { type: 'stars', text: 'Sınav soruları öğrendiklerinizi ölçmek için ne kadar uygun?' },
+                { type: 'choice', text: 'Sınavların sayısı size nasıl geliyor?', options: ['Az', 'Uygun', 'Fazla'] },
+                { type: 'choice', text: 'Kelimeyi öğrenmek için en çok hangisini kullanıyorsunuz?', options: ['Kelime Öğren', 'Tekrar Modu', 'Sınavlar', 'Sandıktaki Kelimeler'] },
+                { type: 'text', text: 'Eklenmesini istediğiniz kitap, ders veya konu var mı?' }
+            ] } },
+        { key: '⏰ Kullanım Alışkanlıkları', desc: 'Ne zaman, ne kadar çalışıyorlar, anonim', t: {
+            named: false, title: 'Çalışma Alışkanlıkları Anketi', intro: 'Nasıl çalıştığınızı anlamak, uygulamayı size uygun hâle getirmemize yardımcı olur.',
+            questions: [
+                { type: 'choice', text: 'Genellikle günün hangi saatinde çalışıyorsunuz?', options: ['Sabah', 'Öğle', 'Akşam', 'Gece', 'Düzenli bir saatim yok'] },
+                { type: 'choice', text: 'Bir seferde ne kadar süre çalışıyorsunuz?', options: ['5 dakikadan az', '5-15 dakika', '15-30 dakika', '30 dakikadan fazla'] },
+                { type: 'choice', text: 'Haftada kaç gün çalışıyorsunuz?', options: ['1-2 gün', '3-4 gün', '5-6 gün', 'Her gün'] },
+                { type: 'choice', text: 'Sizi çalışmaktan en çok ne alıkoyuyor?', options: ['Zaman bulamamak', 'Motivasyon eksikliği', 'Derslerin zor gelmesi', 'Teknik sorunlar', 'Unutmak'] },
+                { type: 'stars', text: 'Günlük seri (ateş) sistemi sizi ne kadar motive ediyor?' },
+                { type: 'choice', text: 'Size hatırlatma bildirimi gönderilmesini ister misiniz?', options: ['Evet', 'Hayır', 'Fark etmez'] },
+                { type: 'text', text: 'Düzenli çalışmanızı kolaylaştıracak bir şey önerir misiniz?' }
+            ] } },
+        { key: '🐞 Teknik Sorun Anketi', desc: 'Cihaz ve hata bilgisi, İSİMLİ', t: {
+            named: true, title: 'Teknik Sorun Anketi', intro: 'Uygulamada yaşadığınız teknik sorunları tespit edip çözebilmemiz için aşağıdaki soruları yanıtlamanızı rica ederiz.',
+            questions: [
+                { type: 'choice', text: 'Kullandığınız cihaz hangisi?', options: ['iPhone', 'Android telefon', 'Bilgisayar', 'Tablet'] },
+                { type: 'choice', text: 'Hangi tarayıcıyı kullanıyorsunuz?', options: ['Safari', 'Chrome', 'Edge', 'Samsung Internet', 'Uygulama (ana ekrana ekledim)', 'Bilmiyorum'] },
+                { type: 'choice', text: 'Yaşadığınız sorun hangisine daha yakın?', options: ['Giriş yapamıyorum', 'Sayfa yavaş açılıyor', 'Puanım veya ilerlemem doğru görünmüyor', 'Sınav veya kelime ekranında hata', 'Görüntü bozuk veya taşıyor', 'Sorun yaşamıyorum'] },
+                { type: 'text', text: 'Sorunu kısaca anlatır mısınız? (Ne yapıyordunuz, ne oldu?)' },
+                { type: 'choice', text: 'Sorun ne sıklıkla oluyor?', options: ['Bir kez oldu', 'Ara sıra', 'Her seferinde'] },
+                { type: 'choice', text: 'Size ulaşıp yardımcı olmamız için uygun olur mu?', options: ['Evet', 'Hayır'] }
+            ] } },
+        { key: '🗳 Yeni Özellik Oylaması', desc: 'Hangi özellik eklensin, anonim', t: {
+            named: false, title: 'Yeni Özellik Oylaması', intro: 'Sıradaki geliştirmeleri sizin tercihlerinize göre belirleyeceğiz.',
+            questions: [
+                { type: 'choice', text: 'Sıradaki güncellemede hangisini görmek isterdiniz?', options: ['Kelimelerin sesli okunuşu', 'Günlük hatırlatma bildirimi', 'Arkadaşlarla yarışma', 'Çalışma istatistikleri ve grafikler', 'Yeni kitap ve dersler', 'Not alma özelliği'] },
+                { type: 'choice', text: 'İkinci tercihiniz hangisi?', options: ['Kelimelerin sesli okunuşu', 'Günlük hatırlatma bildirimi', 'Arkadaşlarla yarışma', 'Çalışma istatistikleri ve grafikler', 'Yeni kitap ve dersler', 'Not alma özelliği'] },
+                { type: 'stars', text: 'Uygulamayı genel olarak ne kadar kullanışlı buluyorsunuz?' },
+                { type: 'text', text: 'Listede olmayan bir fikriniz var mı?' }
+            ] } }
+    ];
+    window.svLoadTemplate = () => {
+        Swal.fire({
+            title: 'Hazır şablon seçin',
+            html: '<div style="display:flex; flex-direction:column; gap:8px; text-align:left;">' + SV_TEMPLATES.map((x, i) => `<button type="button" class="swal2-confirm swal2-styled" style="margin:0; background:#f59e0b; color:#111; text-align:left; padding:10px 14px;" onclick="Swal.close(); svApplyTemplate(${i});"><b>${x.key}</b><br><span style="font-size:12px; font-weight:400;">${x.desc} · ${x.t.questions.length} soru</span></button>`).join('') + '</div>',
+            showConfirmButton: false, showCloseButton: true
+        });
+    };
+    window.svApplyTemplate = (i) => { const t = JSON.parse(JSON.stringify(SV_TEMPLATES[i].t)); const d = window.__svDraft || (window.__svDraft = { id: null }); d.title = t.title; d.intro = t.intro; d.questions = t.questions; d.named = !!t.named; svRenderEditor(); };
     window.__svDraft = null;
 
     window.loadSurveys = async function () {
@@ -1666,7 +1730,6 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         });
     }
     window.svNew = () => { window.__svDraft = { id: null, named: false, title: '', intro: '', questions: [{ type: 'stars', text: '' }] }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
-    window.svLoadTemplate = () => { const t = svTemplate(); const d = window.__svDraft; d.title = t.title; d.intro = t.intro; d.questions = t.questions; d.named = !!t.named; svRenderEditor(); };
     window.svAddQ = () => { window.__svDraft.questions.push({ type: 'stars', text: '' }); svRenderEditor(); };
     window.svDelQ = (i) => { window.__svDraft.questions.splice(i, 1); svRenderEditor(); };
     window.svMove = (i, dir) => { const q = window.__svDraft.questions, j = i + dir; if (j < 0 || j >= q.length) return; [q[i], q[j]] = [q[j], q[i]]; svRenderEditor(); };
