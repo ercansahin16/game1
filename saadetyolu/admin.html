@@ -1516,6 +1516,28 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     };
     const db = getFirestore(app);
 
+    // ===== HESAP SİL: kullanıcının profil/ilerleme kaydı silinir (yedeği deletedUsers'ta kalır) =====
+    window.adminDeleteUser = async function (uid) {
+        const u = (window.adminUsersCache || []).find(x => x.id === uid);
+        if (!u) return;
+        const r = await Swal.fire({
+            title: 'Hesap silinsin mi?',
+            html: '<div style="text-align:left; font-size:14px;"><b id="dlName"></b><br><span id="dlMail" style="opacity:.8;"></span><br><br>📖 ' + (u.totalWordsViewed || 0) + ' kelime · 📝 ' + (u.examsCompleted?.length || 0) + ' sınav<br><br>Profil, puan ve ilerleme kaydı silinecek. Bu işlem arayüzden geri alınamaz.</div>',
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Evet, sil', cancelButtonText: 'Vazgeç',
+            didOpen: (pp) => { pp.querySelector('#dlName').textContent = u.name || 'İsimsiz'; pp.querySelector('#dlMail').textContent = u.email || ''; }
+        });
+        if (!r.isConfirmed) return;
+        try {
+            const { id, ...data } = u;
+            await setDoc(doc(db, 'deletedUsers', uid), { ...data, deletedAt: new Date().toISOString() });
+            await deleteDoc(doc(db, 'users', uid));
+            window.adminUsersCache = (window.adminUsersCache || []).filter(x => x.id !== uid);
+            try { await loadUsers(); } catch (e) { applyUserSearchAndSort(); }
+            Swal.fire({ icon: 'success', title: 'Hesap silindi', timer: 1600, showConfirmButton: false });
+        } catch (e) { Swal.fire({ icon: 'error', title: 'Silinemedi', text: e.message }); }
+    };
+
     // ===== HESAP TAŞIMA: kursiyerin yeni e-postası + varsayılan şifre; eski hesabın verisi yeni hesaba aktarılır =====
     const MOVE_DEFAULT_PASS = '123456'; // Firebase en az 6 karakter ister
     window.adminMoveAccount = async function (oldUid) {
@@ -3118,6 +3140,9 @@ function renderUsersList(users) {
                 </button>
                 <button class="btn ${user.unlockAll ? 'btn-success' : 'btn-secondary'} icon-btn" onclick="event.stopPropagation(); toggleUnlockAll('${user.id}')" title="${user.unlockAll ? 'Tüm kilitler AÇIK (kapatmak için tıkla)' : 'Tüm kilitleri aç (tam yetki ver)'}">
                     <i class="fas ${user.unlockAll ? 'fa-lock-open' : 'fa-lock'}"></i>
+                </button>
+                <button class="btn btn-danger icon-btn" onclick="event.stopPropagation(); adminDeleteUser('${user.id}')" title="Hesabı sil">
+                    <i class="fas fa-trash"></i>
                 </button>
                 <button class="btn btn-secondary icon-btn" onclick="event.stopPropagation(); adminMoveAccount('${user.id}')" title="E-posta adresini değiştir (hesabı taşı)">
                     <i class="fas fa-envelope"></i>
