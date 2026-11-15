@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v59">
+    <meta name="app-build" content="test-v60">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -573,6 +573,7 @@ select option {
 .custom-select-item:hover { background: rgba(255,255,255,0.08); }
 .custom-select-item.kb { background: rgba(245,158,11,0.28); }
 .custom-select-item.active { background: rgba(245,158,11,0.15); color: #f59e0b; font-weight: 700; }
+.cs-meta { margin-left: 8px; font-size: 11px; font-style: italic; font-weight: 400; color: #9ca3af; opacity: .85; }
 .custom-select-item.placeholder { opacity: 0.6; font-style: italic; }
 .custom-select-item.locked { opacity: 0.45; cursor: not-allowed; }
 .custom-select-item.locked:hover { background: transparent; }
@@ -4462,7 +4463,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.14.2 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.15.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -5993,6 +5994,18 @@ async function __ccWordCount() {
     } catch (e) { return 0; }
 }
 
+// Ders başına kelime sayısı (önbellekteki 'words:all' kullanılır, ek okuma yapmaz)
+async function __lessonWordCounts() {
+    try {
+        const snap = await __CC.docsOf('words:all', () => getDocs(collection(db, 'words')));
+        const m = {};
+        snap.docs.forEach(d => { const l = d.data().lessonId; if (l) m[l] = (m[l] || 0) + 1; });
+        return m;
+    } catch (e) { return {}; }
+}
+const __lessonLabel = (lesson, unlocked, counts) => unlocked ? lesson.name : `${lesson.name} 🔒`;
+const __lessonMeta = (lesson, unlocked, counts) => (unlocked && counts[lesson.id]) ? `${counts[lesson.id]} kelime` : '';
+
 let globalLessonSequenceCache = null;   // [{id, name, bookId, bookName}, ...] -> tüm kitaplardaki dersler, sıralı
 
 // Tüm kitap + dersleri tek bir global sıraya diz (kitap adına, sonra ders numarasına göre)
@@ -6567,12 +6580,14 @@ bookSelect.onchange = async () => {
         first.value = '';
         first.textContent = '-- Ders Seçin --';
         frag.appendChild(first);
+        const __wc = await __lessonWordCounts();
         lessons.forEach((lesson, i) => {
             const unlocked = unlockedStatuses[i];
             const option = document.createElement('option');
             option.value = lesson.id;
             // 🔒 kilit simgesi artık metnin SONUNDA (sağ tarafta)
-            option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
+            option.textContent = __lessonLabel(lesson, unlocked, __wc);
+            option.dataset.meta = __lessonMeta(lesson, unlocked, __wc);
             if (!unlocked) {
                 option.disabled = true;
                 option.dataset.locked = 'true';
@@ -6869,13 +6884,15 @@ async function refreshLessonSelectLockState() {
     if (!lessonSelect || !Array.isArray(lessons) || lessons.length === 0) return;
     const currentValue = lessonSelect.value;
     const unlockedStatuses = await Promise.all(lessons.map(lesson => isLessonWordsUnlocked(lesson.id)));
+    const __wc2 = await __lessonWordCounts();
     Array.from(lessonSelect.options).forEach(option => {
         if (!option.value) return; // "-- Ders Seçin --" gibi placeholder
         const idx = lessons.findIndex(l => l.id === option.value);
         if (idx === -1) return;
         const unlocked = unlockedStatuses[idx];
         const lesson = lessons[idx];
-        option.textContent = unlocked ? lesson.name : `${lesson.name} 🔒`;
+        option.textContent = __lessonLabel(lesson, unlocked, __wc2);
+        option.dataset.meta = __lessonMeta(lesson, unlocked, __wc2);
         option.disabled = !unlocked;
         if (unlocked) {
             delete option.dataset.locked;
@@ -15172,9 +15189,8 @@ if (examBookSelect) {
                         option.dataset.locked = 'true';
                     } else {
                         // Aktif derslerde tam bilgi (sınav/soru sayısı) aynı şekilde kalıyor.
-                        label = qCount > 0
-                            ? `${ders.name} (${count} sınav, ${qCount} soru)`
-                            : `${ders.name} (${count} sınav)`;
+                        label = ders.name;
+                        option.dataset.meta = qCount > 0 ? `${count} sınav, ${qCount} soru` : `${count} sınav`;
                     }
                     option.textContent = label;
                     examLessonSelect.appendChild(option);
@@ -16767,8 +16783,13 @@ function enhanceSelectAsDropdown(selectEl) {
         const opt = selectEl.options[selectEl.selectedIndex];
         return opt ? opt.textContent : '';
     }
+    function __fillWithMeta(el, text, meta) {
+        el.textContent = text;
+        if (meta) { const m = document.createElement('span'); m.className = 'cs-meta'; m.textContent = meta; el.appendChild(m); }
+    }
     function syncLabel() {
-        labelEl.textContent = currentLabel();
+        const __o = selectEl.options[selectEl.selectedIndex];
+        __fillWithMeta(labelEl, currentLabel(), __o && __o.dataset ? __o.dataset.meta : '');
         trigger.disabled = selectEl.disabled;
         trigger.classList.toggle('disabled', selectEl.disabled);
     }
@@ -16791,7 +16812,7 @@ function enhanceSelectAsDropdown(selectEl) {
             if (opt.disabled) item.classList.add('locked');
             if (opt.value === selectEl.value) item.classList.add('active');
             if (!opt.value) item.classList.add('placeholder');
-            item.textContent = opt.textContent;
+            __fillWithMeta(item, opt.textContent, opt.dataset.meta);
             // Masaüstünde fare basılınca odak/blur yüzünden tıklamanın kaybolmasını önle
             item.addEventListener('mousedown', (e) => e.preventDefault());
             item.addEventListener('click', (e) => {
