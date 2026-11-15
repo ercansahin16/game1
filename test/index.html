@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v63">
+    <meta name="app-build" content="test-v64">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4459,6 +4459,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
         <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
         <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
         <div class="sidebar-item" id="installAppBtn"><i class="fas fa-download"></i> Uygulamayı İndir</div>
+        <div class="sidebar-item" id="goSurvey" style="display:none;"><i class="fas fa-poll"></i> Memnuniyet Anketi <span style="width:9px; height:9px; border-radius:50%; background:#ef4444; display:inline-block; margin-left:6px;"></span></div>
         <div class="sidebar-item" id="checkUpdateBtn"><i class="fas fa-rotate"></i> Yeni Sürümü Denetle</div>
         <div class="sidebar-footer" style="margin-top: auto; padding: 14px 0 10px; flex-shrink: 0;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
@@ -4466,7 +4467,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.15.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.16.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -7153,6 +7154,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
         try {
             __currentUserRef = userRef;
             const annSnap = await __getAnnDoc();
+            try { if (window.__initSurvey) window.__initSurvey(annSnap.exists() ? (annSnap.data().survey || null) : null); } catch (e) {}
             if (!annSnap.exists()) return;
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
@@ -9549,6 +9551,92 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Lütfen internetinizi kontrol edip tekrar deneyin.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
             }
         };
+    })();
+
+    // ===== 📝 MEMNUNİYET ANKETİ =====
+    // Yayındaki anket appConfig/announcement.survey içinde gelir (ek okuma yok).
+    // Cevap: surveyResponses/{anketId}__{uid} (ad/e-posta kaydedilmez → anonim). Her kursiyer bir kez cevaplar.
+    (function () {
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        let cur = null;
+        const key = (k) => 'sy_sv_' + k + '_' + (currentUser ? currentUser.uid : '') + '_' + (cur ? cur.id : '');
+        const isDone = () => { try { return localStorage.getItem(key('done')) === '1'; } catch (e) { return false; } };
+        const markDone = () => { try { localStorage.setItem(key('done'), '1'); } catch (e) {} };
+        const item = () => document.getElementById('goSurvey');
+
+        window.__initSurvey = async function (sv) {
+            const el = item(); if (!el) return;
+            cur = (sv && sv.id && Array.isArray(sv.questions) && sv.questions.length) ? sv : null;
+            if (!cur || !currentUser) { el.style.display = 'none'; return; }
+            if (isDone()) { el.style.display = 'none'; return; }
+            try {
+                const snap = await getDoc(doc(db, 'surveyResponses', cur.id + '__' + currentUser.uid));
+                if (snap.exists()) { markDone(); el.style.display = 'none'; return; }
+            } catch (e) {}
+            el.style.display = 'flex';
+            let seen = false;
+            try { seen = localStorage.getItem(key('toast')) === '1'; localStorage.setItem(key('toast'), '1'); } catch (e) {}
+            if (!seen) setTimeout(() => { try { showTinyWarning('📝 Yeni bir anket var! Menüden katılabilirsiniz.', 'fa-poll'); } catch (e) {} }, 2500);
+        };
+
+        function openSurvey() {
+            if (!cur || !currentUser) return;
+            const sv = cur;
+            const qHtml = sv.questions.map((q, i) => {
+                let body = '';
+                if (q.type === 'stars') {
+                    body = `<div class="svStars" data-q="${esc(q.id)}" style="display:flex; gap:6px; justify-content:center; font-size:30px;">${[1,2,3,4,5].map(v => `<span class="svStar" data-v="${v}" style="cursor:pointer; opacity:.3; user-select:none;">⭐</span>`).join('')}</div>`;
+                } else if (q.type === 'choice') {
+                    body = `<div class="svChoices" data-q="${esc(q.id)}" style="display:flex; flex-direction:column; gap:6px;">${(q.options || []).map(o => `<div class="svOpt" data-v="${esc(o)}" style="padding:9px 12px; border-radius:10px; border:1px solid rgba(148,163,184,.5); cursor:pointer; font-size:14px;">${esc(o)}</div>`).join('')}</div>`;
+                } else {
+                    body = `<textarea class="svText" data-q="${esc(q.id)}" maxlength="500" rows="3" placeholder="İsterseniz yazın…" style="width:100%; box-sizing:border-box; padding:9px; border-radius:10px; border:1px solid rgba(148,163,184,.5); background:transparent; color:inherit; font-family:inherit;"></textarea>`;
+                }
+                return `<div style="text-align:left; margin-bottom:16px;"><div style="font-weight:700; font-size:14px; margin-bottom:8px;">${i + 1}. ${esc(q.text)}${q.type === 'text' ? ' <span style="font-weight:400; opacity:.6; font-size:12px;">(isteğe bağlı)</span>' : ''}</div>${body}</div>`;
+            }).join('');
+            Swal.fire({
+                title: esc(sv.title || 'Memnuniyet Anketi'),
+                html: `<div style="text-align:left; font-size:13px; opacity:.8; margin-bottom:14px;">${esc(sv.intro || '')}</div><div style="max-height:56vh; overflow-y:auto; padding:0 4px;">${qHtml}</div>`,
+                width: 'min(94vw, 480px)', showCancelButton: true, confirmButtonText: 'Gönder', cancelButtonText: 'Sonra', confirmButtonColor: '#f59e0b',
+                allowOutsideClick: false, customClass: { popup: 'compact-swal themed-swal' },
+                didOpen: (pp) => {
+                    pp.querySelectorAll('.svStars').forEach(g => {
+                        const paint = (v) => g.querySelectorAll('.svStar').forEach(s => { s.style.opacity = (+s.dataset.v <= v) ? '1' : '.3'; });
+                        g.querySelectorAll('.svStar').forEach(s => s.addEventListener('click', () => { g.dataset.v = s.dataset.v; paint(+s.dataset.v); }));
+                    });
+                    pp.querySelectorAll('.svChoices').forEach(g => g.querySelectorAll('.svOpt').forEach(o => o.addEventListener('click', () => {
+                        g.dataset.v = o.dataset.v;
+                        g.querySelectorAll('.svOpt').forEach(x => { const on = x === o; x.style.borderColor = on ? '#f59e0b' : 'rgba(148,163,184,.5)'; x.style.background = on ? 'rgba(245,158,11,.18)' : 'transparent'; x.style.fontWeight = on ? '700' : '400'; });
+                    })));
+                },
+                preConfirm: () => {
+                    const pp = Swal.getPopup(), ans = {};
+                    for (const q of sv.questions) {
+                        let v = '';
+                        if (q.type === 'stars') v = (pp.querySelector(`.svStars[data-q="${q.id}"]`) || {}).dataset?.v || '';
+                        else if (q.type === 'choice') v = (pp.querySelector(`.svChoices[data-q="${q.id}"]`) || {}).dataset?.v || '';
+                        else v = ((pp.querySelector(`.svText[data-q="${q.id}"]`) || {}).value || '').trim();
+                        if (!v && q.type !== 'text') { Swal.showValidationMessage('Lütfen tüm sorulara cevap verin (' + (sv.questions.indexOf(q) + 1) + '. soru eksik).'); return false; }
+                        if (v) ans[q.id] = q.type === 'stars' ? +v : v;
+                    }
+                    return ans;
+                }
+            }).then(async (r) => {
+                if (!r.isConfirmed) return;
+                try {
+                    await setDoc(doc(db, 'surveyResponses', sv.id + '__' + currentUser.uid), {
+                        sid: sv.id, uid: currentUser.uid, answers: r.value, createdAtIso: new Date().toISOString(),
+                        appVersion: document.querySelector('meta[name="app-build"]')?.content || ''
+                    });
+                    markDone();
+                    const el = item(); if (el) el.style.display = 'none';
+                    Swal.fire({ icon: 'success', title: 'Teşekkür ederiz 🤲', text: 'Görüşleriniz bizim için çok değerli.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
+                } catch (e) {
+                    Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Lütfen internetinizi kontrol edip tekrar deneyin.', confirmButtonColor: '#f59e0b' });
+                }
+            });
+        }
+        const btn = item();
+        if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} if (!currentUser) { showWarning('Önce giriş yapın.'); return; } openSurvey(); };
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====

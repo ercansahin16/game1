@@ -925,6 +925,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
     <div class="sidebar-item" id="goBugs"><i class="fas fa-bug"></i> Hata Bildirimleri</div>
+    <div class="sidebar-item" id="goSurveys"><i class="fas fa-poll"></i> Anketler</div>
     <div class="sidebar-item" id="goLoginHelp"><i class="fas fa-life-ring"></i> Giriş Yardımı</div>
     <div class="sidebar-item" id="goDataManagement"><i class="fas fa-database"></i> Veri Yönetimi</div>
     <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
@@ -1203,6 +1204,18 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadBugs()"><i class="fas fa-sync"></i> Yenile</button>
             </div>
             <div id="bugsList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
+        </div>
+
+        <div id="surveysSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-poll"></i> Anketler</h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="svNew()"><i class="fas fa-plus"></i> Yeni Anket</button>
+                    <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadSurveys()"><i class="fas fa-sync"></i> Yenile</button>
+                </div>
+            </div>
+            <div id="surveyEditor" class="hidden" style="border:1px solid rgba(245,158,11,.5); border-radius:12px; padding:12px; margin-bottom:14px;"></div>
+            <div id="surveyList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
         </div>
 
         <div id="loginHelpSection" class="section-card hidden">
@@ -1525,6 +1538,192 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     };
     const db = getFirestore(app);
 
+
+    // ===== ANKETLER (memnuniyet anketi; tekrar tekrar kullanılabilir) =====
+    // surveys/{id}                : anket tanımı (başlık, sorular, durum: draft | active | closed)
+    // appConfig/announcement.survey : YAYINDAKİ anketin kopyası (kursiyer uygulaması ek okuma yapmadan görür)
+    // surveyResponses/{anketId}__{uid} : kursiyerin cevabı (ad/e-posta SAKLANMAZ → anonim)
+    const svEsc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const SV_TYPES = { stars: '⭐ Yıldız (1-5)', choice: '🔘 Tek seçenek', text: '✍️ Serbest yazı' };
+    const svTemplate = () => ({
+        id: null, title: 'SaadetYolu Memnuniyet Anketi', intro: 'Görüşleriniz uygulamayı geliştirmemize yardımcı olur. Anket anonimdir; adınız kaydedilmez. Katkınız için teşekkür ederiz.',
+        questions: [
+            { type: 'stars', text: 'SaadetYolu\'ndan genel olarak ne kadar memnunsunuz?' },
+            { type: 'stars', text: 'Kelime öğrenme bölümünü nasıl buluyorsunuz?' },
+            { type: 'stars', text: 'Sınavlar öğrenmenize yardımcı oluyor mu?' },
+            { type: 'stars', text: 'Puan, sıralama ve rozet sistemi sizi motive ediyor mu?' },
+            { type: 'stars', text: 'Uygulamanın kullanım kolaylığını nasıl buluyorsunuz?' },
+            { type: 'choice', text: 'Uygulamayı ne sıklıkla kullanıyorsunuz?', options: ['Her gün', 'Haftada birkaç kez', 'Haftada bir', 'Ara sıra'] },
+            { type: 'choice', text: 'Uygulamayı en çok hangi cihazda kullanıyorsunuz?', options: ['Telefon', 'Bilgisayar', 'Tablet'] },
+            { type: 'choice', text: 'Uygulamayı arkadaşlarınıza tavsiye eder misiniz?', options: ['Kesinlikle', 'Muhtemelen', 'Emin değilim', 'Hayır'] },
+            { type: 'text', text: 'En çok sevdiğiniz özellik nedir?' },
+            { type: 'text', text: 'Eksik gördüğünüz veya geliştirilmesini istediğiniz şeyler nelerdir?' }
+        ]
+    });
+    window.__svDraft = null;
+
+    window.loadSurveys = async function () {
+        const box = document.getElementById('surveyList');
+        box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div>';
+        try {
+            const snap = await getDocs(query(collection(db, 'surveys'), orderBy('createdAtIso', 'desc'), limit(30)));
+            window.__surveys = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (!window.__surveys.length) { box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Henüz anket yok. "Yeni Anket" ile başlayın; hazır şablon yüklenebilir.</div>'; return; }
+            box.innerHTML = '';
+            window.__surveys.forEach(sv => {
+                const st = sv.status === 'active' ? '<span style="color:#10b981; font-weight:800;">🟢 Yayında</span>' : (sv.status === 'closed' ? '<span style="opacity:.7;">⚪ Kapalı</span>' : '<span style="color:#f59e0b;">📝 Taslak</span>');
+                const when = sv.createdAtIso ? new Date(sv.createdAtIso).toLocaleDateString('tr-TR') : '';
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;';
+                div.innerHTML = `<div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;"><strong>${svEsc(sv.title)}</strong><span style="font-size:12px;">${st}</span></div>
+                    <div style="font-size:12px; opacity:.7;">${(sv.questions || []).length} soru · oluşturuldu ${svEsc(when)}${sv.publishedAtIso ? ' · yayın ' + svEsc(new Date(sv.publishedAtIso).toLocaleDateString('tr-TR')) : ''}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        ${sv.status === 'active' ? `<button class="btn btn-warning" style="padding:6px 12px; font-size:12px;" onclick="svStop('${sv.id}')"><i class="fas fa-stop"></i> Yayını durdur</button>` : `<button class="btn btn-success" style="padding:6px 12px; font-size:12px;" onclick="svPublish('${sv.id}')"><i class="fas fa-play"></i> Yayınla</button>`}
+                        <button class="btn btn-info" style="padding:6px 12px; font-size:12px;" onclick="svResults('${sv.id}')"><i class="fas fa-chart-bar"></i> Sonuçlar</button>
+                        ${sv.status === 'draft' ? `<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="svEdit('${sv.id}')"><i class="fas fa-pen"></i> Düzenle</button>` : ''}
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="svCopy('${sv.id}')" title="Aynı sorularla yeni bir taslak açar (dönemsel tekrar için)"><i class="fas fa-copy"></i> Yeniden kullan</button>
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="svDelete('${sv.id}')"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                box.appendChild(div);
+            });
+        } catch (e) { box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Anketler yüklenemedi: ' + svEsc(e.message) + '</div>'; }
+    };
+
+    function svRenderEditor() {
+        const d = window.__svDraft, box = document.getElementById('surveyEditor');
+        if (!d) { box.classList.add('hidden'); return; }
+        box.classList.remove('hidden');
+        const qs = d.questions.map((q, i) => `<div style="border:1px solid rgba(148,163,184,.35); border-radius:10px; padding:8px; margin-bottom:8px;">
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap;">
+                <b style="font-size:12px;">${i + 1}.</b>
+                <select data-sv="type" data-i="${i}" style="padding:6px; border-radius:8px;">${Object.entries(SV_TYPES).map(([k, v]) => `<option value="${k}" ${q.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+                <span style="flex:1;"></span>
+                <button class="btn btn-secondary" style="padding:4px 9px; font-size:12px;" onclick="svMove(${i},-1)">↑</button>
+                <button class="btn btn-secondary" style="padding:4px 9px; font-size:12px;" onclick="svMove(${i},1)">↓</button>
+                <button class="btn btn-danger" style="padding:4px 9px; font-size:12px;" onclick="svDelQ(${i})"><i class="fas fa-times"></i></button>
+            </div>
+            <input data-sv="text" data-i="${i}" value="${svEsc(q.text)}" maxlength="200" placeholder="Soru metni" style="width:100%; box-sizing:border-box; padding:8px; border-radius:8px;">
+            ${q.type === 'choice' ? `<textarea data-sv="options" data-i="${i}" rows="3" placeholder="Her satıra bir seçenek yazın" style="width:100%; box-sizing:border-box; padding:8px; border-radius:8px; margin-top:6px;">${svEsc((q.options || []).join('\n'))}</textarea>` : ''}
+        </div>`).join('');
+        box.innerHTML = `<h3 style="margin:0 0 8px;">${d.id ? 'Anketi düzenle' : 'Yeni anket'}</h3>
+            <input data-sv="title" value="${svEsc(d.title)}" maxlength="100" placeholder="Anket başlığı" style="width:100%; box-sizing:border-box; padding:9px; border-radius:8px; margin-bottom:6px; font-weight:700;">
+            <textarea data-sv="intro" rows="2" maxlength="400" placeholder="Kursiyere gösterilecek kısa açıklama" style="width:100%; box-sizing:border-box; padding:8px; border-radius:8px; margin-bottom:10px;">${svEsc(d.intro)}</textarea>
+            ${qs}
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-info" style="padding:7px 14px; font-size:13px;" onclick="svAddQ()"><i class="fas fa-plus"></i> Soru ekle</button>
+                <button class="btn btn-secondary" style="padding:7px 14px; font-size:13px;" onclick="svLoadTemplate()"><i class="fas fa-magic"></i> Hazır şablonu yükle</button>
+                <span style="flex:1;"></span>
+                <button class="btn btn-danger" style="padding:7px 14px; font-size:13px;" onclick="svCancel()">Vazgeç</button>
+                <button class="btn btn-success" style="padding:7px 14px; font-size:13px;" onclick="svSave()"><i class="fas fa-save"></i> Taslak olarak kaydet</button>
+            </div>`;
+        box.querySelectorAll('[data-sv]').forEach(el => {
+            const f = el.dataset.sv, i = el.dataset.i;
+            const h = () => {
+                if (f === 'title') d.title = el.value;
+                else if (f === 'intro') d.intro = el.value;
+                else if (f === 'text') d.questions[i].text = el.value;
+                else if (f === 'options') d.questions[i].options = el.value.split('\n');
+                else if (f === 'type') { d.questions[i].type = el.value; if (el.value === 'choice' && !(d.questions[i].options || []).length) d.questions[i].options = ['Evet', 'Hayır']; svRenderEditor(); }
+            };
+            el.addEventListener(f === 'type' ? 'change' : 'input', h);
+        });
+    }
+    window.svNew = () => { window.__svDraft = { id: null, title: '', intro: '', questions: [{ type: 'stars', text: '' }] }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svLoadTemplate = () => { const t = svTemplate(); const d = window.__svDraft; d.title = t.title; d.intro = t.intro; d.questions = t.questions; svRenderEditor(); };
+    window.svAddQ = () => { window.__svDraft.questions.push({ type: 'stars', text: '' }); svRenderEditor(); };
+    window.svDelQ = (i) => { window.__svDraft.questions.splice(i, 1); svRenderEditor(); };
+    window.svMove = (i, dir) => { const q = window.__svDraft.questions, j = i + dir; if (j < 0 || j >= q.length) return; [q[i], q[j]] = [q[j], q[i]]; svRenderEditor(); };
+    window.svCancel = () => { window.__svDraft = null; svRenderEditor(); };
+    window.svEdit = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svCopy = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id: null, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svSave = async function () {
+        const d = window.__svDraft; if (!d) return;
+        const title = (d.title || '').trim();
+        if (!title) { Swal.fire('Uyarı', 'Anket başlığı yazın.', 'warning'); return; }
+        if (!d.questions.length) { Swal.fire('Uyarı', 'En az bir soru ekleyin.', 'warning'); return; }
+        const qs = [];
+        for (let i = 0; i < d.questions.length; i++) {
+            const q = d.questions[i], text = (q.text || '').trim();
+            if (!text) { Swal.fire('Uyarı', (i + 1) + '. sorunun metni boş.', 'warning'); return; }
+            const o = { id: 'q' + (i + 1), type: q.type, text };
+            if (q.type === 'choice') {
+                const opts = (q.options || []).map(x => x.trim()).filter(Boolean);
+                if (opts.length < 2) { Swal.fire('Uyarı', (i + 1) + '. soru için en az 2 seçenek yazın.', 'warning'); return; }
+                o.options = opts;
+            }
+            qs.push(o);
+        }
+        try {
+            const now = new Date().toISOString();
+            if (d.id) await updateDoc(doc(db, 'surveys', d.id), { title, intro: (d.intro || '').trim(), questions: qs, updatedAtIso: now });
+            else await setDoc(doc(db, 'surveys', 'sv' + Date.now().toString(36)), { title, intro: (d.intro || '').trim(), questions: qs, status: 'draft', createdAtIso: now });
+            window.__svDraft = null; svRenderEditor(); await loadSurveys();
+            Swal.fire({ icon: 'success', title: 'Kaydedildi', text: 'Kursiyerlere göstermek için listeden "Yayınla"ya basın.', confirmButtonColor: '#f59e0b' });
+        } catch (e) { Swal.fire('Kaydedilemedi', e.message, 'error'); }
+    };
+    window.svPublish = async function (id) {
+        const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return;
+        const r = await Swal.fire({ title: 'Anket yayınlansın mı?', text: 'Yayındaki başka anket varsa kapatılır. Kursiyerler menüde "Memnuniyet Anketi" görür.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yayınla', cancelButtonText: 'Vazgeç', confirmButtonColor: '#10b981' });
+        if (!r.isConfirmed) return;
+        try {
+            const now = new Date().toISOString();
+            for (const o of (window.__surveys || [])) if (o.status === 'active' && o.id !== id) await updateDoc(doc(db, 'surveys', o.id), { status: 'closed', closedAtIso: now });
+            await updateDoc(doc(db, 'surveys', id), { status: 'active', publishedAtIso: now });
+            // contentVersion'a DOKUNULMAZ (kursiyerlerin içerik önbelleğini sıfırlamasın)
+            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: { id, title: sv.title, intro: sv.intro || '', questions: sv.questions, publishedAtIso: now } }, { merge: true });
+            await loadSurveys();
+            Swal.fire({ icon: 'success', title: 'Anket yayında', timer: 1800, showConfirmButton: false });
+        } catch (e) { Swal.fire('Yayınlanamadı', e.message, 'error'); }
+    };
+    window.svStop = async function (id) {
+        try {
+            await updateDoc(doc(db, 'surveys', id), { status: 'closed', closedAtIso: new Date().toISOString() });
+            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: null }, { merge: true });
+            await loadSurveys();
+        } catch (e) { Swal.fire('Hata', e.message, 'error'); }
+    };
+    window.svDelete = async function (id) {
+        const sv = (window.__surveys || []).find(x => x.id === id);
+        const r = await Swal.fire({ title: 'Anket silinsin mi?', text: 'Anket ve tüm cevapları silinecek. Geri alınamaz.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444' });
+        if (!r.isConfirmed) return;
+        try {
+            if (sv && sv.status === 'active') await setDoc(doc(db, 'appConfig', 'announcement'), { survey: null }, { merge: true });
+            const rs = await getDocs(query(collection(db, 'surveyResponses'), where('sid', '==', id)));
+            for (const d of rs.docs) await deleteDoc(d.ref);
+            await deleteDoc(doc(db, 'surveys', id));
+            await loadSurveys();
+        } catch (e) { Swal.fire('Silinemedi', e.message, 'error'); }
+    };
+    window.svResults = async function (id) {
+        const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return;
+        Swal.fire({ title: 'Sonuçlar hazırlanıyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const rs = await getDocs(query(collection(db, 'surveyResponses'), where('sid', '==', id)));
+            const resp = rs.docs.map(d => d.data());
+            const n = resp.length;
+            const tu = parseInt((document.getElementById('statUsers') || {}).textContent, 10);
+            const rate = (tu > 0) ? ` · katılım %${Math.round(n / tu * 100)} (${tu} kullanıcıdan)` : '';
+            const blocks = (sv.questions || []).map((q, qi) => {
+                const vals = resp.map(r => (r.answers || {})[q.id]).filter(v => v !== undefined && v !== null && v !== '');
+                let body = '';
+                if (q.type === 'stars') {
+                    const cnt = [0, 0, 0, 0, 0]; let sum = 0;
+                    vals.forEach(v => { const k = Math.min(5, Math.max(1, +v)); cnt[k - 1]++; sum += k; });
+                    const avg = vals.length ? (sum / vals.length).toFixed(2) : '–';
+                    body = `<div style="font-size:20px; font-weight:800; color:#f59e0b;">⭐ ${avg} <span style="font-size:12px; opacity:.7; font-weight:400;">/ 5 · ${vals.length} cevap</span></div>` +
+                        [5, 4, 3, 2, 1].map(k => { const pc = vals.length ? Math.round(cnt[k - 1] / vals.length * 100) : 0; return `<div style="display:flex; align-items:center; gap:6px; font-size:12px;"><span style="width:26px;">${k}★</span><span style="flex:1; height:6px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden;"><span style="display:block; height:100%; width:${pc}%; background:#f59e0b;"></span></span><span style="width:70px; text-align:right;">%${pc} (${cnt[k - 1]})</span></div>`; }).join('');
+                } else if (q.type === 'choice') {
+                    body = (q.options || []).map(o => { const c = vals.filter(v => v === o).length, pc = vals.length ? Math.round(c / vals.length * 100) : 0; return `<div style="font-size:12px; margin-top:3px;"><div style="display:flex; justify-content:space-between;"><span>${svEsc(o)}</span><span>%${pc} (${c})</span></div><div style="height:6px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden;"><div style="height:100%; width:${pc}%; background:#3b82f6;"></div></div></div>`; }).join('');
+                } else {
+                    body = vals.length ? vals.slice(0, 80).map(v => `<div style="font-size:13px; padding:6px 8px; margin-top:4px; border-radius:8px; background:rgba(128,128,128,.12); white-space:pre-wrap; text-align:left;">${svEsc(v)}</div>`).join('') + (vals.length > 80 ? `<div style="font-size:12px; opacity:.7;">… ve ${vals.length - 80} yazı daha</div>` : '') : '<div style="font-size:12px; opacity:.6;">Henüz yazı yok.</div>';
+                }
+                return `<div style="text-align:left; padding:10px 0; border-bottom:1px solid rgba(148,163,184,.3);"><div style="font-weight:700; font-size:13px; margin-bottom:4px;">${qi + 1}. ${svEsc(q.text)}</div>${body}</div>`;
+            }).join('');
+            Swal.fire({ title: svEsc(sv.title), html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;"><b>${n}</b> cevap${rate}</div><div style="max-height:62vh; overflow:auto;">${n ? blocks : '<div style="padding:20px; opacity:.7;">Henüz cevap yok.</div>'}</div>`, width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
+        } catch (e) { Swal.fire('Sonuçlar alınamadı', e.message, 'error'); }
+    };
+
     // ===== HESAP SİL: kullanıcının profil/ilerleme kaydı silinir (yedeği deletedUsers'ta kalır) =====
     window.adminDeleteUser = async function (uid) {
         const u = (window.adminUsersCache || []).find(x => x.id === uid);
@@ -1637,6 +1836,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('goWords').onclick = () => { showSection('words'); loadWordBooks(); closeMenu(); };
     document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
     document.getElementById('goUsers').onclick = () => { showSection('users'); loadUsers(); closeMenu(); };
+    document.getElementById('goSurveys').onclick = () => { showSection('surveys'); loadSurveys(); closeMenu(); };
     document.getElementById('goLoginHelp').onclick = () => { showSection('loginHelp'); loadLoginHelp(); closeMenu(); };
     document.getElementById('goBugs').onclick = () => { showSection('bugs'); loadBugs(); closeMenu(); };
     document.querySelector('.logo').onclick = () => { showSection('dashboard'); closeMenu(); };
@@ -1670,6 +1870,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('usersSection').classList.add('hidden');
     document.getElementById('bugsSection').classList.add('hidden');
     document.getElementById('loginHelpSection').classList.add('hidden');
+    document.getElementById('surveysSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
     document.getElementById('bulkExamUploadSection').classList.add('hidden');
      document.getElementById('dataManagementSection').classList.add('hidden'); // YENİ
@@ -1688,6 +1889,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         document.getElementById('examsSection').classList.remove('hidden');
     } else if (section === 'users') {
         document.getElementById('usersSection').classList.remove('hidden');
+    } else if (section === 'surveys') {
+        document.getElementById('surveysSection').classList.remove('hidden');
     } else if (section === 'loginHelp') {
         document.getElementById('loginHelpSection').classList.remove('hidden');
     } else if (section === 'bugs') {
