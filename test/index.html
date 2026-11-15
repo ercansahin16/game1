@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v64">
+    <meta name="app-build" content="test-v65">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4467,7 +4467,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.16.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.16.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -7282,6 +7282,12 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
     }
 
     function openAnnouncementModal(a) {
+        const ACTS = {
+            survey: { label: '📝 Ankete Git', run: () => window.__openSurvey && window.__openSurvey() },
+            qa: { label: '💬 Soru / Hata Bildir', run: () => document.getElementById('goBugReport')?.click() },
+            help: { label: '❓ Yardım / İletişim', run: () => document.getElementById('goHelp')?.click() }
+        };
+        const ACT = ACTS[a.action] || null;
         const guvenliMesaj = String(a.message || '')
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/\n/g, '<br>');
@@ -7289,9 +7295,10 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             icon: 'info',
             title: a.title || '📢 Duyuru',
             html: `<div style="text-align:left; font-size:15px; line-height:1.6;">${guvenliMesaj}</div>${a.editedAt ? `<div style="text-align:right; font-size:11px; opacity:.6; margin-top:10px; font-style:italic;">✏️ Düzenlendi · ${new Date(a.editedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>` : ''}`,
-            confirmButtonText: 'Tamam',
+            confirmButtonText: ACT ? ACT.label : 'Tamam',
+            showCancelButton: !!ACT, cancelButtonText: 'Kapat',
             showCloseButton: true
-        });
+        }).then((r) => { if (ACT && r.isConfirmed) { try { ACT.run(); } catch (e) {} } });
     }
 
     // ===== 🔥 GÜNLÜK SERİ (STREAK) HESAPLAMA =====
@@ -9635,6 +9642,11 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 }
             });
         }
+        window.__openSurvey = function () {
+            if (!currentUser) { showWarning('Önce giriş yapın.'); return; }
+            if (!cur || isDone()) { showWarning(cur ? '✅ Ankete zaten katıldınız, teşekkürler!' : 'Şu an açık bir anket yok.'); return; }
+            openSurvey();
+        };
         const btn = item();
         if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} if (!currentUser) { showWarning('Önce giriş yapın.'); return; } openSurvey(); };
     })();

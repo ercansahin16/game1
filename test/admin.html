@@ -1127,6 +1127,13 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 <input type="text" id="announcementTitleInput" placeholder="Örn: Yeni Ders Eklendi!" style="margin-bottom: 10px;">
                 <label style="font-size: 12px; opacity: 0.8; display: block; margin-bottom: 6px;">Duyuru Metni</label>
                 <textarea id="announcementMessageInput" rows="4" placeholder="Kullanıcılara göstermek istediğin mesajı yaz..." style="width: 100%; padding: 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.08); color: inherit; font-family: inherit; font-size: 16px; resize: vertical;"></textarea>
+                <label style="font-size: 12px; opacity: 0.8; display: block; margin: 10px 0 6px;">Yönlendirme düğmesi (isteğe bağlı)</label>
+                <select id="announcementActionInput" style="width:100%; padding:10px; border-radius:10px; margin-bottom:4px;">
+                    <option value="">Yok</option>
+                    <option value="survey">📝 Memnuniyet Anketine git</option>
+                    <option value="qa">💬 Soru / Hata Bildir'e git</option>
+                    <option value="help">❓ Yardım / İletişim'e git</option>
+                </select>
                 <button id="publishAnnouncementBtn" class="btn btn-success" style="margin-top: 12px; width: 100%;">
                     <i class="fas fa-paper-plane"></i> Duyuru Yayınla
                 </button>
@@ -2043,13 +2050,15 @@ async function publishAnnouncement() {
 
     const id = String(Date.now());
     const publishedAt = Date.now();
-    const data = { id, title, message, publishedAt };
+    const action = (document.getElementById('announcementActionInput') || {}).value || '';
+    const data = { id, title, message, publishedAt, action: action || null };
 
     try {
         await setDoc(doc(db, 'appConfig', 'announcement'), { ...data, contentVersion: Date.now() }, { merge: true });
         await setDoc(doc(db, 'announcements', id), data);
         titleInput.value = '';
         messageInput.value = '';
+        const __ai = document.getElementById('announcementActionInput'); if (__ai) __ai.value = '';
         Swal.fire({ icon: 'success', title: 'Duyuru yayınlandı!', text: 'Kullanıcılar bir sonraki girişlerinde bu duyuruyu görecek.', confirmButtonText: 'Tamam' });
         loadAnnouncements();
     } catch (e) {
