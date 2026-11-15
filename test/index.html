@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v60">
+    <meta name="app-build" content="test-v61">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4463,7 +4463,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.15.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.15.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -8139,7 +8139,17 @@ function showCurrentQuestion() {
     
     // ===== SORU METNİNİ DÜZENLE =====
     let questionText = question.question;
-    questionText = questionText.replace(/\n/g, '<br>');
+    // Arapça kelime ayrı satırda: ortada, büyük ve okunaklı (mobil uyumlu)
+    {
+        const nl = questionText.indexOf('\n');
+        const tail = nl >= 0 ? questionText.slice(nl + 1).trim() : '';
+        if (nl >= 0 && /[\u0600-\u06FF]/.test(tail) && tail.indexOf('\n') < 0) {
+            questionText = questionText.slice(0, nl) +
+                '<div dir="rtl" style="display:block; text-align:center; margin:12px 0 4px; line-height:1.7; font-size:clamp(34px, 9vw, 46px); font-family:\'Scheherazade New\',\'Amiri\',\'Noto Naskh Arabic\',serif; color:#5b8cb8; font-weight:600;">' + tail + '</div>';
+        } else {
+            questionText = questionText.replace(/\n/g, '<br>');
+        }
+    }
     
     const container = document.getElementById('quizContent');
     container.innerHTML = `
@@ -8178,7 +8188,7 @@ function showCurrentQuestion() {
         <div class="quiz-card" style="padding: 10px 12px; margin-bottom: 8px;">
            <div class="question-text" style="direction: ltr; text-align: left; font-size: 18px !important; margin-bottom: 8px !important; line-height: 1.4 !important;"> 
                 <span style="background: #f59e0b20; padding: 2px 9px; border-radius: 14px; margin-right: 7px !important; margin-bottom: 3px !important; display: inline-block; font-size: 12px;">Soru ${currentQuestionIndex + 1}</span>
-                <span style="white-space: pre-wrap; direction: ltr; text-align: left; font-size: 18px;">${questionText}</span>
+                <span style="white-space: pre-wrap; direction: ltr; text-align: left; font-size: 18px; display:block;">${questionText}</span>
             </div>
             
             <!-- ŞIKLAR - DAHA KOMPAKT -->
