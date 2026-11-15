@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v66">
+    <meta name="app-build" content="test-v67">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4467,8 +4467,9 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.17.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.17.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
+            <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
     </div>
     <div class="overlay" id="overlay"></div>
@@ -7171,6 +7172,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             }
         } catch (e) {
             __dbg('Duyuru kontrol hatası:', e.message);
+            try { const d = document.getElementById('svDiag'); if (d) d.textContent = 'anket: duyuru okunamadı'; } catch (x) {}
         }
     }
 
@@ -9579,16 +9581,19 @@ document.getElementById('doLoginBtn').onclick = async () => {
             } catch (e) { return sv.id + '__' + currentUser.uid; }
         }
 
+        const dg = (m) => { const e = document.getElementById('svDiag'); if (e) e.textContent = 'anket: ' + m; };
         window.__initSurvey = async function (sv) {
-            const el = item(); if (!el) return;
+            const el = item(); if (!el) { dg('menü satırı yok'); return; }
             cur = (sv && sv.id && Array.isArray(sv.questions) && sv.questions.length) ? sv : null;
-            if (!cur || !currentUser) { el.style.display = 'none'; return; }
-            if (isDone()) { el.style.display = 'none'; return; }
+            if (!cur) { el.style.display = 'none'; dg('yayında anket yok'); return; }
+            if (!currentUser) { el.style.display = 'none'; dg('giriş yok'); return; }
+            if (isDone()) { el.style.display = 'none'; dg('bu hesapla cevaplandı ✓'); return; }
             try {
                 const snap = await getDoc(doc(db, 'surveyResponses', await respId(cur)));
-                if (snap.exists()) { markDone(); el.style.display = 'none'; return; }
-            } catch (e) {}
+                if (snap.exists()) { markDone(); el.style.display = 'none'; dg('cevaplandı ✓'); return; }
+            } catch (e) { dg('cevap kontrolü yapılamadı'); }
             el.style.display = 'flex';
+            if (document.getElementById('svDiag') && document.getElementById('svDiag').textContent.indexOf('yapılamadı') < 0) dg('açık: ' + String(cur.title || '').slice(0, 24));
             let seen = false;
             try { seen = localStorage.getItem(key('toast')) === '1'; localStorage.setItem(key('toast'), '1'); } catch (e) {}
             if (!seen) setTimeout(() => { try { showTinyWarning('📝 Yeni bir anket var! Menüden katılabilirsiniz.', 'fa-poll'); } catch (e) {} }, 2500);
