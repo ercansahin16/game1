@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v57">
+    <meta name="app-build" content="test-v58">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4462,7 +4462,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.14.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.14.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
         </div>
     </div>
@@ -6057,6 +6057,7 @@ async function getPassedLessonIds() {
 // Önceki ders kelimelerinin %WORD_LEARN_UNLOCK_PERCENT'i öğrenilir öğrenilmez
 // bir sonraki dersin kelimeleri otomatik açılır (sınav sonucu beklenmez).
 async function isLessonWordsUnlocked(lessonId) {
+    try { const __ud = await __getMyUserDoc(); if (__ud.exists() && __ud.data().unlockAll === true) return true; } catch (e) {}
     const sequence = await getGlobalLessonSequence();
     const pos = getLessonPositionInSequence(sequence, lessonId);
     if (pos <= 0) return true; // İlk ders (veya sırada bulunamayan) her zaman açık
@@ -6083,6 +6084,7 @@ async function getLessonWordViewPercent(lessonId) {
 
 // Bir dersin SINAVI açık mı? (O dersin kelimelerinin %80'i öğrenilmiş mi?)
 async function isLessonExamUnlocked(lessonId) {
+    try { const __ud = await __getMyUserDoc(); if (__ud.exists() && __ud.data().unlockAll === true) return true; } catch (e) {}
     const percent = await getLessonWordViewPercent(lessonId);
     return percent >= WORD_LEARN_UNLOCK_PERCENT;
 }
