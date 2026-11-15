@@ -1579,7 +1579,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     const svEsc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const SV_TYPES = { stars: '⭐ Yıldız (1-5)', choice: '🔘 Tek seçenek', text: '✍️ Serbest yazı' };
     const svTemplate = () => ({
-        id: null, title: 'SaadetYolu Memnuniyet Anketi', intro: 'Görüşleriniz uygulamayı geliştirmemize yardımcı olur. Anket anonimdir; adınız kaydedilmez. Katkınız için teşekkür ederiz.',
+        id: null, named: false, title: 'SaadetYolu Memnuniyet Anketi', intro: 'Görüşleriniz uygulamayı geliştirmemize yardımcı olur. Katkınız için teşekkür ederiz.',
         questions: [
             { type: 'stars', text: 'SaadetYolu\'ndan genel olarak ne kadar memnunsunuz?' },
             { type: 'stars', text: 'Kelime öğrenme bölümünü nasıl buluyorsunuz?' },
@@ -1610,7 +1610,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 div.className = 'item';
                 div.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;';
                 div.innerHTML = `<div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;"><strong>${svEsc(sv.title)}</strong><span style="font-size:12px;">${st}</span></div>
-                    <div style="font-size:12px; opacity:.7;">${(sv.questions || []).length} soru · oluşturuldu ${svEsc(when)}${sv.publishedAtIso ? ' · yayın ' + svEsc(new Date(sv.publishedAtIso).toLocaleDateString('tr-TR')) : ''}</div>
+                    <div style="font-size:12px; opacity:.7;">${sv.named ? '👤 İsimli' : '🔒 Anonim'} · ${(sv.questions || []).length} soru · oluşturuldu ${svEsc(when)}${sv.publishedAtIso ? ' · yayın ' + svEsc(new Date(sv.publishedAtIso).toLocaleDateString('tr-TR')) : ''}</div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         ${sv.status === 'active' ? `<button class="btn btn-warning" style="padding:6px 12px; font-size:12px;" onclick="svStop('${sv.id}')"><i class="fas fa-stop"></i> Yayını durdur</button>` : `<button class="btn btn-success" style="padding:6px 12px; font-size:12px;" onclick="svPublish('${sv.id}')"><i class="fas fa-play"></i> Yayınla</button>`}
                         <button class="btn btn-info" style="padding:6px 12px; font-size:12px;" onclick="svResults('${sv.id}')"><i class="fas fa-chart-bar"></i> Sonuçlar</button>
@@ -1641,6 +1641,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         </div>`).join('');
         box.innerHTML = `<h3 style="margin:0 0 8px;">${d.id ? 'Anketi düzenle' : 'Yeni anket'}</h3>
             <input data-sv="title" value="${svEsc(d.title)}" maxlength="100" placeholder="Anket başlığı" style="width:100%; box-sizing:border-box; padding:9px; border-radius:8px; margin-bottom:6px; font-weight:700;">
+            <select data-sv="named" style="width:100%; box-sizing:border-box; padding:8px; border-radius:8px; margin-bottom:4px;"><option value="0" ${d.named ? '' : 'selected'}>🔒 Anonim anket (ad görünmez)</option><option value="1" ${d.named ? 'selected' : ''}>👤 İsimli anket (ad ve ID görünür)</option></select>
+            <div style="font-size:11px; opacity:.7; margin-bottom:8px;">Kursiyere anketin başında seçtiğiniz türe uygun bilgi notu otomatik gösterilir. Aşağıdaki açıklamaya ayrıca "anonim" yazmanıza gerek yok.</div>
             <textarea data-sv="intro" rows="2" maxlength="400" placeholder="Kursiyere gösterilecek kısa açıklama" style="width:100%; box-sizing:border-box; padding:8px; border-radius:8px; margin-bottom:10px;">${svEsc(d.intro)}</textarea>
             ${qs}
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -1654,22 +1656,23 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             const f = el.dataset.sv, i = el.dataset.i;
             const h = () => {
                 if (f === 'title') d.title = el.value;
+                else if (f === 'named') d.named = el.value === '1';
                 else if (f === 'intro') d.intro = el.value;
                 else if (f === 'text') d.questions[i].text = el.value;
                 else if (f === 'options') d.questions[i].options = el.value.split('\n');
                 else if (f === 'type') { d.questions[i].type = el.value; if (el.value === 'choice' && !(d.questions[i].options || []).length) d.questions[i].options = ['Evet', 'Hayır']; svRenderEditor(); }
             };
-            el.addEventListener(f === 'type' ? 'change' : 'input', h);
+            el.addEventListener((f === 'type' || f === 'named') ? 'change' : 'input', h);
         });
     }
-    window.svNew = () => { window.__svDraft = { id: null, title: '', intro: '', questions: [{ type: 'stars', text: '' }] }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
-    window.svLoadTemplate = () => { const t = svTemplate(); const d = window.__svDraft; d.title = t.title; d.intro = t.intro; d.questions = t.questions; svRenderEditor(); };
+    window.svNew = () => { window.__svDraft = { id: null, named: false, title: '', intro: '', questions: [{ type: 'stars', text: '' }] }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svLoadTemplate = () => { const t = svTemplate(); const d = window.__svDraft; d.title = t.title; d.intro = t.intro; d.questions = t.questions; d.named = !!t.named; svRenderEditor(); };
     window.svAddQ = () => { window.__svDraft.questions.push({ type: 'stars', text: '' }); svRenderEditor(); };
     window.svDelQ = (i) => { window.__svDraft.questions.splice(i, 1); svRenderEditor(); };
     window.svMove = (i, dir) => { const q = window.__svDraft.questions, j = i + dir; if (j < 0 || j >= q.length) return; [q[i], q[j]] = [q[j], q[i]]; svRenderEditor(); };
     window.svCancel = () => { window.__svDraft = null; svRenderEditor(); };
-    window.svEdit = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
-    window.svCopy = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id: null, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svEdit = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id, named: !!sv.named, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
+    window.svCopy = (id) => { const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return; window.__svDraft = { id: null, named: !!sv.named, title: sv.title, intro: sv.intro || '', questions: JSON.parse(JSON.stringify(sv.questions || [])) }; svRenderEditor(); document.getElementById('surveyEditor').scrollIntoView({ behavior: 'smooth' }); };
     window.svSave = async function () {
         const d = window.__svDraft; if (!d) return;
         const title = (d.title || '').trim();
@@ -1689,8 +1692,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         }
         try {
             const now = new Date().toISOString();
-            if (d.id) await updateDoc(doc(db, 'surveys', d.id), { title, intro: (d.intro || '').trim(), questions: qs, updatedAtIso: now });
-            else await setDoc(doc(db, 'surveys', 'sv' + Date.now().toString(36)), { title, intro: (d.intro || '').trim(), questions: qs, status: 'draft', createdAtIso: now });
+            if (d.id) await updateDoc(doc(db, 'surveys', d.id), { title, named: !!d.named, intro: (d.intro || '').trim(), questions: qs, updatedAtIso: now });
+            else await setDoc(doc(db, 'surveys', 'sv' + Date.now().toString(36)), { title, named: !!d.named, intro: (d.intro || '').trim(), questions: qs, status: 'draft', createdAtIso: now });
             window.__svDraft = null; svRenderEditor(); await loadSurveys();
             Swal.fire({ icon: 'success', title: 'Kaydedildi', text: 'Kursiyerlere göstermek için listeden "Yayınla"ya basın.', confirmButtonColor: '#f59e0b' });
         } catch (e) { Swal.fire('Kaydedilemedi', e.message, 'error'); }
@@ -1704,7 +1707,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             for (const o of (window.__surveys || [])) if (o.status === 'active' && o.id !== id) await updateDoc(doc(db, 'surveys', o.id), { status: 'closed', closedAtIso: now });
             await updateDoc(doc(db, 'surveys', id), { status: 'active', publishedAtIso: now });
             // contentVersion'a DOKUNULMAZ (kursiyerlerin içerik önbelleğini sıfırlamasın)
-            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: { id, title: sv.title, intro: sv.intro || '', questions: sv.questions, publishedAtIso: now } }, { merge: true });
+            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: { id, title: sv.title, named: !!sv.named, intro: sv.intro || '', questions: sv.questions, publishedAtIso: now } }, { merge: true });
             await loadSurveys();
             Swal.fire({ icon: 'success', title: 'Anket yayında', timer: 1800, showConfirmButton: false });
         } catch (e) { Swal.fire('Yayınlanamadı', e.message, 'error'); }
@@ -1741,6 +1744,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             const rate = (tu > 0) ? ` · katılım %${Math.round(n / tu * 100)} (${tu} kullanıcıdan)` : '';
             const blocks = (sv.questions || []).map((q, qi) => {
                 const vals = resp.map(r => (r.answers || {})[q.id]).filter(v => v !== undefined && v !== null && v !== '');
+                const textItems = sv.named ? resp.filter(r => (r.answers || {})[q.id]).map(r => ({ v: r.answers[q.id], who: (r.name || 'İsimsiz') + (r.pid ? ' #' + r.pid : '') })) : vals.map(v => ({ v, who: '' }));
                 let body = '';
                 if (q.type === 'stars') {
                     const cnt = [0, 0, 0, 0, 0]; let sum = 0;
@@ -1751,11 +1755,16 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 } else if (q.type === 'choice') {
                     body = (q.options || []).map(o => { const c = vals.filter(v => v === o).length, pc = vals.length ? Math.round(c / vals.length * 100) : 0; return `<div style="font-size:12px; margin-top:3px;"><div style="display:flex; justify-content:space-between;"><span>${svEsc(o)}</span><span>%${pc} (${c})</span></div><div style="height:6px; border-radius:99px; background:rgba(148,163,184,.3); overflow:hidden;"><div style="height:100%; width:${pc}%; background:#3b82f6;"></div></div></div>`; }).join('');
                 } else {
-                    body = vals.length ? vals.slice(0, 80).map(v => `<div style="font-size:13px; padding:6px 8px; margin-top:4px; border-radius:8px; background:rgba(128,128,128,.12); white-space:pre-wrap; text-align:left;">${svEsc(v)}</div>`).join('') + (vals.length > 80 ? `<div style="font-size:12px; opacity:.7;">… ve ${vals.length - 80} yazı daha</div>` : '') : '<div style="font-size:12px; opacity:.6;">Henüz yazı yok.</div>';
+                    body = vals.length ? textItems.slice(0, 80).map(t => `<div style="font-size:13px; padding:6px 8px; margin-top:4px; border-radius:8px; background:rgba(128,128,128,.12); white-space:pre-wrap; text-align:left;">${t.who ? '<b style="color:#f59e0b;">' + svEsc(t.who) + ':</b> ' : ''}${svEsc(t.v)}</div>`).join('') + (vals.length > 80 ? `<div style="font-size:12px; opacity:.7;">… ve ${vals.length - 80} yazı daha</div>` : '') : '<div style="font-size:12px; opacity:.6;">Henüz yazı yok.</div>';
                 }
                 return `<div style="text-align:left; padding:10px 0; border-bottom:1px solid rgba(148,163,184,.3);"><div style="font-weight:700; font-size:13px; margin-bottom:4px;">${qi + 1}. ${svEsc(q.text)}</div>${body}</div>`;
             }).join('');
-            Swal.fire({ title: svEsc(sv.title), html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;"><b>${n}</b> cevap${rate}</div><div style="max-height:62vh; overflow:auto;">${n ? blocks : '<div style="padding:20px; opacity:.7;">Henüz cevap yok.</div>'}</div>`, width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
+            let people = '';
+            if (sv.named && n) {
+                const sorted = resp.slice().sort((a, b) => (b.createdAtIso || '').localeCompare(a.createdAtIso || ''));
+                people = '<div style="text-align:left; margin-top:14px; font-weight:800; font-size:14px;">👤 Kişi bazında cevaplar</div>' + sorted.map(r => { const lines = (sv.questions || []).map((q, qi) => { const v = (r.answers || {})[q.id]; if (v === undefined || v === '') return ''; return `<div style="font-size:12px; margin-top:2px;"><span style="opacity:.65;">${qi + 1}.</span> ${q.type === 'stars' ? '⭐'.repeat(Math.min(5, +v)) + ' (' + v + ')' : svEsc(v)}</div>`; }).join(''); return `<details style="text-align:left; padding:6px 0; border-bottom:1px solid rgba(148,163,184,.25);"><summary style="cursor:pointer; font-size:13px; font-weight:700;">${svEsc(r.name || 'İsimsiz')}${r.pid ? ' <span style="opacity:.6; font-weight:400;">#' + svEsc(r.pid) + '</span>' : ''} <span style="opacity:.55; font-weight:400; font-size:11px;">${svEsc(r.createdAtIso ? new Date(r.createdAtIso).toLocaleDateString('tr-TR') : '')}</span></summary>${lines}</details>`; }).join('');
+            }
+            Swal.fire({ title: svEsc(sv.title) + (sv.named ? ' 👤' : ' 🔒'), html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;"><b>${n}</b> cevap${rate} · ${sv.named ? 'isimli anket' : 'anonim anket'}</div><div style="max-height:62vh; overflow:auto;">${n ? blocks + people : '<div style="padding:20px; opacity:.7;">Henüz cevap yok.</div>'}</div>`, width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
         } catch (e) { Swal.fire('Sonuçlar alınamadı', e.message, 'error'); }
     };
 
