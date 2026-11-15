@@ -1761,16 +1761,26 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             Swal.fire({ icon: 'success', title: 'Kaydedildi', text: 'Kursiyerlere göstermek için listeden "Yayınla"ya basın.', confirmButtonColor: '#f59e0b' });
         } catch (e) { Swal.fire('Kaydedilemedi', e.message, 'error'); }
     };
+    // Yayındaki anketler: appConfig/announcement.surveys (dizi). Eski tek alan (survey) varsa birleştirilir.
+    async function svGetActive() {
+        const snap = await getDoc(doc(db, 'appConfig', 'announcement'));
+        const d = snap.exists() ? snap.data() : {};
+        const arr = Array.isArray(d.surveys) ? d.surveys.slice() : [];
+        if (d.survey && d.survey.id && !arr.some(x => x.id === d.survey.id)) arr.push(d.survey);
+        return arr.filter(x => x && x.id);
+    }
+    // contentVersion'a DOKUNULMAZ (kursiyerlerin içerik önbelleğini sıfırlamasın)
+    async function svSetActive(arr) { await setDoc(doc(db, 'appConfig', 'announcement'), { surveys: arr, survey: null }, { merge: true }); }
     window.svPublish = async function (id) {
         const sv = (window.__surveys || []).find(x => x.id === id); if (!sv) return;
-        const r = await Swal.fire({ title: 'Anket yayınlansın mı?', text: 'Yayındaki başka anket varsa kapatılır. Kursiyerler menüde "Memnuniyet Anketi" görür.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yayınla', cancelButtonText: 'Vazgeç', confirmButtonColor: '#10b981' });
+        const r = await Swal.fire({ title: 'Anket yayınlansın mı?', text: 'Kursiyerler menüdeki "Anketler" bölümünde bu anketi görür. Yayındaki diğer anketler açık kalır.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yayınla', cancelButtonText: 'Vazgeç', confirmButtonColor: '#10b981' });
         if (!r.isConfirmed) return;
         try {
             const now = new Date().toISOString();
-            for (const o of (window.__surveys || [])) if (o.status === 'active' && o.id !== id) await updateDoc(doc(db, 'surveys', o.id), { status: 'closed', closedAtIso: now });
             await updateDoc(doc(db, 'surveys', id), { status: 'active', publishedAtIso: now });
-            // contentVersion'a DOKUNULMAZ (kursiyerlerin içerik önbelleğini sıfırlamasın)
-            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: { id, title: sv.title, named: !!sv.named, intro: sv.intro || '', questions: sv.questions, publishedAtIso: now } }, { merge: true });
+            const arr = (await svGetActive()).filter(x => x.id !== id);
+            arr.push({ id, title: sv.title, named: !!sv.named, intro: sv.intro || '', questions: sv.questions, publishedAtIso: now });
+            await svSetActive(arr);
             await loadSurveys();
             Swal.fire({ icon: 'success', title: 'Anket yayında', timer: 1800, showConfirmButton: false });
         } catch (e) { Swal.fire('Yayınlanamadı', e.message, 'error'); }
@@ -1778,7 +1788,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     window.svStop = async function (id) {
         try {
             await updateDoc(doc(db, 'surveys', id), { status: 'closed', closedAtIso: new Date().toISOString() });
-            await setDoc(doc(db, 'appConfig', 'announcement'), { survey: null }, { merge: true });
+            await svSetActive((await svGetActive()).filter(x => x.id !== id));
             await loadSurveys();
         } catch (e) { Swal.fire('Hata', e.message, 'error'); }
     };
@@ -1787,7 +1797,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         const r = await Swal.fire({ title: 'Anket silinsin mi?', text: 'Anket ve tüm cevapları silinecek. Geri alınamaz.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sil', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444' });
         if (!r.isConfirmed) return;
         try {
-            if (sv && sv.status === 'active') await setDoc(doc(db, 'appConfig', 'announcement'), { survey: null }, { merge: true });
+            if (sv && sv.status === 'active') await svSetActive((await svGetActive()).filter(x => x.id !== id));
             const rs = await getDocs(query(collection(db, 'surveyResponses'), where('sid', '==', id)));
             for (const d of rs.docs) await deleteDoc(d.ref);
             await deleteDoc(doc(db, 'surveys', id));
@@ -3954,20 +3964,23 @@ function timeAgo(date) {
             ]);
             if (hTot !== null) document.getElementById('statHelp').textContent = hTot;
             if (hNew !== null) { document.getElementById('statHelpSub').textContent = hNew ? hNew + ' talep bekliyor' : 'Bekleyen yok ✓'; setBadge(['badgeHelpCard', 'badgeHelpMenu'], hNew); }
-            const ann = await getDoc(doc(db, 'appConfig', 'announcement'));
-            const sv = ann.exists() ? ann.data().survey : null;
-            if (!sv || !sv.id) {
+            const act = await svGetActive();
+            if (!act.length) {
                 document.getElementById('statSurvey').textContent = '–';
                 document.getElementById('statSurveySub').textContent = 'Yayında anket yok';
                 setBadge(['badgeSurveyCard', 'badgeSurveyMenu'], 0);
             } else {
-                const n = await cnt(query(collection(db, 'surveyResponses'), where('sid', '==', sv.id)));
-                if (n !== null) {
-                    document.getElementById('statSurvey').textContent = n;
-                    document.getElementById('statSurveySub').textContent = (sv.title || 'Anket').slice(0, 28);
+                let total = 0, fresh = 0;
+                for (const sv of act) {
+                    const n = await cnt(query(collection(db, 'surveyResponses'), where('sid', '==', sv.id)));
+                    if (n === null) continue;
+                    total += n;
                     let seen = 0; try { seen = parseInt(localStorage.getItem('adm_sv_seen_' + sv.id) || '0', 10) || 0; } catch (e) {}
-                    setBadge(['badgeSurveyCard', 'badgeSurveyMenu'], Math.max(0, n - seen));
+                    fresh += Math.max(0, n - seen);
                 }
+                document.getElementById('statSurvey').textContent = total;
+                document.getElementById('statSurveySub').textContent = act.length === 1 ? String(act[0].title || 'Anket').slice(0, 28) : act.length + ' anket yayında';
+                setBadge(['badgeSurveyCard', 'badgeSurveyMenu'], fresh);
             }
         } catch (e) { console.warn('Rozetler güncellenemedi', e); }
     };

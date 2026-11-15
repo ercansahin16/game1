@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v79">
+    <meta name="app-build" content="saadetyolu-shell-v80">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4459,7 +4459,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
         <div class="sidebar-item" onclick="goHome()"><i class="fas fa-home"></i> Ana Sayfa</div>
         <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
         <div class="sidebar-item" id="installAppBtn"><i class="fas fa-download"></i> Uygulamayı İndir</div>
-        <div class="sidebar-item" id="goSurvey" style="display:none;"><i class="fas fa-poll"></i> Memnuniyet Anketi <span style="width:9px; height:9px; border-radius:50%; background:#ef4444; display:inline-block; margin-left:6px;"></span></div>
+        <div class="sidebar-item" id="goSurvey"><i class="fas fa-poll"></i> Anketler <span class="svDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; align-items:center; justify-content:center; box-sizing:border-box; margin-left:8px;"></span></div>
         <div class="sidebar-item" id="checkUpdateBtn"><i class="fas fa-rotate"></i> Yeni Sürümü Denetle</div>
         <div class="sidebar-footer" style="margin-top: auto; padding: 14px 0 10px; flex-shrink: 0;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
@@ -4467,7 +4467,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.17.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -7155,7 +7155,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
         try {
             __currentUserRef = userRef;
             const annSnap = await __getAnnDoc();
-            try { if (window.__initSurvey) window.__initSurvey(annSnap.exists() ? (annSnap.data().survey || null) : null); } catch (e) {}
+            try { if (window.__initSurvey) window.__initSurvey(annSnap.exists() ? annSnap.data() : null); } catch (e) {}
             if (!annSnap.exists()) return;
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
@@ -7285,7 +7285,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
 
     function openAnnouncementModal(a) {
         const ACTS = {
-            survey: { label: '📝 Ankete Git', run: () => window.__openSurvey && window.__openSurvey() },
+            survey: { label: '📝 Anketlere Git', run: () => window.__openSurvey && window.__openSurvey() },
             qa: { label: '💬 Soru / Hata Bildir', run: () => document.getElementById('goBugReport')?.click() },
             help: { label: '❓ Yardım / İletişim', run: () => document.getElementById('goHelp')?.click() }
         };
@@ -9562,16 +9562,24 @@ document.getElementById('doLoginBtn').onclick = async () => {
         };
     })();
 
-    // ===== 📝 MEMNUNİYET ANKETİ =====
-    // Yayındaki anket appConfig/announcement.survey içinde gelir (ek okuma yok).
-    // Cevap: surveyResponses/{anketId}__{uid} (ad/e-posta kaydedilmez → anonim). Her kursiyer bir kez cevaplar.
+    // ===== 📝 ANKETLER (birden fazla anket olabilir) =====
+    // Yayındaki anketler appConfig/announcement.surveys (dizi) içinde gelir (ek okuma yok).
+    // Cevap: surveyResponses/{anketId}__{kimlik}. Anonim ankette ad/uid yazılmaz; isimli ankette ad ve ID yazılır.
     (function () {
         const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-        let cur = null;
-        const key = (k) => 'sy_sv_' + k + '_' + (currentUser ? currentUser.uid : '') + '_' + (cur ? cur.id : '');
-        const isDone = () => { try { return localStorage.getItem(key('done')) === '1'; } catch (e) { return false; } };
-        const markDone = () => { try { localStorage.setItem(key('done'), '1'); } catch (e) {} };
+        let list = [];              // yayındaki anketler
+        const answered = new Set(); // bu hesabın cevapladığı anket kimlikleri
+        const keyOf = (k, sv) => 'sy_sv_' + k + '_' + (currentUser ? currentUser.uid : '') + '_' + sv.id;
+        const isDoneLocal = (sv) => { try { return localStorage.getItem(keyOf('done', sv)) === '1'; } catch (e) { return false; } };
+        const markDone = (sv) => { answered.add(sv.id); try { localStorage.setItem(keyOf('done', sv), '1'); } catch (e) {} };
         const item = () => document.getElementById('goSurvey');
+        const dg = (m) => { const e = document.getElementById('svDiag'); if (e) e.textContent = 'anket: ' + m; };
+        const pending = () => list.filter(sv => !answered.has(sv.id));
+        function refresh() {
+            const el = item(); if (!el) return;
+            const dot = el.querySelector('.svDot'); const n = pending().length;
+            if (dot) { dot.style.display = n ? 'inline-flex' : 'none'; dot.textContent = n ? String(n) : ''; }
+        }
         // Anonim ankette kayıt kimliği uid'den türetilmiş karma (hash) olur: belge adından kişi doğrudan okunmaz.
         async function respId(sv) {
             if (sv.named) return sv.id + '__' + currentUser.uid;
@@ -9581,27 +9589,34 @@ document.getElementById('doLoginBtn').onclick = async () => {
             } catch (e) { return sv.id + '__' + currentUser.uid; }
         }
 
-        const dg = (m) => { const e = document.getElementById('svDiag'); if (e) e.textContent = 'anket: ' + m; };
-        window.__initSurvey = async function (sv) {
+        // ann: appConfig/announcement belgesinin verisi (veya null)
+        window.__initSurvey = async function (ann) {
             const el = item(); if (!el) { dg('menü satırı yok'); return; }
-            cur = (sv && sv.id && Array.isArray(sv.questions) && sv.questions.length) ? sv : null;
-            if (!cur) { el.style.display = 'none'; dg('yayında anket yok'); return; }
-            if (!currentUser) { el.style.display = 'none'; dg('giriş yok'); return; }
-            if (isDone()) { el.style.display = 'none'; dg('bu hesapla cevaplandı ✓'); return; }
-            try {
-                const snap = await getDoc(doc(db, 'surveyResponses', await respId(cur)));
-                if (snap.exists()) { markDone(); el.style.display = 'none'; dg('cevaplandı ✓'); return; }
-            } catch (e) { dg('cevap kontrolü yapılamadı'); }
-            el.style.display = 'flex';
-            if (document.getElementById('svDiag') && document.getElementById('svDiag').textContent.indexOf('yapılamadı') < 0) dg('açık: ' + String(cur.title || '').slice(0, 24));
-            let seen = false;
-            try { seen = localStorage.getItem(key('toast')) === '1'; localStorage.setItem(key('toast'), '1'); } catch (e) {}
-            if (!seen) setTimeout(() => { try { showTinyWarning('📝 Yeni bir anket var! Menüden katılabilirsiniz.', 'fa-poll'); } catch (e) {} }, 2500);
+            let arr = [];
+            if (ann && Array.isArray(ann.surveys)) arr = ann.surveys.slice();
+            if (ann && ann.survey && ann.survey.id && !arr.some(x => x && x.id === ann.survey.id)) arr.push(ann.survey);   // eski tek-anket alanı
+            list = arr.filter(sv => sv && sv.id && Array.isArray(sv.questions) && sv.questions.length);
+            answered.clear();
+            if (!currentUser) { dg('giriş yok'); return; }
+            for (const sv of list) {
+                if (isDoneLocal(sv)) { answered.add(sv.id); continue; }
+                try {
+                    const snap = await getDoc(doc(db, 'surveyResponses', await respId(sv)));
+                    if (snap.exists()) markDone(sv);
+                } catch (e) { /* kontrol edilemedi: cevaplanmamış sayılır */ }
+            }
+            refresh();
+            const n = pending().length;
+            dg(list.length ? (list.length + ' yayında, ' + n + ' bekliyor') : 'yayında anket yok');
+            if (n) {
+                let seen = false; const k = 'sy_sv_toast_' + currentUser.uid + '_' + pending().map(x => x.id).join(',');
+                try { seen = localStorage.getItem(k) === '1'; localStorage.setItem(k, '1'); } catch (e) {}
+                if (!seen) setTimeout(() => { try { showTinyWarning('📝 Yeni anket var! Menüden "Anketler"e girin.', 'fa-poll'); } catch (e) {} }, 2500);
+            }
         };
 
-        function openSurvey() {
-            if (!cur || !currentUser) return;
-            const sv = cur;
+        function openSurvey(sv) {
+            if (!sv || !currentUser) return;
             const qHtml = sv.questions.map((q, i) => {
                 let body = '';
                 if (q.type === 'stars') {
@@ -9651,21 +9666,33 @@ document.getElementById('doLoginBtn').onclick = async () => {
                         try { base.pid = (typeof myPublicId !== 'undefined' && myPublicId) ? String(myPublicId) : ''; } catch (e) { base.pid = ''; }
                     }
                     await setDoc(doc(db, 'surveyResponses', rid), base);
-                    markDone();
-                    const el = item(); if (el) el.style.display = 'none';
+                    markDone(sv);
+                    refresh();
                     Swal.fire({ icon: 'success', title: 'Teşekkür ederiz 🤲', text: 'Görüşleriniz bizim için çok değerli.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
                 } catch (e) {
                     Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Lütfen internetinizi kontrol edip tekrar deneyin.', confirmButtonColor: '#f59e0b' });
                 }
             });
         }
-        window.__openSurvey = function () {
+
+        function openList() {
             if (!currentUser) { showWarning('Önce giriş yapın.'); return; }
-            if (!cur || isDone()) { showWarning(cur ? '✅ Ankete zaten katıldınız, teşekkürler!' : 'Şu an açık bir anket yok.'); return; }
-            openSurvey();
-        };
+            const p = pending();
+            if (!p.length) {
+                Swal.fire({ icon: 'info', title: 'Cevaplanacak anket yok', text: list.length ? 'Yayındaki tüm anketlere cevap verdiniz. Teşekkür ederiz 🤲' : 'Şu an yayında anket bulunmuyor. Yeni bir anket açıldığında burada görünecek.', confirmButtonText: 'Tamam', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
+                return;
+            }
+            if (p.length === 1) { openSurvey(p[0]); return; }
+            Swal.fire({
+                title: 'Anketler',
+                html: '<div style="display:flex; flex-direction:column; gap:8px;">' + p.map((sv, i) => `<button type="button" class="swal2-confirm swal2-styled" data-i="${i}" style="margin:0; background:#f59e0b; color:#111; text-align:left; padding:10px 14px;"><b>${esc(sv.title)}</b><br><span style="font-size:12px; font-weight:400;">${sv.named ? '👤 İsimli' : '🔒 Anonim'} · ${sv.questions.length} soru</span></button>`).join('') + '</div>',
+                showConfirmButton: false, showCloseButton: true, customClass: { popup: 'compact-swal themed-swal' },
+                didOpen: (pp) => pp.querySelectorAll('button[data-i]').forEach(b => b.addEventListener('click', () => { const sv = p[+b.dataset.i]; Swal.close(); setTimeout(() => openSurvey(sv), 200); }))
+            });
+        }
+        window.__openSurvey = openList;
         const btn = item();
-        if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} if (!currentUser) { showWarning('Önce giriş yapın.'); return; } openSurvey(); };
+        if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} openList(); };
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
