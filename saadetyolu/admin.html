@@ -2274,6 +2274,43 @@ document.getElementById('editActiveAnnouncementBtn').onclick = () => window.edit
 // ===== İÇERİK SİLME (kitap / ders / kelime / sınav) =====
 // Kitap silinirse: dersleri + dersleri altındaki tüm kelime ve sınavlar da silinir.
 // Ders silinirse: kelimeleri + sınavları da silinir. Geri alınamaz; önce "Hızlı Yedekle" önerilir.
+
+window.adminDownloadContent = async function (kind, id, btnEl) {
+    const old = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    const safe = (t) => String(t || 'dosya').replace(/[\\/:*?"<>|]+/g, '-').trim().replace(/\s+/g, '_');
+    const wordsOf = async (lid) => (await getDocs(query(collection(db, 'words'), where('lessonId', '==', lid)))).docs
+        .map(d => d.data()).sort((a, b) => (a.order || 0) - (b.order || 0)).map(w => ({ arabic: w.arabic, turkish: w.turkish }));
+    const examsOf = async (lid) => (await getDocs(query(collection(db, 'exams'), where('lessonId', '==', lid)))).docs
+        .map(d => d.data()).sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'tr', { numeric: true }))
+        .map(e => ({ title: e.title, questions: e.questions || [] }));
+    try {
+        let data, name;
+        if (kind === 'exam') {
+            const s = await getDoc(doc(db, 'exams', id)); if (!s.exists()) throw new Error('Sınav bulunamadı');
+            const e = s.data(); data = e.questions || []; name = safe(e.title) + '_sorular';   // toplu soru yükleme biçimi
+        } else if (kind === 'word') {
+            const s = await getDoc(doc(db, 'words', id)); if (!s.exists()) throw new Error('Kelime bulunamadı');
+            const w = s.data(); data = [{ arabic: w.arabic, turkish: w.turkish }]; name = 'kelime_' + safe(w.turkish);
+        } else if (kind === 'lesson') {
+            const s = await getDoc(doc(db, 'lessons', id)); if (!s.exists()) throw new Error('Ders bulunamadı');
+            const l = s.data(); data = { ders: l.name, kelimeler: await wordsOf(id), sinavlar: await examsOf(id) }; name = safe(l.name);
+        } else if (kind === 'book') {
+            const s = await getDoc(doc(db, 'books', id)); if (!s.exists()) throw new Error('Kitap bulunamadı');
+            const b = s.data();
+            const ls = (await getDocs(query(collection(db, 'lessons'), where('bookId', '==', id)))).docs
+                .map(d => ({ id: d.id, ...d.data() })).sort((a, b2) => (a.order || 0) - (b2.order || 0));
+            const dersler = [];
+            for (const l of ls) dersler.push({ ders: l.name, kelimeler: await wordsOf(l.id), sinavlar: await examsOf(l.id) });
+            data = { kitap: b.name, dersler }; name = safe(b.name);
+        } else return;
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.json';
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    } catch (e) { alert('İndirilemedi: ' + (e.message || e)); }
+    finally { if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = old; } }
+};
+
 window.adminDeleteContent = async function (kind, id, btnEl) {
     const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const cntOf = async (q) => { try { return (await getCountFromServer(q)).data().count; } catch (e) { return 0; } };
@@ -2350,7 +2387,7 @@ async function loadBooks() {
                     <small>${book.description || ''} | Sıra: ${book.order || 0}</small>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('book','${book.id}',this)"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-warning icon-btn" onclick="editBook('${book.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('book','${book.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('book','${book.id}',this)"><i class="fas fa-trash"></i></button>
                     
                 </div>
             `;
@@ -2453,7 +2490,7 @@ if (addBookBtn) {
         snapshot.docs.forEach(doc => {
             const data = doc.data();
             const div = document.createElement('div'); div.className = 'item';
-            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('lesson','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
+            div.innerHTML = `<div class="item-info"><strong>${data.name}</strong><small>${data.description || ''} | Sıra: ${data.order || 0}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editLesson('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('lesson','${doc.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('lesson','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
             container.appendChild(div);
         });
         document.getElementById('statLessons').innerHTML = snapshot.size;
@@ -2649,7 +2686,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
     snapshot.docs.forEach(doc => {
         const data = doc.data();
         const div = document.createElement('div'); div.className = 'item';
-        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('word','${doc.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
         container.appendChild(div);
     });
     
@@ -2715,7 +2752,7 @@ document.getElementById('wordBookSelect').onchange = async () => {
                 const bookName = lesson ? (bookMap[lesson.bookId] || '?') : '?';
                 const lessonName = lesson ? lesson.name : 'Bilinmeyen ders';
                 const div = document.createElement('div'); div.className = 'item';
-                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${d.id}',this)"><i class="fas fa-trash"></i></button></div>`;
+                div.innerHTML = `<div class="item-info"><strong class="arabic-word">${w.arabic}</strong><small>${w.turkish} &nbsp;·&nbsp; 📚 ${bookName} / ${lessonName}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${d.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('word','${d.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${d.id}',this)"><i class="fas fa-trash"></i></button></div>`;
                 container.appendChild(div);
             });
         } catch (error) {
@@ -4973,7 +5010,7 @@ document.getElementById('wordLessonSelect').onchange = async () => {
     snapshot.docs.forEach(doc => {
         const data = doc.data();
         const div = document.createElement('div'); div.className = 'item';
-        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
+        div.innerHTML = `<div class="item-info"><strong class="arabic-word">${data.arabic}</strong><small>${data.turkish}</small></div><div class="item-actions"><button class="btn btn-warning icon-btn" onclick="editWord('${doc.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('word','${doc.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('word','${doc.id}',this)"><i class="fas fa-trash"></i></button></div>`;
         container.appendChild(div);
     });
     
@@ -5210,7 +5247,7 @@ function displayAdminExams(exams) {
                 <small>${exam.questions?.length || 0} soru</small>
             </div>
             <div class="item-actions">
-                <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('exam','${exam.id}',this)"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-warning icon-btn" onclick="editExam('${exam.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-info icon-btn" title="JSON olarak indir" onclick="adminDownloadContent('exam','${exam.id}',this)"><i class="fas fa-download"></i></button><button class="btn btn-danger icon-btn" title="Sil" onclick="adminDeleteContent('exam','${exam.id}',this)"><i class="fas fa-trash"></i></button>
                 
             </div>
         `;
