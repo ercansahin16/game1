@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v80">
+    <meta name="app-build" content="saadetyolu-shell-v81">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4467,7 +4467,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -7557,7 +7557,9 @@ async function loadUserStats() {
             // ===== PUANLAR =====
             const quizScore = data.quizScore || 0;              // YARIŞMA PUANI
             const mevcutSeviye = data.mevcutSeviye || 1;
-            const totalWordsViewed = data.totalWordsViewed || 0;
+            // Oturum içinde kelime sayısı geriye düşmesin (bekleyen yazı/bayat okuma anlık 0.01 gösteriyordu)
+            const totalWordsViewed = Math.max(data.totalWordsViewed || 0, window.__twvSeen || 0);
+            window.__twvSeen = totalWordsViewed;
             const sandikCount = data.quizSandik?.length || 0;
             
             // ===== ORTALAMA PUANI examsCompleted ÜZERİNDEN HESAPLA =====
@@ -14893,7 +14895,11 @@ async function addWordLearningPoint() {
                 wordLearningPoint.style.color = '#10b981';
                 // "Puan" da anında yukarı çıksın (sunucudan gelen değer birazdan aynı sayıya oturur)
                 const wls = document.getElementById('wordLearningScore');
-                if (wls) { const v = parseFloat(wls.textContent) || 0; wls.textContent = (Math.round((v + 0.01) * 100) / 100).toFixed(2); }
+                if (wls) {
+                    const v = window.__twvSeen != null ? window.__twvSeen * 0.01 : (parseFloat(wls.textContent) || 0);
+                    if (window.__twvSeen != null) window.__twvSeen += 1;
+                    wls.textContent = (Math.round((v + 0.01) * 100) / 100).toFixed(2);
+                }
                 wordLearningPoint.style.transform = 'scale(1.3)';
                 wordLearningPoint.style.transition = 'all 0.3s';
                 setTimeout(() => {
