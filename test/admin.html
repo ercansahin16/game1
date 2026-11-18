@@ -2297,14 +2297,18 @@ window.adminDeleteContent = async function (kind, id, btnEl) {
         } else if (kind === 'exam') {
             info = `<b>${(d.questions || []).length}</b> soru silinecek.`;
         }
-        const big = (kind === 'book' || kind === 'lesson');
+        const big = (kind === 'book' || kind === 'lesson');   // kademeli silme (alt kayıtlar da gider)
+        // Kelimede Arapça yazmak zor olabilir: Türkçe anlamı da kabul edilir. Diğerlerinde adın kendisi.
+        const accepted = kind === 'word' ? [d.turkish || '', d.arabic || ''] : [name];
+        const typeHint = kind === 'word' ? (d.turkish || d.arabic || '') : name;
+        const typeText = kind === 'word' ? 'Onaylamak için kelimenin <b>Türkçe anlamını</b> (veya Arapçasını) aynen yazın:' : 'Onaylamak için adını aynen yazın:';
         const label = { book: 'Kitap', lesson: 'Ders', word: 'Kelime', exam: 'Sınav' }[kind];
         const r = await Swal.fire({
             icon: 'warning', title: label + ' silinsin mi?',
-            html: `<div style="text-align:left; font-size:14px;"><b>${esc(name)}</b><br>${info}<br><br>Bu işlem <b>geri alınamaz</b>.${big ? ' Önce ana sayfadaki <b>Hızlı Yedekle</b> ile yedek almanızı öneririm.<br><br>Onaylamak için adını aynen yazın:' : ''}</div>`,
-            input: big ? 'text' : undefined, inputPlaceholder: big ? name : undefined,
+            html: `<div style="text-align:left; font-size:14px;"><b>${esc(name)}</b><br>${info}<br><br>Bu işlem <b>geri alınamaz</b>.${big ? ' Önce ana sayfadaki <b>Hızlı Yedekle</b> ile yedek almanızı öneririm.' : ''}<br><br>${typeText}<br><b style="color:#f59e0b;">${esc(typeHint)}</b></div>`,
+            input: 'text', inputPlaceholder: typeHint,
             showCancelButton: true, confirmButtonText: 'Evet, sil', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444',
-            preConfirm: (v) => { if (big && (v || '').trim() !== (name || '').trim()) { Swal.showValidationMessage('Ad aynı değil. Aynen yazın: ' + name); return false; } return true; }
+            preConfirm: (v) => { const t = (v || '').trim(); if (!t || !accepted.some(a => String(a).trim() === t)) { Swal.showValidationMessage('Yazılan metin eşleşmiyor. Aynen yazın: ' + typeHint); return false; } return true; }
         });
         if (!r.isConfirmed) return;
         Swal.fire({ title: 'Siliniyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
