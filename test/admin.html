@@ -902,6 +902,11 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             #statAvgScoreCard { grid-column: 1 / -1; }
             #statCoverageCard, #statLocksCard, #statExamOpenCard, #statSurveyCard, #statBugsCard, #statHelpCard, .stats-grid > .stats-card:nth-child(n+12) { grid-column: 1 / -1; }
         }
+    
+        .sv-res .swal2-title { font-size: 18px !important; padding: 6px 36px 0 !important; line-height: 1.25; }
+        .sv-res .swal2-html-container { margin: 8px 12px 4px !important; }
+        .sv-res .swal2-actions { margin: 8px auto 4px !important; }
+        .sv-res { padding: 10px 6px 12px !important; max-height: 96dvh; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1882,7 +1887,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 const sorted = resp.slice().sort((a, b) => (b.createdAtIso || '').localeCompare(a.createdAtIso || ''));
                 people = '<div style="text-align:left; margin-top:14px; font-weight:800; font-size:14px;">👤 Kişi bazında cevaplar</div>' + sorted.map(r => { const lines = (sv.questions || []).map((q, qi) => { const v = (r.answers || {})[q.id]; if (v === undefined || v === '') return ''; return `<div style="font-size:12px; margin-top:2px;"><span style="opacity:.65;">${qi + 1}.</span> ${q.type === 'stars' ? '⭐'.repeat(Math.min(5, +v)) + ' (' + v + ')' : svEsc(v)}</div>`; }).join(''); return `<details style="text-align:left; padding:6px 0; border-bottom:1px solid rgba(148,163,184,.25);"><summary style="cursor:pointer; font-size:13px; font-weight:700;">${svEsc(r.name || 'İsimsiz')}${r.pid ? ' <span style="opacity:.6; font-weight:400;">#' + svEsc(r.pid) + '</span>' : ''} <span style="opacity:.55; font-weight:400; font-size:11px;">${svEsc(r.createdAtIso ? new Date(r.createdAtIso).toLocaleDateString('tr-TR') : '')}</span></summary>${lines}</details>`; }).join('');
             }
-            Swal.fire({ title: svEsc(sv.title) + (sv.named ? ' 👤' : ' 🔒'), html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;"><b>${n}</b> cevap${rate} · ${sv.named ? 'isimli anket' : 'anonim anket'}</div><div style="max-height:62vh; overflow:auto;">${n ? blocks + people : '<div style="padding:20px; opacity:.7;">Henüz cevap yok.</div>'}</div>`, width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal' } });
+            Swal.fire({ title: svEsc(sv.title) + (sv.named ? ' 👤' : ' 🔒'), html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;"><b>${n}</b> cevap${rate} · ${sv.named ? 'isimli anket' : 'anonim anket'}</div><div style="max-height:calc(100vh - 290px); max-height:calc(100dvh - 290px); overflow:auto;">${n ? blocks + people : '<div style="padding:20px; opacity:.7;">Henüz cevap yok.</div>'}</div>`, width: 'min(96vw, 560px)', confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', showCloseButton: true, heightAuto: false, customClass: { popup: 'compact-swal sv-res' } });
         } catch (e) { Swal.fire('Sonuçlar alınamadı', e.message, 'error'); }
     };
 
