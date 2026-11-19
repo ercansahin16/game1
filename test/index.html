@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v69">
+    <meta name="app-build" content="test-v70">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4460,6 +4460,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
         <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
         <div class="sidebar-item" id="installAppBtn"><i class="fas fa-download"></i> Uygulamayı İndir</div>
         <div class="sidebar-item" id="goSurvey"><i class="fas fa-poll"></i> Anketler <span class="svDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; align-items:center; justify-content:center; box-sizing:border-box; margin-left:8px;"></span></div>
+        <div class="sidebar-item" id="goDuel"><i class="fas fa-users"></i> ⚔️ Düello</div>
         <div class="sidebar-item" id="checkUpdateBtn"><i class="fas fa-rotate"></i> Yeni Sürümü Denetle</div>
         <div class="sidebar-footer" style="margin-top: auto; padding: 14px 0 10px; flex-shrink: 0;">
             <div class="sidebar-item" id="goHelp"><i class="fas fa-question-circle"></i> Yardım / İletişim</div>
@@ -9695,6 +9696,184 @@ document.getElementById('doLoginBtn').onclick = async () => {
         window.__openSurvey = openList;
         const btn = item();
         if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} openList(); };
+    })();
+
+    // ===== ⚔️ ARKADAŞ DÜELLOSU (test) =====
+    // İki kişilik, sıra-sıra oynanan yarışma: 6 haneli kodla davet edilir, soruları ikisi de aynı çözer.
+    (function () {
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const Q_COUNT = 10, CODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        const newCode = () => Array.from({ length: 6 }, () => CODE_CH[Math.floor(Math.random() * CODE_CH.length)]).join('');
+        const myName = () => (document.getElementById('userNameDisplay')?.textContent || currentUser?.displayName || 'Kursiyer').trim() || 'Kursiyer';
+        const shuf = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+        const fmtMs = (ms) => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+        const permMsg = 'Düello kaydedilemedi. Firestore kurallarına "duels" koleksiyonu için izin eklenmemiş olabilir.';
+
+        async function allWords() { return (await __CC.docsOf('words:all', () => getDocs(collection(db, 'words')))).docs.map(d => ({ id: d.id, ...d.data() })); }
+
+        async function buildQuestions(lessonId, pool) {
+            const base = lessonId === '*' ? pool : pool.filter(w => w.lessonId === lessonId);
+            const pick = shuf(base.filter(w => w.arabic && w.turkish)).slice(0, Q_COUNT);
+            return pick.map(w => {
+                let others = shuf(base.filter(x => x.id !== w.id && x.turkish && x.turkish !== w.turkish));
+                if (others.length < 3) others = others.concat(shuf(pool.filter(x => x.id !== w.id && x.turkish && x.turkish !== w.turkish && !others.includes(x))));
+                const seen = new Set([w.turkish]); const wrong = [];
+                for (const o of others) { if (!seen.has(o.turkish)) { seen.add(o.turkish); wrong.push(o.turkish); } if (wrong.length === 3) break; }
+                const opts = shuf([w.turkish, ...wrong]);
+                return { arabic: w.arabic, options: opts, correct: opts.indexOf(w.turkish) };
+            });
+        }
+
+        async function lessonChoices() {
+            const pool = await allWords();
+            const cnt = {}; pool.forEach(w => { if (w.lessonId) cnt[w.lessonId] = (cnt[w.lessonId] || 0) + 1; });
+            const ls = (await __CC.docsOf('lessons:all', () => getDocs(collection(db, 'lessons')))).docs.map(d => ({ id: d.id, ...d.data() }))
+                .filter(l => (cnt[l.id] || 0) >= 4).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const out = [];
+            for (const l of ls) { let ok = false; try { ok = await isLessonWordsUnlocked(l.id); } catch (e) {} if (ok) out.push(l); }
+            return { pool, lessons: out };
+        }
+
+        function shareText(code) { return `SaadetYolu'nda seninle düello yapmak istiyorum! ⚔️\nDüello kodu: ${code}\nUygulamada menüden "Düello" → "Koda katıl" de.\n${location.origin}${location.pathname}`; }
+        async function share(code) {
+            const t = shareText(code);
+            try { if (navigator.share) { await navigator.share({ text: t }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+            try { await navigator.clipboard.writeText(t); Swal.fire({ icon: 'success', title: 'Davet metni kopyalandı', text: 'Arkadaşına gönderebilirsin.', timer: 1800, showConfirmButton: false }); }
+            catch (e) { Swal.fire({ title: 'Düello kodu', html: `<div style="font-size:34px; font-weight:800; letter-spacing:4px;">${code}</div>` }); }
+        }
+
+        async function create() {
+            Swal.fire({ title: 'Dersler hazırlanıyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            let ch; try { ch = await lessonChoices(); } catch (e) { return Swal.fire('Hata', 'Dersler alınamadı.', 'error'); }
+            if (!ch.lessons.length) return Swal.fire('Düello için açık ders yok', 'Önce en az bir dersin kelimelerini açmalısın.', 'info');
+            const opts = '<option value="*">🎲 Karışık (açık derslerimden)</option>' + ch.lessons.map(l => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+            const r = await Swal.fire({
+                title: '⚔️ Yeni düello', confirmButtonText: 'Düelloyu kur', showCancelButton: true, cancelButtonText: 'Vazgeç', confirmButtonColor: '#f59e0b',
+                html: `<div style="text-align:left; font-size:13px; margin-bottom:6px;">Hangi dersten ${Q_COUNT} soru sorulsun?</div><select id="duelLesson" class="swal2-select" style="width:100%; margin:0;">${opts}</select>
+                       <div style="text-align:left; font-size:12px; opacity:.7; margin-top:8px;">Kurduktan sonra çıkan kodu arkadaşına gönder. İkiniz de aynı soruları kendi zamanınızda çözersiniz; doğru sayısı ve süreye göre kazanan belli olur.</div>`,
+                preConfirm: () => document.getElementById('duelLesson').value
+            });
+            if (!r.isConfirmed) return;
+            Swal.fire({ title: 'Düello kuruluyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const lid = r.value; const lname = lid === '*' ? 'Karışık' : (ch.lessons.find(l => l.id === lid) || {}).name || 'Ders';
+                const allowedPool = lid === '*' ? ch.pool.filter(w => ch.lessons.some(l => l.id === w.lessonId)) : ch.pool;
+                const questions = await buildQuestions(lid, allowedPool);
+                if (questions.length < 4) return Swal.fire('Yeterli kelime yok', 'Bu dersten soru üretilemedi.', 'info');
+                let code = newCode();
+                for (let i = 0; i < 5; i++) { if (!(await getDoc(doc(db, 'duels', code))).exists()) break; code = newCode(); }
+                const uid = currentUser.uid;
+                await setDoc(doc(db, 'duels', code), { code, lessonName: lname, questions, pids: [uid], names: { [uid]: myName() }, results: {}, createdAtIso: new Date().toISOString() });
+                const d = await Swal.fire({ icon: 'success', title: 'Düello hazır!', confirmButtonText: '📤 Arkadaşına gönder', showDenyButton: true, denyButtonText: 'Önce ben oynayayım', confirmButtonColor: '#f59e0b',
+                    html: `<div style="font-size:13px; opacity:.8;">${esc(lname)} · ${questions.length} soru</div><div style="font-size:38px; font-weight:800; letter-spacing:6px; margin:10px 0; color:#f59e0b;">${code}</div><div style="font-size:12px; opacity:.7;">Bu kodu arkadaşına gönder.</div>` });
+                if (d.isConfirmed) await share(code);
+                else if (d.isDenied) { const s = await getDoc(doc(db, 'duels', code)); play({ id: code, ...s.data() }); }
+            } catch (e) { console.warn(e); Swal.fire('Hata', permMsg, 'error'); }
+        }
+
+        async function join() {
+            const r = await Swal.fire({ title: 'Koda katıl', input: 'text', inputPlaceholder: '6 haneli kod', inputAttributes: { maxlength: 6, autocapitalize: 'characters', style: 'text-align:center; letter-spacing:4px; font-size:22px;' },
+                showCancelButton: true, confirmButtonText: 'Katıl', cancelButtonText: 'Vazgeç', confirmButtonColor: '#f59e0b' });
+            if (!r.isConfirmed) return;
+            const code = String(r.value || '').trim().toUpperCase();
+            if (code.length !== 6) return Swal.fire('Kod 6 haneli olmalı', '', 'info');
+            try {
+                const ref = doc(db, 'duels', code); const s = await getDoc(ref);
+                if (!s.exists()) return Swal.fire('Düello bulunamadı', 'Kodu kontrol et.', 'info');
+                const d = s.data(); const uid = currentUser.uid;
+                if (!d.pids.includes(uid)) {
+                    if (d.pids.length >= 2) return Swal.fire('Düello dolu', 'Bu düelloda zaten iki kişi var.', 'info');
+                    await updateDoc(ref, { pids: arrayUnion(uid), ['names.' + uid]: myName() });
+                }
+                const s2 = await getDoc(ref); openDuel({ id: code, ...s2.data() });
+            } catch (e) { console.warn(e); Swal.fire('Hata', permMsg, 'error'); }
+        }
+
+        function status(d) {
+            const uid = currentUser.uid, me = d.results && d.results[uid];
+            const oppId = (d.pids || []).find(x => x !== uid), opp = oppId && d.results && d.results[oppId];
+            if (!oppId) return { k: 'wait', t: '⏳ Arkadaş bekleniyor' };
+            if (!me) return { k: 'play', t: '▶ Sıra sende' };
+            if (!opp) return { k: 'oppwait', t: '⌛ Rakip oynuyor' };
+            const w = verdict(d); return { k: 'done', t: w === 1 ? '🏆 Kazandın' : w === -1 ? '😔 Kaybettin' : '🤝 Berabere' };
+        }
+        function verdict(d) {
+            const uid = currentUser.uid, oppId = d.pids.find(x => x !== uid);
+            const a = d.results[uid], b = d.results[oppId];
+            if (a.correct !== b.correct) return a.correct > b.correct ? 1 : -1;
+            if (Math.abs(a.ms - b.ms) < 1000) return 0;
+            return a.ms < b.ms ? 1 : -1;
+        }
+
+        function openDuel(d) {
+            const st = status(d);
+            if (st.k === 'play') return play(d);
+            if (st.k === 'wait') return share(d.id);
+            return showResult(d);
+        }
+
+        function showResult(d) {
+            const uid = currentUser.uid, oppId = d.pids.find(x => x !== uid);
+            const a = d.results[uid], b = oppId && d.results[oppId];
+            const row = (n, r, you) => `<div style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:10px; margin:6px 0; background:${you ? 'rgba(245,158,11,.15)' : 'rgba(128,128,128,.12)'};"><b>${you ? '🧑 ' : '👤 '}${esc(n)}</b><span>${r ? `<b>${r.correct}/${d.questions.length}</b> · ${fmtMs(r.ms)}` : '<i style="opacity:.6;">henüz oynamadı</i>'}</span></div>`;
+            let head = '';
+            if (a && b) { const v = verdict(d); head = `<div style="font-size:34px;">${v === 1 ? '🏆' : v === -1 ? '😔' : '🤝'}</div><div style="font-weight:800; font-size:20px; margin-bottom:6px;">${v === 1 ? 'Kazandın!' : v === -1 ? 'Rakibin kazandı' : 'Berabere'}</div>`; }
+            else head = '<div style="font-size:13px; opacity:.75; margin-bottom:6px;">Rakibin oynayınca sonuç burada görünür.</div>';
+            Swal.fire({ title: '⚔️ ' + esc(d.lessonName), showCloseButton: true, confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b',
+                html: head + row(d.names[uid] || 'Sen', a, true) + (oppId ? row(d.names[oppId] || 'Rakip', b, false) : '') + `<div style="font-size:11px; opacity:.6; margin-top:8px;">Kod: ${d.id} · Sıralama: önce doğru sayısı, eşitse daha kısa süre</div>` });
+        }
+
+        function play(d) {
+            const qs = d.questions; let i = 0, correct = 0; const t0 = Date.now(); let locked = false;
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed; inset:0; z-index:99999; background:#0f1115; color:#fff; display:flex; flex-direction:column; padding:14px; overflow:auto;';
+            document.body.appendChild(ov);
+            const close = () => { clearInterval(tm); ov.remove(); };
+            const tm = setInterval(() => { const e = ov.querySelector('#duelT'); if (e) e.textContent = '⏱ ' + fmtMs(Date.now() - t0); }, 500);
+            function render() {
+                const q = qs[i];
+                ov.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; opacity:.9;">
+                      <button id="duelX" style="background:none; border:none; color:#fff; font-size:22px;">✕</button><b>⚔️ ${esc(d.lessonName)}</b><span id="duelT">⏱ ${fmtMs(Date.now() - t0)}</span></div>
+                    <div style="height:6px; border-radius:99px; background:rgba(255,255,255,.12); margin:10px 0 16px;"><div style="height:100%; width:${(i / qs.length) * 100}%; background:#f59e0b; border-radius:99px;"></div></div>
+                    <div style="text-align:center; font-size:13px; opacity:.7;">Soru ${i + 1}/${qs.length}</div>
+                    <div dir="rtl" style="text-align:center; font-size:clamp(40px, 12vw, 58px); font-family:'Scheherazade New','Amiri','Noto Naskh Arabic',serif; color:#7fb2e5; margin:18px 0 22px; line-height:1.6;">${esc(q.arabic)}</div>
+                    <div style="display:flex; flex-direction:column; gap:10px; max-width:520px; width:100%; margin:0 auto;">${q.options.map((o, k) => `<button data-k="${k}" style="padding:14px 14px; border-radius:14px; border:1.5px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#fff; font-size:17px; text-align:left;">${'ABCD'[k]}. ${esc(o)}</button>`).join('')}</div>`;
+                ov.querySelector('#duelX').onclick = async () => { const r = await Swal.fire({ title: 'Düellodan çıkılsın mı?', text: 'Çıkarsan bu turu baştan oynarsın.', showCancelButton: true, confirmButtonText: 'Çık', cancelButtonText: 'Devam et' }); if (r.isConfirmed) close(); };
+                ov.querySelectorAll('button[data-k]').forEach(b => b.onclick = () => {
+                    if (locked) return; locked = true; const k = +b.dataset.k;
+                    if (k === q.correct) correct++;
+                    ov.querySelectorAll('button[data-k]').forEach(x => { const kk = +x.dataset.k; if (kk === q.correct) x.style.background = '#15803d'; else if (kk === k) x.style.background = '#b91c1c'; });
+                    setTimeout(async () => { locked = false; i++; if (i < qs.length) render(); else await finish(); }, 650);
+                });
+            }
+            async function finish() {
+                const ms = Date.now() - t0; close();
+                try {
+                    await updateDoc(doc(db, 'duels', d.id), { ['results.' + currentUser.uid]: { correct, ms, at: new Date().toISOString() } });
+                    const s = await getDoc(doc(db, 'duels', d.id)); showResult({ id: d.id, ...s.data() });
+                } catch (e) { console.warn(e); Swal.fire('Sonuç kaydedilemedi', permMsg, 'error'); }
+            }
+            render();
+        }
+
+        async function menu() {
+            Swal.fire({ title: 'Düellolar yükleniyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            let list = [];
+            try { list = (await getDocs(query(collection(db, 'duels'), where('pids', 'array-contains', currentUser.uid), limit(30)))).docs.map(x => ({ id: x.id, ...x.data() })); }
+            catch (e) { console.warn(e); }
+            list.sort((a, b) => String(b.createdAtIso).localeCompare(String(a.createdAtIso)));
+            const rows = list.map(d => { const st = status(d); const opp = d.pids.find(x => x !== currentUser.uid);
+                return `<button data-id="${d.id}" style="display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; padding:10px 12px; margin:6px 0; border-radius:12px; border:1px solid rgba(128,128,128,.3); background:rgba(128,128,128,.1); color:inherit;">
+                  <span><b>${esc(opp ? (d.names[opp] || 'Rakip') : 'Henüz rakip yok')}</b><br><small style="opacity:.7;">${esc(d.lessonName)} · ${d.id}</small></span><span style="font-size:13px; font-weight:700;">${st.t}</span></button>`; }).join('');
+            const r = await Swal.fire({ title: '⚔️ Arkadaş Düellosu', showCloseButton: true, showConfirmButton: true, confirmButtonText: '➕ Yeni düello', confirmButtonColor: '#f59e0b', showDenyButton: true, denyButtonText: '🔑 Koda katıl', denyButtonColor: '#6366f1',
+                html: `<div style="max-height:calc(100dvh - 330px); overflow:auto;">${rows || '<div style="padding:16px; opacity:.7; font-size:14px;">Henüz düellon yok. Yeni düello kur ya da arkadaşının kodunu gir.</div>'}</div>`,
+                didOpen: (el) => el.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { const d = list.find(x => x.id === b.dataset.id); Swal.close(); if (d) openDuel(d); }) });
+            if (r.isConfirmed) create(); else if (r.isDenied) join();
+        }
+
+        window.__openDuel = menu;
+        const btn = document.getElementById('goDuel');
+        if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} menu(); };
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
