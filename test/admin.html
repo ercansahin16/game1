@@ -1052,7 +1052,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div><i class="fas fa-users"></i> Kullanıcı</div>
                 </div>
                 <!-- Toplam Sandık (tüm kullanıcılar) -->
-                <div class="stats-card" id="statSandikCard" style="cursor: pointer;" onclick="showSection('users'); loadUsers();">
+                <div class="stats-card" id="statSandikCard" style="cursor: pointer;" onclick="showSandikStats()">
                     <div id="statSandikTotal">0</div>
                     <div><i class="fas fa-box"></i> Toplam Sandık</div>
                 </div>
@@ -3399,6 +3399,38 @@ window.loadLoginHelp = async function () {
     } catch (e) { box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Talepler yüklenemedi.</div>'; }
 };
 
+
+window.showSandikStats = async function () {
+    const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    Swal.fire({ title: 'Sandık verisi hazırlanıyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const snap = await getDocs(collection(db, 'users'));
+        const rows = []; const words = {}; let total = 0, withSandik = 0;
+        snap.docs.forEach(d => {
+            const u = d.data(); const sd = Array.isArray(u.quizSandik) ? u.quizSandik : [];
+            total += sd.length; if (sd.length) withSandik++;
+            rows.push({ name: u.name || u.email || '(isimsiz)', n: sd.length });
+            sd.forEach(w => { const k = w.arabic || w.id || '?'; (words[k] = words[k] || { a: k, t: w.turkish || '', c: 0 }).c++; });
+        });
+        rows.sort((a, b) => b.n - a.n);
+        const topW = Object.values(words).sort((a, b) => b.c - a.c).slice(0, 15);
+        const th = 'position:sticky; top:0; background:#1f2937; color:#f59e0b; padding:6px 8px; font-size:12px; text-align:left;';
+        const uRows = rows.filter(r => r.n > 0).map((r, i) => `<tr><td style="padding:5px 8px;">${i + 1}</td><td style="padding:5px 8px; text-align:left;">${esc(r.name)}</td><td style="padding:5px 8px; text-align:right; font-weight:700;">${r.n}</td></tr>`).join('');
+        const wRows = topW.map(w => `<tr><td style="padding:5px 8px; font-size:18px; direction:rtl;">${esc(w.a)}</td><td style="padding:5px 8px; text-align:left;">${esc(w.t)}</td><td style="padding:5px 8px; text-align:right; font-weight:700;">${w.c}</td></tr>`).join('');
+        Swal.fire({
+            title: '📦 Sandık İstatistiği', width: 'min(96vw, 560px)', showCloseButton: true, confirmButtonText: 'Kapat', confirmButtonColor: '#f59e0b', heightAuto: false,
+            customClass: { popup: 'compact-swal sv-res' },
+            html: `<div style="text-align:left; font-size:13px; margin-bottom:8px;"><b>${total}</b> kelime sandıkta · <b>${withSandik}</b>/${snap.size} kullanıcının sandığı dolu · kişi başı ort. <b>${snap.size ? (total / snap.size).toFixed(1) : 0}</b></div>
+              <div style="max-height:calc(100dvh - 300px); overflow:auto;">
+                <div style="text-align:left; font-weight:700; margin:6px 0 4px;">Kullanıcıya göre sandık</div>
+                <table style="width:100%; border-collapse:collapse; font-size:13px;"><thead><tr><th style="${th}">#</th><th style="${th}">Kullanıcı</th><th style="${th} text-align:right;">Sandıktaki kelime</th></tr></thead><tbody>${uRows || '<tr><td colspan="3" style="padding:10px; opacity:.7;">Sandığı dolu kullanıcı yok.</td></tr>'}</tbody></table>
+                <div style="text-align:left; font-weight:700; margin:12px 0 4px;">Sandıkta en çok takılan kelimeler</div>
+                <table style="width:100%; border-collapse:collapse; font-size:13px;"><thead><tr><th style="${th}">Arapça</th><th style="${th}">Anlamı</th><th style="${th} text-align:right;">Kaç kişide</th></tr></thead><tbody>${wRows || '<tr><td colspan="3" style="padding:10px; opacity:.7;">Veri yok.</td></tr>'}</tbody></table>
+              </div>`
+        });
+    } catch (e) { Swal.fire('Alınamadı', e.message || String(e), 'error'); }
+};
+
 window.__purgeQaImages = async function (id) {
     // Çözüldü olarak işaretlenen sorunun tüm görüntülerini (soru + yanıtlar) siler, yer kaplamasın
     try {
@@ -5163,7 +5195,6 @@ async function loadExams() {
     // Sınav listesini temizle ve uyarı mesajı göster
     const container = document.getElementById('examsList');
     container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen önce bir kitap seçin</div>';
-    document.getElementById('statExams').innerHTML = '0';
 }
 
 async function loadAdminExamBooks() {
@@ -5193,7 +5224,6 @@ async function loadAdminExamBooks() {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
             container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -5225,7 +5255,6 @@ async function loadAdminExamBooks() {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
             container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -5262,7 +5291,6 @@ async function loadAdminExamBooks() {
         });
         
         container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
-        document.getElementById('statExams').innerHTML = '0';
     };
 }
 
@@ -5295,7 +5323,6 @@ async function loadExamsByLesson(lessonId) {
 // Admin paneli - Sınavları listele
 function displayAdminExams(exams) {
     const container = document.getElementById('examsList');
-    document.getElementById('statExams').innerHTML = exams.length;
     
     if (exams.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px;">Henüz sınav eklenmemiş.</div>';
@@ -5335,7 +5362,6 @@ if (adminExamBookSelect) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Önce Kitap Seçin --</option>';
             container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -5369,7 +5395,6 @@ if (adminExamBookSelect) {
             lessonSelect.disabled = true;
             lessonSelect.innerHTML = '<option value="">-- Bu kitapta ders yok --</option>';
             container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -5407,7 +5432,6 @@ if (adminExamBookSelect) {
         
         // Sınavları GÖSTERME, sadece mesaj göster
         container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
-        document.getElementById('statExams').innerHTML = '0';
     };
 }
 
@@ -5420,7 +5444,6 @@ if (adminExamLessonSelect) {
         
         if (!lessonId) {
             container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -5437,7 +5460,6 @@ if (adminExamLessonSelect) {
         
         if (exams.length === 0) {
             container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz sınav yok</div>';
-            document.getElementById('statExams').innerHTML = '0';
         } else {
             displayAdminExams(exams);
         }
@@ -6056,7 +6078,6 @@ if (adminExamBookSelect) {
             if (container) {
                 container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Lütfen bir kitap seçin</div>';
             }
-            document.getElementById('statExams').innerHTML = '0';
             return;
         }
         
@@ -6095,7 +6116,6 @@ if (adminExamBookSelect) {
                 if (container) {
                     container.innerHTML = '<div style="text-align:center; padding:20px;">📚 Bu kitapta ders bulunamadı</div>';
                 }
-                document.getElementById('statExams').innerHTML = '0';
                 return;
             }
             
@@ -6136,7 +6156,6 @@ if (adminExamBookSelect) {
             if (container) {
                 container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
             }
-            document.getElementById('statExams').innerHTML = '0';
             
         } catch (error) {
             console.error('Dersler yüklenirken hata:', error);
@@ -6159,7 +6178,6 @@ if (adminExamBookSelect) {
                 if (container) {
                     container.innerHTML = '<div style="text-align:center; padding:20px;">📗 Lütfen bir ders seçin</div>';
                 }
-                document.getElementById('statExams').innerHTML = '0';
                 return;
             }
             
@@ -6178,7 +6196,6 @@ if (adminExamBookSelect) {
                     if (container) {
                         container.innerHTML = '<div style="text-align:center; padding:20px;">Bu derste henüz sınav yok</div>';
                     }
-                    document.getElementById('statExams').innerHTML = '0';
                 } else {
                     displayAdminExams(exams);
                 }
