@@ -3399,6 +3399,19 @@ window.loadLoginHelp = async function () {
     } catch (e) { box.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Talepler yüklenemedi.</div>'; }
 };
 
+window.__purgeQaImages = async function (id) {
+    // Çözüldü olarak işaretlenen sorunun tüm görüntülerini (soru + yanıtlar) siler, yer kaplamasın
+    try {
+        const rs = await getDocs(collection(db, 'qaPosts', id, 'replies'));
+        for (const r of rs.docs) {
+            try { await deleteDoc(doc(db, 'qaImages', id + '__' + r.id)); } catch (e) {}
+            if (r.data().hasImage) { try { await updateDoc(r.ref, { hasImage: false }); } catch (e) {} }
+        }
+        try { await deleteDoc(doc(db, 'qaImages', id)); } catch (e) {}
+        try { await updateDoc(doc(db, 'qaPosts', id), { hasImage: false, imagesPurged: true }); } catch (e) {}
+    } catch (e) { console.warn('purge', e); }
+};
+
 window.loadBugs = async function () {
     const box = document.getElementById('bugsList');
     if (!box) return;
@@ -3431,6 +3444,7 @@ window.loadBugs = async function () {
                 </div>`;
             div.onclick = () => openBugThread(d.id);
             box.appendChild(div);
+            if (done && p.hasImage) window.__purgeQaImages(d.id);   // eskiden çözülmüşlerin görüntüleri de temizlensin
         });
     } catch (e) {
         console.warn(e);
@@ -3503,6 +3517,7 @@ window.openBugThread = async function (id) {
             loadBugs();
         } else if (res.isDenied) {
             await updateDoc(doc(db, 'qaPosts', id), { status: done ? 'new' : 'done' });
+            if (!done) await window.__purgeQaImages(id);   // çözüldü → görüntüleri sil
             loadBugs();
         }
     } catch (e) {
