@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v83">
+    <meta name="app-build" content="saadetyolu-shell-v84">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4478,7 +4478,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.3 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.4 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -8280,18 +8280,10 @@ function fixArabicText(text) {
         if (k === __q.correct) el.classList.add('correct');
         else if (k === optionIdx) el.classList.add('wrong');
     });
-    setTimeout(() => {
-        window.__examAnsLock = false;
-        if (examCompleted) return;
-        if (currentQuestionIndex < currentExam.questions.length - 1) {
-            if (currentQuestionIndex === questionIdx) currentQuestionIndex++;
-            showCurrentQuestion();
-            startTimer();
-        } else {
-            // Son soru cevaplandı, sınavı bitir
-            completeExam();
-        }
-    }, 900);
+    const __b = document.querySelector('.quiz-answered-badge');
+    if (__b) __b.innerHTML = `<i class="fas fa-check-circle"></i> ${userAnswers.filter(x => x !== null && x !== undefined).length}/${currentExam.questions.length}`;
+    // Otomatik geçiş yok: kursiyer renkleri görüp "Sonraki" ile kendisi ilerler (son soruda "Bitir")
+    window.__examAnsLock = false;
 };
 
 
@@ -8557,12 +8549,13 @@ async function updateExamSummary(correct, totalQuestions) {
     if (currentQuestionIndex < currentExam.questions.length - 1) {
         currentQuestionIndex++;
         showCurrentQuestion();
-        startTimer();
+        if (userAnswers[currentQuestionIndex] === null || userAnswers[currentQuestionIndex] === undefined) startTimer();   // cevaplanmış soruda süre başlamasın
     }
 };
     
     window.previousQuestion = () => {
         if (currentQuestionIndex > 0) {
+            stopTimer();
             currentQuestionIndex--;
             showCurrentQuestion();
         }
