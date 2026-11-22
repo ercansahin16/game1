@@ -1120,10 +1120,10 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
                 </div>
                 <!-- İçeriği Yayınla (statik icerik.json) -->
-                <div class="stats-card" id="statPublishContentCard" style="cursor: pointer; border-color: rgba(245,158,11,0.4);" onclick="publishContentJson()">
-                    <div style="font-size: 28px; color: #f59e0b;">🚀</div>
-                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">İçeriği Yayınla</div>
-                    <div style="font-size: 11px; opacity: 0.7;">icerik.json üret (hızlı yükleme)</div>
+                <div class="stats-card" id="statPublishContentCard" style="border-color: rgba(34,197,94,0.4); cursor: default;">
+                    <div style="font-size: 28px; color: #22c55e;">📦</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">İçerik: icerik.json</div>
+                    <div style="font-size: 11px; opacity: 0.7;">Kitap, ders, kelime ve sınavlar dosyadan okunur (salt okunur). Değişiklik için dosyayı güncelleyin.</div>
                 </div>
                 <!-- Yedekleme -->
                 <div class="stats-card" id="statBackupCard" style="cursor: pointer; border-color: rgba(168,85,247,0.3);" onclick="backupAllData()">
@@ -1596,7 +1596,49 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut as __signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch, limit, increment, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+   import { getFirestore, collection as _collection, doc as _doc, getDoc as _getDoc, getDocs as _getDocs, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, query as _query, where as _where, orderBy as _orderBy, writeBatch as _writeBatch, limit, increment, getCountFromServer as _getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    // ===== İÇERİK = icerik.json (salt okunur) =====
+    // kitap/ders/kelime/sınav artık Firebase'den değil icerik.json'dan okunur. Diğer koleksiyonlar (kullanıcılar, duyurular, sorular...) Firebase'de kalır.
+    const __CONTENT = new Set(['books', 'lessons', 'words', 'exams']);
+    let __icP = null;
+    const __icerik = () => __icP || (__icP = fetch('icerik.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('icerik.json okunamadı (' + r.status + ')'); return r.json(); }));
+    const __RO = () => { throw new Error('İçerik artık icerik.json dosyasından yönetiliyor. Değişikliği dosyada yapıp GitHub\'a yükleyin.'); };
+    const __cmp = (a, b) => { const na = Number(a), nb = Number(b); if (a !== '' && b !== '' && !isNaN(na) && !isNaN(nb)) return na - nb; return String(a ?? '').localeCompare(String(b ?? ''), 'tr'); };
+    async function __run(q) {
+        const j = await __icerik(); let arr = (j[q.__sc] || []).slice();
+        for (const c of q.__cons) {
+            if (c.__w) { const [f, op, v] = c.__w; arr = arr.filter(o => op === '==' ? o[f] === v : op === '!=' ? o[f] !== v : op === 'in' ? v.includes(o[f]) : op === 'array-contains' ? (o[f] || []).includes(v) : true); }
+        }
+        for (const c of q.__cons.filter(c => c.__o).reverse()) { const [f, dir] = c.__o; arr.sort((x, y) => (dir === 'desc' ? -1 : 1) * __cmp(x[f], y[f])); }
+        const lim = q.__cons.find(c => c.__l); if (lim) arr = arr.slice(0, lim.__l);
+        return arr;
+    }
+    const __mkDoc = (coll, o) => { const { id, ...rest } = o; return { id, ref: { __sd: coll, id }, data: () => JSON.parse(JSON.stringify(rest)), exists: () => true }; };
+    const collection = (...a) => (a.length === 2 && typeof a[1] === 'string' && __CONTENT.has(a[1])) ? { __sc: a[1], __cons: [] } : _collection(...a);
+    const doc = (...a) => {
+        if (a[0] && a[0].__sc) return { __sd: a[0].__sc, id: 'new' };
+        if (typeof a[1] === 'string' && __CONTENT.has(a[1])) return { __sd: a[1], id: a[2] };
+        return _doc(...a);
+    };
+    const where = (...a) => { const c = _where(...a); c.__w = a; return c; };
+    const orderBy = (...a) => { const c = _orderBy(...a); c.__o = [a[0], a[1] || 'asc']; return c; };
+    const query = (q, ...cons) => (q && q.__sc) ? { __sc: q.__sc, __cons: [...q.__cons, ...cons] } : _query(q, ...cons);
+    const getDocs = async (q) => {
+        if (!(q && q.__sc)) return _getDocs(q);
+        const docs = (await __run(q)).map(o => __mkDoc(q.__sc, o));
+        return { docs, size: docs.length, empty: !docs.length, forEach: fn => docs.forEach(fn) };
+    };
+    const getDoc = async (r) => {
+        if (!(r && r.__sd)) return _getDoc(r);
+        const o = ((await __icerik())[r.__sd] || []).find(x => x.id === r.id);
+        return o ? __mkDoc(r.__sd, o) : { id: r.id, exists: () => false, data: () => undefined, ref: r };
+    };
+    const getCountFromServer = async (q) => { if (q && q.__sc) { const n = (await __run(q)).length; return { data: () => ({ count: n }) }; } return _getCountFromServer(q); };
+    const __isC = (r) => r && (r.__sd || r.__sc);
+    const setDoc = (r, ...a) => __isC(r) ? __RO() : _setDoc(r, ...a);
+    const updateDoc = (r, ...a) => __isC(r) ? __RO() : _updateDoc(r, ...a);
+    const deleteDoc = (r) => __isC(r) ? __RO() : _deleteDoc(r);
+    const writeBatch = (d) => { const b = _writeBatch(d); return { set: (r, ...a) => __isC(r) ? __RO() : b.set(r, ...a), update: (r, ...a) => __isC(r) ? __RO() : b.update(r, ...a), delete: (r) => __isC(r) ? __RO() : b.delete(r), commit: () => b.commit() }; };
      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"; // ✅ YENİ
     const firebaseConfig = {
         apiKey: "AIzaSyCloL8IN0NpHQBxFjaRH_62vOEWjLQjr4o",
