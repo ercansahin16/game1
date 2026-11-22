@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v93">
+    <meta name="app-build" content="saadetyolu-shell-v94">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4485,7 +4485,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.4 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.5 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -7220,7 +7220,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
             __latestAnnouncement = ann;
-            if (ann.hasImage && ann.id) setTimeout(() => { __loadAnnImage(ann.id).then((src) => { if (src) { const im = new Image(); im.src = src; } }); }, 1200);   // resmi arka planda önden indir
+            if (ann.hasImage && ann.id) setTimeout(() => { __loadAnnImage(ann.id, ann.imageUrl).then((src) => { if (src) { const im = new Image(); im.src = src; } }); }, 1200);   // resmi arka planda önden indir
             window.__annUnreadId = (userData.lastOpenedAnnouncementId !== annKey(ann)) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== annKey(ann));
@@ -7314,7 +7314,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                             </div>
                             <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
                         `;
-                        if (a.hasImage && a.id && !__annImgCache[a.id]) __loadAnnImage(a.id);   // önden indir
+                        if (a.hasImage && a.id && !__annImgCache[a.id]) __loadAnnImage(a.id, a.imageUrl).then((src) => { if (src && a.imageUrl) { const im = new Image(); im.src = src; } });   // önden indir
                         row.onclick = () => { openAnnouncementModal(a); markAnnouncementRead(docSnap.id, row); };
                         listEl.appendChild(row);
                     });
@@ -7347,7 +7347,9 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
 
     // ===== Duyuru resmi (announcementImages/{id}) =====
     const __annImgCache = {};
-    async function __loadAnnImage(id) {
+    const __cdn = (u, w) => (u && u.indexOf('/upload/') > 0) ? u.replace('/upload/', '/upload/f_auto,q_auto,w_' + w + '/') : u;
+    async function __loadAnnImage(id, url) {
+        if (url) { const u = __cdn(url, 900); __annImgCache[id] = u; return u; }   // Cloudinary: hızlı CDN
         if (__annImgCache[id] !== undefined) return __annImgCache[id];
         try { const s = await getDoc(doc(db, 'announcementImages', id)); __annImgCache[id] = s.exists() ? (s.data().data || null) : null; }
         catch (e) { return null; }
@@ -7384,10 +7386,10 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             title: a.title || '📢 Duyuru',
             didOpen: () => {
                 const box = document.getElementById('annImgBox'); if (!box || !a.id) return;
-                __loadAnnImage(a.id).then((src) => {
+                __loadAnnImage(a.id, a.imageUrl).then((src) => {
                     if (!src) { box.remove(); return; }
                     box.innerHTML = '<img src="' + src + '" alt=""><span class="ann-img-hint">🔍 Büyütmek için dokun</span>';
-                    box.onclick = () => __openAnnLightbox(src);
+                    box.onclick = () => __openAnnLightbox(a.imageUrl ? __cdn(a.imageUrl, 1600) : src);
                 });
             },
             html: `${a.hasImage ? '<div id="annImgBox" class="ann-img-box"><div style="text-align:center;padding:26px;font-size:12px;opacity:.6;">Resim yükleniyor…</div></div>' : ''}<div style="text-align:left; font-size:15px; line-height:1.6;">${guvenliMesaj}</div>${a.editedAt ? `<div style="text-align:right; font-size:11px; opacity:.6; margin-top:10px; font-style:italic;">✏️ Düzenlendi · ${new Date(a.editedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>` : ''}`,
