@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v91">
+    <meta name="app-build" content="saadetyolu-shell-v92">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4485,7 +4485,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.2 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -7220,6 +7220,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
             __latestAnnouncement = ann;
+            if (ann.hasImage && ann.id) setTimeout(() => { __loadAnnImage(ann.id).then((src) => { if (src) { const im = new Image(); im.src = src; } }); }, 1200);   // resmi arka planda önden indir
             window.__annUnreadId = (userData.lastOpenedAnnouncementId !== annKey(ann)) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== annKey(ann));
@@ -7313,6 +7314,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                             </div>
                             <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
                         `;
+                        if (a.hasImage && a.id && !__annImgCache[a.id]) __loadAnnImage(a.id);   // önden indir
                         row.onclick = () => { openAnnouncementModal(a); markAnnouncementRead(docSnap.id, row); };
                         listEl.appendChild(row);
                     });

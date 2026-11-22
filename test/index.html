@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v81">
+    <meta name="app-build" content="test-v82">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -7221,6 +7221,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             const ann = annSnap.data();
             if (!ann.id || !ann.message) return;
             __latestAnnouncement = ann;
+            if (ann.hasImage && ann.id) setTimeout(() => { __loadAnnImage(ann.id).then((src) => { if (src) { const im = new Image(); im.src = src; } }); }, 1200);   // resmi arka planda önden indir
             window.__annUnreadId = (userData.lastOpenedAnnouncementId !== annKey(ann)) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== annKey(ann));
@@ -7314,6 +7315,7 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
                             </div>
                             <div style="font-size:12px; opacity:0.7; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${guvenliOnizleme}</div>
                         `;
+                        if (a.hasImage && a.id && !__annImgCache[a.id]) __loadAnnImage(a.id);   // önden indir
                         row.onclick = () => { openAnnouncementModal(a); markAnnouncementRead(docSnap.id, row); };
                         listEl.appendChild(row);
                     });
