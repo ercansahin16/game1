@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v95">
+    <meta name="app-build" content="saadetyolu-shell-v96">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4485,7 +4485,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.6 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.20.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -4909,6 +4909,11 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
 ">
     <i class="fas fa-user-friends"></i>
     <span>Arkadaşlarım</span>
+</button>
+                <!-- ===== ÇEVRİMİÇİ OLANLAR ===== -->
+                <button id="onlineChipBtn" onclick="window.openOnlineModal()" style="background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #22c55e; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+    <span style="width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.9);display:inline-block;"></span>
+    <span>Çevrimiçi <b id="onlineChipCount">0</b></span>
 </button>
                 <!-- ===== BİLDİRİMLER (Mesajlar) BUTONU ===== -->
                 <button id="notifBellBtn" onclick="window.openNotificationsModal()" style="
@@ -10988,6 +10993,38 @@ window.loadRanking = async function(force) {
 };
 
 // ===== SIRALAMA EKRANINI ÇİZ (yeniden sunucudan veri çekmeden, sekmeye göre) =====
+// ===== 🟢 ÇEVRİMİÇİ GÖSTERGESİ (sıralama) =====
+// Kalp atışı (lastActive) son 90 sn içinde olan kullanıcılar çevrimiçi sayılır. Sadece bu kullanıcılar okunur (az okuma).
+window.__onlineSet = window.__onlineSet || new Set();
+let __onlineBusy = false, __onlineAt = 0;
+window.openOnlineModal = async function () {
+    await window.__refreshOnline(true);
+    const set = window.__onlineSet || new Set(), names = window.__onlineNames || {};
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const rows = [...set].map(id => ({ id, name: (lastRankingUsers.find(u => u.id === id) || {}).name || names[id] || 'Oyuncu' }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    Swal.fire({
+        title: '🟢 Çevrimiçi (' + rows.length + ')',
+        html: rows.length ? '<div style="text-align:left;max-height:50vh;overflow:auto;">' + rows.map(r => '<div onclick="Swal.close();window.openPlayerProfile(\'' + r.id + '\')" style="padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,.06);border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex:none;"></span>' + esc(r.name) + (r.id === (currentUser && currentUser.uid) ? ' <small style="opacity:.6">(sen)</small>' : '') + '</div>').join('') + '</div>' : 'Şu an çevrimiçi kimse yok.',
+        confirmButtonText: 'Kapat'
+    });
+};
+window.__refreshOnline = async function (force) {
+    if (__onlineBusy || !currentUser || (!force && Date.now() - __onlineAt < 15000)) return;
+    __onlineBusy = true;
+    try {
+        const cutoff = Date.now() - window.__presenceOnlineThresholdMs;
+        const snap = await getDocs(query(collection(db, 'users'), where('lastActive', '>', cutoff)));
+        const set = new Set(); const names = {}; snap.forEach(d => { set.add(d.id); names[d.id] = d.data().name || 'Oyuncu'; }); set.add(currentUser.uid); window.__onlineNames = names;
+        window.__onlineSet = set; __onlineAt = Date.now();
+        document.querySelectorAll('#onlineChipCount').forEach(el => { el.textContent = set.size; });
+        document.querySelectorAll('.lb-on-dot').forEach(el => { el.style.display = set.has(el.dataset.uid) ? 'block' : 'none'; });
+    } catch (e) { /* önemli değil */ }
+    __onlineBusy = false;
+};
+setInterval(() => { const sc = document.getElementById('rankingScreen'); if (sc && sc.offsetParent !== null && document.visibilityState === 'visible') window.__refreshOnline(); }, 45000);
+(function () { const st = document.createElement('style'); st.textContent = '.lb-on-dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:2px solid #1b1b1b;box-shadow:0 0 6px rgba(34,197,94,.8);}'; document.head.appendChild(st); })();
+
 function renderRankingUI(mode) {
     rankingActiveMode = mode;
     const scoreField = mode === 'season' ? 'seasonScore' : 'totalScore';
@@ -11060,7 +11097,7 @@ function renderRankingUI(mode) {
                     <div class="lb-row ${isCurrentUser ? 'me' : ''}" onclick="window.openPlayerProfile('${user.id}')" style="background: ${rowBg};" onmouseover="this.style.background='rgba(245,158,11,0.08)'" onmouseout="this.style.background='${rowBg}'">
                         <div class="lb-left">
                             <span class="lb-medal">${medal}</span>
-                            <div class="social-avatar small">${lbInitials(user.name)}</div>
+                            <div style="position:relative; flex:none;"><div class="social-avatar small">${lbInitials(user.name)}</div><span class="lb-on-dot" data-uid="${user.id}" title="Çevrimiçi" style="display:${(window.__onlineSet && window.__onlineSet.has(user.id)) ? 'block' : 'none'};"></span></div>
                             <div class="lb-name-wrap">
                                 <div class="lb-name-row">
                                     <span class="lb-name"><span style="opacity:0.45; font-weight:400;">${index + 1}.</span> ${user.name}</span>
@@ -11098,6 +11135,7 @@ function renderRankingUI(mode) {
     rankingCounts.forEach(el => {
         if (el) el.textContent = `${toplamOyuncu} oyuncu`;
     });
+    window.__refreshOnline();
 
     // ===== KULLANICININ KENDİ SIRALAMASI =====
     if (currentUser) {
