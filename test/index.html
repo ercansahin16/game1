@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v87">
+    <meta name="app-build" content="test-v88">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4910,6 +4910,11 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
 ">
     <i class="fas fa-user-friends"></i>
     <span>Arkadaşlarım</span>
+</button>
+                <!-- ===== ÇEVRİMİÇİ OLANLAR ===== -->
+                <button id="onlineChipBtn" onclick="window.openOnlineModal()" style="background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #22c55e; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+    <span style="width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.9);display:inline-block;"></span>
+    <span>Çevrimiçi <b id="onlineChipCount">0</b></span>
 </button>
                 <!-- ===== BİLDİRİMLER (Mesajlar) BUTONU ===== -->
                 <button id="notifBellBtn" onclick="window.openNotificationsModal()" style="
@@ -11171,14 +11176,27 @@ window.loadRanking = async function(force) {
 // Kalp atışı (lastActive) son 90 sn içinde olan kullanıcılar çevrimiçi sayılır. Sadece bu kullanıcılar okunur (az okuma).
 window.__onlineSet = window.__onlineSet || new Set();
 let __onlineBusy = false, __onlineAt = 0;
-window.__refreshOnline = async function () {
-    if (__onlineBusy || !currentUser || Date.now() - __onlineAt < 15000) return;
+window.openOnlineModal = async function () {
+    await window.__refreshOnline(true);
+    const set = window.__onlineSet || new Set(), names = window.__onlineNames || {};
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const rows = [...set].map(id => ({ id, name: (lastRankingUsers.find(u => u.id === id) || {}).name || names[id] || 'Oyuncu' }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    Swal.fire({
+        title: '🟢 Çevrimiçi (' + rows.length + ')',
+        html: rows.length ? '<div style="text-align:left;max-height:50vh;overflow:auto;">' + rows.map(r => '<div onclick="Swal.close();window.openPlayerProfile(\'' + r.id + '\')" style="padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,.06);border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex:none;"></span>' + esc(r.name) + (r.id === (currentUser && currentUser.uid) ? ' <small style="opacity:.6">(sen)</small>' : '') + '</div>').join('') + '</div>' : 'Şu an çevrimiçi kimse yok.',
+        confirmButtonText: 'Kapat'
+    });
+};
+window.__refreshOnline = async function (force) {
+    if (__onlineBusy || !currentUser || (!force && Date.now() - __onlineAt < 15000)) return;
     __onlineBusy = true;
     try {
         const cutoff = Date.now() - window.__presenceOnlineThresholdMs;
         const snap = await getDocs(query(collection(db, 'users'), where('lastActive', '>', cutoff)));
-        const set = new Set(); snap.forEach(d => set.add(d.id)); set.add(currentUser.uid);
+        const set = new Set(); const names = {}; snap.forEach(d => { set.add(d.id); names[d.id] = d.data().name || 'Oyuncu'; }); set.add(currentUser.uid); window.__onlineNames = names;
         window.__onlineSet = set; __onlineAt = Date.now();
+        document.querySelectorAll('#onlineChipCount').forEach(el => { el.textContent = set.size; });
         document.querySelectorAll('.lb-on-dot').forEach(el => { el.style.display = set.has(el.dataset.uid) ? 'block' : 'none'; });
         document.querySelectorAll('#rankingCount').forEach(el => { const base = (el.textContent || '').split(' · ')[0]; el.textContent = base + (set.size ? ` · 🟢 ${set.size}` : ''); });
     } catch (e) { /* önemli değil */ }
