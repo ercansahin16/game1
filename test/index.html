@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v99">
+    <meta name="app-build" content="test-v100">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -227,6 +227,8 @@ body.light-theme .profile-info-card .info-divider {
 html, body {
     overscroll-behavior-y: none;
     overflow-y: auto;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 /* Scroll bar olan eeeelementler */
@@ -6366,6 +6368,31 @@ async function markLessonPassedIfNeeded(lessonId, percent) {
             menuBtn.style.top = Math.round(r.top + r.height / 2 - (menuBtn.offsetHeight || 38) / 2) + 'px';
         } catch (e) {}
     }
+    // ===== Aşağı kaydırılınca üstteki "<" (geri) düğmesi görünmez olur: hamburger yanında sabit bir "<" göster =====
+    (function () {
+        const fb = document.createElement('button');
+        fb.id = 'floatBackBtn'; fb.type = 'button'; fb.title = 'Geri';
+        fb.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        fb.style.cssText = 'position:fixed;display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:linear-gradient(145deg,#fbbf24,#f59e0b);color:#121212;font-size:16px;cursor:pointer;z-index:100;box-shadow:0 4px 10px rgba(0,0,0,0.35),inset 0 2px 2px rgba(255,255,255,0.6),inset 0 -3px 4px rgba(0,0,0,0.25);';
+        fb.onclick = () => { try { (window.handleHeaderExit || handleHeaderExit)(); } catch (e) {} };
+        document.body.appendChild(fb);
+        function syncFloatBack() {
+            try {
+                const logo = document.getElementById('homeLogo');
+                const mobile = window.matchMedia('(max-width: 768px)').matches;
+                if (!mobile || !menuBtn || menuBtn.classList.contains('hidden') || !logo || !logo.classList.contains('logo-back-mode') || logo.offsetParent === null) { fb.style.display = 'none'; return; }
+                const lr = logo.getBoundingClientRect(), mr = menuBtn.getBoundingClientRect();
+                const outOfView = lr.bottom < mr.top + 4 || lr.top > window.innerHeight;
+                if (!outOfView) { fb.style.display = 'none'; return; }
+                fb.style.top = Math.round(mr.top) + 'px';
+                fb.style.left = Math.round(mr.right + 8) + 'px';
+                fb.style.display = 'flex';
+            } catch (e) {}
+        }
+        window.addEventListener('scroll', syncFloatBack, { passive: true });
+        window.addEventListener('resize', syncFloatBack);
+        setInterval(syncFloatBack, 500);
+    })();
     window.addEventListener('resize', alignMenuBtn);
     window.addEventListener('orientationchange', () => setTimeout(alignMenuBtn, 300));
     window.addEventListener('load', alignMenuBtn);
