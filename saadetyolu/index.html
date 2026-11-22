@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v81">
+    <meta name="app-build" content="saadetyolu-shell-v82">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -1046,6 +1046,17 @@ body.light-theme .custom-select-item:hover { background: rgba(0,0,0,0.06); }
         .option.correct { background: rgba(16, 185, 129, 0.2); border-color: #10b981; }
         .option.wrong { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; }
         .option.selected { background: rgba(59, 130, 246, 0.3); border-color: #3b82f6; }
+
+        /* ===== SINAV: cevap anında doğru yeşil / yanlış açık kırmızı ===== */
+        .option.correct, .option.wrong { position: relative; cursor: default; }
+        .option.correct { background: rgba(16,185,129,.22) !important; border: 2px solid #10b981 !important; }
+        .option.wrong { background: rgba(239,68,68,.20) !important; border: 2px solid #ef4444 !important; }
+        .option.correct .option-letter, .option.correct .option-text { color: #34d399; font-weight: 700; }
+        .option.wrong .option-letter, .option.wrong .option-text { color: #f87171; font-weight: 700; }
+        .option.correct::after, .option.wrong::after { margin-left: auto; font-size: 20px; padding-left: 8px; }
+        .option.correct::after { content: '✅'; }
+        .option.wrong::after { content: '❌'; }
+        .option.locked { pointer-events: none; }
         
         .quiz-header {
             display: flex;
@@ -4467,7 +4478,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.1 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.18.2 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -8210,7 +8221,7 @@ function showCurrentQuestion() {
             <!-- ŞIKLAR - DAHA KOMPAKT -->
             <div class="options" id="optionsContainer" style="gap: 5px; margin-bottom: 6px;">
                 ${question.options.map((opt, i) => `
-                    <div class="option ${userAnswers[currentQuestionIndex] === i ? 'selected' : ''}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="padding: 8px 12px; gap: 9px; border-radius: 10px;">
+                    <div class="option ${(userAnswers[currentQuestionIndex] !== null && userAnswers[currentQuestionIndex] !== undefined) ? ('locked ' + (i === question.correct ? 'correct' : (userAnswers[currentQuestionIndex] === i ? 'wrong' : ''))) : (userAnswers[currentQuestionIndex] === i ? 'selected' : '')}" data-option-index="${i}" onclick="selectOption(${currentQuestionIndex}, ${i})" style="padding: 8px 12px; gap: 9px; border-radius: 10px;">
                         <div class="option-letter" style="font-size: 15px !important; min-width: 20px;">${letters[i]}.</div>
                         <div class="option-text" style="direction: ltr; text-align: left; font-size: 15px !important;">${opt}</div>
                     </div>
@@ -8248,18 +8259,32 @@ function fixArabicText(text) {
     
    window.selectOption = (questionIdx, optionIdx) => {
     if (examCompleted) return;
+    if (userAnswers[questionIdx] !== null && userAnswers[questionIdx] !== undefined) return;   // cevap verilen soru kilitli
+    if (window.__examAnsLock) return;
+    window.__examAnsLock = true;
     userAnswers[questionIdx] = optionIdx;
     
-    // Cevap verildi, sonraki soruya geç
+    // Doğru şık yeşil, seçilen yanlışsa açık kırmızı gösterilir; kısa bekleyip sonraki soruya geçilir
     stopTimer();
-    if (currentQuestionIndex < currentExam.questions.length - 1) {
-        currentQuestionIndex++;
-        showCurrentQuestion();
-        startTimer();
-    } else {
-        // Son soru cevaplandı, sınavı bitir
-        completeExam();
-    }
+    const __q = currentExam.questions[questionIdx];
+    document.querySelectorAll('#optionsContainer .option').forEach(el => {
+        const k = +el.dataset.optionIndex;
+        el.classList.add('locked');
+        if (k === __q.correct) el.classList.add('correct');
+        else if (k === optionIdx) el.classList.add('wrong');
+    });
+    setTimeout(() => {
+        window.__examAnsLock = false;
+        if (examCompleted) return;
+        if (currentQuestionIndex < currentExam.questions.length - 1) {
+            if (currentQuestionIndex === questionIdx) currentQuestionIndex++;
+            showCurrentQuestion();
+            startTimer();
+        } else {
+            // Son soru cevaplandı, sınavı bitir
+            completeExam();
+        }
+    }, 900);
 };
 
 
