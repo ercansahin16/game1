@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v90">
+    <meta name="app-build" content="saadetyolu-shell-v91">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4485,7 +4485,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
             <div class="sidebar-item" id="startTourBtn"><i class="fas fa-compass"></i> Site Rehberi</div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.19.1 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -6009,6 +6009,7 @@ const __CC = (() => {
         })();
         return stP;
     }
+    setTimeout(() => { try { staticContent(); } catch (e) {} }, 0);   // uygulama açılır açılmaz arka planda indir
     async function staticFor(key) {
         let coll, scope, field;
         if (key === 'books') { coll = 'books'; scope = 'all'; }
@@ -6026,8 +6027,8 @@ const __CC = (() => {
 
     // key: önbellek anahtarı, loader: önbellekte yoksa çalışacak Firestore sorgusu
     async function docsOf(key, loader) {
+        { const sd = await staticFor(key); if (sd) return fakeSnap(sd); }   // icerik.json varsa sürüm kontrolünü (Firestore) BEKLEMEDEN hemen dön
         await ready();
-        { const sd = await staticFor(key); if (sd) return fakeSnap(sd); }
         let arr = mem.get(key);
         if (!arr) arr = await idbGet(key);
         if (!arr) {
