@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v97">
+    <meta name="app-build" content="saadetyolu-shell-v98">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4486,7 +4486,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.21.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.22.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -9666,6 +9666,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     status: 'new', createdAtIso: new Date().toISOString(), appVersion: (document.querySelector('meta[name="app-build"]') || {}).content || ''
                 });
                 try { localStorage.setItem('sy_lh_last', String(Date.now())); } catch (e) {}
+                window.__ntfy('Giris Yardimi talebi', String(o.name || 'Kursiyer') + ' - ' + String(o.kind || ''), 'sos', 'lh');
                 Swal.fire({ icon: 'success', title: 'Talebiniz alındı', text: 'En kısa sürede sizinle iletişime geçeceğiz.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
             } catch (e) {
                 Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: 'Lütfen internetinizi kontrol edip tekrar deneyin.', confirmButtonColor: '#f59e0b', customClass: { popup: 'compact-swal themed-swal' } });
@@ -9806,6 +9807,18 @@ document.getElementById('doLoginBtn').onclick = async () => {
         if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} openList(); };
     })();
 
+    // ===== 🔔 YÖNETİCİYE TELEFON BİLDİRİMİ (ntfy) =====
+    // Kursiyerden gelen yeni mesaj / soru / yardım talebinde yöneticinin telefonuna kısa bildirim gönderir.
+    // Aynı türden en fazla 20 sn'de bir; içerik kısaltılır (hassas bilgi/telefon gönderilmez).
+    window.__ntfy = function (title, body, tags, key) {
+        try {
+            const lk = 'sy_ntfy_' + key, now = Date.now();
+            if (now - (parseInt(localStorage.getItem(lk) || '0', 10) || 0) < 20000) return;
+            localStorage.setItem(lk, String(now));
+            fetch('https://ntfy.sh/sy-destek-ksldhenkfdmm-48373', { method: 'POST', body: String(body).slice(0, 160), headers: { 'Title': title, 'Tags': tags || 'bell', 'Click': location.origin + location.pathname.replace(/[^/]*$/, '') + 'admin.html' } }).catch(() => {});
+        } catch (e) {}
+    };
+
     // ===== 💬 CANLI DESTEK (kursiyer ↔ yönetici birebir mesajlaşma) =====
     // support/{uid} : özet {name, publicId, email, lastText, lastFrom, lastAt, unreadAdmin, unreadUser}
     // support/{uid}/messages/* : {from:'user'|'admin', text, at}
@@ -9871,6 +9884,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             try {
                 await setDoc(doc(collection(db, 'support', currentUser.uid, 'messages')), { from: 'user', text, at: now });
                 await setDoc(doc(db, 'support', currentUser.uid), { uid: currentUser.uid, name: myName(), publicId: window.__idFromUid ? window.__idFromUid(currentUser.uid) : '', email: currentUser.email || '', lastText: text, lastFrom: 'user', lastAt: now, unreadAdmin: increment(1), unreadUser: false }, { merge: true });
+                window.__ntfy('SaadetYolu Canli Destek', myName() + ': ' + text, 'speech_balloon', 'support');
             } catch (e) { inp.value = text; Swal.fire({ icon: 'error', title: 'Mesaj gönderilemedi', text: 'İnternet bağlantınızı kontrol edip tekrar deneyin.', confirmButtonText: 'Tamam' }); }
         }
         function open() {
@@ -10144,6 +10158,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     await setDoc(doc(db, 'qaPosts', id, 'replies', rid), { uid: currentUser.uid, name: myName(), text, isAdmin: false, hasImage: hasImg, createdAtIso: nowIso });
                     await updateDoc(doc(db, 'qaPosts', id), { replyCount: increment(1), lastIso: nowIso });
                     rate('r', true);
+                    window.__ntfy('Soru / Hata - yeni yanit', myName() + ': ' + String(text).slice(0, 120), 'speech_balloon', 'qar');
                     p.replyCount = (p.replyCount || 0) + 1; p.lastIso = nowIso;
                     showThread(id);
                 } catch (e) { bt.disabled = false; bt.textContent = 'Yanıtla'; showWarning('Yanıt gönderilemedi. Lütfen tekrar deneyin.'); }
@@ -10194,6 +10209,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                     createdAtIso: nowIso, lastIso: nowIso, appVersion: document.querySelector('meta[name="app-build"]')?.content || ''
                 });
                 rate('q', true);
+                window.__ntfy('Yeni Soru / Hata', myName() + ': ' + String(r.value).slice(0, 120), 'question', 'qaq');
                 if (typeof closeLoadingAlert === 'function') closeLoadingAlert();
                 showList(true);
             } catch (e) {
