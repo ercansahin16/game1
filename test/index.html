@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v89">
+    <meta name="app-build" content="test-v90">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4478,6 +4478,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
         <div class="sidebar-item" onclick="showProfile()"><i class="fas fa-user"></i> Profilim</div>
         <div class="sidebar-item" id="installAppBtn"><i class="fas fa-download"></i> Uygulamayı İndir</div>
         <div class="sidebar-item" id="goSurvey"><i class="fas fa-poll"></i> Anketler <span class="svDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; align-items:center; justify-content:center; box-sizing:border-box; margin-left:8px;"></span></div>
+        <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
         <div class="sidebar-item" id="goDuel"><i class="fas fa-users"></i> ⚔️ Düello</div>
         <div class="sidebar-item" id="checkUpdateBtn"><i class="fas fa-rotate"></i> Yeni Sürümü Denetle</div>
         <div class="sidebar-footer" style="margin-top: auto; padding: 14px 0 10px; flex-shrink: 0;">
@@ -5335,7 +5336,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
 <script type="module">
     
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField, serverTimestamp, limit, startAfter } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, runTransaction, setDoc, updateDoc, query, where, orderBy, increment, arrayUnion, arrayRemove, deleteField, serverTimestamp, limit, startAfter, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, onAuthStateChanged, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";  
   
     
@@ -6365,7 +6366,7 @@ async function markLessonPassedIfNeeded(lessonId, percent) {
         overlay.classList.toggle('active'); 
     }
     
-    menuBtn.onclick = toggleMenu;
+    menuBtn.onclick = () => { toggleMenu(); try { window.__checkSupportUnread && window.__checkSupportUnread(); } catch (e) {} };
     overlay.onclick = closeMenu;
     
     // ===== MOBİL HEADER: "<" ile Yardım/Seri panelini aç-kapa =====
@@ -9515,6 +9516,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 // ipucu belirip birkaç saniye sonra kendiliğinden kaybolur.
                 // ARTIK EKRANI ENGELLEYEN BİR PENCERE AÇILMIYOR. =====
                 setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1200);
+                setTimeout(() => { try { window.__checkSupportUnread && window.__checkSupportUnread(true); } catch (e) {} }, 2500);
             }
         } catch (error) {
             __dbg('⚠️ Seviye yükleme hatası:', error);
@@ -9981,6 +9983,88 @@ document.getElementById('doLoginBtn').onclick = async () => {
         window.__openDuel = menu;
         const btn = document.getElementById('goDuel');
         if (btn) btn.onclick = () => { try { closeMenu(); } catch (e) {} menu(); };
+    })();
+
+    // ===== 💬 CANLI DESTEK (kursiyer ↔ yönetici birebir mesajlaşma) =====
+    // support/{uid} : özet {name, publicId, email, lastText, lastFrom, lastAt, unreadAdmin, unreadUser}
+    // support/{uid}/messages/* : {from:'user'|'admin', text, at}
+    (function () {
+        const btn = document.getElementById('goSupport'); if (!btn) return;
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const myName = () => (document.getElementById('userNameDisplay')?.textContent || currentUser?.displayName || 'Kursiyer').trim() || 'Kursiyer';
+        let unsub = null, ov = null, lastSend = 0, lastChk = 0;
+        const fmt = (t) => t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        function setDot(n) {
+            const d = btn.querySelector('.supDot'); if (d) { d.style.display = n ? 'inline-flex' : 'none'; }
+            const mb = document.getElementById('menuBtn'); if (mb) { mb.style.position = 'relative'; let x = mb.querySelector('.menuSupDot'); if (!x) { x = document.createElement('span'); x.className = 'menuSupDot'; x.style.cssText = 'position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#ef4444;border:2px solid #1b1b1b;'; mb.appendChild(x); } x.style.display = n ? 'block' : 'none'; }
+        }
+        window.__checkSupportUnread = async function (force) {
+            if (!currentUser || (!force && Date.now() - lastChk < 60000)) return; lastChk = Date.now();
+            try { const s = await getDoc(doc(db, 'support', currentUser.uid)); setDot(s.exists() && s.data().unreadUser ? 1 : 0); } catch (e) {}
+        };
+        function build() {
+            if (ov) return ov;
+            ov = document.createElement('div'); ov.id = 'supOv';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:150000;background:#121212;color:#eee;display:none;flex-direction:column;height:100dvh;';
+            ov.innerHTML = `
+              <div style="display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);">
+                <button id="supBack" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;width:38px;height:38px;border-radius:50%;font-size:16px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+                <div><div style="font-weight:800;font-size:16px;">💬 Canlı Destek</div><div style="font-size:11px;opacity:.6;">Mesajınız doğrudan yöneticiye ulaşır</div></div>
+              </div>
+              <div id="supMsgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;"></div>
+              <div style="display:flex;gap:8px;align-items:flex-end;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);border-top:1px solid rgba(255,255,255,.08);background:#161616;">
+                <textarea id="supInput" rows="1" maxlength="1000" placeholder="Mesajınızı yazın…" style="flex:1;max-height:120px;padding:11px 14px;border:none;border-radius:20px;background:rgba(255,255,255,.08);color:#eee;font-family:inherit;font-size:16px;resize:none;outline:none;"></textarea>
+                <button id="supSend" style="background:#f59e0b;border:none;color:#1b1b1b;width:44px;height:44px;border-radius:50%;font-size:17px;cursor:pointer;flex:none;"><i class="fas fa-paper-plane"></i></button>
+              </div>`;
+            document.body.appendChild(ov);
+            ov.querySelector('#supBack').onclick = close;
+            ov.querySelector('#supSend').onclick = send;
+            const inp = ov.querySelector('#supInput');
+            inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(120, inp.scrollHeight) + 'px'; });
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 700) { e.preventDefault(); send(); } });
+            return ov;
+        }
+        function render(list) {
+            const box = ov.querySelector('#supMsgs'); box.innerHTML = '';
+            const hello = document.createElement('div');
+            hello.style.cssText = 'align-self:flex-start;max-width:85%;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.07);font-size:14px;line-height:1.45;';
+            hello.textContent = 'Selamün aleyküm 🌱 Size nasıl yardımcı olabiliriz? Sorunuzu ya da yaşadığınız sorunu yazabilirsiniz.';
+            box.appendChild(hello);
+            list.forEach((m, i) => {
+                const mine = m.from === 'user';
+                const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;align-items:' + (mine ? 'flex-end' : 'flex-start') + ';';
+                const b = document.createElement('div');
+                b.style.cssText = 'max-width:85%;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.45;white-space:pre-wrap;word-break:break-word;' + (mine ? 'background:#f59e0b;color:#1b1b1b;' : 'background:rgba(255,255,255,.1);');
+                b.innerHTML = esc(m.text) + `<div style="font-size:10px;opacity:.6;margin-top:3px;text-align:right;">${fmt(m.at)}</div>`;
+                wrap.appendChild(b);
+                if (mine && i === list.length - 1) { const n = document.createElement('div'); n.style.cssText = 'font-size:10.5px;font-style:italic;opacity:.65;margin-top:3px;'; n.textContent = 'En yakın zamanda mesajınıza cevap verilecektir.'; wrap.appendChild(n); }
+                box.appendChild(wrap);
+            });
+            box.scrollTop = box.scrollHeight;
+        }
+        async function send() {
+            const inp = ov.querySelector('#supInput'); const text = inp.value.trim();
+            if (!text || !currentUser) return;
+            if (Date.now() - lastSend < 1500) return; lastSend = Date.now();
+            inp.value = ''; inp.style.height = 'auto'; const now = Date.now();
+            try {
+                await setDoc(doc(collection(db, 'support', currentUser.uid, 'messages')), { from: 'user', text, at: now });
+                await setDoc(doc(db, 'support', currentUser.uid), { uid: currentUser.uid, name: myName(), publicId: window.__idFromUid ? window.__idFromUid(currentUser.uid) : '', email: currentUser.email || '', lastText: text, lastFrom: 'user', lastAt: now, unreadAdmin: increment(1), unreadUser: false }, { merge: true });
+            } catch (e) { inp.value = text; Swal.fire({ icon: 'error', title: 'Mesaj gönderilemedi', text: 'İnternet bağlantınızı kontrol edip tekrar deneyin.', confirmButtonText: 'Tamam' }); }
+        }
+        function open() {
+            if (!currentUser) return;
+            build(); ov.style.display = 'flex'; document.getElementById('sidebar')?.classList.remove('open'); document.getElementById('overlay')?.classList.remove('active');
+            if (unsub) unsub();
+            let first = true;
+            unsub = onSnapshot(query(collection(db, 'support', currentUser.uid, 'messages'), orderBy('at', 'asc'), limit(200)), (snap) => {
+                const list = []; snap.forEach(d => list.push(d.data())); render(list);
+                if (first || (list.length && list[list.length - 1].from === 'admin')) setDoc(doc(db, 'support', currentUser.uid), { unreadUser: false }, { merge: true }).catch(() => {});
+                first = false; setDot(0);
+            }, () => {});
+        }
+        function close() { if (unsub) { unsub(); unsub = null; } if (ov) ov.style.display = 'none'; }
+        btn.onclick = open;
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
