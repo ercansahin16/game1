@@ -974,6 +974,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     </div>
     <div class="sidebar-item" id="goDashboard"><i class="fas fa-chart-line"></i> Anasayfa</div>
     <div class="sidebar-item" id="goAnnouncements"><i class="fas fa-bullhorn"></i> Duyurular</div>
+    <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> Canlı Destek <span class="adm-badge" id="badgeSupportMenu"></span></div>
     <div class="sidebar-item" id="goBooks"><i class="fas fa-book"></i> Kitaplar</div>
     <div class="sidebar-item" id="goLessons"><i class="fas fa-graduation-cap"></i> Dersler</div>
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
@@ -1093,6 +1094,13 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div id="statBugs">–</div>
                     <div><i class="fas fa-bug"></i> Soru / Hata</div>
                     <div id="statBugsSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
+                </div>
+                <!-- Canlı destek -->
+                <div class="stats-card" id="statSupportCard" style="cursor: pointer;" onclick="showSection('support'); loadSupport();">
+                    <span class="adm-badge" id="badgeSupportCard"></span>
+                    <div id="statSupport">–</div>
+                    <div><i class="fas fa-headset"></i> Canlı Destek</div>
+                    <div id="statSupportSub" style="font-size: 11px; opacity: 0.75; margin-top: 4px;">&nbsp;</div>
                 </div>
                 <!-- Giriş yardımı -->
                 <div class="stats-card" id="statHelpCard" style="cursor: pointer;" onclick="showSection('loginHelp'); loadLoginHelp();">
@@ -1312,6 +1320,24 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             </div>
             <div id="surveyEditor" class="hidden" style="border:1px solid rgba(245,158,11,.5); border-radius:12px; padding:12px; margin-bottom:14px;"></div>
             <div id="surveyList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
+        </div>
+
+        <div id="supportSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-headset"></i> Canlı Destek</h2>
+            </div>
+            <div id="supportList"><div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div></div>
+            <div id="supportThread" style="display:none;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <button class="btn btn-info" style="padding:8px 14px; font-size:13px;" onclick="supportBack()"><i class="fas fa-arrow-left"></i> Liste</button>
+                    <div id="supportThreadTitle" style="font-weight:700;"></div>
+                </div>
+                <div id="supportMsgs" style="max-height:55vh; overflow:auto; padding:10px; background:rgba(255,255,255,0.04); border-radius:12px; display:flex; flex-direction:column; gap:8px;"></div>
+                <div style="display:flex; gap:8px; margin-top:10px; align-items:flex-end;">
+                    <textarea id="supportReplyInput" rows="2" maxlength="1500" placeholder="Cevabınızı yazın..." style="flex:1; padding:10px; border:none; border-radius:10px; background:rgba(255,255,255,0.08); color:inherit; font-family:inherit; font-size:15px; resize:vertical;"></textarea>
+                    <button class="btn btn-success" style="padding:12px 16px;" onclick="supportSend()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
         </div>
 
         <div id="loginHelpSection" class="section-card hidden">
@@ -1602,7 +1628,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut as __signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-   import { getFirestore, collection as _collection, doc as _doc, getDoc as _getDoc, getDocs as _getDocs, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, query as _query, where as _where, orderBy as _orderBy, writeBatch as _writeBatch, limit, increment, getCountFromServer as _getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+   import { getFirestore, collection as _collection, doc as _doc, getDoc as _getDoc, getDocs as _getDocs, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, query as _query, where as _where, orderBy as _orderBy, writeBatch as _writeBatch, limit, increment, onSnapshot, getCountFromServer as _getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     // ===== İÇERİK = icerik.json (salt okunur) =====
     // kitap/ders/kelime/sınav artık Firebase'den değil icerik.json'dan okunur. Diğer koleksiyonlar (kullanıcılar, duyurular, sorular...) Firebase'de kalır.
     const __CONTENT = new Set(['books', 'lessons', 'words', 'exams']);
@@ -2059,6 +2085,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('goExams').onclick = () => { showSection('exams'); loadExams(); closeMenu(); };
     document.getElementById('goUsers').onclick = () => { showSection('users'); loadUsers(); closeMenu(); };
     document.getElementById('goSurveys').onclick = () => { showSection('surveys'); loadSurveys(); closeMenu(); };
+    document.getElementById('goSupport').onclick = () => { showSection('support'); loadSupport(); closeMenu(); };
     document.getElementById('goLoginHelp').onclick = () => { showSection('loginHelp'); loadLoginHelp(); closeMenu(); };
     document.getElementById('goBugs').onclick = () => { showSection('bugs'); loadBugs(); closeMenu(); };
     document.querySelector('.logo').onclick = () => { showSection('dashboard'); closeMenu(); };
@@ -2083,6 +2110,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     }
 
  function showSection(section) {
+    if (section !== 'support' && window.__supStop) window.__supStop();
+    document.getElementById('supportSection').classList.add('hidden');
     document.getElementById('dashboardSection').classList.add('hidden');
     document.getElementById('announcementsSection').classList.add('hidden');
     document.getElementById('booksSection').classList.add('hidden');
@@ -2099,6 +2128,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 
     if (section === 'dashboard') {
         document.getElementById('dashboardSection').classList.remove('hidden');
+    } else if (section === 'support') {
+        document.getElementById('supportSection').classList.remove('hidden');
     } else if (section === 'announcements') {
         document.getElementById('announcementsSection').classList.remove('hidden');
     } else if (section === 'books') {
@@ -2255,6 +2286,60 @@ document.getElementById('announcementImageInput').addEventListener('change', (e)
     document.getElementById('announcementImagePreviewImg').src = URL.createObjectURL(f); box.style.display = 'block';
 });
 window.clearAnnouncementImage = function () { document.getElementById('announcementImageInput').value = ''; document.getElementById('announcementImagePreview').style.display = 'none'; };
+
+// ===== 💬 CANLI DESTEK (yönetici) =====
+// support/{uid} : özet (ad, son mesaj, okunmamış sayacı) · support/{uid}/messages/* : mesajlar {from:'user'|'admin', text, at}
+let __supUnsubList = null, __supUnsubThread = null, __supUid = null, __supName = '';
+window.__supStop = function () { if (__supUnsubList) { __supUnsubList(); __supUnsubList = null; } if (__supUnsubThread) { __supUnsubThread(); __supUnsubThread = null; } __supUid = null; };
+const __supTime = (t) => t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+window.supportBack = function () { document.getElementById('supportThread').style.display = 'none'; document.getElementById('supportList').style.display = 'block'; if (__supUnsubThread) { __supUnsubThread(); __supUnsubThread = null; } __supUid = null; };
+window.loadSupport = function () {
+    window.__supStop();
+    document.getElementById('supportThread').style.display = 'none';
+    const box = document.getElementById('supportList'); box.style.display = 'block'; box.innerHTML = '<div style="text-align:center; padding:20px; opacity:.7;">Yükleniyor...</div>';
+    __supUnsubList = onSnapshot(query(collection(db, 'support'), orderBy('lastAt', 'desc'), limit(100)), (snap) => {
+        if (snap.empty) { box.innerHTML = '<div style="text-align:center; padding:24px; opacity:.7;">Henüz mesaj yok.</div>'; return; }
+        box.innerHTML = '';
+        snap.forEach(d => {
+            const a = d.data(); const un = a.unreadAdmin || 0;
+            const it = document.createElement('div'); it.className = 'item'; it.style.cursor = 'pointer';
+            it.innerHTML = `<div class="item-info"><strong>${escapeHtml(a.name || 'Kursiyer')}</strong> <small style="opacity:.6;">${escapeHtml(a.publicId || '')}</small>
+                <small style="display:block; margin-top:4px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70vw;">${a.lastFrom === 'admin' ? '↩️ ' : ''}${escapeHtml(a.lastText || '')}</small>
+                <small style="opacity:.55;">${__supTime(a.lastAt)}</small></div>${un ? `<span class="adm-badge on" style="position:static;">${un}</span>` : ''}`;
+            it.onclick = () => openSupportThread(d.id, a.name || 'Kursiyer');
+            box.appendChild(it);
+        });
+    }, (e) => { box.innerHTML = '<div style="opacity:.7; padding:14px;">Yüklenemedi: ' + escapeHtml(e.message) + '</div>'; });
+};
+window.openSupportThread = function (uid, name) {
+    if (__supUnsubThread) __supUnsubThread();
+    __supUid = uid; __supName = name;
+    document.getElementById('supportList').style.display = 'none';
+    document.getElementById('supportThread').style.display = 'block';
+    document.getElementById('supportThreadTitle').textContent = name;
+    const mb = document.getElementById('supportMsgs'); mb.innerHTML = '';
+    __supUnsubThread = onSnapshot(query(collection(db, 'support', uid, 'messages'), orderBy('at', 'asc'), limit(300)), (snap) => {
+        mb.innerHTML = '';
+        snap.forEach(d => {
+            const m = d.data(); const mine = m.from === 'admin';
+            const b = document.createElement('div');
+            b.style.cssText = 'max-width:82%; padding:8px 12px; border-radius:14px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-break:break-word; ' + (mine ? 'align-self:flex-end; background:#f59e0b; color:#1b1b1b;' : 'align-self:flex-start; background:rgba(255,255,255,0.1);');
+            b.innerHTML = escapeHtml(m.text || '') + `<div style="font-size:10px; opacity:.6; margin-top:3px; text-align:right;">${__supTime(m.at)}</div>`;
+            mb.appendChild(b);
+        });
+        mb.scrollTop = mb.scrollHeight;
+        setDoc(doc(db, 'support', uid), { unreadAdmin: 0 }, { merge: true }).catch(() => {});
+    });
+};
+window.supportSend = async function () {
+    const inp = document.getElementById('supportReplyInput'); const text = inp.value.trim();
+    if (!text || !__supUid) return;
+    inp.value = ''; const now = Date.now();
+    try {
+        await setDoc(doc(collection(db, 'support', __supUid, 'messages')), { from: 'admin', text, at: now });
+        await setDoc(doc(db, 'support', __supUid), { lastText: text, lastFrom: 'admin', lastAt: now, unreadUser: true, unreadAdmin: 0 }, { merge: true });
+    } catch (e) { inp.value = text; Swal.fire({ icon: 'error', title: 'Gönderilemedi', text: e.message, confirmButtonText: 'Tamam' }); }
+};
 
 async function publishAnnouncement() {
     const titleInput = document.getElementById('announcementTitleInput');
@@ -4282,6 +4367,8 @@ function timeAgo(date) {
                 cnt(query(collection(db, 'loginHelp'), where('status', '==', 'new')))
             ]);
             if (hTot !== null) document.getElementById('statHelp').textContent = hTot;
+            { const sUn = await cnt(query(collection(db, 'support'), where('unreadAdmin', '>', 0)));
+              if (sUn !== null) { document.getElementById('statSupport').textContent = sUn; document.getElementById('statSupportSub').textContent = sUn ? sUn + ' yanıt bekliyor' : 'Bekleyen yok ✓'; setBadge(['badgeSupportCard', 'badgeSupportMenu'], sUn); } }
             if (hNew !== null) { document.getElementById('statHelpSub').textContent = hNew ? hNew + ' talep bekliyor' : 'Bekleyen yok ✓'; setBadge(['badgeHelpCard', 'badgeHelpMenu'], hNew); }
             const act = await svGetActive();
             if (!act.length) {
