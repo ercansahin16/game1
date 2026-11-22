@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v73">
+    <meta name="app-build" content="test-v74">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -8272,8 +8272,7 @@ function fixArabicText(text) {
     window.__examAnsLock = true;
     userAnswers[questionIdx] = optionIdx;
     
-    // Doğru şık yeşil, seçilen yanlışsa açık kırmızı gösterilir; kısa bekleyip sonraki soruya geçilir
-    stopTimer();
+    // Doğru şık yeşil, seçilen yanlışsa açık kırmızı gösterilir. Süre durmaz: 30 sn dolunca otomatik sonraki soruya geçilir
     const __q = currentExam.questions[questionIdx];
     document.querySelectorAll('#optionsContainer .option').forEach(el => {
         const k = +el.dataset.optionIndex;
@@ -8283,7 +8282,7 @@ function fixArabicText(text) {
     });
     const __b = document.querySelector('.quiz-answered-badge');
     if (__b) __b.innerHTML = `<i class="fas fa-check-circle"></i> ${userAnswers.filter(x => x !== null && x !== undefined).length}/${currentExam.questions.length}`;
-    // Otomatik geçiş yok: kursiyer renkleri görüp "Sonraki" ile kendisi ilerler (son soruda "Bitir")
+    // Süre dolunca (30 sn) startTimer otomatik sonraki soruya geçer; kursiyer isterse "Sonraki" ile daha erken de geçebilir
     window.__examAnsLock = false;
 };
 
@@ -8550,7 +8549,7 @@ async function updateExamSummary(correct, totalQuestions) {
     if (currentQuestionIndex < currentExam.questions.length - 1) {
         currentQuestionIndex++;
         showCurrentQuestion();
-        if (userAnswers[currentQuestionIndex] === null || userAnswers[currentQuestionIndex] === undefined) startTimer();   // cevaplanmış soruda süre başlamasın
+        startTimer();
     }
 };
     
