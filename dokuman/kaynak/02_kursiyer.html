@@ -1,0 +1,161 @@
+<h1>6. Kursiyer uygulaması: tüm özellikler (index.html)</h1>
+<p>Bu bölüm kursiyerin gördüğü her ekranı ve davranışı anlatır. Uygulama tek sayfadır; ekranlar gösterilip gizlenerek değişir (<span class="mono">karmaScreen, rankingScreen, wordsLearningScreen, quizScreen, profileScreen, examsScreen, myWordsScreen, sandikScreen</span> vb.).</p>
+
+<h2>6.1 Kayıt, giriş ve oturum</h2>
+<table>
+<tr><th>Özellik</th><th>Davranış</th></tr>
+<tr><td>Kayıt</td><td>Ad Soyad + e-posta + şifre. Şifre en az 6 karakter; e-posta biçimi denetlenir; e-postada <b>Türkçe karakter (ş, ç, ğ, ı, ö, ü) ve boşluk yasaktır</b> (şifre sıfırlama e-postaları ulaşmadığı için). Kayıtta <span class="mono">users/{uid}</span> belgesi oluşturulur (ad, e-posta, puan alanları, <span class="mono">createdAt</span>, <span class="mono">tourCompleted:false</span>).</td></tr>
+<tr><td>Akıllı kayıt</td><td>İsim alanı boş bırakılıp e-posta+şifre doğruysa, kişi zaten kayıtlıdır; sistem otomatik giriş yapar ("Zaten kayıtlısınız, giriş yapıldı").</td></tr>
+<tr><td>Giriş</td><td>E-posta + şifre. "Beni hatırla" ve isteğe bağlı "şifremi bu cihazda hatırla" (cihazda saklanır). Giriş alanı gerçek bir form olduğu için tarayıcı şifre yöneticisi kaydedebilir.</td></tr>
+<tr><td>Google ile giriş</td><td><span class="mono">googleLogin()</span> — Firebase Auth Google sağlayıcısı. (Firebase konsolunda Google sağlayıcısı etkin ve yetkili alan adları listesinde nevafil.com.tr kayıtlı olmalıdır.)</td></tr>
+<tr><td>Şifremi unuttum</td><td>Firebase şifre sıfırlama e-postası gönderir. Tek "Geri" düğmeli sade ekran.</td></tr>
+<tr><td>Açılış perdesi</td><td>Otomatik giriş bitene kadar "Lütfen bekleyiniz" koyu perde gösterilir ve dokunma engellenir.</td></tr>
+<tr><td>Giriş yapamayanlar</td><td>Giriş ekranının altındaki <b>"💬 Mesaj bırakın veya canlı desteğe bağlanın"</b> bağlantısı misafir Canlı Destek'i açar (bölüm 9.1).</td></tr>
+<tr><td>Çıkış</td><td>Kenar menü veya üst çubuktaki çıkış simgesi; presence ve bildirim dinleyicileri durdurulur.</td></tr>
+<tr><td>Yeni kullanıcı</td><td>İlk girişte 🤲 dua ekranı (sayaç <span class="mono">appStats/duaSayaci</span>) ve ardından "Site Rehberi" (adım adım tur) gösterilir. Tur bitince <span class="mono">tourCompleted:true</span> yazılır. Menüdeki "Site Rehberi" ile tekrar izlenebilir.</td></tr>
+<tr><td>Oyuncu numarası</td><td>İlk girişte her kullanıcıya 8 haneli benzersiz numara (10.000.000–99.999.999) verilir (<span class="mono">publicIds</span> kayıt defteri çakışmayı önler). İsmin altında <span class="mono">#12345678</span> olarak gösterilir, arama ve arkadaşlık için kullanılır. Profilde panoya kopyalanabilir.</td></tr>
+</table>
+
+<h2>6.2 Ana ekran ve menüler</h2>
+<ul>
+<li><b>Üst çubuk:</b> ☰ menü düğmesi, geri "‹" düğmesi, kullanıcı adı, ⋮ (yardım/seri paneli) ve çıkış simgesi. Mobilde bu düğmeler aynı satıra hizalıdır.</li>
+<li><b>Ana kartlar:</b> Kelime Öğren, Sınava Gir, Yarışma, Sıralama, Sandıktaki Kelimeler; Kelimelerim ve Tekrar Modu ilgili ekranlardan açılır. Üstte yeni duyuru şeridi ("Yeni duyuru var").</li>
+<li><b>Kenar menü (sırasıyla):</b> Ana Sayfa, Profilim, (Uygulamayı İndir — yalnızca kurulabilir tarayıcıda), Yeni Sürümü Denetle; altta sabit grup: <b>Anketler</b> (kırmızı rozetli), Yardım / İletişim, Soru / Hata Bildir, Site Rehberi, <b>Canlı Destek</b>, Tema Değiştir, Çıkış Yap. En altta sürüm numarası, güncelleme denetimi durumu ve anket tanı satırı.</li>
+<li><b>Tema:</b> Koyu ve açık tema. Tercih cihazda saklanır. Açık tema için <span class="mono">body.light-theme</span> CSS sınıfı kullanılır; yeni ekran eklerken iki temayı da denemek gerekir.</li>
+<li><b>Çevrimdışı uyarısı:</b> İnternet kesilince kırmızı şerit çıkar, bağlantı gelince veriler senkronize olur.</li>
+</ul>
+
+<h2>6.3 Kelime Öğren</h2>
+<ul>
+<li>Kitap → ders seçilir; kelimeler Arapça kart olarak gelir. <b>Göster</b> düğmesi veya (mobilde) karta dokunma Türkçe anlamı açar. Yatay kaydırma/Önceki-Sonraki ile gezilir (kaydırma animasyonlu).</li>
+<li>Anlam gösterilen her kelime <b>+0,01 puan</b> kazandırır ve <span class="mono">totalWordsViewed</span> sayacını atomik olarak (<span class="mono">increment(1)</span>) artırır. Ayrıca günlük hareket kaydı (<span class="mono">dailyLog</span>) tutulur.</li>
+<li><b>Merdiven (kilit) sistemi:</b> Bir dersin kelimelerinin <b>%80'i öğrenilince</b> (a) o dersin sınavı açılır, (b) bir sonraki dersin kelimeleri açılır. Yönetici "tüm kilitleri aç" anahtarıyla (hesap bazında <span class="mono">unlockAll</span>) kilitleri kaldırabilir.</li>
+<li><b>Kişisel ipucu:</b> Her kelimeye kullanıcı kendi ipucunu (hatırlatıcı cümle) ekleyebilir. Sol üstteki simge ekle/düzenle, sol alttaki "ipucu" etiketi gösterir/gizler. İpuçları <span class="mono">users/{uid}.wordHints</span> alanında saklanır.</li>
+<li><b>Kelimelerim (+ düğmesi):</b> Beğenilen/zor kelime kişisel listeye eklenir (<span class="mono">myWords</span>); kitaba göre süzülerek görüntülenir.</li>
+<li>Mobilde ilk 5 kelimede "dokun-kaydır" ipucu gösterilir. Dersin son kelimesinde <b>"Sonraki Derse Geç"</b> düğmesi çıkar.</li>
+<li>"Bu Oturum" puan sayacı vardır; kelime sayısı oturum içinde geriye gitmez (puan düşme hatası düzeltmesi).</li>
+</ul>
+
+<h2>6.4 Sınav</h2>
+<ul>
+<li>Ders → sınav seçilir (ör. <i>Ders-12 / Sınav-2</i>). Kilitli dersi seçen kişiye kısa açıklama ve Kelime Öğren'e yönlendirme çıkar.</li>
+<li>Her soruda <b>30 saniye</b> sayaç vardır. Süre bitince sonraki soruya geçilir; cevap verilse bile süre devam eder, kullanıcı "Sonraki" ile de ilerleyebilir. Doğru şık yeşil, yanlış seçim açık kırmızı gösterilir.</li>
+<li>Soru biçimi: <i>"Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?"</i> + Arapça kelime (ortada, büyük). 4 şık, tek doğru.</li>
+<li>Masaüstünde Önceki/Sonraki düğmeleri ekranın dışına taşmasın diye <b>kompakt düzen</b> uygulanmıştır (CSS bloğu "Sınav ekranı: masaüstünde ..." — gerçek <span class="mono">&lt;style&gt;</span> içinde; JS şablonunun içine konmamalıdır).</li>
+<li>Sonuç: puan = doğru × 0,01; yüzdeye göre motive edici mesaj (%80+ "geçtin", %50–79 "az kaldı", altı "çalışmaya devam"). Tüm soruların doğru/yanlış/boş özeti gösterilir. <b>Tekrar Dene</b> sınavı baştan başlatır.</li>
+<li>Sınav kaydı <span class="mono">users/{uid}.examsCompleted[]</span> dizisine eklenir: <span class="mono">{title, date, score, correct, total}</span>. <span class="mono">averageScore</span> bu dizideki puanların ortalamasıdır.</li>
+<li><b>%80 ve üzeri</b> alınırsa ders "geçildi" sayılır (<span class="mono">passedLessonIds</span>), yarışma seviyesi (<span class="mono">mevcutSeviye</span>) güncellenir, bir sonraki dersin açıldığı bildirilir.</li>
+</ul>
+
+<h2>6.5 Yarışma (karma kelime) ve Sandık</h2>
+<ul>
+<li>Kullanıcının <b>mevcut seviyesine</b> (= geçilen ders sayısı + 1, en çok ders sayısı kadar) karşılık gelen dersin kelimeleri 4 şıklı sorularla sorulur.</li>
+<li><b>Doğru:</b> +0,01 puan (yeşil mesaj). Sandıktaki kelime ise kutusu ilerler. <b>Yanlış:</b> −1 puan (alt sınır 0) ve kelime <b>Sandık</b>'a eklenir.</li>
+<li><b>Sandık (oturum içi aralıklı tekrar):</b> Kutu 1→2→3. Kutu aralıkları (soru sayısı olarak): 3, 6, 12 soru sonra tekrar sorulur. Kutu 3'te doğru cevaplanan kelime <b>mezun olur</b> ve sandıktan çıkar. Yanlış bilinirse kutu 1'e döner. Sandıktaki her kelime toplam puandan <b>−1</b> düşer (ceza); kurtarılınca ceza kalkar.</li>
+<li>Yarışmada seviye atlamak için dersin sınavını %80 ile geçmek gerekir; yarışma turunu bitirmek seviye açmaz.</li>
+<li>Profildeki "Yarışma %" için <span class="mono">karmaStats.total/correct/wrong</span> sayaçları atomik artırılır.</li>
+<li><b>Sandıktaki Kelimeler</b> ekranı: sandık listesi, sandıktan devam et (<span class="mono">devamEt()</span>).</li>
+</ul>
+
+<h2>6.6 Tekrar Modu (takvim bazlı uzun vadeli tekrar)</h2>
+<ul>
+<li>Sandık sistemi yalnızca bir yarışma oturumu içindir. <b>Tekrar Modu</b> ise tamamen ayrı, kalıcı ve takvime bağlıdır: Kelime Öğren'de öğrenilen her kelime <b>3, 7, 21 ve 60 gün</b> sonra tekrar karşıya çıkar (<span class="mono">REVIEW_INTERVALS_GUN = [3,7,21,60]</span>).</li>
+<li>Kuyruk <span class="mono">users/{uid}.reviewQueue</span> alanında <span class="mono">{kelimeId: {arabic, turkish, lessonId, stage, nextReviewAt}}</span> olarak saklanır. Doğru bilinirse aşama ilerler, yanlışta başa döner.</li>
+<li>Günü gelen kelime sayısı rozetle gösterilir. Tekrar Modu puanı/ilerlemeyi etkilemez.</li>
+</ul>
+
+<h2>6.7 Sıralama (liderlik tablosu)</h2>
+<ul>
+<li><b>Tüm Zamanlar</b> ve <b>Bu Ay</b> (sezon) sekmeleri. İlk 3'e madalya (🥇🥈🥉), diğerlerine yıldız simgesi. Her satırda: sıra, ad, #ID, 🏆 seviye (ör. 24/48), 📖 kelime sayısı, 📦 sandık sayısı, puan.</li>
+<li><b>Çevrimiçi göstergesi:</b> Avatarda yeşil nokta, başlıkta/profil sekmesinde "Çevrimiçi N" düğmesi (tıklayınca isim listesi, isme tıklayınca oyuncu profili). Çevrimiçi sayılma: son 90 saniye içinde kalp atışı (<span class="mono">lastActive</span>). Kalp atışı 25 saniyede bir yazılır; sorgu yalnızca çevrimiçi kullanıcıları okur ve sıralama ekranı açıkken 45 saniyede bir yenilenir.</li>
+<li><b>Arkadaşlarım</b> düğmesi (takip ettikleriniz) ve 🔔 Bildirimler düğmesi başlıkta durur; Profil → Sıralama sekmesinde de Arkadaşlarım ve Çevrimiçi düğmeleri vardır.</li>
+<li><b>Oyuncu ara:</b> İsim veya 8 haneli ID ile. 🏅 düğmesi geçen ayın şampiyonlarını açar (podyum, konfeti, önceki aylar).</li>
+<li><b>Önbellek:</b> Diğer oyuncuların verisi normalde 30 dk, ay geçişlerinde (son 3 + ilk 2 gün) 3 dk önbellekte tutulur. Kendi satırınız her zaman güncel okunur. "Yenile" düğmesi önbelleği atlar.</li>
+<li>Bir oyuncuya dokununca <b>oyuncu profili</b> açılır: takip etmeyen kişi kısıtlı bilgi görür; takip edince tam istatistik, rozetler ve mesaj gönderme açılır.</li>
+</ul>
+
+<h2>6.8 Profil</h2>
+<ul>
+<li><b>Sekmeler:</b> Profil, İstatistikler, Sıralama, Duyurular.</li>
+<li><b>Profil:</b> Ad (düzenlenebilir), e-posta (kopyala/değiştir — e-posta değişiminde şifre ile yeniden doğrulama ve yeni adrese doğrulama bağlantısı), şifre değiştir (mevcut şifre alanı, göster/gizle, anlaşılır Türkçe hata mesajları), toplam puan ve <b>Puan Detayı</b> penceresi (yarışma + sınav ortalaması + kelime + seviye − sandık), oyuncu numarası, seviye.</li>
+<li><b>İstatistikler:</b> Rozetler, ay başarıları, son 7 gün, geçmiş aylar, seri bilgileri.</li>
+<li>Başkasının profilinde ayrıca arkadaş sayısı (tıklayınca arkadaşları) ve rozet pencereleri ("kazandı" ifadesiyle) görünür.</li>
+</ul>
+
+<h2>6.9 Günlük seri, sezon ve şampiyonlar</h2>
+<ul>
+<li><b>Günlük seri (🔥):</b> Türkiye saatine göre her gün girilince <span class="mono">gunlukSeri</span> artar; bir gün atlanırsa 1'e döner. <span class="mono">enUzunSeri</span> saklanır. Seri riski taşıyan kullanıcıya (hatırlatma açıksa) uyarı gösterilir.</li>
+<li><b>Aylık sezon:</b> Tüm Zamanlar puanı silinmez. Her ay başında "Bu Ay" puanı sıfırdan başlar: kullanıcı belgesinde <span class="mono">seasonId</span> (YYYY-AA) ve <span class="mono">seasonBaselineScore</span> tutulur; bu ayın puanı = toplam − baseline. Ay değişince eski ay <span class="mono">seasonHistory</span> içine yazılır.</li>
+<li><b>Ayın şampiyonları:</b> Yeni ayın ilk girişinde, kayıt yoksa ilk giren kullanıcının cihazı geçen ayın ilk 3'ünü hesaplar ve <span class="mono">seasonWinners/YYYY-AA</span> belgesine bir kez (işlemle) yazar. Ayın ilk 7 gününde tebrik penceresi gösterilir.</li>
+</ul>
+
+<h2>6.10 Kurulum (PWA), güncelleme, rehber</h2>
+<ul>
+<li><b>Uygulamayı İndir:</b> Android/Chrome'da <span class="mono">beforeinstallprompt</span> ile tek dokunuş; iPhone için resimli adım adım "Ana Ekrana Ekle" rehberi modalı.</li>
+<li><b>Yeni Sürümü Denetle / otomatik güncelleme uyarısı:</b> Çalışan kodun yapı numarası <span class="mono">&lt;meta name="app-build"&gt;</span>'tan okunur; sunucudaki index.html'in numarasıyla farklıysa küçük bir "Yenile" bildirimi çıkar (en çok 10 dakikada bir). Menü altında "güncelleme denetimi HH:DD ✓ güncel" yazar. Ayrıntı: bölüm 15.</li>
+<li><b>Site Rehberi:</b> Yeni kullanıcıya özelliklerin adım adım tanıtıldığı tur (<span class="mono">startAppTour</span>).</li>
+<li><b>Yardım / İletişim:</b> Yöneticinin e-posta adresini gösteren ve kopyalatan küçük pencere. <b>E-posta adresi kodda sabittir (<span class="mono">goHelp</span> işleyicisi); devirde yeni sahibin adresiyle değiştirilmelidir.</b> Ayrıca profil içinde açıklayıcı ❓ yardım pencereleri vardır.</li>
+</ul>
+
+<h2>6.11 Ek: Arkadaş Düellosu (yalnızca test klasöründe)</h2>
+<p>Menüde "⚔️ Düello": iki kişi kodla davet edilir, aynı sorularla yarışır; kazanan doğru sayısı ve süreye göre belirlenir. Veriler <span class="mono">duels</span> koleksiyonuna yazılır; <b>Firestore kurallarına bu koleksiyon için izin eklenmemişse "Düello kaydedilemedi" uyarısı çıkar</b>. Şu an canlıya (saadetyolu) alınmamıştır; almak için önce kurallara <span class="mono">duels</span> izni eklenmelidir.</p>
+
+<h1>7. Puan, seviye, kilit, seri, sezon kuralları (formüller)</h1>
+<h2>7.1 Toplam puan formülü</h2>
+<pre>toplamPuan = yarışmaPuanı (quizScore)
+           + sınavOrtalaması (averageScore)
+           + seviyePuanı  = (mevcutSeviye - 1) × 2
+           + kelimePuanı  = totalWordsViewed × 0,01
+           - sandıkCezası = sandıktakiKelimeSayısı × 1
+(sonuç 0'ın altına düşmez, 2 ondalığa yuvarlanır)</pre>
+<p>Bu formül <span class="mono">computeTotalScoreFromUserData()</span> fonksiyonunda ve aynı mantıkla profil, sıralama, oyuncu profili ve admin tarafında kullanılır. <b>Formülü değiştirirseniz hepsini birlikte güncelleyin;</b> aksi halde profil ile sıralama farklı puan gösterir.</p>
+<h2>7.2 Puan kaynakları (çoktan aza)</h2>
+<table>
+<tr><th>Eylem</th><th>Puan</th><th>Not</th></tr>
+<tr><td>Sınavı %80+ ile geçip seviye atlamak</td><td>+2</td><td>Ders başına bir kez; 48 ders = en fazla 94 puan.</td></tr>
+<tr><td>Kelime Öğren'de kelime görmek</td><td>+0,01</td><td>Kelime başına, sınırsız.</td></tr>
+<tr><td>Yarışmada doğru cevap</td><td>+0,01</td><td>Yanlış −1 puan ve kelime sandığa girer.</td></tr>
+<tr><td>Sınav</td><td>doğru × 0,01</td><td>Ortalaması alındığı için toplama en çok yaklaşık 0,20 katkı yapar; asıl faydası seviyeyi açmasıdır.</td></tr>
+<tr><td>Sandıktaki kelime</td><td>−1 (kelime başına)</td><td>Kurtarılınca (kutu 3'te doğru) ceza kalkar.</td></tr>
+</table>
+<h2>7.3 Sabitler tablosu</h2>
+<table>
+<tr><th>Değer</th><th>Kod adı</th><th>Anlamı</th></tr>
+<tr><td>80</td><td><span class="mono">WORD_LEARN_UNLOCK_PERCENT</span></td><td>Dersin kelimelerinin %80'i öğrenilince sınav ve sonraki ders açılır.</td></tr>
+<tr><td>80</td><td><span class="mono">EXAM_PASS_PERCENT</span></td><td>Sınavda %80 başarı = ders geçildi, yarışma seviyesi açılır.</td></tr>
+<tr><td>30 sn</td><td><span class="mono">timeLeft</span></td><td>Sınav soru süresi.</td></tr>
+<tr><td>3 / 6 / 12</td><td><span class="mono">SRS_ARALIKLARI</span></td><td>Sandık kutusu 1/2/3 için tekrar aralığı (soru sayısı).</td></tr>
+<tr><td>3</td><td><span class="mono">SRS_MAX_KUTU</span></td><td>Bu kutuda doğru bilen kelime sandıktan mezun olur.</td></tr>
+<tr><td>3, 7, 21, 60 gün</td><td><span class="mono">REVIEW_INTERVALS_GUN</span></td><td>Tekrar Modu aralıkları.</td></tr>
+<tr><td>25 sn / 90 sn</td><td>kalp atışı / <span class="mono">__presenceOnlineThresholdMs</span></td><td>Çevrimiçi göstergesi.</td></tr>
+<tr><td>8 hane</td><td>oyuncu ID</td><td>10.000.000–99.999.999.</td></tr>
+<tr><td>2 puan</td><td>seviye bonusu</td><td>Her yeni seviye için.</td></tr>
+</table>
+
+<h1>8. Rozetler (37 adet) ve sosyal sistem</h1>
+<h2>8.1 Rozetler</h2>
+<p>Rozetler "kolaydan efsaneye" 4 zorluk derecesindedir ve <span class="mono">window.__profileExtrasHTML</span> içinde hesaplanır (kullanıcı verisinden anlık; ayrı kayıt tutulmaz). Kategoriler ve sayıları:</p>
+<table>
+<tr><th>Kategori</th><th>Adet</th><th>Örnekler</th></tr>
+<tr><td>📖 Kelime</td><td>7</td><td>Yeni Başlayan (1), Kelime Avcısı (100), Kelime Ustası (500), Bin Kelime (1.000), Kelime Âlimi (2.500), Kelime Sultanı (5.000), Kelime Efsanesi (10.000)</td></tr>
+<tr><td>🔥 Seri</td><td>5</td><td>7, 30, 100, 365 ve 1000 gün seri</td></tr>
+<tr><td>📝 Sınav</td><td>6</td><td>Sınav Çırağı (10 sınav), Sınavda %90+ (5+ soruluk sınavda %90), Sınav Ustası (50 sınav), Kusursuz Sınav (10+ soruluk sınavda %100), Sınav Kahramanı (200 sınav), Mükemmeliyetçi (10 kusursuz sınav)</td></tr>
+<tr><td>🕰️ Sadakat</td><td>5</td><td>Hesap yaşına göre: 6 Aylık Yol (180 gün), 1 Yıllık Yol, 3 Yıllık Yol, 5 Yıllık Yol, 10 Yıllık Yol (3650 gün)</td></tr>
+<tr><td>🏔️ Seviye</td><td>4</td><td>Seviye 5, Seviye 20, Seviye 50 ve Zirve (son seviye = tüm dersler)</td></tr>
+<tr><td>🎯 Yarışma</td><td>3</td><td>Keskin Nişancı (30 soru, %70 doğruluk), Usta Okçu (500 soru, %80), Yarışma Kartalı (2.000 soru, %85)</td></tr>
+<tr><td>👥 Sosyal</td><td>3</td><td>Sosyal (5 arkadaş), Kalabalık Dost (15), Kervan Başı (30)</td></tr>
+<tr><td>🏆 Şampiyonluk</td><td>3</td><td>Ayın Şampiyonu (ilk 3'e 1 kez girmek), Ayın Birincisi (1. olmak), Seri Şampiyon (5 kez ilk 3)</td></tr>
+<tr><td>🌟 Final</td><td>1</td><td>Hepsini Topladın (diğer tüm rozetler)</td></tr>
+</table>
+<p>Rozet tanımları (ad, simge, hedef, açıklama) kodda <span class="mono">B('kategori','simge','ad',zorluk,mevcut,hedef,'birim','açıklama')</span> satırlarıdır (index.html, "ROZET TANIMLARI" bölümü). Yeni rozet eklemek için bu listeye bir satır eklemek yeterlidir.</p>
+
+<h2>8.2 Takip / arkadaşlık sistemi</h2>
+<ul>
+<li><b>Takip isteği:</b> Oyuncu profilinden istek gönderilir; karşı taraf Bildirimler → İstekler'den kabul/ret eder. Kabulde iki taraf da birbirinin <span class="mono">following</span>/<span class="mono">followers</span> listesine <span class="mono">arrayUnion</span> ile eklenir. Takibi bırakmak karşılıklıdır ve o kişiyle olan tüm mesajlar (kendi tarafınızda) silinir.</li>
+<li><b>Hazır mesajlar (CANNED_MESSAGES):</b> Serbest metin yoktur; kullanıcı 30 hazır mesajdan seçer: motive edici (👏 "Çok başarılısın, harikasın!", 🔥 "Bu tempo ile zirveye çıkacaksın!" ...) ve takılmalı/hırslandırıcı (🐌 "Salyangoz hızında gidiyorsun...", 👑 "Taht boş değil..." ...). Bu bilinçli bir güvenlik tercihidir: kötü içerik oluşamaz.</li>
+<li><b>Emoji yanıtı:</b> Gelen mesaja yalnızca emoji ile yanıt verilir; yanıt, mesajın altında iç içe görünür; tek yanıt silinebilir.</li>
+<li><b>Bildirimler modalı:</b> Mesajlar (Instagram/WhatsApp tarzı sohbet listesi) ve İstekler sekmeleri; tek pencere kapanmadan yerinde güncellenir; sohbet başlığında karşı tarafın "Çevrimiçi / X dk önce aktifti" durumu görünür; sohbet silme yalnızca kendi tarafınızı siler.</li>
+<li><b>Arka plan dinleyicisi:</b> Uygulama açıkken periyodik kontrolle yeni istek/mesaj gelince küçük bildirim (toast) ve zil rozeti güncellenir.</li>
+<li><b>Arkadaşlık serisi (Snapchat tarzı):</b> İki arkadaş art arda günlerde birbirine mesaj/emoji atarsa seri artar (<span class="mono">friendStreaks.{uid}</span>); bir gün atlanırsa 1'e döner. İsteğe bağlı günlük hatırlatma (<span class="mono">toggleFriendReminders</span>, cihazda <span class="mono">friendReminders</span> anahtarı). Emoji reaksiyon sayaçları da tutulur.</li>
+<li><b>Mesaj depolama:</b> Mesajlar kullanıcı belgesinde <span class="mono">inboxMessages</span> (alınan) ve <span class="mono">outboxMessages</span> (gönderilen) dizilerinde; bekleyen istekler <span class="mono">pendingFollowRequests</span> dizisinde saklanır.</li>
+</ul>

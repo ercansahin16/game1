@@ -1,0 +1,192 @@
+<h1>13. Veri modeli: Firebase koleksiyonları ve alanlar</h1>
+<p>Firestore'daki tüm koleksiyonlar aşağıdadır (kodda geçen adlara göre). "Okur / Yazar" sütunu kodun yaptığı ve amaçladığı erişimi gösterir; gerçek yetki Firebase Güvenlik Kuralları ile sınırlanır ve kuralların bu tabloyla uyumlu olduğu <b>doğrulanmamıştır</b> (bölüm 20).</p>
+<table>
+<tr><th>Koleksiyon / belge</th><th>İçerik</th><th>Okur / Yazar</th></tr>
+<tr><td><span class="mono">users/{uid}</span></td><td>Her kullanıcının ana belgesi (alanlar aşağıda).</td><td>Kendisi okur/yazar; diğer oyuncular sıralama/profil için okur; arkadaşlık alanlarını karşı taraf da yazar; admin okur/yazar.</td></tr>
+<tr><td><span class="mono">publicIds/{8haneliID}</span></td><td>ID kayıt defteri: çakışmayı imkânsızlaştırır (<span class="mono">{uid}</span>).</td><td>Kullanıcı ilk girişte yazar.</td></tr>
+<tr><td><span class="mono">seasonWinners/{YYYY-AA}</span></td><td>Ayın ilk 3'ü: <span class="mono">{seasonId, winners:[{uid,name,publicId,score}], createdAt}</span>.</td><td>İlk giren kullanıcı bir kez yazar; herkes okur.</td></tr>
+<tr><td><span class="mono">appConfig/announcement</span></td><td>Aktif duyuru (<span class="mono">id, title, message, publishedAt, action, hasImage, imageUrl, editedAt</span>), <span class="mono">contentVersion</span> (içerik önbellek sürümü), <span class="mono">surveys</span> (yayındaki anket id'leri).</td><td>Herkes okur; admin yazar.</td></tr>
+<tr><td><span class="mono">announcements/{id}</span></td><td>Duyuru geçmişi (aynı alanlar).</td><td>Herkes okur; admin yazar.</td></tr>
+<tr><td><span class="mono">announcementImages/{id}</span></td><td>Eski duyuru resimleri (Firebase'e gömülü, base64). Yeni duyurular Cloudinary kullanır.</td><td>Herkes okur; admin yazar/siler.</td></tr>
+<tr><td><span class="mono">appStats/duaSayaci</span></td><td>Dua ekranının sayacı.</td><td>Kullanıcı artırır.</td></tr>
+<tr><td><span class="mono">support/{uid|guest_xxx}</span> + <span class="mono">/messages/*</span></td><td>Canlı Destek (bölüm 9.1).</td><td>Sahibi + admin; misafir için kimliksiz yazma gerekir.</td></tr>
+<tr><td><span class="mono">qaPosts/{id}</span> + <span class="mono">/replies/*</span></td><td>Herkese açık Soru/Hata panosu.</td><td>Herkes okur; sahibi/oturumlu yazar; admin yönetir.</td></tr>
+<tr><td><span class="mono">qaPrivate/{id}</span></td><td>Sorunun e-posta + cihaz bilgisi.</td><td>Yalnızca admin okur; soru sahibi yazar.</td></tr>
+<tr><td><span class="mono">qaImages/{id}</span></td><td>Ekran görüntüleri.</td><td>Soru sahibi + admin.</td></tr>
+<tr><td><span class="mono">surveys/{id}</span>, <span class="mono">surveyResponses/{id}</span></td><td>Anket tanımı ve cevaplar.</td><td>Anketi herkes okur; cevabı kullanıcı yazar; sonuçları admin okur.</td></tr>
+<tr><td><span class="mono">loginHelp/{id}</span></td><td>Eski giriş yardımı talepleri.</td><td>Admin okur.</td></tr>
+<tr><td><span class="mono">bugReports</span>, <span class="mono">bugReportImages</span></td><td>Eski hata bildirimleri (soru-cevap yapısına taşındı).</td><td>Admin.</td></tr>
+<tr><td><span class="mono">deletedUsers/{uid}</span></td><td>Admin "hesabı sil" yaptığında profilin yedeği.</td><td>Admin yazar.</td></tr>
+<tr><td><span class="mono">duels/*</span></td><td>Düello (yalnızca test).</td><td>Kurallarda izin gerekir.</td></tr>
+<tr><td><span class="mono">books, lessons, words, exams</span></td><td>Eski içerik. <b>Artık okunmaz</b>; icerik.json kullanılır. Silinebilir.</td><td>—</td></tr>
+</table>
+<h2>13.1 users/{uid} alanları</h2>
+<table>
+<tr><th>Alan</th><th>Anlamı</th></tr>
+<tr><td><span class="mono">name, email, publicId, createdAt, tourCompleted</span></td><td>Kimlik ve kayıt bilgileri. <span class="mono">publicId</span> 8 haneli oyuncu numarasıdır.</td></tr>
+<tr><td><span class="mono">quizScore</span></td><td>Yarışma puanı.</td></tr>
+<tr><td><span class="mono">examsCompleted[]</span>, <span class="mono">averageScore</span></td><td>Sınav geçmişi ve ortalaması.</td></tr>
+<tr><td><span class="mono">totalWordsViewed</span></td><td>Görülen kelime sayısı (atomik artar).</td></tr>
+<tr><td><span class="mono">mevcutSeviye, toplamSeviye, passedLessonIds[]</span></td><td>Yarışma seviyesi, toplam ders ve geçilen dersler.</td></tr>
+<tr><td><span class="mono">unlockAll</span></td><td>Yönetici "tüm kilitleri aç" anahtarı.</td></tr>
+<tr><td><span class="mono">quizSandik[]</span></td><td>Sandıktaki kelimeler: <span class="mono">{id, arabic, turkish, box, dueAt}</span>.</td></tr>
+<tr><td><span class="mono">reviewQueue{}</span></td><td>Tekrar Modu kuyruğu (bölüm 6.6).</td></tr>
+<tr><td><span class="mono">myWords[], wordHints{}</span></td><td>Kelimelerim listesi ve kişisel ipuçları.</td></tr>
+<tr><td><span class="mono">karmaStats{total,correct,wrong}</span></td><td>Yarışma sayaçları.</td></tr>
+<tr><td><span class="mono">gunlukSeri, enUzunSeri, lastStreakDate</span></td><td>Günlük seri.</td></tr>
+<tr><td><span class="mono">seasonId, seasonBaselineScore, seasonHistory{}</span></td><td>Aylık sezon (bölüm 6.9).</td></tr>
+<tr><td><span class="mono">following[], followers[], pendingFollowRequests[]</span></td><td>Arkadaşlık.</td></tr>
+<tr><td><span class="mono">inboxMessages[], outboxMessages[], friendStreaks{}, emojiStats{}</span></td><td>Mesajlar, arkadaşlık serisi ve emoji sayaçları.</td></tr>
+<tr><td><span class="mono">dailyLog{dYYYYMMDD:{v,w,q}}</span></td><td>Günlük hareket kaydı (v: girdi, w: kelime, q: soru; Türkiye saati). Admin istatistikleri içindir.</td></tr>
+<tr><td><span class="mono">lastActive</span></td><td>Kalp atışı zaman damgası (ms). Çevrimiçi göstergesi buna bakar.</td></tr>
+</table>
+<div class="note"><b>Yerel (cihaz) depolama anahtarları:</b> <span class="mono">sy_rank_cache</span> (sıralama önbelleği), <span class="mono">sy_guest_id / sy_guest_info</span> (misafir destek), <span class="mono">sy_ntfy_*</span> (bildirim hız sınırı), <span class="mono">sy_qa_q / sy_qa_r</span> (soru-yanıt sınırları), <span class="mono">friendReminders</span>, tema ve "beni hatırla" tercihleri; IndexedDB'de içerik önbelleği.</div>
+
+<h1>14. Performans, önbellek ve Firebase kota tasarrufu</h1>
+<p>Firebase ücretsiz (Spark) planın günlük <b>50.000 belge okuma</b> sınırı vardır. Yüzlerce kişinin aynı anda ders listesi ve sıralama açtığı bir sistemde bu sınır kolayca aşılır; aşılırsa o gün uygulama veri okuyamaz. Alınan önlemler:</p>
+<table>
+<tr><th>Önlem</th><th>Etkisi</th></tr>
+<tr><td>İçerik icerik.json'da (Firestore'da değil)</td><td>Kitap/ders/kelime/sınav için sıfır okuma. En büyük tasarruf.</td></tr>
+<tr><td>İçerik açılışta önceden indirilir; Firestore sürüm kontrolü beklenmez</td><td>Kitap/ders listesi anında açılır.</td></tr>
+<tr><td>Sıralama önbelleği (cihazda): diğer oyuncular 30 dk (ay geçişinde 3 dk)</td><td>Her sıralama açılışı yüzlerce okuma yapmaz; "Yenile" zorla günceller.</td></tr>
+<tr><td>Kendi puanım her zaman taze okunur (1 okuma)</td><td>Kişi kendi puanında gecikme görmez.</td></tr>
+<tr><td>Çevrimiçi sorgusu yalnızca son 90 sn aktif kullanıcıları okur; ekran açıkken 45 sn'de bir</td><td>Tüm kullanıcıları okumaz.</td></tr>
+<tr><td>Kalp atışı: 25 sn'de bir tek alan yazar (<span class="mono">lastActive</span>)</td><td>Yazma kotasını (20.000/gün) göz önünde tutar. Çok kullanıcı eşzamanlı açıksa yazma sayısı hızla artar; ölçülü tutulmalıdır.</td></tr>
+<tr><td>Atomik <span class="mono">increment()</span></td><td>Önce oku sonra yaz yarışlarını ve fazladan okumayı ortadan kaldırır (kelime sayacı).</td></tr>
+<tr><td>Duyuru/sürüm belgesi tek okuma, 20 sn bellek</td><td>Aynı belgeyi birçok işlev ayrı ayrı okumaz.</td></tr>
+<tr><td>Admin yedeği ve kullanıcı listesi</td><td>Çok okuma yapar; ayda birkaç kez yeterli.</td></tr>
+<tr><td>Resim: Cloudinary CDN, <span class="mono">f_auto,q_auto,w_900</span></td><td>Firestore'a büyük belge yazılmaz; hızlı ve küçük resim.</td></tr>
+</table>
+<h2>14.1 Kota aşılırsa ne olur, ne yapılır?</h2>
+<ul>
+<li>Belirti: Giriş yapılamaz, sıralama yüklenmez, "kota" hatası. Firebase Console → Firestore → Kullanım sekmesinden günlük okuma/yazma görülür; kota Pasifik saatiyle gece yarısı (Türkiye'de sabaha karşı) sıfırlanır.</li>
+<li>Çözümler: önbellek sürelerini uzatmak, kalp atışı aralığını artırmak (25 sn → 60 sn), admin yedeğini ve toplu sorguları azaltmak ya da Blaze (kullandıkça öde) plana geçmek. Geliştiricinin kararı <b>ücretli plana geçmemek</b> ve davranışı bozan kısıtlamalardan kaçınmaktır; ileride "daha hızlı veritabanı ve barındırma" seçeneği düşünülmektedir.</li>
+</ul>
+
+<h1>15. Servis çalışanı (PWA), sürüm numaraları ve güncelleme</h1>
+<h2>15.1 service-worker.js</h2>
+<ul>
+<li><b>Önbellek adı:</b> <span class="mono">saadetyolu-shell-vNN</span> (test: <span class="mono">saadetyolu-test-shell-vNN</span>). <b>index.html her değiştiğinde NN bir artırılmalıdır;</b> bu, eski önbelleği silmeyi ve yeni sürümün alınmasını tetikler.</li>
+<li><b>Strateji: ağ öncelikli (network-first).</b> İnternet varken her zaman en yeni dosya ağdan çekilip önbellek güncellenir; yalnızca ağ yoksa önbellekten açılır. Böylece "Ana Ekrana Ekle" PWA'larında eski sürüm takılı kalmaz.</li>
+<li><b>Dokunmadıkları:</b> firebaseio.com, googleapis.com, gstatic.com, cloudfunctions.net ve tüm GET dışı istekler (Firebase/harici API'ler doğrudan ağa gider).</li>
+<li><b>Kabuk dosyaları:</b> <span class="mono">./index.html, ./manifest.json, ./icons/icon-192.png, ./icons/icon-512.png</span>. <span class="mono">skipWaiting()</span> ve <span class="mono">clients.claim()</span> ile yeni servis çalışanı hemen devreye girer.</li>
+</ul>
+<h2>15.2 Üç ayrı "sürüm" bilgisi (hepsi birlikte artırılır)</h2>
+<table>
+<tr><th>Nerede</th><th>Biçim</th><th>Görevi</th></tr>
+<tr><td><span class="mono">service-worker.js → CACHE_NAME</span></td><td><span class="mono">saadetyolu-shell-v104</span></td><td>Önbellek adı.</td></tr>
+<tr><td><span class="mono">index.html → &lt;meta name="app-build"&gt;</span></td><td>canlı: <span class="mono">saadetyolu-shell-v104</span>; test: <span class="mono">test-v99</span></td><td>"Yeni sürüm var" uyarısı bu etiketi karşılaştırır.</td></tr>
+<tr><td>Kenar menü altı: "Sürüm X.Y.Z · tarih"</td><td><span class="mono">2.23.5</span></td><td>Kullanıcıya görünen anlamlı sürüm numarası (aşağıdaki kurala göre).</td></tr>
+</table>
+<p><b>Sürüm numarası kuralı (X.Y.Z):</b> küçük düzeltme → Z artar; yeni özellik → Y artar; büyük değişiklik → X artar. Yalnızca <span class="mono">admin.html</span> değiştiyse sürüm numaraları <b>değişmez</b> (admin sayfası servis çalışanına bağlı değildir).</p>
+<h2>15.3 Yeni sürüm uyarısı nasıl çalışır?</h2>
+<ol>
+<li>Uygulama açılırken kendi yapı numarasını (<span class="mono">app-build</span>) okur.</li>
+<li>Uygulamaya her dönüşte (en çok 10 dakikada bir) sunucudaki <span class="mono">index.html</span>'in başlığını <span class="mono">?_b=zaman</span> ile çekip <span class="mono">app-build</span> değerini karşılaştırır (önce kısmi indirme; olmazsa tam sayfa yedeği).</li>
+<li>Farklıysa altta küçük "Yenile" bildirimi çıkar (yalnızca giriş yapılmışken). Pencereleri kapatmaz, sayfayı kendiliğinden yenilemez.</li>
+<li>Menüdeki <b>Yeni Sürümü Denetle</b> aynı kontrolü anında yapar ve sonucu "güncelleme denetimi HH:DD ✓ güncel" olarak yazar.</li>
+</ol>
+<div class="warn">Bu sistemin çalışması için <span class="mono">app-build</span> etiketinin <b>her index.html değişikliğinde</b> değişmesi şarttır. Etiket değişmezse kullanıcılar yeni sürümü görmez.</div>
+<h2>15.4 PWA bildirimi (manifest.json)</h2>
+<ul>
+<li><span class="mono">start_url: /saadetyolu/index.html</span>, <span class="mono">scope: /saadetyolu/</span>, <span class="mono">display: standalone</span>, dikey yön, renkler <span class="mono">#121212</span>, dil <span class="mono">tr</span>. Simgeler 72–512 px + maskable 512.</li>
+<li>iPhone'da uygulama "Paylaş → Ana Ekrana Ekle" ile kurulur (uygulama içi resimli rehber vardır); Android Chrome'da "Uygulamayı İndir" düğmesi kurulum istemini açar.</li>
+<li>Yer değiştirme: başlangıç adresi mutlak yollar içerir (<span class="mono">/saadetyolu/...</span>). Uygulama başka bir klasöre/alan adına taşınırsa <span class="mono">manifest.json</span>'daki yollar ve <span class="mono">id</span> güncellenmelidir.</li>
+</ul>
+
+<h1>16. Geliştirme ve yayınlama iş akışı (test → canlı)</h1>
+<h2>16.1 Altın kurallar</h2>
+<ol>
+<li><b>Canlı klasöre (saadetyolu) doğrudan deneme yapılmaz.</b> Çok sayıda kişi kullanır. Her yeni özellik önce <span class="mono">test</span> klasöründe denenir; çalışırsa canlıya taşınır.</li>
+<li><b>Test klasörü aynı Firebase'i kullanır.</b> Testte yazılan veri gerçek veritabanına gider (ayrı bir test projesi planlanmıştır). Yıkıcı denemeleri gerçek veriyle yapmayın.</li>
+<li>Her index.html değişikliğinde 3 sürüm bilgisini artırın (bölüm 15.2).</li>
+<li>Yayından önce gömülü betiğin söz dizimini denetleyin (aşağıda).</li>
+<li>Admin sayfası değiştiyse yalnızca yayınlamak yeterlidir (sürüm artmaz).</li>
+</ol>
+<h2>16.2 Adım adım: küçük bir değişiklik yayınlama</h2>
+<ol>
+<li><b>Hazırlık:</b> <span class="mono">git clone https://github.com/ercansahin16/game1</span> (ilk kez) veya <span class="mono">git pull</span>.</li>
+<li><b>Düzenle:</b> önce <span class="mono">test/index.html</span> (veya admin.html) dosyasını değiştir.</li>
+<li><b>Söz dizimi denetimi (Node ile):</b>
+<pre>python3 - test &lt;&lt;'E'
+import re,sys
+s=open(sys.argv[1]+'/index.html',encoding='utf-8').read()
+ms=re.findall(r'&lt;script type="module"&gt;(.*?)&lt;/script&gt;',s,re.S)
+open('/tmp/m.mjs','w').write(max(ms,key=len))
+E
+node --check /tmp/m.mjs &amp;&amp; echo TAMAM</pre></li>
+<li><b>Sürüm bilgileri (test):</b> <span class="mono">test/service-worker.js</span> içindeki <span class="mono">saadetyolu-test-shell-vNN</span> → NN+1; <span class="mono">test/index.html</span> içinde <span class="mono">&lt;meta name="app-build" content="test-vNN"&gt;</span> → NN+1.</li>
+<li><b>Yayınla:</b> <span class="mono">git add -A &amp;&amp; git commit -m "açıklama" &amp;&amp; git push</span>. GitHub Pages 1–3 dakika içinde günceller. Telefonda uygulamayı kapatıp açın (veya menüden "Yeni Sürümü Denetle").</li>
+<li><b>Dene:</b> <span class="mono">nevafil.com.tr/test</span> adresinde hem koyu hem açık temada, telefon ve bilgisayarda.</li>
+<li><b>Canlıya taşı:</b> değişikliği <span class="mono">saadetyolu/index.html</span>'e uygula; sürüm numaralarını (X.Y.Z, <span class="mono">saadetyolu-shell-vNN</span>, <span class="mono">app-build</span>) artır; denetle; commit + push.</li>
+</ol>
+<h2>16.3 Geri alma</h2>
+<ul>
+<li>Hatalı sürümü geri almak için: <span class="mono">git revert &lt;commit-kodu&gt;</span> → <span class="mono">git push</span>. Servis çalışanı önbelleği için <b>önbellek adı yeniden artırılmalıdır</b> (revert eski adı geri getirebilir; adı bir üst numaraya çıkarın).</li>
+<li>İçerik hatasında (<span class="mono">icerik.json</span>) önceki sürüme <span class="mono">git checkout &lt;commit&gt; -- saadetyolu/icerik.json</span> ile dönülür.</li>
+</ul>
+<h2>16.4 Sık yapılan hatalar (öğrenilmiş dersler)</h2>
+<ul>
+<li><b>CSS'i yanlış yere koymak:</b> index.html'de bir CSS bloğu, JS şablon metninin (örn. sıralama listesi) içine eklenirse etkisiz kalır. Stil, gerçek <span class="mono">&lt;style&gt;</span> bloğuna konmalıdır.</li>
+<li><b>Düğmenin konumunu zorlamak:</b> Menü düğmesine <span class="mono">position:relative</span> zorlamak düğmeyi aşağı kaydırmıştı; yalnızca hesaplanmış konum "static" ise uygulanmalıdır.</li>
+<li><b>Sahte (cache'ten gelen) belge nesnelerinde <span class="mono">id</span> yoktur:</b> önbellekten gelen Firestore benzeri belgelerde <span class="mono">data()</span> id içermez; <span class="mono">{...snap.data(), id: snap.id}</span> yazılmalıdır.</li>
+<li><b>z-index çatışmaları:</b> SweetAlert kapsayıcısı 200000, duyuru resmi lightbox'ı 300000, Canlı Destek ekranı 150000 kullanır. Yeni katman eklerken bu sıraya dikkat edin.</li>
+<li><b>Açık tema:</b> Sabit renk (<span class="mono">#121212</span> vb.) kullanan yeni ekran açık temada bozulur; <span class="mono">body.light-theme</span> kuralı ekleyin.</li>
+<li><b>Sürüm numarasını artırmayı unutmak:</b> kullanıcılar yeni sürümü görmez.</li>
+<li><b>Birlikte güncellenmesi gerekenler:</b> puan formülü (kodda yedi civarı yerde), Firebase yapılandırması (saadetyolu + test + admin).</li>
+</ul>
+<h2>16.5 Doğrulama için yerel deneme (isteğe bağlı)</h2>
+<p>Dosyalar statik olduğu için <span class="mono">python3 -m http.server</span> ile yerelde açılabilir; ancak Firebase'e gerçek veriyle bağlanır. Ekran düzenini otomatik denemek için Chrome + Playwright ve Firebase modüllerini "stub"layan bir yönlendirme kullanıldı; zorunlu değildir.</p>
+
+<h1>17. Cloudinary (duyuru resimleri) kurulumu ve işletimi</h1>
+<h2>17.1 Neden Cloudinary?</h2>
+<p>Duyuru resimleri önce Firebase'e (base64) gömülüyordu: yavaş yükleniyor ve Firestore kotasını tüketiyordu. GitHub'a elle resim yüklemek pratik değildi. Cloudinary ücretsizdir, resmi dünya genelindeki CDN'den hızla sunar ve boyutu otomatik küçültür.</p>
+<h2>17.2 Kurulum (sıfırdan, yeni hesap için)</h2>
+<ol>
+<li><b>cloudinary.com</b> → ücretsiz hesap açın (yönetici e-postasıyla).</li>
+<li>Panel (Dashboard) → <b>Cloud name</b> değerini not edin (mevcut hesapta: <span class="mono">n5g02nam</span>).</li>
+<li><b>Settings → Upload → Upload presets → Add upload preset</b>: ad <span class="mono">duyuru</span>, <b>Signing mode: Unsigned</b>, isteğe bağlı klasör ve izin verilen biçimler (jpg, png, webp). Kaydedin.</li>
+<li><b>Kod değişikliği:</b> <span class="mono">saadetyolu/admin.html</span> ve <span class="mono">test/admin.html</span> içinde <span class="mono">__annUploadCloud</span> fonksiyonundaki bulut adını ve ön ayar adını yeni hesaba göre değiştirin:
+<pre>fd.append('upload_preset', 'duyuru');
+fetch('https://api.cloudinary.com/v1_1/&lt;BULUT-ADI&gt;/image/upload', {method:'POST', body:fd})</pre></li>
+<li>Devir sırasında yeni sahibin hesabında aynı adımları yapıp kodu güncelleyin; <b>eski duyurulardaki resim adresleri eski hesaba bağlı olduğundan</b>, eski hesap silinirse eski duyuru resimleri kaybolur. Önemliyse resimleri yeniden yükleyip duyuruları düzenleyin.</li>
+</ol>
+<h2>17.3 İşleyiş ve sınırlar</h2>
+<ul>
+<li>Yükleme yalnızca yönetici panelinden yapılır; resim tarayıcıda JPEG olarak sıkıştırılır (en çok ~600 bin karakter), <span class="mono">upload_preset</span> ile Cloudinary'ye gönderilir, dönen <span class="mono">secure_url</span> duyuruya yazılır.</li>
+<li>Kursiyer tarafı adresi dönüştürür: <span class="mono">.../upload/f_auto,q_auto,w_900/...</span> (liste/duyuru), büyütmede <span class="mono">w_1600</span>.</li>
+<li><b>Ücretsiz plan:</b> aylık 25 "kredi" (1 kredi ≈ 1 GB depolama veya 1 GB bant genişliği veya 1000 dönüşüm). Duyuru amaçlı yüzlerce kullanıcı için fazlasıyla yeterlidir.</li>
+<li><b>Silme:</b> İmzasız ön ayarla yüklenen resim istemciden silinemez; silmek için Cloudinary panelinden (Media Library) elle silinir. Duyuru silinse bile resim Cloudinary'de kalır (yer kaplar, zararsızdır).</li>
+<li><b>Güvenlik:</b> <b>API Key ve API Secret kodda ve belgelerde asla paylaşılmamalıdır.</b> Bu sistemde yalnızca bulut adı ve imzasız ön ayar adı kullanılır; ikisi de gizli değildir ama kötüye kullanılabilir (herkes o ön ayarla yükleme yapabilir). Kötüye kullanım görülürse ön ayarı Cloudinary panelinden devre dışı bırakıp yenisini oluşturun.</li>
+<li>Soru/Hata ve eski giriş yardımındaki ekran görüntüleri <b>bilerek</b> Cloudinary'e taşınmadı: adresler herkese açık olduğu için gizlilik riski taşır ve gizli anahtar olmadan silinemez.</li>
+</ul>
+
+<h1>18. ntfy (yöneticiye telefon bildirimi) kurulumu ve işletimi</h1>
+<h2>18.1 Ne işe yarar?</h2>
+<p>Yönetici admin sayfasına sürekli girip bakmak zorunda kalmasın diye, kursiyer bir mesaj yazdığında yöneticinin telefonuna <b>anlık bildirim</b> gönderilir. ntfy.sh ücretsiz, hesapsız, açık kaynaklı bir "yayın–abone" bildirim servisidir: belirli bir <b>konu adına</b> (topic) gönderilen mesajı o konuya abone tüm telefonlar alır.</p>
+<h2>18.2 Hangi olaylar bildirim gönderir?</h2>
+<table>
+<tr><th>Olay</th><th>Başlık</th><th>Öncelik</th></tr>
+<tr><td>Kursiyer Canlı Destek mesajı</td><td>SaadetYolu Canli Destek</td><td>Normal</td></tr>
+<tr><td>Giriş yapamayan misafir mesajı</td><td>GIRIS YAPAMAYAN KURSIYER</td><td><b>Yüksek</b> (🚨 simgesi)</td></tr>
+<tr><td>Yeni Soru / Hata</td><td>Yeni Soru / Hata</td><td>Normal</td></tr>
+<tr><td>Soru/Hata'ya yeni yanıt</td><td>Soru / Hata - yeni yanit</td><td>Normal</td></tr>
+<tr><td>Giriş yardımı talebi (eski form)</td><td>Giris Yardimi talebi</td><td>Normal</td></tr>
+</table>
+<p>Bildirimin tıklanınca açtığı adres <span class="mono">admin.html</span> sayfasıdır (HTTP başlığı <span class="mono">Click</span>). Başlıkta Türkçe karakter kullanılmaz (HTTP başlığı kısıtı). İçerik 160 karaktere kısaltılır; <b>telefon numarası ve e-posta bildirime konmaz</b>. Aynı türden bildirim en çok 20 saniyede bir gönderilir (<span class="mono">sy_ntfy_&lt;anahtar&gt;</span> yerel zaman damgası).</p>
+<h2>18.3 Kurulum adımları</h2>
+<ol>
+<li>Yöneticinin telefonuna <b>ntfy</b> uygulamasını kurun (App Store / Google Play).</li>
+<li>Uygulamada "+" → <b>Subscribe to topic</b> → kendinize özel, tahmin edilmesi imkânsız uzun bir konu adı yazın (örn. <span class="mono">sy-destek-</span> + 15–20 rastgele harf/rakam). Sunucu: varsayılan <span class="mono">ntfy.sh</span>.</li>
+<li>Kodda <span class="mono">window.__ntfy</span> fonksiyonundaki adresin sonunu (konu adını) aynı değerle değiştirin (<span class="mono">saadetyolu/index.html</span> ve <span class="mono">test/index.html</span>). Konu adı kodda tek yerdedir.</li>
+<li>Telefonda ntfy uygulamasının bildirim iznini verin; iPhone'da "Zaman Duyarlı"/odak modu ayarlarını kontrol edin.</li>
+<li>Deneme: giriş ekranından misafir mesajı gönderin; telefona 🚨 bildirimi gelmelidir.</li>
+</ol>
+<div class="warn"><b>Gizlilik:</b> Konu adı kaynak kodda göründüğü için (depo herkese açık) teorik olarak herkes o konuya sahte bildirim gönderebilir (spam). Bunun bedeli yalnızca gereksiz bildirimdir; hassas veri gönderilmez. Spam görülürse yeni bir konu adı seçip kodu ve telefonu güncelleyin. <b>Devir sırasında yeni sahip kendi konu adını belirlemelidir.</b> Daha güvenli seçenek: ntfy'de kendi (yetkilendirmeli) sunucu/konu kullanmak.</div>
+<h2>18.4 Sınırlar</h2>
+<ul>
+<li>Bildirim <b>kursiyerin cihazından</b> gönderilir (sunucu yok). Kursiyerin interneti kesilirse bildirim gitmez, ancak mesaj admin panelinde yine görünür.</li>
+<li>Admin'in kursiyere cevabı için bildirim yoktur; kursiyer uygulamayı açınca kırmızı nokta görür.</li>
+<li>ntfy.sh ücretsiz kullanımında istek sınırı vardır (yaklaşık günlük yüzlerce bildirim); bu proje ölçeğinde sorun olmaz.</li>
+<li>Anket cevapları ve duyuru okunması için bildirim yoktur (istenirse toplu özet olarak eklenebilir).</li>
+</ul>

@@ -1,0 +1,192 @@
+<div class="cover">
+  <div style="font-size:54pt">📖</div>
+  <div class="big">SaadetYolu<br>Kur'an Akademisi</div>
+  <div class="sub">Proje Devir Teslim ve Kullanım Kılavuzu</div>
+  <div class="meta">
+    <b>Uygulama sürümü:</b> 2.23.5 &nbsp;|&nbsp; <b>Belge tarihi:</b> 23 Kasım 2026<br>
+    <b>Canlı adres:</b> nevafil.com.tr/saadetyolu &nbsp;|&nbsp; <b>Deneme adresi:</b> nevafil.com.tr/test<br>
+    <b>Kaynak kod:</b> github.com/ercansahin16/game1 (klasörler: <span class="mono">saadetyolu</span> ve <span class="mono">test</span>)<br>
+    <b>Veritabanı:</b> Firebase projesi <span class="mono">duapro-a7d7e</span>
+  </div>
+  <div class="box">Bu belge, projeyi hiç görmemiş bir kişinin <b>her şeyi anlayıp</b> uygulamayı işletebilmesi, hata giderebilmesi, yeni özellik ekleyebilmesi ve hesapları devralabilmesi için hazırlanmıştır. Ücretsiz ve kâr amacı gütmeyen bir eğitim projesidir.</div>
+</div>
+
+<div class="toc">
+<h1 class="first" style="page-break-before:avoid">İçindekiler</h1>
+<ol>
+<li><span class="n">1</span>Bu belge nedir, nasıl okunur<span class="pg">__PG1__</span></li>
+<li><span class="n">2</span>Projeye genel bakış<span class="pg">__PG2__</span></li>
+<li><span class="n">3</span>Mimari: parçalar ve birbirleriyle ilişkisi<span class="pg">__PG3__</span></li>
+<li><span class="n">4</span>Depo (GitHub) yapısı ve klasörler<span class="pg">__PG4__</span></li>
+<li><span class="n">5</span>Kullanılan tüm harici servisler ve programlar<span class="pg">__PG5__</span></li>
+<li><span class="n">6</span>Kursiyer uygulaması: tüm özellikler (index.html)<span class="pg">__PG6__</span></li>
+<li><span class="n">7</span>Puan, seviye, kilit, seri, sezon kuralları (formüller)<span class="pg">__PG7__</span></li>
+<li><span class="n">8</span>Rozetler (37 adet) ve sosyal sistem<span class="pg">__PG8__</span></li>
+<li><span class="n">9</span>Destek kanalları: Canlı Destek, Soru/Hata, Giriş Yardımı, Anketler, Duyurular<span class="pg">__PG9__</span></li>
+<li><span class="n">10</span>Yönetici paneli (admin.html) bölüm bölüm<span class="pg">__PG10__</span></li>
+<li><span class="n">11</span>Gizli araç sayfası (duzenler.html)<span class="pg">__PG11__</span></li>
+<li><span class="n">12</span>İçerik yönetimi: icerik.json ve Excel<span class="pg">__PG12__</span></li>
+<li><span class="n">13</span>Veri modeli: Firebase koleksiyonları ve alanlar<span class="pg">__PG13__</span></li>
+<li><span class="n">14</span>Performans, önbellek ve Firebase kota tasarrufu<span class="pg">__PG14__</span></li>
+<li><span class="n">15</span>Servis çalışanı (PWA), sürüm numaraları ve güncelleme<span class="pg">__PG15__</span></li>
+<li><span class="n">16</span>Geliştirme ve yayınlama iş akışı (test → canlı)<span class="pg">__PG16__</span></li>
+<li><span class="n">17</span>Cloudinary (duyuru resimleri) kurulumu ve işletimi<span class="pg">__PG17__</span></li>
+<li><span class="n">18</span>ntfy (yöneticiye telefon bildirimi) kurulumu ve işletimi<span class="pg">__PG18__</span></li>
+<li><span class="n">19</span>Devir teslim kontrol listesi (hesaplar ve sahiplikler)<span class="pg">__PG19__</span></li>
+<li><span class="n">20</span>Güvenlik değerlendirmesi ve öneriler<span class="pg">__PG20__</span></li>
+<li><span class="n">21</span>Sık karşılaşılan sorunlar ve çözümleri<span class="pg">__PG21__</span></li>
+<li><span class="n">22</span>Proje geçmişi, alınan kararlar ve sürüm günlüğü<span class="pg">__PG22__</span></li>
+<li><span class="n">23</span>Sözlük ve ek tablolar<span class="pg">__PG23__</span></li>
+</ol>
+</div>
+
+<h1>1. Bu belge nedir, nasıl okunur</h1>
+<p>SaadetYolu, Kur'an-ı Kerim'i anlamaya yönelik <b>Arapça kelime öğrenme</b> uygulamasıdır. Kursiyerler (öğrenciler) kelimeleri çalışır, sınavlara girer, yarışmada puan toplar, sıralamada birbirleriyle yarışır, arkadaşlık kurar ve yöneticiyle (öğretmen) yazışır. Uygulama telefona kurulabilen bir web uygulamasıdır (PWA) ve tamamen ücretsizdir.</p>
+<p>Bu kılavuz şunları yanıtlar:</p>
+<ul>
+<li>Uygulama ne yapar, hangi ekranlar ve özellikler vardır?</li>
+<li>Hangi parça nerede çalışır, hangi dosya neyi yönetir? (Mimari)</li>
+<li>Hangi harici hesap, servis ve program kullanılıyor, ne kadar ücretsiz hakkı var, kimin adına kayıtlı?</li>
+<li>İçerik (kelime, ders, sınav) nasıl güncellenir?</li>
+<li>Yeni bir sürüm nasıl yayınlanır, hata olursa nasıl geri dönülür?</li>
+<li>Projeyi devralan kişi hangi hesapları kendi adına almalıdır?</li>
+</ul>
+<div class="note"><b>Okuma önerisi:</b> Projeyi devralan kişi önce 2, 3, 4 ve 5. bölümleri okumalı, sonra 19. bölümdeki kontrol listesiyle hesapları devralmalıdır. Günlük işletim için 10 (admin), 12 (içerik) ve 16 (yayınlama) bölümleri yeterlidir. Geliştirici olarak koda dokunacak kişi 6, 7, 13, 14 ve 15. bölümlere de dikkatle bakmalıdır.</div>
+<h3>Bu belgedeki kısaltma ve yazım kuralları</h3>
+<table class="kv">
+<tr><td>Kursiyer</td><td>Uygulamayı kullanan öğrenci (kullanıcı, oyuncu ile aynı kişi).</td></tr>
+<tr><td>Yönetici / admin</td><td>İçeriği, duyuruları ve destek mesajlarını yöneten kişi (<span class="mono">admin.html</span> sayfasını kullanır).</td></tr>
+<tr><td>Canlı</td><td><span class="mono">saadetyolu</span> klasörü; gerçek kursiyerlerin kullandığı sürüm.</td></tr>
+<tr><td>Test</td><td><span class="mono">test</span> klasörü; yeni özelliklerin önce denendiği kopya. Aynı Firebase projesini kullanır, bu yüzden test sırasında yazılan veriler gerçek veritabanına gider.</td></tr>
+<tr><td>Kod yazımı</td><td><span class="mono">Bu biçim</span> dosya adı, fonksiyon, koleksiyon veya komut demektir.</td></tr>
+<tr><td>Satır numaraları</td><td>Belgede verilen satır numaraları 2.23.5 sürümüne göredir ve yaklaşıktır; kod değiştikçe kayar. Aramak için fonksiyon adını kullanın.</td></tr>
+</table>
+
+<h1>2. Projeye genel bakış</h1>
+<h2>2.1 Amaç ve kitle</h2>
+<p>Proje kâr amacı gütmeyen, ücretsiz bir eğitim aracıdır. Kur'an kelimelerini öğretmek için "Kur'an'ı Anlama Kılavuzu" kitaplarındaki kelimeleri derslere bölerek sunar. Yaklaşık 120 kursiyer kayıtlıdır; dönemsel olarak 200 öğrenciye çıkması ve ileride çok daha fazlasına ulaşması hedeflenmektedir (sistem 8 haneli kullanıcı numarasıyla yüz binlerce kullanıcıya göre tasarlanmıştır).</p>
+<h2>2.2 Rakamlarla içerik (icerik.json, 23 Kasım 2026)</h2>
+<table>
+<tr><th>Öğe</th><th>Adet</th><th>Açıklama</th></tr>
+<tr><td>Kitap</td><td>3</td><td>Kur'an'ı Anlama kılavuzu -1, -2, -3</td></tr>
+<tr><td>Ders</td><td>48</td><td>Her ders bir "seviye"dir; yarışma ve kilit sistemi dersler üzerinden ilerler.</td></tr>
+<tr><td>Kelime</td><td>1264</td><td>Arapça kelime + Türkçe anlam + ders bağlantısı. Kaynak: Excel dosyası (Kelimeler_v2.xlsx).</td></tr>
+<tr><td>Sınav</td><td>129</td><td>Ders başına birkaç sınav; her sınav çoktan seçmeli sorulardan oluşur (4 şık).</td></tr>
+<tr><td>Rozet</td><td>37</td><td>9 kategoride (kelime, seri, sınav, sadakat, seviye, yarışma, sosyal, şampiyonluk, final).</td></tr>
+</table>
+<h2>2.3 Ana özelliklerin tek bakışta özeti</h2>
+<ul>
+<li><b>Kelime Öğren:</b> Derse göre Arapça kartlar, anlamı gösterme, kaydırma, kişisel ipucu, "Kelimelerim" listesine ekleme.</li>
+<li><b>Sınav:</b> Her soru için 30 saniye, 4 şıklı sorular, %80 başarıyla sonraki ders açılır.</li>
+<li><b>Yarışma:</b> Seviyedeki kelimelerle puan toplama; doğru +0,01, yanlış −1 ve yanlış kelime "Sandık"a düşer; Sandık aralıklı tekrar (SRS) ile boşaltılır.</li>
+<li><b>Tekrar Modu:</b> Öğrenilen kelimeler 3, 7, 21, 60 gün sonra takvime bağlı olarak yeniden sorulur.</li>
+<li><b>Sıralama:</b> Tüm Zamanlar ve Bu Ay (sezon) listeleri, çevrimiçi göstergesi, oyuncu arama, ayın ilk 3 şampiyonu.</li>
+<li><b>Sosyal:</b> 8 haneli oyuncu numarası, takip isteği, arkadaşlık, hazır mesajlar, emoji yanıtı, arkadaşlık serisi, bildirimler.</li>
+<li><b>Destek:</b> Canlı Destek (birebir yazışma), Soru/Hata Bildir (herkese açık soru-cevap), Giriş Yardımı (misafir mesajı), Anketler, resimli Duyurular.</li>
+<li><b>Yönetici:</b> İstatistikler, kullanıcı yönetimi, duyuru, destek, anket, yedekleme; yönetici telefonuna anlık bildirim (ntfy).</li>
+</ul>
+<h2>2.4 Mevcut sahiplik ve durum (devir anındaki fotoğraf)</h2>
+<table class="kv">
+<tr><td>Proje sahibi / geliştirici</td><td>Ercan Şahin</td></tr>
+<tr><td>Kullanıcı kitlesi</td><td>saadetyolu.net eğitim platformunun kursiyerleri; uygulama saadetyolu.net içinde "Alıştırmalar" simgesi altında da kullanılmaktadır.</td></tr>
+<tr><td>Barındırma</td><td>GitHub Pages (ücretsiz, statik). Alan adı nevafil.com.tr, depodaki <span class="mono">CNAME</span> dosyasıyla bağlıdır. Alan adı kayıt firması: Alastyr (yalnızca alan adı, barındırma hizmeti yok).</td></tr>
+<tr><td>Veritabanı ve giriş</td><td>Firebase (Spark / ücretsiz plan), proje kimliği <span class="mono">duapro-a7d7e</span>. Proje, geliştiricinin kişisel hesabından farklı bir Google hesabı altındadır.</td></tr>
+<tr><td>Ücretli hizmet</td><td>Yoktur. Bütün servisler ücretsiz plandadır. Firebase'de Blaze (ücretli) plana geçilmemesi bilinçli bir karardır.</td></tr>
+<tr><td>Devir planı</td><td>Proje saadetyolu.net ekibine devredilecektir. Yeni bir Gmail hesabına Firebase projesinin "Sahip" yetkisi verilmesi ve GitHub deposunun devri planlanmıştır (bkz. 19. bölüm).</td></tr>
+</table>
+
+<h1>3. Mimari: parçalar ve birbirleriyle ilişkisi</h1>
+<p>Projenin <b>kendi sunucusu yoktur</b>. Tüm kod, tarayıcıda çalışan statik dosyalardır; tarayıcı doğrudan Firebase'e, Cloudinary'ye ve ntfy'ye bağlanır. Bu yüzden barındırma ücretsizdir ve bakım gerektiren bir sunucu yoktur.</p>
+<div class="diagram">
+<svg width="640" height="470" viewBox="0 0 640 470" xmlns="http://www.w3.org/2000/svg" font-family="Liberation Sans, DejaVu Sans, sans-serif" font-size="12">
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#555"/></marker></defs>
+<rect x="215" y="10" width="210" height="62" rx="10" fill="#14614a"/><text x="320" y="36" fill="#fff" text-anchor="middle" font-weight="bold">Kursiyer (telefon / bilgisayar)</text><text x="320" y="55" fill="#d9efe5" text-anchor="middle">Tarayıcı veya "Ana Ekrana Ekle" PWA</text>
+<rect x="10" y="130" width="190" height="76" rx="10" fill="#e8f0fb" stroke="#2b7fd6"/><text x="105" y="154" text-anchor="middle" font-weight="bold">GitHub Pages</text><text x="105" y="172" text-anchor="middle">index.html, admin.html,</text><text x="105" y="188" text-anchor="middle">icerik.json, simgeler, SW</text>
+<rect x="225" y="130" width="190" height="76" rx="10" fill="#fff3e3" stroke="#d9822b"/><text x="320" y="154" text-anchor="middle" font-weight="bold">Firebase (duapro-a7d7e)</text><text x="320" y="172" text-anchor="middle">Auth (giriş) + Firestore</text><text x="320" y="188" text-anchor="middle">(kullanıcı, puan, mesaj...)</text>
+<rect x="440" y="130" width="190" height="76" rx="10" fill="#f1e8fb" stroke="#8b5cf6"/><text x="535" y="154" text-anchor="middle" font-weight="bold">Cloudinary</text><text x="535" y="172" text-anchor="middle">Duyuru resimleri (CDN)</text><text x="535" y="188" text-anchor="middle">bulut adı n5g02nam</text>
+<rect x="10" y="270" width="190" height="70" rx="10" fill="#eef6f2" stroke="#2e9e5b"/><text x="105" y="294" text-anchor="middle" font-weight="bold">Servis çalışanı (SW)</text><text x="105" y="312" text-anchor="middle">Çevrimdışı kabuk önbelleği</text><text x="105" y="327" text-anchor="middle">Ağ öncelikli</text>
+<rect x="225" y="270" width="190" height="70" rx="10" fill="#eef6f2" stroke="#2e9e5b"/><text x="320" y="294" text-anchor="middle" font-weight="bold">IndexedDB önbelleği</text><text x="320" y="312" text-anchor="middle">Cihazda içerik kopyası</text><text x="320" y="327" text-anchor="middle">(kitap, ders, kelime, sınav)</text>
+<rect x="440" y="270" width="190" height="70" rx="10" fill="#fde4e4" stroke="#c62828"/><text x="535" y="294" text-anchor="middle" font-weight="bold">ntfy.sh</text><text x="535" y="312" text-anchor="middle">Yönetici telefonuna</text><text x="535" y="327" text-anchor="middle">anlık bildirim</text>
+<rect x="150" y="395" width="340" height="62" rx="10" fill="#14614a"/><text x="320" y="420" fill="#fff" text-anchor="middle" font-weight="bold">Yönetici (admin.html)</text><text x="320" y="440" fill="#d9efe5" text-anchor="middle">Aynı Firebase'e bağlanır; içeriği icerik.json'dan okur</text>
+<line x1="270" y1="72" x2="120" y2="130" stroke="#555" marker-end="url(#a)"/><line x1="320" y1="72" x2="320" y2="130" stroke="#555" marker-end="url(#a)"/><line x1="370" y1="72" x2="520" y2="130" stroke="#555" marker-end="url(#a)"/>
+<line x1="105" y1="206" x2="105" y2="270" stroke="#555" marker-end="url(#a)"/><line x1="170" y1="206" x2="290" y2="270" stroke="#555" marker-end="url(#a)"/>
+<path d="M425,22 H638 V305 H632" fill="none" stroke="#555" stroke-dasharray="4" marker-end="url(#a)"/><text x="440" y="16" font-size="10" fill="#555">bildirim (kursiyer cihazından)</text>
+<text x="150" y="105" font-size="10" fill="#555">sayfa + içerik</text><text x="328" y="105" font-size="10" fill="#555">giriş + canlı veri</text><text x="470" y="105" font-size="10" fill="#555">resim</text>
+</svg>
+<div class="small">Şekil 1: Sistem mimarisi (ok yönü: istek/veri akışı)</div>
+</div>
+<h2>3.1 Çalışma mantığı</h2>
+<ol>
+<li>Kursiyer <span class="mono">nevafil.com.tr/saadetyolu</span> adresini açar. GitHub Pages <span class="mono">index.html</span> dosyasını verir (yaklaşık 830 KB; tüm uygulama kodu bu tek dosyadadır).</li>
+<li>Servis çalışanı (<span class="mono">service-worker.js</span>) dosyayı ağdan alır, çevrimdışı yedek olarak önbelleğe koyar.</li>
+<li>Uygulama <span class="mono">icerik.json</span> dosyasını indirir (kitap, ders, kelime, sınav) ve cihazın IndexedDB'sine kaydeder. İçerik için Firebase'e <b>artık gidilmez</b>.</li>
+<li>Kullanıcı e-posta ve şifreyle (veya Google ile) Firebase Authentication üzerinden giriş yapar.</li>
+<li>Puan, ilerleme, arkadaşlık, mesaj, sıralama gibi <b>canlı veriler</b> Firestore'da tutulur ve oradan okunur/yazılır.</li>
+<li>Duyuru resimleri Cloudinary'ye yüklenir, kursiyer cihazı resmi Cloudinary CDN'inden çeker.</li>
+<li>Kursiyer Canlı Destek / Soru-Hata yazdığında uygulama ntfy.sh'a küçük bir bildirim gönderir; yöneticinin telefonu bildirim alır.</li>
+</ol>
+<h2>3.2 Tasarım ilkeleri</h2>
+<ul>
+<li><b>Tek dosya uygulama:</b> <span class="mono">index.html</span> (kursiyer) ve <span class="mono">admin.html</span> (yönetici) birer büyük dosyadır; derleme (build) adımı, Node, npm yoktur. Dosyayı değiştirip GitHub'a göndermek yayınlamak demektir.</li>
+<li><b>Sunucusuz:</b> Güvenlik ve yetkilendirme Firebase Güvenlik Kuralları ile sağlanır (bkz. 20. bölüm).</li>
+<li><b>Ücretsiz kalma:</b> Firestore okuma/yazma kotası ücretsiz planla sınırlıdır. Bu yüzden sabit içerik <span class="mono">icerik.json</span>'a taşınmış, önbellekler eklenmiştir (bkz. 14. bölüm).</li>
+<li><b>Önce test:</b> Her yeni özellik <span class="mono">test</span> klasöründe denenir, çalışırsa <span class="mono">saadetyolu</span> klasörüne taşınır.</li>
+<li><b>Türkçe arayüz:</b> Tüm metinler Türkçedir; dil dosyası yoktur, metinler kodun içindedir.</li>
+</ul>
+
+<h1>4. Depo (GitHub) yapısı ve klasörler</h1>
+<p>Depo adresi: <span class="mono">https://github.com/ercansahin16/game1</span> (herkese açık, <span class="mono">main</span> dalı). Aynı depoda geliştiricinin başka projeleri de bulunur; SaadetYolu ile ilgili olanlar aşağıda işaretlidir.</p>
+<table>
+<tr><th>Yol</th><th>Ne olduğu</th><th>SaadetYolu ile ilgisi</th></tr>
+<tr><td><span class="mono">saadetyolu/</span></td><td><b>Canlı uygulama.</b> index.html (kursiyer), admin.html (yönetici), duzenler.html (gizli araçlar), icerik.json (içerik), firebase.js, manifest.json, service-worker.js, icons/, tools/ (logolar), favicon.ico.</td><td>ANA PROJE</td></tr>
+<tr><td><span class="mono">test/</span></td><td>Deneme klasörü; saadetyolu ile aynı yapıda (duzenler.html hariç). Yeni özellikler burada denenir. Şu an yalnızca testte olan özellik: <b>Arkadaş Düellosu</b> (⚔️).</td><td>ANA PROJE (deneme)</td></tr>
+<tr><td><span class="mono">saadetyolu1/, saadetyolu2/, saadetyolu3/</span></td><td>Eski sürümlerin kopyaları (arşiv). Canlıya çıkış sırasında <span class="mono">saadetyolu3</span> kullanılmış, sonradan <span class="mono">saadetyolu</span> klasörüne geçilmiştir.</td><td>Arşiv; dokunmayın</td></tr>
+<tr><td><span class="mono">server/</span></td><td>Node.js "köprü" servisi taslağı (index.js, assign-ids.js): saadetyolu.net (Heryer platformu) hesaplarıyla tek oturum açma (SSO) denemesi ve mevcut kullanıcılara toplu ID atama betiği. Canlıda çalışmıyor.</td><td>Kullanılmıyor (taslak)</td></tr>
+<tr><td><span class="mono">CNAME</span></td><td>İçinde <span class="mono">nevafil.com.tr</span> yazar; GitHub Pages özel alan adı. <b>Silinirse site adresi bozulur.</b></td><td>KRİTİK</td></tr>
+<tr><td><span class="mono">.nojekyll</span></td><td>GitHub Pages'in Jekyll işlemesini kapatır (dosyalar olduğu gibi yayınlanır).</td><td>Gerekli</td></tr>
+<tr><td><span class="mono">index.html, admindash.html, yonetim.html, thanks.html, firebase-core.js, license-check.js, manifest.json, img/</span></td><td>Geliştiricinin başka projesi "Nevafil" (kök sayfa, lisans oluşturma, yönetim).</td><td>İlgisiz</td></tr>
+<tr><td><span class="mono">game/, link/, bio/, tools/ney.mp3</span></td><td>Diğer projeler: "Manevi Bilgi Oyunu", bağlantı sayfası, mini biyografi.</td><td>İlgisiz</td></tr>
+</table>
+<h2>4.1 saadetyolu klasörünün dosya dosya açıklaması</h2>
+<table>
+<tr><th>Dosya</th><th>Boyut (yakl.)</th><th>Görev</th></tr>
+<tr><td><span class="mono">index.html</span></td><td>830 KB</td><td>Kursiyer uygulamasının tamamı: HTML, CSS ve bir adet <span class="mono">&lt;script type="module"&gt;</span> içinde tüm JavaScript.</td></tr>
+<tr><td><span class="mono">admin.html</span></td><td>350 KB</td><td>Yönetici paneli. Şifre ekranıyla açılır.</td></tr>
+<tr><td><span class="mono">duzenler.html</span></td><td>35 KB</td><td>Gizli, tehlikeli işlemler sayfası (veri silme/sıfırlama, yedekten geri yükleme). Arama motorlarına kapalıdır (<span class="mono">noindex</span>).</td></tr>
+<tr><td><span class="mono">icerik.json</span></td><td>500 KB</td><td>Kitap, ders, kelime ve sınav içeriği (tek gerçek kaynak). Bölüm 12.</td></tr>
+<tr><td><span class="mono">firebase.js</span></td><td>&lt;1 KB</td><td>Firebase yapılandırması (proje kimliği, uygulama anahtarı vb.). Başka Firebase projesine geçmek için bu dosya (ve test klasöründekini) güncellenir.</td></tr>
+<tr><td><span class="mono">service-worker.js</span></td><td>2 KB</td><td>PWA servis çalışanı; önbellek adı her sürümde artırılır (bölüm 15).</td></tr>
+<tr><td><span class="mono">manifest.json</span></td><td>2 KB</td><td>PWA tanımı: ad, simgeler, renkler, başlangıç adresi <span class="mono">/saadetyolu/index.html</span>, dikey yön.</td></tr>
+<tr><td><span class="mono">icons/</span></td><td>—</td><td>72–512 px PNG simgeler ve "maskable" 512 simge.</td></tr>
+<tr><td><span class="mono">tools/logo*.png</span></td><td>—</td><td>Uygulama logoları (kenar menü, giriş ekranı).</td></tr>
+</table>
+<div class="warn"><b>Önemli:</b> <span class="mono">firebase.js</span>, <span class="mono">index.html</span> içinde de ayrıca yapılandırma içerebilir. Firebase projesini değiştirirken her iki yeri ve hem <span class="mono">saadetyolu</span> hem <span class="mono">test</span> klasörlerini kontrol edin (<code>grep -n "duapro-a7d7e" -r saadetyolu test</code>).</div>
+
+<h1>5. Kullanılan tüm harici servisler ve programlar</h1>
+<h2>5.1 Hizmet (servis) listesi</h2>
+<table>
+<tr><th>Servis</th><th>Ne için</th><th>Plan / limit</th><th>Nerede yapılandırılır</th></tr>
+<tr><td><b>GitHub</b> (depo + GitHub Pages)</td><td>Kodun saklanması, sürüm geçmişi ve siteyi yayınlama.</td><td>Ücretsiz. Pages: 1 GB depo, ayda 100 GB trafik (yumuşak sınırlar).</td><td>Depo ayarları → Pages; kök <span class="mono">CNAME</span> dosyası.</td></tr>
+<tr><td><b>Alastyr</b> (alan adı kaydı)</td><td>nevafil.com.tr alan adının sahibi.</td><td>Yıllık alan adı ücreti. Barındırma/e-posta hizmeti yok.</td><td>Alastyr müşteri paneli → DNS kayıtları (GitHub Pages IP'leri veya <span class="mono">ercansahin16.github.io</span> CNAME).</td></tr>
+<tr><td><b>Firebase Authentication</b></td><td>E-posta/şifre ve Google ile giriş; şifre sıfırlama e-postaları.</td><td>Spark (ücretsiz). Aylık kullanıcı sayısı çok yüksek; e-posta gönderimi günlük sınırlıdır.</td><td>Firebase Console → Authentication.</td></tr>
+<tr><td><b>Cloud Firestore</b></td><td>Tüm canlı veriler: kullanıcılar, puanlar, mesajlar, duyurular, destek, anket.</td><td>Spark: günlük 50.000 okuma, 20.000 yazma, 20.000 silme; 1 GiB depolama. (Aşılırsa uygulama o gün veri okuyamaz.)</td><td>Firebase Console → Firestore; <b>Güvenlik Kuralları</b> burada saklanır, depoda yoktur.</td></tr>
+<tr><td><b>Cloudinary</b></td><td>Duyuru resimlerinin saklanması ve CDN ile hızlı sunulması.</td><td>Ücretsiz plan: aylık 25 kredi (depolama + dönüşüm + bant genişliği birlikte). Duyuru kullanımı için fazlasıyla yeterli.</td><td>Bulut adı <span class="mono">n5g02nam</span>; imzasız yükleme ön ayarı <span class="mono">duyuru</span>; kodda <span class="mono">admin.html</span> içinde.</td></tr>
+<tr><td><b>ntfy.sh</b></td><td>Yöneticinin telefonuna anlık bildirim (yeni destek mesajı, soru/hata vb.).</td><td>Ücretsiz, hesapsız. Konu (topic) adı gizli "şifre" gibidir.</td><td>Kod: <span class="mono">window.__ntfy</span> fonksiyonu (index.html). Telefonda ntfy uygulaması.</td></tr>
+<tr><td><b>SweetAlert2</b> (CDN)</td><td>Açılır pencereler (modal), uyarılar.</td><td>Ücretsiz kütüphane (jsDelivr/CDN'den yüklenir).</td><td>index.html ve admin.html başlığı.</td></tr>
+<tr><td><b>Font Awesome 6</b> (CDN)</td><td>Simgeler.</td><td>Ücretsiz.</td><td>index.html başlığı (cdnjs).</td></tr>
+<tr><td><b>Google Fonts</b></td><td>Arapça yazı tipleri (Scheherazade New, Amiri), Baloo 2 ve Nunito.</td><td>Ücretsiz.</td><td>index.html / duzenler.html başlığı.</td></tr>
+<tr><td><b>Firebase JS SDK 9.23</b> (gstatic CDN)</td><td>Auth + Firestore istemci kütüphanesi (modül olarak doğrudan tarayıcıya yüklenir).</td><td>Ücretsiz.</td><td><span class="mono">firebase.js</span> ve index.html'deki <span class="mono">import</span> satırları.</td></tr>
+</table>
+<div class="note">Hiçbir ücretli aboneliğe, API anahtarı olan "gizli" bir servise veya kendi sunucumuza bağımlılık yoktur. Cloudinary'nin <b>API Secret</b> değeri hiçbir yerde kullanılmaz (imzasız yükleme ön ayarı yeterlidir) ve kodda bulunmamalıdır.</div>
+<h2>5.2 Geliştirme için gereken programlar (bilgisayarda)</h2>
+<table>
+<tr><th>Program</th><th>Ne için gerekir</th></tr>
+<tr><td>Git + GitHub hesabı</td><td>Kodu çekmek (<span class="mono">git clone</span>), değiştirmek ve göndermek (<span class="mono">git push</span>). Dosyaları GitHub web arayüzünden de yükleyebilirsiniz.</td></tr>
+<tr><td>Metin düzenleyici (VS Code vb.)</td><td>HTML/JS düzenlemek. Dosyalar çok büyüktür; "Bul" (Ctrl+F) ve "Satıra git" (Ctrl+G) kullanın.</td></tr>
+<tr><td>Node.js (≥18) — isteğe bağlı</td><td>Yalnızca söz dizimi denetimi için: gömülü modül betiği ayrı bir dosyaya çıkarılıp <span class="mono">node --check dosya.mjs</span> ile denenir. Uygulamanın çalışması için gerekmez.</td></tr>
+<tr><td>Python 3 + openpyxl — isteğe bağlı</td><td>Excel'den <span class="mono">icerik.json</span> üretmek ve sınavları oluşturmak için kullanılan betikler (bölüm 12).</td></tr>
+<tr><td>Excel (Kelimeler_v2.xlsx)</td><td>Kelime ve anlamların doğrulanmış kaynağı. Depoda yoktur; geliştiricinin bilgisayarındadır (devirde teslim edilmelidir).</td></tr>
+<tr><td>Chrome + Playwright — isteğe bağlı</td><td>Ekran düzenini otomatik denemek için kullanıldı; zorunlu değil.</td></tr>
+<tr><td>ntfy uygulaması (iOS/Android)</td><td>Yönetici telefonunda bildirim almak için.</td></tr>
+<tr><td>Claude Code (yapay zekâ kodlama asistanı)</td><td>Geliştirmenin büyük kısmı Claude ile yapıldı; commit mesajlarında "Co-Authored-By: Claude" satırı bu yüzden vardır. Zorunlu değildir; devralan kişi dilediği gibi çalışabilir.</td></tr>
+</table>

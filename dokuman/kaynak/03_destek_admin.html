@@ -1,0 +1,157 @@
+<h1>9. Destek kanalları: Canlı Destek, Soru/Hata, Giriş Yardımı, Anketler, Duyurular</h1>
+<p>Kursiyer ile yönetici arasında beş kanal vardır. Her birinin veri yeri, kursiyer ve yönetici tarafı ve bildirim davranışı farklıdır.</p>
+<table>
+<tr><th>Kanal</th><th>Amaç</th><th>Firestore</th><th>Yönetici bildirimi (ntfy)</th></tr>
+<tr><td>💬 Canlı Destek</td><td>Birebir, özel yazışma (yalnızca kursiyer ↔ yönetici).</td><td><span class="mono">support/{uid}</span> + <span class="mono">messages</span></td><td>Evet (misafir için acil, yüksek öncelik)</td></tr>
+<tr><td>🐞 Soru / Hata Bildir</td><td>Herkese açık soru-cevap panosu; hata bildirimi.</td><td><span class="mono">qaPosts, qaPrivate, qaImages</span></td><td>Evet (yeni soru ve yeni yanıt)</td></tr>
+<tr><td>🆘 Giriş Yardımı</td><td>Eski, giriş yapamayanlar için form. Kullanıcı arayüzünden kaldırıldı; eski kayıtlar admin'de duruyor.</td><td><span class="mono">loginHelp</span></td><td>İşlev kodda durur; arayüzden bağlı değil</td></tr>
+<tr><td>📝 Anketler</td><td>Memnuniyet / geliştirme anketleri.</td><td><span class="mono">surveys, surveyResponses</span>, <span class="mono">appConfig/announcement</span></td><td>Hayır</td></tr>
+<tr><td>📢 Duyurular</td><td>Yönetici → tüm kursiyerler tek yönlü duyuru (resimli olabilir).</td><td><span class="mono">appConfig/announcement</span>, <span class="mono">announcements</span></td><td>Hayır</td></tr>
+</table>
+
+<h2>9.1 Canlı Destek (v2.21.0 ve sonrası)</h2>
+<h3>Kursiyer tarafı</h3>
+<ul>
+<li>Kenar menüde "Site Rehberi"nin altında <b>💬 Canlı Destek</b>. Tam ekran sohbet penceresi açılır (<span class="mono">#supOv</span>). Başlıkta geri okuna basılınca kapanır.</li>
+<li>Kursiyer mesajı sağda (turuncu), yönetici mesajı solda. Kursiyerin son mesajının hemen altında küçük, italik bir not görünür: <i>"En yakın zamanda mesajınıza cevap verilecektir."</i> Yönetici cevap yazınca not kaybolur.</li>
+<li>Yönetici cevap yazdığında menü simgesinde (☰) ve "Canlı Destek" satırında <b>kırmızı nokta</b> görünür. Kontrol: girişten 2,5 sn sonra ve menü her açıldığında (en çok 60 sn'de bir) <span class="mono">__checkSupportUnread</span> çalışır.</li>
+<li>Gönderme sınırı: 1,5 sn'de bir mesaj. En çok 1000 karakter.</li>
+</ul>
+<h3>Misafir (giriş yapamayan) modu</h3>
+<ul>
+<li>Giriş ekranında "💬 Mesaj bırakın veya canlı desteğe bağlanın" bağlantısı. Hesap olmadığı için rastgele bir <b>misafir kimliği</b> (<span class="mono">guest_xxxxxxxxxx</span>) üretilir ve cihazda <span class="mono">sy_guest_id</span> anahtarında saklanır; ad ve telefon/e-posta bir kez sorulur (<span class="mono">sy_guest_info</span>).</li>
+<li>Sohbet üstünde sarı uyarı çıkar: <b>"Lütfen bu sayfayı kapatmayın"</b>; yönetici cevap verene kadar bekleme tarayıcı kapatılırsa <span class="mono">beforeunload</span> uyarısı verir. Yönetici cevap yazınca telefon titrer.</li>
+<li>Yönetici tarafında bu kişiler kırmızı <b>🆘 GİRİŞ YAPAMIYOR</b> rozetiyle görünür; ntfy bildirimi "GIRIS YAPAMAYAN KURSIYER" başlığıyla <b>yüksek öncelikli</b> gelir.</li>
+<li>Güvenlik notu: Misafir yazışması kimliksiz yapıldığı için Firestore kurallarının <span class="mono">support/guest_*</span> yollarına kimliksiz yazmaya izin vermesi gerekir (bölüm 20).</li>
+</ul>
+<h3>Yönetici tarafı</h3>
+<p>Admin → <b>Canlı Destek</b> (kenar menü + ana sayfada kart, okunmamış rozetli). Sol listede konuşmalar (en yeni üstte, en çok 100), tıklayınca yazışma açılır ve <span class="mono">unreadAdmin:0</span> yapılır. Cevap yazılınca <span class="mono">unreadUser:true</span> yapılır; kursiyerde kırmızı nokta çıkar.</p>
+<h3>Veri modeli</h3>
+<pre>support/{uid}  (uid = Firebase uid ya da guest_xxxx)
+  uid, guest(bool), contact, name, publicId, email,
+  lastText, lastFrom('user'|'admin'), lastAt(ms),
+  unreadAdmin(sayı; increment), unreadUser(bool)
+support/{uid}/messages/{id}
+  from('user'|'admin'), text, at(ms)</pre>
+
+<h2>9.2 Soru / Hata Bildir</h2>
+<ul>
+<li>Menüde "Soru / Hata Bildir". <b>Herkese açık</b> sayfalı pano; her soru ad, metin, yanıt sayısı, durum gösterir. Kimlik ve cihaz bilgisi herkese açık belgede <b>yoktur</b>: e-posta + cihaz bilgisi yalnızca yöneticinin okuyabildiği <span class="mono">qaPrivate/{id}</span> belgesindedir; ekran görüntüsü <span class="mono">qaImages/{id}</span> belgesindedir (yalnızca soru sahibi + yönetici).</li>
+<li><b>Yanıtlar</b> <span class="mono">qaPosts/{id}/replies</span> altındadır: <span class="mono">{uid, name, text, isAdmin, hasImage, createdAtIso}</span>. Soru sahibi yanıtına da ekran görüntüsü ekleyebilir.</li>
+<li><b>Resim kuralları:</b> yalnızca resim (jpeg/png/webp/heic/heif), en çok 12 MB; tarayıcıda yeniden boyutlandırılıp JPEG'e sıkıştırılarak yaklaşık 330 KB altına indirilir ve Firestore belgesinde saklanır (Cloudinary kullanılmaz; gizlilik için bilinçli tercih).</li>
+<li><b>Sınırlar (cihaz tarafı):</b> soru dakikada 1 / günde 5; yanıt 15 sn'de 1 / günde 30; "Yenile" düğmesi 5 dakikada bir kullanılabilir.</li>
+<li><b>Çözüldü:</b> Yönetici konuyu "çözüldü" işaretlerse yeni yanıt yazılamaz ve eklenmiş görüntüler silinir. Soru sahibi yöneticinin son yanıtına 👍/👎 verebilir; bu oylar yalnızca yöneticiye görünür.</li>
+<li>Eski "hata bildirimleri" (<span class="mono">bugReports</span>) soru-cevap yapısına taşındı (<span class="mono">migrateOldBugReports</span>).</li>
+</ul>
+
+<h2>9.3 Giriş Yardımı (eski kanal)</h2>
+<p>Giriş ekranındaki "Giriş yapamıyorum, yardım istiyorum" formu (<span class="mono">loginHelp</span> koleksiyonu) Kasım 2026'da (v2.23.x) kaldırılıp misafir Canlı Destek'e çevrildi. Admin'de "Giriş Yardımı" bölümü eski talepleri göstermeye devam eder; her kayıt için WhatsApp, Ara ve E-posta düğmeleri vardır (telefon numarasından üretilir).</p>
+
+<h2>9.4 Anketler</h2>
+<ul>
+<li><b>Soru türleri:</b> ⭐ Yıldız (1–5), 🔘 Tek seçenek, ✍️ Serbest yazı. Anketler <b>anonim</b> ya da <b>isimli</b> olabilir; isimli ankette ad ve oyuncu ID'si yöneticiye gösterilir ve kursiyer bunu bilir.</li>
+<li><b>6 hazır şablon:</b> Memnuniyet Anketi, Geliştirme Anketi, Ders ve İçerik Değerlendirme, Çalışma Alışkanlıkları, Teknik Sorun Anketi, Yeni Özellik Oylaması.</li>
+<li><b>Yönetici işlemleri:</b> Yeni / düzenle / kopyala / sil, <b>Yayınla</b> (aynı anda birden fazla anket yayında olabilir), <b>Durdur</b>, <b>Sonuçlar</b> (yıldız ortalaması, seçenek dağılımı, serbest yanıtlar).</li>
+<li><b>Yayın bilgisi</b> <span class="mono">appConfig/announcement.surveys</span> dizisindedir (yayındaki anket kimlikleri). Kursiyer menüsündeki "Anketler" satırı kırmızı rozetle <b>cevaplanmamış</b> anket sayısını gösterir; cevaplanacak anket yoksa bilgi mesajı verir. Menü altındaki "anket: N yayında, M bekliyor" satırı tanı amaçlıdır.</li>
+<li>Cevaplar <span class="mono">surveyResponses/{id}</span> belgesidir.</li>
+</ul>
+
+<h2>9.5 Duyurular (resimli)</h2>
+<ul>
+<li><b>Yönetici:</b> Admin → Duyurular → başlık (isteğe bağlı), metin, <b>Yönlendirme düğmesi</b> (Yok / Memnuniyet Anketine git / Soru-Hata Bildir'e git / Yardım-İletişim'e git), <b>Resim</b> (isteğe bağlı). Yayınlayınca <span class="mono">appConfig/announcement</span> güncellenir ve <span class="mono">announcements</span> koleksiyonuna geçmiş kaydı eklenir.</li>
+<li><b>Resim akışı:</b> Admin resmi seçer → (gerekirse JPEG sıkıştırılır) → Cloudinary'ye yüklenir (<span class="mono">n5g02nam</span> / <span class="mono">duyuru</span>) → dönen <span class="mono">secure_url</span> duyuru belgesine <span class="mono">imageUrl</span> olarak, <span class="mono">hasImage:true</span> ile yazılır. Eski (Firebase'e gömülü) resimler <span class="mono">announcementImages/{id}</span>'den okunmaya devam eder.</li>
+<li><b>Kursiyer:</b> Duyuru penceresinde resim en üstte gösterilir (<span class="mono">/upload/f_auto,q_auto,w_900/</span> ile boyutlandırılmış), resme dokununca büyük görünüm (lightbox, <span class="mono">w_1600</span>, yarı saydam bulanık arka plan) açılır; dışarı dokunmak veya Esc duyuruya geri döner. Resim önceden yüklenir (prefetch).</li>
+<li><b>Düzenle / sil:</b> Geçmişten duyuru düzenlenebilir (metin, resim, "Mevcut resmi kaldır"); "✏️ Düzenlendi · tarih" notu gösterilir. Silince Firebase'deki eski resim kaydı da silinir (Cloudinary'deki dosya silinmez; imzasız yükleme ile silinemez, 17. bölüme bakın).</li>
+<li>Yeni duyuru olduğunda kursiyerde "Yeni duyuru var" şeridi ve Duyurular sekmesi bunu gösterir. Duyuru/sürüm kontrolü tek okuma ile 20 sn içinde paylaşılır (kota tasarrufu).</li>
+</ul>
+
+<h1>10. Yönetici paneli (admin.html) bölüm bölüm</h1>
+<p>Adres: <span class="mono">nevafil.com.tr/saadetyolu/admin.html</span> (arama motorlarından gizli tutulmuştur; ama herkese açık bir dosyadır). Açılışta şifre sorar (bölüm 20'de güvenlik notu). Giriş sonrası sol menü vardır; telefonda ☰ ile açılır, ana sayfa kartları 2 sütun görünür. Panel kendi temasına (koyu/açık) sahiptir.</p>
+<h2>10.1 Menü ve bölümler</h2>
+<table>
+<tr><th>Bölüm</th><th>Ne yapar</th></tr>
+<tr><td><b>Anasayfa</b> (dashboard)</td><td>İstatistik kartları: toplam kullanıcı, kitap/ders/kelime/sınav sayıları, <b>Doluluk</b> (kitap, ders, sınav kapsamı; detay penceresi), <b>Kilit Açılma Oranı</b> (ders bazında dersi açan kullanıcı oranı; sütun başlıklı tablo), <b>Sınav Açılma Oranı</b>, <b>Toplam Sandık</b> (tıklayınca sandık istatistiği), <b>Zor kelimeler raporu</b>, anket / soru-hata / giriş yardımı / canlı destek kartları (okunmamış rozetli).</td></tr>
+<tr><td><b>Duyurular</b></td><td>Duyuru yayınla/düzenle/sil, resim ekle, yönlendirme düğmesi, geçmiş listesi (bölüm 9.5).</td></tr>
+<tr><td><b>Canlı Destek</b></td><td>Kursiyerlerle birebir yazışma (bölüm 9.1).</td></tr>
+<tr><td><b>Kitaplar / Dersler / Kelimeler / Sınavlar</b></td><td><b>Salt okunur.</b> Veriler <span class="mono">icerik.json</span>'dan okunur; yazma denemesi "İçerik artık icerik.json dosyasından yönetiliyor" hatası verir. Her satırda <b>JSON indir</b> düğmesi, kitap/ders/kelime/sınav silme düğmeleri (artık işlevsiz), "Sınav Kapsamı", "Zor kelimeler" raporları vardır. İçerik değiştirme bölüm 12'dedir.</td></tr>
+<tr><td><b>Kullanıcılar</b></td><td>Liste + arama; <b>kullanıcı detayı</b> (ders bazında kelime öğrenme çubukları, sınavlar, puan dökümü); <b>tüm kilitleri aç</b> anahtarı (<span class="mono">unlockAll</span>); <b>şifre sıfırlama e-postası gönder</b>; <b>e-postayı değiştir / hesabı yeni e-postaya taşı</b>; <b>hesabı sil</b>; <b>Giriş Listesi</b> (Ad Soyad–e-posta, ara/kopyala/CSV).</td></tr>
+<tr><td><b>Hata Bildirimleri</b></td><td>Soru/Hata panosunu yönetir: yanıtla, çözüldü işaretle, sil; kullanıcı e-postası/cihazı (qaPrivate) ve ekran görüntüsü (qaImages) görünür; en yeni üstte; okunmamış rozeti.</td></tr>
+<tr><td><b>Anketler</b></td><td>Anket oluşturma, şablon, yayınlama, sonuçlar (bölüm 9.4).</td></tr>
+<tr><td><b>Giriş Yardımı</b></td><td>Eski giriş yardım talepleri; WhatsApp/Ara/E-posta düğmeleri.</td></tr>
+<tr><td><b>Veri Yönetimi</b></td><td><b>"Tüm Verileri Yedekle"</b>: kitap, ders, kelime, sınav ve kullanıcı verilerini tek JSON dosyası olarak indirir. (Kullanıcı verisi büyüdüğünde Firestore okuma kotasını tüketebilir; kota kritikse ayda bir kez kullanın.)</td></tr>
+<tr><td><b>Toplu Kelime / Toplu Soru Yükleme</b></td><td>Eski Firebase içerik yöneticisinin parçaları. İçerik artık <span class="mono">icerik.json</span>'dan yönetildiği için <b>yazma işlemleri devre dışıdır</b>.</td></tr>
+<tr><td>Üst çubuk</td><td>Ana Sayfa düğmesi, tema, çıkış.</td></tr>
+</table>
+<h2>10.2 Yönetici paneli teknik ayrıntıları</h2>
+<ul>
+<li><b>İçerik uyarlayıcısı (shim):</b> admin.html'in modül başlığında Firestore işlevleri (<span class="mono">collection, doc, query, where, orderBy, getDocs, getDoc, getCountFromServer, setDoc, updateDoc, deleteDoc, writeBatch</span>) sarmalanmıştır. <span class="mono">books, lessons, words, exams</span> koleksiyonları için okumalar <span class="mono">icerik.json</span>'dan (önbelleksiz fetch) gelir, yazmalar hata fırlatır. Diğer koleksiyonlar normal Firebase'e gider.</li>
+<li><b>Rozetler:</b> <span class="mono">refreshAdminBadges</span> kenar menüdeki kırmızı sayıları (okunmamış destek, hata, anket yanıtı, giriş yardımı) günceller. Okunmamış destek sayısı <span class="mono">where('unreadAdmin','>',0)</span> sorgusuyla bulunur.</li>
+<li><b>Admin oturumu:</b> Firebase'e giriş yapılmaz; şifre yalnızca tarayıcıda denetlenir (bölüm 20).</li>
+<li><b>Panel değişikliklerinde sürüm numarası artırılmaz;</b> yalnızca kursiyer <span class="mono">index.html</span> değişince artırılır.</li>
+</ul>
+
+<h1>11. Gizli araç sayfası (duzenler.html)</h1>
+<p><span class="mono">saadetyolu/duzenler.html</span> ("Düzenler"), geri döndürülemez ve tehlikeli işlemleri paylaşılan yönetici panelinden ayırmak için yapılmış ayrı sayfadır. Kendi şifre kapısı vardır, arama motorlarına kapalıdır (<span class="mono">noindex</span>) ve yalnızca proje sahibi tarafından bilinmesi amaçlanmıştır. Bölümleri:</p>
+<table>
+<tr><th>Bölüm</th><th>İşlev</th><th>Risk</th></tr>
+<tr><td>👥 Kullanıcılar</td><td>Kullanıcı listesi / yönetimi.</td><td>Orta</td></tr>
+<tr><td>🗑️ İçerik Silme</td><td>Kitap/ders/kelime/sınav silme (artık içerik icerik.json'da olduğu için eski Firebase kopyalarını temizlemek içindir).</td><td>Yüksek</td></tr>
+<tr><td>🆔 Eksik ID'leri Ata</td><td>8 haneli ID'si olmayan tüm kullanıcılara benzersiz ID verir. Güvenle tekrar çalıştırılabilir.</td><td>Düşük</td></tr>
+<tr><td>📦 Tüm Sandıkları Sıfırla</td><td>Bütün kullanıcıların sandığını boşaltır; puanlar korunur.</td><td>Yüksek</td></tr>
+<tr><td>🏆 Tüm Puanları Sıfırla</td><td>Puan, sınav geçmişi ve yarışma istatistiklerini sıfırlar; sandık korunur.</td><td>Çok yüksek</td></tr>
+<tr><td>☢️ Her Şeyi Sıfırla</td><td>Sandık, puan, sınav geçmişi, kelime sayısı, sıralama, son aktiflik: tüm ilerleme sıfırlanır (hesaplar silinmez).</td><td>Çok yüksek</td></tr>
+<tr><td>Yedek İndir / Yedekten Geri Yükle (JSON)</td><td>Veri yedeğini indirir; yedekten geri yükler.</td><td>Yüksek</td></tr>
+</table>
+<div class="danger"><b>Uyarı:</b> Bu sayfadaki işlemler topluca ve geri alınamaz şekilde veri siler. Kullanmadan önce mutlaka <b>"Yedek İndir"</b> yapın. Bu sayfanın varlığı herkese açık bir depoda göründüğü için erişimi şifreyle sınırlıdır; devir sonrası şifre değiştirilmelidir (bölüm 19–20).</div>
+
+<h1>12. İçerik yönetimi: icerik.json ve Excel</h1>
+<h2>12.1 Neden icerik.json?</h2>
+<p>Başlangıçta kitap/ders/kelime/sınav Firestore'daydı. Kullanıcı sayısı artınca ücretsiz okuma kotası aşıldı ve ders listeleri yavaş açılıyordu. Bu içerik zaten sabit olduğundan <b>tek bir statik dosyaya</b> (<span class="mono">icerik.json</span>) taşındı: hızlıdır, Firebase kotası harcamaz ve GitHub'da sürüm geçmişi vardır. Hem kursiyer uygulaması hem admin paneli içeriği bu dosyadan okur. Firebase artık yalnızca kullanıcı, puan, sıralama, mesaj, duyuru, destek, anket ve benzeri <b>canlı veriler</b> için kullanılır.</p>
+<h2>12.2 Dosya şeması</h2>
+<pre>{
+  "version": 1,
+  "generatedAt": "2026-11-22T19:24:32.990Z",
+  "books":   [ {id, name, description, order} ],
+  "lessons": [ {id, name:"Ders-17", description:"KIYAMETİN GERÇEKLEŞMESİ", bookId, order, createdAt} ],
+  "words":   [ {id, arabic:"اَرْضُ", turkish:"yer, yeryüzü", lessonId, createdAt} ],
+  "exams":   [ {id, title:"Ders-1/Sınav-1", lessonId, bookId,
+                questions:[ {question:"Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?\nاٰيَة",
+                             options:["...","...","...","..."], correct:0} ],
+                createdAt, updatedAt} ]
+}</pre>
+<p><b>Kurallar:</b> Kimlikler (<span class="mono">id</span>) kullanıcıların sandık, tekrar kuyruğu ve ipucu verilerinde saklandığı için <b>değiştirilmemeli</b>; kelime silinse bile eski kimlikler kullanıcı verisinde kalabilir. Ders adı <span class="mono">Ders-N</span> biçiminde olmalı (sıralama sayıdan yapılır); sınav başlığı <span class="mono">Ders-N/Sınav-K</span> olmalıdır. <span class="mono">correct</span> 0–3 arası doğru şıkkın indeksidir.</p>
+<h2>12.3 Uygulama içeriği nasıl yükler?</h2>
+<ol>
+<li><span class="mono">staticContent()</span> uygulama açılışında (kısa gecikmeyle) <span class="mono">icerik.json</span>'ı <b>önceden indirir</b>. Dosya bellekte tutulur.</li>
+<li><span class="mono">__CC.docsOf(anahtar, yükleyici)</span> içerik isteğini önce statik içerikten (<span class="mono">staticFor(anahtar)</span>) karşılar; <b>Firestore sürüm kontrolünü beklemeden</b> anında döner.</li>
+<li>Statik dosyada bulunmayan bir anahtar kalırsa eski yol (IndexedDB önbelleği ve Firestore) yedek olarak çalışır.</li>
+<li>Cihazdaki IndexedDB önbelleği içerik sürümü (<span class="mono">appConfig/announcement.contentVersion</span>) değişince temizlenir.</li>
+</ol>
+<h2>12.4 İçeriği güncelleme yolları</h2>
+<h3>A) Küçük düzeltme (bir kelimenin anlamı, bir sınav sorusu)</h3>
+<ol>
+<li>GitHub'da <span class="mono">saadetyolu/icerik.json</span> dosyasını açın (kalem simgesi) veya yerelde bir editörde düzenleyin. Önce <span class="mono">test/icerik.json</span> üzerinde deneyip sonra canlıya yapıştırmak güvenlidir.</li>
+<li>Düzenlemeden sonra dosyanın <b>geçerli JSON</b> olduğunu denetleyin (<span class="mono">python3 -m json.tool icerik.json &gt; /dev/null</span>).</li>
+<li>Commit edin. GitHub Pages 1–3 dakikada yayınlar. Kullanıcıların cihazındaki kopya bir sonraki açılışta güncellenir.</li>
+</ol>
+<h3>B) Toplu güncelleme (Excel'den)</h3>
+<p>Kelimelerin <b>tek doğru kaynağı</b> Excel dosyasıdır (<span class="mono">Kelimeler_v2.xlsx</span>; A: ders no, B: Arapça, C: Türkçe anlam, 4. satırdan itibaren). Excel dosyası depoda <b>yoktur</b>, devirde ayrıca teslim edilmelidir. Depoda <span class="mono">dokuman/araclar/</span> altında üç betik vardır:</p>
+<table>
+<tr><th>Betik</th><th>Görev</th></tr>
+<tr><td><span class="mono">excel_dogrula.py</span></td><td>Excel ile icerik.json kelimelerini karşılaştırır; fark yoksa "TAMAMEN UYUMLU" yazar. (Bugünkü durum: 1264 kelime birebir uyumlu.)</td></tr>
+<tr><td><span class="mono">sinav_uret.py</span></td><td>Tüm dersler için sınav dosyaları üretir: ders başına ⌈kelime/12⌉ sınav; her kelime tam bir kez sorulur; çeldiriciler önce aynı dersten, sonra yakın derslerden seçilir; doğru cevapla eş anlamlı çeldirici engellenir; doğru şık dağılımı dengelidir; sabit tohumla tekrarlanabilir.</td></tr>
+<tr><td><span class="mono">icerik_birlestir.py</span></td><td>Üretilen sınavları icerik.json'a işler; mevcut sınav id'lerini korur.</td></tr>
+</table>
+<pre>pip install openpyxl
+python3 dokuman/araclar/excel_dogrula.py Kelimeler_v2.xlsx saadetyolu/icerik.json
+python3 dokuman/araclar/sinav_uret.py Kelimeler_v2.xlsx /tmp/sinavlar
+python3 dokuman/araclar/icerik_birlestir.py saadetyolu/icerik.json /tmp/sinavlar</pre>
+<div class="note">Yeni kelime eklerken <span class="mono">words</span> dizisine <span class="mono">{id, arabic, turkish, lessonId, createdAt}</span> eklenir (id: 20 karakterlik rastgele harf-rakam). Mevcut kelimelerin id'leri korunmalıdır. Yeni ders/kitap eklenirse <span class="mono">lessons</span>/<span class="mono">books</span> dizilerine kayıt eklenmelidir. Sonra <span class="mono">sinav_uret.py</span> + <span class="mono">icerik_birlestir.py</span> çalıştırılır. Betikler "doğrulama" ve "sınav üretimi" içindir; kelime/ders listelerini otomatik değiştirmez (güvenlik için).</div>
+<h3>C) Eski kitap-ders-kelime-sınav aracı</h3>
+<p>Admin panelindeki toplu yükleme ve düzenleme araçları artık çalışmaz (salt okunur). Eski Firebase verisi (books/lessons/words/exams) hâlâ Firestore'dadır; önce yedek alınıp (Veri Yönetimi) sonra <span class="mono">duzenler.html → İçerik Silme</span> ile temizlenebilir. Acelesi yoktur.</p>
+<h2>12.5 Sınav üretim kuralları (karar kaydı)</h2>
+<ul>
+<li>Soru metni sabit: <i>"Aşağıdaki Arapça kelimenin anlamı hangi seçenekte doğru verilmiştir?"</i> + yeni satır + Arapça kelime.</li>
+<li>Her sınavda kelimeler tekrar etmez; bir ders tüm kelimelerini sınavlara paylaştırır (ders başına yaklaşık 12 soruluk sınavlar).</li>
+<li>Eski sınavlardaki ayet/ifade cümle soruları (yaklaşık 177 adet) yeni sınavlarda yoktur; istenirse ayrı eklenebilir.</li>
+</ul>
