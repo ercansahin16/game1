@@ -2225,6 +2225,16 @@ async function loadAnnouncements() {
 }
 
 // ===== Duyuru resmi: küçült (~500 KB altı) → announcementImages/{id} =====
+// Cloudinary (unsigned preset): resim CDN'e yüklenir, adres duyuruya yazılır
+window.__annUploadCloud = async function (file) {
+    const data = await window.__annCompress(file);
+    const blob = await (await fetch(data)).blob();
+    const fd = new FormData(); fd.append('file', blob, 'duyuru.jpg'); fd.append('upload_preset', 'duyuru');
+    const r = await fetch('https://api.cloudinary.com/v1_1/n5g02nam/image/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok || !j.secure_url) throw new Error('Resim yüklenemedi: ' + ((j.error && j.error.message) || r.status));
+    return j.secure_url;
+};
 window.__annCompress = async function (file) {
     const url = URL.createObjectURL(file);
     try {
@@ -2234,7 +2244,7 @@ window.__annCompress = async function (file) {
             const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
             const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
             const data = c.toDataURL('image/jpeg', q);
-            if (data.length <= 230000) return data;
+            if (data.length <= 600000) return data;
         }
         throw new Error('Resim çok büyük, daha küçük bir resim seçin.');
     } finally { URL.revokeObjectURL(url); }
@@ -2265,8 +2275,7 @@ async function publishAnnouncement() {
     try {
         const imgFile = (document.getElementById('announcementImageInput').files || [])[0];
         if (imgFile) {
-            const imgData = await window.__annCompress(imgFile);
-            await setDoc(doc(db, 'announcementImages', id), { data: imgData, createdAt: Date.now() });
+            data.imageUrl = await window.__annUploadCloud(imgFile);
             data.hasImage = true;
         } else { data.hasImage = false; }
         await setDoc(doc(db, 'appConfig', 'announcement'), { ...data, contentVersion: Date.now() }, { merge: true });
@@ -2373,12 +2382,11 @@ window.editAnnouncement = async function (id) {
     if (renotify) upd.renotifyAt = editedAt;
     try {
         if (imgFile) {
-            const imgData = await window.__annCompress(imgFile);
-            await setDoc(doc(db, 'announcementImages', id), { data: imgData, createdAt: Date.now() });
+            upd.imageUrl = await window.__annUploadCloud(imgFile);
             upd.hasImage = true;
         } else if (imgRemove) {
             try { await deleteDoc(doc(db, 'announcementImages', id)); } catch (e) {}
-            upd.hasImage = false;
+            upd.hasImage = false; upd.imageUrl = null;
         }
         await updateDoc(doc(db, 'announcements', id), upd);
         // Aktif duyuru da bu ise, kullanıcıların gördüğü kopya da güncellensin
