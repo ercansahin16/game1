@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v71">
+    <meta name="app-build" content="test-v72">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -5991,6 +5991,13 @@ const __CC = (() => {
         let arr = mem.get(key);
         if (!arr) arr = await idbGet(key);
         if (!arr) {
+            // Daha geniş bir liste (örn. 'exams:all') zaten cihazdaysa, ders/kitap listesi ondan türetilir → ağa çıkılmaz
+            const m = /^(words|exams|lessons):(?:(lesson|book):)?([^:]+)$/.exec(key);
+            if (m && m[3] !== 'all') {
+                const superKey = m[1] + ':all', field = m[1] === 'lessons' ? 'bookId' : (m[2] === 'book' ? 'bookId' : 'lessonId');
+                let sup = mem.get(superKey); if (!sup) sup = await idbGet(superKey);
+                if (sup) { mem.set(superKey, sup); arr = sup.filter((o) => o[field] === m[3]); if (m[1] === 'lessons') arr.sort((x, y) => (x.order || 0) - (y.order || 0)); mem.set(key, arr); return fakeSnap(arr); }
+            }
             const snap = await loader();
             arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
             await idbSet(key, arr);
