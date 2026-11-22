@@ -2303,10 +2303,10 @@ window.loadSupport = function () {
         snap.forEach(d => {
             const a = d.data(); const un = a.unreadAdmin || 0;
             const it = document.createElement('div'); it.className = 'item'; it.style.cursor = 'pointer';
-            it.innerHTML = `<div class="item-info"><strong>${escapeHtml(a.name || 'Kursiyer')}</strong> <small style="opacity:.6;">${escapeHtml(a.publicId || '')}</small>
+            it.innerHTML = `<div class="item-info">${a.guest ? '<span style="background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:8px;margin-right:6px;">🆘 GİRİŞ YAPAMIYOR</span>' : ''}<strong>${escapeHtml(a.name || 'Kursiyer')}</strong> <small style="opacity:.6;">${escapeHtml(a.guest ? (a.contact || '') : (a.publicId || ''))}</small>
                 <small style="display:block; margin-top:4px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70vw;">${a.lastFrom === 'admin' ? '↩️ ' : ''}${escapeHtml(a.lastText || '')}</small>
                 <small style="opacity:.55;">${__supTime(a.lastAt)}</small></div>${un ? `<span class="adm-badge on" style="position:static;">${un}</span>` : ''}`;
-            it.onclick = () => openSupportThread(d.id, a.name || 'Kursiyer');
+            it.onclick = () => openSupportThread(d.id, (a.name || 'Kursiyer') + (a.guest ? ' · ' + (a.contact || '') : ''));
             box.appendChild(it);
         });
     }, (e) => { box.innerHTML = '<div style="opacity:.7; padding:14px;">Yüklenemedi: ' + escapeHtml(e.message) + '</div>'; });

@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v98">
+    <meta name="app-build" content="saadetyolu-shell-v99">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4486,7 +4486,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.22.0 · 12 Eki 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.23.0 · 12 Eki 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -4564,7 +4564,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
                 <button id="showRegisterBtn" class="btn auth-tab" style="flex:1; background:#3b82f6; color:white;"><span class="at-main">🆕 Kayıt Ol</span><span class="at-sub">İlk kez giriyorum</span></button>
             </div>
             <form id="loginForm" action="#" method="post" onsubmit="return false;" autocomplete="on">
-    <div class="auth-banner" style="--c:#f59e0b"><b>🔑 GİRİŞ EKRANI</b><br>Daha önce kayıt olduysanız burayı kullanın.</div>
+    <button type="button" id="loginLiveSupportBtn" onclick="window.__openGuestSupport && window.__openGuestSupport()" style="display:block;width:100%;margin:6px 0 12px;padding:11px 14px;border-radius:14px;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.12);color:#f59e0b;font-weight:700;font-size:14px;cursor:pointer;">💬 Giriş yapamıyor musunuz? <span style="font-weight:500;opacity:.9;">Canlı Destek'e yazın</span></button>
     <div class="input-wrapper">
         <input type="email" id="loginEmail" placeholder="E-posta" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
     </div>
@@ -4618,7 +4618,6 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="auth-swap" onclick="document.getElementById('showRegisterBtn').click()">Hesabınız yok mu? <b style="color:#60a5fa">Kayıt Ol</b></div>
 </form>
             <div id="registerForm" style="display: none;">
-                <div class="auth-banner" style="--c:#3b82f6"><b>🆕 KAYIT EKRANI</b><br>Sadece ilk defa giriyorsanız burayı kullanın.</div>
                 <div class="input-wrapper">
                     <input type="text" id="regName" placeholder="Adınız Soyadınız" autocomplete="name">
                 </div>
@@ -9810,12 +9809,12 @@ document.getElementById('doLoginBtn').onclick = async () => {
     // ===== 🔔 YÖNETİCİYE TELEFON BİLDİRİMİ (ntfy) =====
     // Kursiyerden gelen yeni mesaj / soru / yardım talebinde yöneticinin telefonuna kısa bildirim gönderir.
     // Aynı türden en fazla 20 sn'de bir; içerik kısaltılır (hassas bilgi/telefon gönderilmez).
-    window.__ntfy = function (title, body, tags, key) {
+    window.__ntfy = function (title, body, tags, key, prio) {
         try {
             const lk = 'sy_ntfy_' + key, now = Date.now();
             if (now - (parseInt(localStorage.getItem(lk) || '0', 10) || 0) < 20000) return;
             localStorage.setItem(lk, String(now));
-            fetch('https://ntfy.sh/sy-destek-ksldhenkfdmm-48373', { method: 'POST', body: String(body).slice(0, 160), headers: { 'Title': title, 'Tags': tags || 'bell', 'Click': location.origin + location.pathname.replace(/[^/]*$/, '') + 'admin.html' } }).catch(() => {});
+            fetch('https://ntfy.sh/sy-destek-ksldhenkfdmm-48373', { method: 'POST', body: String(body).slice(0, 160), headers: Object.assign({ 'Title': title, 'Tags': tags || 'bell', 'Click': location.origin + location.pathname.replace(/[^/]*$/, '') + 'admin.html' }, prio ? { 'Priority': prio } : {}) }).catch(() => {});
         } catch (e) {}
     };
 
@@ -9826,7 +9825,24 @@ document.getElementById('doLoginBtn').onclick = async () => {
         const btn = document.getElementById('goSupport'); if (!btn) return;
         const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const myName = () => (document.getElementById('userNameDisplay')?.textContent || currentUser?.displayName || 'Kursiyer').trim() || 'Kursiyer';
-        let unsub = null, ov = null, lastSend = 0, lastChk = 0;
+        let unsub = null, ov = null, lastSend = 0, lastChk = 0, waiting = false;
+        // Giriş yapamayan kişi (misafir): hesap yok → rastgele misafir kimliği + ad/iletişim bilgisi ile yazışır
+        let guest = false, gId = null, gInfo = null;
+        const supUid = () => guest ? gId : (currentUser && currentUser.uid);
+        const getGuestId = () => { try { let id = localStorage.getItem('sy_guest_id'); if (!id) { id = 'guest_' + Math.random().toString(36).slice(2, 12); localStorage.setItem('sy_guest_id', id); } return id; } catch (e) { return 'guest_' + Date.now().toString(36); } };
+        const readInfo = () => { try { const j = JSON.parse(localStorage.getItem('sy_guest_info') || 'null'); return j && j.name && j.contact ? j : null; } catch (e) { return null; } };
+        async function askInfo() {
+            const r = await Swal.fire({
+                title: '💬 Canlı Destek',
+                html: '<div style="text-align:left;font-size:13px;opacity:.85;margin-bottom:10px;">Giriş sorununuzu yöneticiye iletelim. Size ulaşabilmemiz için bilgilerinizi yazın.</div><input id="gdName" class="swal2-input" placeholder="Adınız Soyadınız" style="margin:0 0 10px;width:100%;"><input id="gdContact" class="swal2-input" placeholder="Telefon veya e-posta" style="margin:0;width:100%;">',
+                showCancelButton: true, confirmButtonText: 'Devam', cancelButtonText: 'Vazgeç', focusConfirm: false,
+                preConfirm: () => { const name = document.getElementById('gdName').value.trim(), contact = document.getElementById('gdContact').value.trim(); if (name.length < 2 || contact.length < 5) { Swal.showValidationMessage('Ad ve telefon/e-posta gerekli'); return false; } return { name: name.slice(0, 60), contact: contact.slice(0, 80) }; }
+            });
+            if (!r.isConfirmed || !r.value) return null;
+            try { localStorage.setItem('sy_guest_info', JSON.stringify(r.value)); } catch (e) {}
+            return r.value;
+        }
+        window.addEventListener('beforeunload', (e) => { if (guest && waiting && ov && ov.style.display === 'flex') { e.preventDefault(); e.returnValue = ''; } });
         const fmt = (t) => t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
         function setDot(n) {
             const d = btn.querySelector('.supDot'); if (d) { d.style.display = n ? 'inline-flex' : 'none'; }
@@ -9845,6 +9861,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 <button id="supBack" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;width:38px;height:38px;border-radius:50%;font-size:16px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
                 <div><div style="font-weight:800;font-size:16px;">💬 Canlı Destek</div><div style="font-size:11px;opacity:.6;">Mesajınız doğrudan yöneticiye ulaşır</div></div>
               </div>
+              <div id="supGuestBar" style="display:none;margin:10px 12px 0;padding:10px 12px;border-radius:12px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.5);font-size:13px;line-height:1.45;">⚠️ <b>Lütfen bu sayfayı kapatmayın.</b> Mesajınızı yazdıktan sonra yöneticimiz cevap verene kadar bu ekranda bekleyin; cevap burada görünecek.</div>
               <div id="supMsgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;"></div>
               <div style="display:flex;gap:8px;align-items:flex-end;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);border-top:1px solid rgba(255,255,255,.08);background:#161616;">
                 <textarea id="supInput" rows="1" maxlength="1000" placeholder="Mesajınızı yazın…" style="flex:1;max-height:120px;padding:11px 14px;border:none;border-radius:20px;background:rgba(255,255,255,.08);color:#eee;font-family:inherit;font-size:16px;resize:none;outline:none;"></textarea>
@@ -9862,7 +9879,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
             const box = ov.querySelector('#supMsgs'); box.innerHTML = '';
             const hello = document.createElement('div');
             hello.style.cssText = 'align-self:flex-start;max-width:85%;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.07);font-size:14px;line-height:1.45;';
-            hello.textContent = 'Selamün aleyküm 🌱 Size nasıl yardımcı olabiliriz? Sorunuzu ya da yaşadığınız sorunu yazabilirsiniz.';
+            hello.textContent = guest ? 'Selamün aleyküm 🌱 Giriş yaparken ne tür bir sorun yaşıyorsunuz? (Hata mesajını ya da ne olduğunu yazın.)' : 'Selamün aleyküm 🌱 Size nasıl yardımcı olabiliriz? Sorunuzu ya da yaşadığınız sorunu yazabilirsiniz.';
+            waiting = !!(list.length && list[list.length - 1].from === 'user');
             box.appendChild(hello);
             list.forEach((m, i) => {
                 const mine = m.from === 'user';
@@ -9871,35 +9889,41 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 b.style.cssText = 'max-width:85%;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.45;white-space:pre-wrap;word-break:break-word;' + (mine ? 'background:#f59e0b;color:#1b1b1b;' : 'background:rgba(255,255,255,.1);');
                 b.innerHTML = esc(m.text) + `<div style="font-size:10px;opacity:.6;margin-top:3px;text-align:right;">${fmt(m.at)}</div>`;
                 wrap.appendChild(b);
-                if (mine && i === list.length - 1) { const n = document.createElement('div'); n.style.cssText = 'font-size:10.5px;font-style:italic;opacity:.65;margin-top:3px;'; n.textContent = 'En yakın zamanda mesajınıza cevap verilecektir.'; wrap.appendChild(n); }
+                if (mine && i === list.length - 1) { const n = document.createElement('div'); n.style.cssText = 'font-size:10.5px;font-style:italic;opacity:.65;margin-top:3px;'; n.textContent = guest ? 'Mesajınız yöneticiye iletildi. Lütfen bu sayfayı kapatmadan bekleyin, cevap burada görünecek.' : 'En yakın zamanda mesajınıza cevap verilecektir.'; wrap.appendChild(n); }
                 box.appendChild(wrap);
             });
             box.scrollTop = box.scrollHeight;
         }
         async function send() {
             const inp = ov.querySelector('#supInput'); const text = inp.value.trim();
-            if (!text || !currentUser) return;
+            if (!text || !supUid()) return;
             if (Date.now() - lastSend < 1500) return; lastSend = Date.now();
             inp.value = ''; inp.style.height = 'auto'; const now = Date.now();
             try {
-                await setDoc(doc(collection(db, 'support', currentUser.uid, 'messages')), { from: 'user', text, at: now });
-                await setDoc(doc(db, 'support', currentUser.uid), { uid: currentUser.uid, name: myName(), publicId: window.__idFromUid ? window.__idFromUid(currentUser.uid) : '', email: currentUser.email || '', lastText: text, lastFrom: 'user', lastAt: now, unreadAdmin: increment(1), unreadUser: false }, { merge: true });
-                window.__ntfy('SaadetYolu Canli Destek', myName() + ': ' + text, 'speech_balloon', 'support');
+                const uid = supUid();
+                await setDoc(doc(collection(db, 'support', uid, 'messages')), { from: 'user', text, at: now });
+                await setDoc(doc(db, 'support', uid), { uid, guest, contact: guest ? gInfo.contact : '', name: guest ? gInfo.name : myName(), publicId: (!guest && window.__idFromUid) ? window.__idFromUid(uid) : '', email: guest ? gInfo.contact : (currentUser.email || ''), lastText: text, lastFrom: 'user', lastAt: now, unreadAdmin: increment(1), unreadUser: false }, { merge: true });
+                if (guest) window.__ntfy('GIRIS YAPAMAYAN KURSIYER', gInfo.name + ': ' + text, 'rotating_light', 'guest', 'high'); else window.__ntfy('SaadetYolu Canli Destek', myName() + ': ' + text, 'speech_balloon', 'support');
             } catch (e) { inp.value = text; Swal.fire({ icon: 'error', title: 'Mesaj gönderilemedi', text: 'İnternet bağlantınızı kontrol edip tekrar deneyin.', confirmButtonText: 'Tamam' }); }
         }
-        function open() {
-            if (!currentUser) return;
-            build(); ov.style.display = 'flex'; document.getElementById('sidebar')?.classList.remove('open'); document.getElementById('overlay')?.classList.remove('active');
+        async function open(asGuest) {
+            guest = !currentUser || asGuest === true;
+            if (guest) { gId = getGuestId(); gInfo = readInfo(); if (!gInfo) { gInfo = await askInfo(); if (!gInfo) return; } }
+            else if (!currentUser) return;
+            build(); ov.querySelector('#supGuestBar').style.display = guest ? 'block' : 'none'; ov.style.display = 'flex'; document.getElementById('sidebar')?.classList.remove('open'); document.getElementById('overlay')?.classList.remove('active');
             if (unsub) unsub();
             let first = true;
-            unsub = onSnapshot(query(collection(db, 'support', currentUser.uid, 'messages'), orderBy('at', 'asc'), limit(200)), (snap) => {
+            const myUid = supUid();
+            unsub = onSnapshot(query(collection(db, 'support', myUid, 'messages'), orderBy('at', 'asc'), limit(200)), (snap) => {
                 const list = []; snap.forEach(d => list.push(d.data())); render(list);
-                if (first || (list.length && list[list.length - 1].from === 'admin')) setDoc(doc(db, 'support', currentUser.uid), { unreadUser: false }, { merge: true }).catch(() => {});
+                if (first || (list.length && list[list.length - 1].from === 'admin')) setDoc(doc(db, 'support', myUid), { unreadUser: false }, { merge: true }).catch(() => {});
+                if (!first && guest && list.length && list[list.length - 1].from === 'admin') { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} }
                 first = false; setDot(0);
             }, () => {});
         }
         function close() { if (unsub) { unsub(); unsub = null; } if (ov) ov.style.display = 'none'; }
-        btn.onclick = open;
+        btn.onclick = () => open(false);
+        window.__openGuestSupport = () => open(true);
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
