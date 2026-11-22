@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v91">
+    <meta name="app-build" content="test-v92">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -10050,6 +10050,13 @@ document.getElementById('doLoginBtn').onclick = async () => {
             try {
                 await setDoc(doc(collection(db, 'support', currentUser.uid, 'messages')), { from: 'user', text, at: now });
                 await setDoc(doc(db, 'support', currentUser.uid), { uid: currentUser.uid, name: myName(), publicId: window.__idFromUid ? window.__idFromUid(currentUser.uid) : '', email: currentUser.email || '', lastText: text, lastFrom: 'user', lastAt: now, unreadAdmin: increment(1), unreadUser: false }, { merge: true });
+                // Yöneticiye telefon bildirimi (ntfy). Aynı kursiyerden en fazla 45 sn'de bir; içerik kısaltılır.
+                try {
+                    const lk = 'sy_ntfy_last'; if (now - (parseInt(localStorage.getItem(lk) || '0', 10) || 0) > 45000) {
+                        localStorage.setItem(lk, String(now));
+                        fetch('https://ntfy.sh/sy-destek-ksldhenkfdmm-48373', { method: 'POST', body: myName() + ': ' + text.slice(0, 120), headers: { 'Title': 'SaadetYolu Canli Destek', 'Tags': 'speech_balloon', 'Click': location.origin + location.pathname.replace(/[^/]*$/, '') + 'admin.html' } }).catch(() => {});
+                    }
+                } catch (e) {}
             } catch (e) { inp.value = text; Swal.fire({ icon: 'error', title: 'Mesaj gönderilemedi', text: 'İnternet bağlantınızı kontrol edip tekrar deneyin.', confirmButtonText: 'Tamam' }); }
         }
         function open() {
