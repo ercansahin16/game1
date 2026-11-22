@@ -1119,6 +1119,12 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Toplu Soru Yükle</div>
                     <div style="font-size: 11px; opacity: 0.7;">JSON ile toplu soru ekle</div>
                 </div>
+                <!-- İçeriği Yayınla (statik icerik.json) -->
+                <div class="stats-card" id="statPublishContentCard" style="cursor: pointer; border-color: rgba(245,158,11,0.4);" onclick="publishContentJson()">
+                    <div style="font-size: 28px; color: #f59e0b;">🚀</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">İçeriği Yayınla</div>
+                    <div style="font-size: 11px; opacity: 0.7;">icerik.json üret (hızlı yükleme)</div>
+                </div>
                 <!-- Yedekleme -->
                 <div class="stats-card" id="statBackupCard" style="cursor: pointer; border-color: rgba(168,85,247,0.3);" onclick="backupAllData()">
                     <div style="font-size: 28px; color: #a855f7;">💾</div>
@@ -3434,6 +3440,24 @@ window.showSandikStats = async function () {
               </div>`
         });
     } catch (e) { Swal.fire('Alınamadı', e.message || String(e), 'error'); }
+};
+
+
+// ===== 🚀 İÇERİĞİ YAYINLA: kitap/ders/kelime/sınavları tek dosyaya (icerik.json) toplar =====
+// Oyuncular bu dosyayı siteden okur (Firestore okuması harcamaz). Dosya GitHub'daki ilgili klasöre (test/ ya da saadetyolu/) konur.
+window.publishContentJson = async function () {
+    Swal.fire({ title: 'İçerik toplanıyor…', text: 'Kitap, ders, kelime ve sınavlar okunuyor.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const grab = async (name) => (await getDocs(collection(db, name))).docs.map(d => JSON.parse(JSON.stringify({ id: d.id, ...d.data() })));
+        const [books, lessons, words, exams] = await Promise.all([grab('books'), grab('lessons'), grab('words'), grab('exams')]);
+        const out = { version: 1, generatedAt: new Date().toISOString(), books, lessons, words, exams };
+        const json = JSON.stringify(out);
+        const blob = new Blob([json], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'icerik.json';
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+        Swal.fire({ icon: 'success', title: 'icerik.json hazır', confirmButtonColor: '#f59e0b',
+            html: `<div style="text-align:left; font-size:14px;"><b>${books.length}</b> kitap · <b>${lessons.length}</b> ders · <b>${words.length}</b> kelime · <b>${exams.length}</b> sınav<br>Boyut: <b>${(json.length / 1024).toFixed(0)} KB</b><br><br>İndirilen <b>icerik.json</b> dosyasını GitHub'da ilgili klasöre (test denemesi için <b>test</b> klasörü) yükle ve commit et. Birkaç dakika sonra oyuncular içeriği bu dosyadan okur.</div>` });
+    } catch (e) { console.warn(e); Swal.fire('Hazırlanamadı', e.message || String(e), 'error'); }
 };
 
 window.__purgeQaImages = async function (id) {

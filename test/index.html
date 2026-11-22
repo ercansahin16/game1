@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v74">
+    <meta name="app-build" content="test-v75">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -5985,9 +5985,42 @@ const __CC = (() => {
         const docs = arr.map((o) => { const { id, ...rest } = o; return { id, data: () => ({ ...rest }), exists: () => true }; });
         return { docs, size: docs.length, empty: docs.length === 0, forEach: (fn) => docs.forEach(fn) };
     }
+    // ===== Statik içerik: icerik.json (admin "İçeriği Yayınla" ile üretilir) =====
+    // Varsa kitap/ders/kelime/sınav buradan okunur (Firestore okuması yok, hızlı). Yoksa/bozuksa eski yöntem (Firestore) çalışır.
+    let stP = null;
+    function staticContent() {
+        if (!stP) stP = (async () => {
+            try {
+                const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+                const r = await fetch('icerik.json', { cache: 'no-cache', signal: ctl.signal }); clearTimeout(t);
+                if (!r.ok) return null;
+                const j = await r.json();
+                if (!j || !Array.isArray(j.books) || !Array.isArray(j.lessons) || !Array.isArray(j.words) || !Array.isArray(j.exams)) return null;
+                __dbg('📦 icerik.json kullanılıyor:', j.generatedAt);
+                return j;
+            } catch (e) { return null; }
+        })();
+        return stP;
+    }
+    async function staticFor(key) {
+        let coll, scope, field;
+        if (key === 'books') { coll = 'books'; scope = 'all'; }
+        else {
+            const m = /^(words|exams|lessons):(?:(lesson|book):)?([^:]+)$/.exec(key);
+            if (!m) return null;
+            coll = m[1]; scope = m[3];
+            field = coll === 'lessons' ? 'bookId' : (m[2] === 'book' ? 'bookId' : 'lessonId');
+        }
+        const st = await staticContent(); if (!st || !Array.isArray(st[coll])) return null;
+        let arr = scope === 'all' ? st[coll] : st[coll].filter((o) => o[field] === scope);
+        if (coll === 'lessons') arr = arr.slice().sort((x, y) => (x.order || 0) - (y.order || 0));
+        return arr;
+    }
+
     // key: önbellek anahtarı, loader: önbellekte yoksa çalışacak Firestore sorgusu
     async function docsOf(key, loader) {
         await ready();
+        { const sd = await staticFor(key); if (sd) return fakeSnap(sd); }
         let arr = mem.get(key);
         if (!arr) arr = await idbGet(key);
         if (!arr) {
