@@ -1335,6 +1335,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 </div>
                 <div id="supportMsgs" style="max-height:55vh; overflow:auto; padding:10px; background:rgba(255,255,255,0.04); border-radius:12px; display:flex; flex-direction:column; gap:8px;"></div>
                 <div style="display:flex; gap:8px; margin-top:10px; align-items:flex-end;">
+                    <button class="btn btn-info" id="supportAttachBtn" style="padding:12px 14px;" title="Resim ekle" onclick="document.getElementById('supportFile').click()"><i class="fas fa-image"></i></button><input type="file" id="supportFile" accept="image/*" style="display:none;" onchange="supportSendImage(this)">
                     <textarea id="supportReplyInput" rows="2" maxlength="1500" placeholder="Cevabınızı yazın..." style="flex:1; padding:10px; border:none; border-radius:10px; background:rgba(255,255,255,0.08); color:inherit; font-family:inherit; font-size:15px; resize:vertical;"></textarea>
                     <button class="btn btn-success" style="padding:12px 16px;" onclick="supportSend()"><i class="fas fa-paper-plane"></i></button>
                 </div>
@@ -2307,7 +2308,8 @@ window.loadSupport = function () {
             const it = document.createElement('div'); it.className = 'item'; it.style.cursor = 'pointer';
             it.innerHTML = `<div class="item-info">${a.guest ? '<span style="background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:8px;margin-right:6px;">🆘 GİRİŞ YAPAMIYOR</span>' : ''}<strong>${escapeHtml(a.name || 'Kursiyer')}</strong> <small style="opacity:.6;">${escapeHtml(a.guest ? (a.contact || '') : (a.publicId || ''))}</small>
                 <small style="display:block; margin-top:4px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70vw;">${a.lastFrom === 'admin' ? '↩️ ' : ''}${escapeHtml(a.lastText || '')}</small>
-                <small style="opacity:.55;">${__supTime(a.lastAt)}</small></div>${un ? `<span class="adm-badge on" style="position:static;">${un}</span>` : ''}`;
+                <small style="opacity:.55;">${__supTime(a.lastAt)}</small></div>${un ? `<span class="adm-badge on" style="position:static;">${un}</span>` : ''}<button class="btn btn-danger" style="padding:6px 10px;font-size:13px;margin-left:8px;" title="Sohbeti sil"><i class="fas fa-trash"></i></button>`;
+            it.querySelector('.btn-danger').onclick = (ev) => { ev.stopPropagation(); supportDelete(d.id, (a.name || 'Kursiyer')); };
             it.onclick = () => openSupportThread(d.id, (a.name || 'Kursiyer') + (a.guest ? ' · ' + (a.contact || '') : ''));
             box.appendChild(it);
         });
@@ -2328,12 +2330,32 @@ window.openSupportThread = function (uid, name) {
             const m = d.data(); const mine = m.from === 'admin';
             const b = document.createElement('div');
             b.style.cssText = 'max-width:82%; padding:8px 12px; border-radius:14px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-break:break-word; ' + (mine ? 'align-self:flex-end; background:#f59e0b; color:#1b1b1b;' : 'align-self:flex-start; background:rgba(255,255,255,0.1);');
-            b.innerHTML = escapeHtml(m.text || '') + `<div style="font-size:10px; opacity:.6; margin-top:3px; text-align:right;">${__supTime(m.at)}</div>`;
+            b.innerHTML = (m.img ? `<img src="${escapeHtml(m.img)}" loading="lazy" onclick="window.open(this.src,'_blank')" style="max-width:100%;max-height:260px;border-radius:10px;display:block;cursor:zoom-in;">` : '') + escapeHtml(m.text || '') + `<div style="font-size:10px; opacity:.6; margin-top:3px; text-align:right;">${__supTime(m.at)}</div>`;
             mb.appendChild(b);
         });
         mb.scrollTop = mb.scrollHeight;
         setDoc(doc(db, 'support', uid), { unreadAdmin: 0 }, { merge: true }).catch(() => {});
     });
+};
+window.supportSendImage = async function (inp) {
+    const f = inp.files && inp.files[0]; inp.value = '';
+    if (!f || !__supUid) return;
+    const btn = document.getElementById('supportAttachBtn'); btn.disabled = true; btn.style.opacity = '.5';
+    try {
+        const imgUrl = await window.__annUploadCloud(f); const now = Date.now();
+        await setDoc(doc(collection(db, 'support', __supUid, 'messages')), { from: 'admin', text: '', img: imgUrl, at: now });
+        await setDoc(doc(db, 'support', __supUid), { lastText: '📷 Resim', lastFrom: 'admin', lastAt: now, unreadUser: true, unreadAdmin: 0 }, { merge: true });
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Resim gönderilemedi', text: e.message, confirmButtonText: 'Tamam' }); }
+    btn.disabled = false; btn.style.opacity = '1';
+};
+window.supportDelete = async function (uid, name) {
+    const r = await Swal.fire({ icon: 'warning', title: 'Sohbet silinsin mi?', html: '<b>' + escapeHtml(name) + '</b> ile olan tüm mesajlar silinecek. Geri alınamaz.', showCancelButton: true, confirmButtonText: 'Evet, sil', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444' });
+    if (!r.isConfirmed) return;
+    try {
+        const ms = await getDocs(collection(db, 'support', uid, 'messages'));
+        for (const d of ms.docs) await deleteDoc(d.ref);
+        await deleteDoc(doc(db, 'support', uid));
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Silinemedi', text: e.message, confirmButtonText: 'Tamam' }); }
 };
 window.supportSend = async function () {
     const inp = document.getElementById('supportReplyInput'); const text = inp.value.trim();
