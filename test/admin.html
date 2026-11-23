@@ -1003,7 +1003,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
 
 <div class="container">
     <div class="header" id="mainHeader" style="display: none;">
-        <div class="logo" onclick="showSection('dashboard'); closeMenu();" style="cursor: pointer;">🔐 AnaSayfa</div>
+        <div class="logo" onclick="var t=document.getElementById('supportThread'); if (t && t.offsetParent !== null) { supportBack(); return; } showSection('dashboard'); closeMenu();" style="cursor: pointer;">🔐 AnaSayfa</div>
         <div class="header-right">
             <button class="theme-icon-btn" id="homeIconBtn" title="Ana Sayfa" onclick="showSection('dashboard'); closeMenu(); window.scrollTo(0,0);"><i class="fas fa-house"></i></button>
             <button class="theme-icon-btn" id="contentRefreshBtn" title="Oyuncu önbelleğini yenile (kelime/ders/sınav)" onclick="window.bumpContentVersion().then(()=>Swal.fire({icon:'success',title:'Yenilendi',text:'Oyuncuların cihazındaki kelime/ders/sınav önbelleği bir sonraki açılışta yenilenecek.',timer:2600,showConfirmButton:false}))"><i class="fas fa-rotate"></i></button>
@@ -2293,7 +2293,8 @@ window.clearAnnouncementImage = function () { document.getElementById('announcem
 let __supUnsubList = null, __supUnsubThread = null, __supUid = null, __supName = '';
 window.__supStop = function () { if (__supUnsubList) { __supUnsubList(); __supUnsubList = null; } if (__supUnsubThread) { __supUnsubThread(); __supUnsubThread = null; } __supUid = null; };
 const __supTime = (t) => t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-window.supportBack = function () { document.getElementById('supportThread').style.display = 'none'; document.getElementById('supportList').style.display = 'block'; if (__supUnsubThread) { __supUnsubThread(); __supUnsubThread = null; } __supUid = null; };
+window.supportBack = function () { if (history.state && history.state.supThread) { history.back(); return; } __supShowList(); };
+window.__supShowList = function () { document.getElementById('supportThread').style.display = 'none'; document.getElementById('supportList').style.display = 'block'; if (__supUnsubThread) { __supUnsubThread(); __supUnsubThread = null; } __supUid = null; };
 window.loadSupport = function () {
     window.__supStop();
     document.getElementById('supportThread').style.display = 'none';
@@ -2312,9 +2313,11 @@ window.loadSupport = function () {
         });
     }, (e) => { box.innerHTML = '<div style="opacity:.7; padding:14px;">Yüklenemedi: ' + escapeHtml(e.message) + '</div>'; });
 };
+window.addEventListener('popstate', function () { const t = document.getElementById('supportThread'); if (t && t.style.display === 'block') __supShowList(); });
 window.openSupportThread = function (uid, name) {
     if (__supUnsubThread) __supUnsubThread();
     __supUid = uid; __supName = name;
+    try { history.pushState({ supThread: 1 }, ''); } catch (e) {}
     document.getElementById('supportList').style.display = 'none';
     document.getElementById('supportThread').style.display = 'block';
     document.getElementById('supportThreadTitle').textContent = name;
