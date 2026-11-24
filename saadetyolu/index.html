@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v106">
+    <meta name="app-build" content="saadetyolu-shell-v107">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4501,7 +4501,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.23.7 · 23 Kas 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.23.8 · 24 Kas 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -9560,6 +9560,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
                 // ARTIK EKRANI ENGELLEYEN BİR PENCERE AÇILMIYOR. =====
                 setTimeout(() => { checkAndShowAnnouncement(userRef, data); }, 1200);
                 setTimeout(() => { try { window.__checkSupportUnread && window.__checkSupportUnread(true); } catch (e) {} }, 2500);
+                setTimeout(() => { try { window.__checkReplies && window.__checkReplies(true); } catch (e) {} }, 4500);
             }
         } catch (error) {
             __dbg('⚠️ Seviye yükleme hatası:', error);
@@ -10007,6 +10008,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
         function close() { if (unsub) { unsub(); unsub = null; } if (ov) ov.style.display = 'none'; }
         btn.onclick = () => open(false);
         window.__openGuestSupport = () => open(true);
+        window.__openSupportChat = () => open(false);
     })();
 
     // ===== 🐞 SORU / HATA BİLDİR (herkese açık soru-cevap) =====
@@ -10180,6 +10182,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
             try {
                 if (!p) { const d = await getDoc(doc(db, 'qaPosts', id)); if (!d.exists()) { body.textContent = 'Bu soru bulunamadı.'; return; } p = { id, ...d.data() }; }
                 const rs = await getDocs(query(collection(db, 'qaPosts', id, 'replies'), orderBy('createdAtIso', 'asc'), limit(100)));
+                try { if (p.adminReplyIso && window.__markReplySeen) window.__markReplySeen('qa_' + id, p.adminReplyIso); } catch (e) {}
                 replies = rs.docs.map(d => ({ id: d.id, ...d.data() }));
             } catch (e) { body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Yüklenemedi. Lütfen daha sonra tekrar deneyin.</div>`; return; }
             const mine = currentUser && p.uid === currentUser.uid;
@@ -10331,6 +10334,56 @@ document.getElementById('doLoginBtn').onclick = async () => {
             if (!currentUser) { showWarning('Önce giriş yapın.'); return; }
             showList(true);
         };
+        window.__openQaThread = (id) => { closeMenu(); showThread(id); };
+    })();
+
+    // ===== 🔔 YÖNETİCİ YANITI UYARISI: kursiyer uygulamayı açınca / geri dönünce, Canlı Destek veya Soru-Hata'ya
+    // yönetici yanıt yazdıysa güzel bir uyarı çıkar; "Yanıtı Gör" ilgili yere götürür. Aynı yanıt için bir kez uyarır.
+    (function () {
+        let last = 0, busy = false;
+        const KEY = 'sy_reply_seen';
+        const seen = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+        window.__markReplySeen = (k, v) => { const s = seen(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} };
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const short = (t) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > 70 ? t.slice(0, 70) + '…' : t; };
+        function go(it) {
+            try {
+                if (it.kind === 'sup') { window.__openSupportChat && window.__openSupportChat(); }
+                else if (window.__openQaThread) window.__openQaThread(it.id);
+            } catch (e) {}
+        }
+        async function show(items) {
+            items.forEach(it => window.__markReplySeen(it.key, it.val));
+            const one = items.length === 1;
+            const label = (it) => it.kind === 'sup' ? '💬 Canlı Destek' : '🐞 Soru / Hata';
+            let html = '<div style="font-size:14px;opacity:.85;margin-bottom:10px;">Yöneticimiz mesajınıza cevap yazdı 🌱</div>';
+            if (one) html += `<div style="text-align:left;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:12px;padding:10px 12px;font-size:13px;"><b>${label(items[0])}</b><br><span style="opacity:.8;">${esc(short(items[0].text))}</span></div>`;
+            else html += items.map((it, i) => `<button type="button" class="swReplyGo" data-i="${i}" style="display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.12);color:inherit;font-family:inherit;font-size:13px;cursor:pointer;"><b>${label(it)}</b> — ${esc(short(it.text))}<br><span style="color:#f59e0b;font-weight:700;">Yanıtı gör ›</span></button>`).join('');
+            const r = await Swal.fire({
+                icon: 'success', title: 'Yanıtınız geldi!', html,
+                showConfirmButton: one, confirmButtonText: 'Yanıtı Gör', confirmButtonColor: '#f59e0b',
+                showCancelButton: true, cancelButtonText: 'Sonra', allowOutsideClick: true,
+                customClass: { popup: 'compact-swal themed-swal' },
+                didOpen: (pop) => { pop.querySelectorAll('.swReplyGo').forEach(b => { b.onclick = () => { Swal.close(); go(items[+b.dataset.i]); }; }); }
+            });
+            if (r.isConfirmed) go(items[0]);
+        }
+        window.__checkReplies = async function (force) {
+            if (!currentUser || busy) return;
+            if (!force && Date.now() - last < 180000) return;
+            if (Swal.isVisible() || document.getElementById('supOv')?.style.display === 'flex' || document.getElementById('qaOverlay')) return;
+            last = Date.now(); busy = true;
+            try {
+                const s = seen(), items = [];
+                const sup = await getDoc(doc(db, 'support', currentUser.uid));
+                if (sup.exists()) { const d = sup.data(); if (d.unreadUser && d.lastFrom === 'admin' && s.sup !== d.lastAt) items.push({ kind: 'sup', key: 'sup', val: d.lastAt, text: d.lastText }); }
+                const qs = await getDocs(query(collection(db, 'qaPosts'), where('uid', '==', currentUser.uid), limit(30)));
+                qs.forEach(x => { const d = x.data(); if (d.adminReplyIso && s['qa_' + x.id] !== d.adminReplyIso) items.push({ kind: 'qa', id: x.id, key: 'qa_' + x.id, val: d.adminReplyIso, text: d.text }); });
+                if (items.length && !Swal.isVisible()) await show(items);
+            } catch (e) {} finally { busy = false; }
+        };
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') window.__checkReplies(false); });
+        setInterval(() => { if (document.visibilityState === 'visible') window.__checkReplies(false); }, 300000);
     })();
 
     // Yardım / İletişim
