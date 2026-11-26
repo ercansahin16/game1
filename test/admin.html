@@ -980,6 +980,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="sidebar-item" id="goWords"><i class="fas fa-language"></i> Kelimeler</div>
     <div class="sidebar-item" id="goExams"><i class="fas fa-pen"></i> Sınavlar</div>
     <div class="sidebar-item" id="goUsers"><i class="fas fa-users"></i> Kullanıcılar</div>
+    <div class="sidebar-item" id="goTestAcct"><i class="fas fa-flask"></i> Test Hesabı</div>
     <div class="sidebar-item" id="goBugs"><i class="fas fa-bug"></i> Hata Bildirimleri <span class="adm-badge" id="badgeBugsMenu"></span></div>
     <div class="sidebar-item" id="goSurveys"><i class="fas fa-poll"></i> Anketler <span class="adm-badge" id="badgeSurveyMenu"></span></div>
     <div class="sidebar-item" id="goLoginHelp"><i class="fas fa-life-ring"></i> Giriş Yardımı <span class="adm-badge" id="badgeHelpMenu"></span></div>
@@ -1340,6 +1341,14 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <button class="btn btn-success" style="padding:12px 16px;" onclick="supportSend()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
+        </div>
+
+        <div id="testAcctSection" class="section-card hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-flask"></i> Test Hesabı</h2>
+                <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="taLoad()"><i class="fas fa-sync"></i> Yenile</button>
+            </div>
+            <div id="testAcctBody"></div>
         </div>
 
         <div id="loginHelpSection" class="section-card hidden">
@@ -2091,6 +2100,105 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             Swal.fire('Hesap açılamadı', m[e.code] || ('Bir sorun oluştu: ' + (e.message || e)), 'error');
         }
     };
+    // ===== 🧪 TEST HESABI (admin): s@yolu.com hesabıyla her şeyi denemek için ayar paneli =====
+    const TEST_EMAIL = 's@yolu.com';
+    let __taUid = null, __taData = null;
+    const __taDay = (off) => { const d = new Date(); d.setDate(d.getDate() + off); return d.toISOString().slice(0, 10); };
+    const __taSeason = (off) => { const d = new Date(); const x = new Date(d.getFullYear(), d.getMonth() + (off || 0), 1); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); };
+    const __taTotal = (u) => Math.max(0, Math.round(((u.quizScore || 0) + (u.averageScore || 0) + ((u.mevcutSeviye || 1) - 1) * 2 + (u.totalWordsViewed || 0) * 0.01 - ((u.quizSandik || []).length)) * 100) / 100);
+    const __taBox = () => document.getElementById('testAcctBody');
+    async function __taLoad() {
+        const box = __taBox(); box.innerHTML = '<div style="text-align:center;padding:20px;opacity:.7;">Yükleniyor...</div>';
+        try {
+            const snap = await getDocs(query(collection(db, 'users'), where('email', '==', TEST_EMAIL)));
+            if (snap.empty) { box.innerHTML = '<div style="padding:16px;line-height:1.6;">⚠️ <b>' + TEST_EMAIL + '</b> hesabı bulunamadı.<br>Kullanıcılar bölümündeki <b>Yeni Hesap</b> butonuyla açın.</div>'; return; }
+            __taUid = snap.docs[0].id; __taData = snap.docs[0].data();
+            if (__taData.hiddenFromRanking === undefined) { await updateDoc(doc(db, 'users', __taUid), { hiddenFromRanking: true }); __taData.hiddenFromRanking = true; }
+            __taRender();
+        } catch (e) { box.innerHTML = '<div style="padding:16px;color:#ef4444;">Yüklenemedi: ' + escapeHtml(e.message) + '</div>'; }
+    }
+    window.taLoad = __taLoad;
+    async function __taSet(fields, msg) {
+        try {
+            await updateDoc(doc(db, 'users', __taUid), fields);
+            Object.assign(__taData, fields);
+            __taRender();
+            const t = document.getElementById('taToast'); if (t) { t.textContent = '✅ ' + (msg || 'Uygulandı'); t.style.opacity = 1; setTimeout(() => { t.style.opacity = 0; }, 2200); }
+        } catch (e) { Swal.fire({ icon: 'error', title: 'Uygulanamadı', text: e.message, confirmButtonText: 'Tamam' }); }
+    }
+    const __taNum = (id) => { const v = parseFloat(String(document.getElementById(id).value).replace(',', '.')); return isNaN(v) ? null : v; };
+    const __taRow = (title, inner, hint) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;margin-bottom:12px;"><div style="font-weight:800;color:#f59e0b;margin-bottom:8px;">${title}</div>${inner}${hint ? `<div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">${hint}</div>` : ''}</div>`;
+    const __taIn = (id, label, val) => `<label style="display:inline-block;margin:3px 6px 3px 0;font-size:12px;">${label}<br><input id="${id}" type="number" step="any" value="${val}" style="width:96px;padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,.1);color:inherit;font-size:15px;"></label>`;
+    const __taBtn = (label, fn, cls) => `<button class="btn ${cls || 'btn-info'}" style="padding:8px 12px;font-size:13px;margin:3px 4px 3px 0;" onclick="${fn}">${label}</button>`;
+    function __taRender() {
+        const u = __taData, box = __taBox();
+        const exams = u.examsCompleted || [];
+        box.innerHTML = `
+        <div style="padding:10px 12px;border-radius:12px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);margin-bottom:12px;font-size:13px;line-height:1.7;">
+            <b>${escapeHtml(u.name || '')}</b> · ${escapeHtml(u.email || '')}<br>
+            🏆 Toplam puan: <b>${__taTotal(u)}</b> · Seviye: <b>${u.mevcutSeviye || 1}</b> · Kelime: <b>${u.totalWordsViewed || 0}</b> · Sınav: <b>${exams.length}</b><br>
+            🔥 Seri: <b>${u.gunlukSeri || 0}</b> (en uzun ${u.enUzunSeri || 0}) · 📦 Sandık: <b>${(u.quizSandik || []).length}</b> · 👥 Arkadaş: <b>${(u.following || []).length}</b><br>
+            🔓 Tüm kilitler: <b>${u.unlockAll ? 'AÇIK' : 'kapalı'}</b> · 🙈 Sıralamada: <b>${u.hiddenFromRanking ? 'gizli' : 'görünür'}</b>
+            <span id="taToast" style="float:right;opacity:0;transition:opacity .3s;color:#10b981;font-weight:700;"></span>
+        </div>
+        ${__taRow('🔓 Kilitler', __taBtn('🔓 Tüm kilitleri aç', "taUnlock(true)", 'btn-success') + __taBtn('🔒 Kilitleri normale döndür', "taUnlock(false)", 'btn-secondary'), 'Açıkken tüm derslerin kelime ekranı ve sınavları kilitsizdir. Yarışma seviyeleri için aşağıdaki seviyeyi yükseltin.')}
+        ${__taRow('🏔️ Seviye', __taIn('taLevel', 'Seviye', u.mevcutSeviye || 1) + __taBtn('Uygula', 'taApplyLevel()') + __taBtn('Son seviye', 'taMaxLevel()') + __taBtn('Dersleri de "geçildi" say', 'taPassLessons()'), 'Yarışmada o seviyeye kadar sorular açılır. "Dersleri geçildi say": seviyeden küçük sıradaki tüm dersleri geçilmiş işaretler.')}
+        ${__taRow('🏆 Puan', __taIn('taQuiz', 'Yarışma puanı', u.quizScore || 0) + __taIn('taAvg', 'Ortalama puan', u.averageScore || 0) + __taIn('taWords', 'Öğrenilen kelime', u.totalWordsViewed || 0) + '<br>' + __taBtn('Uygula', 'taApplyScore()') + __taIn('taTarget', 'Hedef toplam puan', __taTotal(u)) + __taBtn('Toplamı hedefe getir', 'taTargetTotal()'), 'Toplam puan = yarışma + ortalama + (seviye−1)×2 + kelime×0,01 − sandık sayısı. "Hedefe getir" yarışma puanını buna göre ayarlar.')}
+        ${__taRow('📅 Bu ay ve geçmiş aylar', __taIn('taMonth', 'Bu ay puanı', Math.max(0, Math.round((__taTotal(u) - ((u.seasonId === __taSeason(0)) ? (u.seasonBaselineScore || 0) : __taTotal(u))) * 100) / 100)) + __taBtn('Uygula', 'taApplyMonth()') + '<br>' + __taIn('taHistScore', 'Geçen ay puanı', 50) + __taBtn('Geçmiş aya ekle', 'taAddHistory()') + __taBtn('Geçmişi temizle', 'taClearHistory()', 'btn-secondary'))}
+        ${__taRow('🔥 Seri', __taIn('taStreak', 'Günlük seri', u.gunlukSeri || 0) + __taIn('taBest', 'En uzun seri', u.enUzunSeri || 0) + '<br><label style="font-size:12px;">Son sayılan gün <select id="taStreakDay" style="padding:8px;border-radius:8px;background:rgba(255,255,255,.1);color:inherit;border:none;"><option value="0">Bugün (devam etmiş)</option><option value="-1" selected>Dün (girişte +1 olur)</option><option value="-3">3 gün önce (seri kopar)</option></select></label> ' + __taBtn('Uygula', 'taApplyStreak()'), 'Örn. seri 99 + "Dün" seçince hesapla ilk giriş yapıldığında seri 100 olur ve 100 gün rozeti denenir.')}
+        ${__taRow('📝 Sınavlar', __taIn('taExamN', 'Adet', 5) + '<br>' + __taBtn('Normal sınav ekle (%80)', 'taAddExams(false)') + __taBtn('Kusursuz sınav ekle (10/10)', 'taAddExams(true)') + __taBtn('Sınav geçmişini temizle', 'taClearExams()', 'btn-danger'), 'Sınav sayısı, ortalama puan, en iyi sınav ve kusursuz sınav rozetleri buna bağlıdır.')}
+        ${__taRow('📦 Sandık', __taIn('taSandikN', 'Kelime', 10) + __taBtn('Sandığa ekle', 'taAddSandik()') + __taBtn('Sandığı boşalt', 'taClearSandik()', 'btn-secondary'), 'Eklenen her kelime toplam puandan 1 düşürür.')}
+        ${__taRow('👥 Arkadaşlar', __taIn('taFriendN', 'Adet', 5) + __taBtn('Arkadaş ata', 'taFriends()') + __taBtn('Arkadaşları temizle', 'taClearFriends()', 'btn-secondary'), 'Yalnızca bu hesabın listesine rastgele gerçek kursiyerler eklenir; onların listelerine dokunulmaz (sosyal rozetler içindir).')}
+        ${__taRow('🧩 Diğer', __taBtn('Tanıtım turunu sıfırla', "taSet({tourCompleted:false},'Tur sıfırlandı')") + __taBtn('Duyuruyu "görülmedi" yap', "taSet({lastSeenAnnouncementId:''},'Duyuru sıfırlandı')") + __taBtn('Tekrar modu kuyruğunu sil', "taSet({reviewQueue:{}},'Kuyruk silindi')") + __taBtn('Kelime listemi boşalt', "taSet({myWords:[]},'Liste boşaltıldı')") + __taBtn('Son 7 gün hareketini sil', "taSet({dailyLog:{}},'Temizlendi')") + __taBtn(u.hiddenFromRanking ? '👁️ Sıralamada göster' : '🙈 Sıralamada gizle', "taSet({hiddenFromRanking:" + (!u.hiddenFromRanking) + "},'Güncellendi')"))}
+        ${__taRow('🎬 Hazır senaryolar', __taBtn('100 gün seri rozeti', 'taScenario(1)') + __taBtn('Kelime Sultanı (4999 kelime)', 'taScenario(2)') + __taBtn('Sınav Çırağı (9 sınav)', 'taScenario(3)') + __taBtn('Seviye 50 (49\'da)', 'taScenario(4)'), 'Hesapta oturum açıp ilgili işi yapınca rozet kutlamasını görürsünüz. Senaryo mevcut ayarların üzerine yazar.')}
+        ${__taRow('♻️ Sıfırla', __taBtn('Hesabı ilk haline döndür', 'taReset()', 'btn-danger'), 'Puan, seviye, seri, sınav, sandık, arkadaş ve ilerleme silinir. Ad, e-posta ve şifre kalır.')}`;
+    }
+    window.taSet = __taSet;
+    window.taUnlock = (on) => __taSet({ unlockAll: !!on }, on ? 'Tüm kilitler açıldı' : 'Kilitler normale döndü');
+    window.taApplyLevel = () => { const v = __taNum('taLevel'); if (v === null || v < 1) return; __taSet({ mevcutSeviye: Math.round(v) }, 'Seviye ' + Math.round(v)); };
+    async function __taLessonSeq() {
+        const bs = await getDocs(collection(db, 'books')); const books = bs.docs.map(d => ({ id: d.id, ...d.data() }));
+        books.sort((a, b) => ((a.order || 0) - (b.order || 0)) || String(a.name || '').localeCompare(String(b.name || ''), 'tr'));
+        const ls = await getDocs(collection(db, 'lessons')); const all = ls.docs.map(d => ({ id: d.id, ...d.data() }));
+        const seq = [];
+        books.forEach(b => all.filter(l => l.bookId === b.id).sort((a, c) => ((a.order || 0) - (c.order || 0)) || String(a.name || '').localeCompare(String(c.name || ''), 'tr')).forEach(l => seq.push(l.id)));
+        return seq;
+    }
+    window.taMaxLevel = async () => { const seq = await __taLessonSeq(); __taSet({ mevcutSeviye: Math.max(1, seq.length), toplamSeviye: Math.max(1, seq.length) }, 'Son seviye: ' + seq.length); };
+    window.taPassLessons = async () => { const seq = await __taLessonSeq(); const lvl = Math.min(Math.max(1, Math.round(__taNum('taLevel') || (__taData.mevcutSeviye || 1))), seq.length + 1); __taSet({ passedLessonIds: seq.slice(0, Math.max(0, lvl - 1)), mevcutSeviye: lvl, toplamSeviye: Math.max(1, seq.length) }, (lvl - 1) + ' ders geçildi sayıldı'); };
+    window.taApplyScore = () => { const q = __taNum('taQuiz'), a = __taNum('taAvg'), w = __taNum('taWords'); const f = {}; if (q !== null) f.quizScore = q; if (a !== null) f.averageScore = a; if (w !== null) f.totalWordsViewed = Math.max(0, Math.round(w)); __taSet(f, 'Puanlar güncellendi'); };
+    window.taTargetTotal = () => { const t = __taNum('taTarget'); if (t === null) return; const u = __taData; const other = (u.averageScore || 0) + ((u.mevcutSeviye || 1) - 1) * 2 + (u.totalWordsViewed || 0) * 0.01 - (u.quizSandik || []).length; __taSet({ quizScore: Math.round((t - other) * 100) / 100 }, 'Toplam puan ' + t); };
+    window.taApplyMonth = () => { const m = __taNum('taMonth'); if (m === null || m < 0) return; const tot = __taTotal(__taData); __taSet({ seasonId: __taSeason(0), seasonBaselineScore: Math.round((tot - m) * 100) / 100 }, 'Bu ay puanı ' + m); };
+    window.taAddHistory = () => { const s = __taNum('taHistScore'); if (s === null) return; const h = (__taData.seasonHistory || []).slice(-11); h.push({ seasonId: __taSeason(-1 - h.length), score: s }); __taSet({ seasonHistory: h }, 'Geçmiş aya eklendi'); };
+    window.taClearHistory = () => __taSet({ seasonHistory: [] }, 'Geçmiş temizlendi');
+    window.taApplyStreak = () => { const s = __taNum('taStreak'), b = __taNum('taBest'); const off = parseInt(document.getElementById('taStreakDay').value, 10); const seri = Math.max(0, Math.round(s || 0)); __taSet({ gunlukSeri: seri, enUzunSeri: Math.max(seri, Math.round(b || 0)), lastStreakDate: __taDay(off) }, 'Seri güncellendi'); };
+    function __taFakeExams(n, perfect) { const arr = []; for (let i = 0; i < n; i++) { const correct = perfect ? 10 : 8; arr.push({ title: 'Test Sınavı', date: new Date(Date.now() - i * 60000).toISOString(), score: correct * 0.01, correct, total: 10 }); } return arr; }
+    function __taAvgOf(arr) { return arr.length ? Math.round(arr.reduce((s, e) => s + (e.score || 0), 0) / arr.length * 100) / 100 : 0; }
+    window.taAddExams = (perfect) => { const n = Math.max(1, Math.round(__taNum('taExamN') || 1)); const arr = (__taData.examsCompleted || []).concat(__taFakeExams(n, perfect)); __taSet({ examsCompleted: arr, averageScore: __taAvgOf(arr) }, n + ' sınav eklendi'); };
+    window.taClearExams = () => __taSet({ examsCompleted: [], averageScore: 0 }, 'Sınav geçmişi temizlendi');
+    window.taAddSandik = async () => {
+        const n = Math.max(1, Math.round(__taNum('taSandikN') || 1));
+        try {
+            const ws = await getDocs(collection(db, 'words')); const pick = ws.docs.slice(0, n).map(d => ({ id: d.id, ...d.data() }));
+            const cur = __taData.quizSandik || []; const have = new Set(cur.map(x => x.id));
+            const add = pick.filter(w => !have.has(w.id)).map(w => ({ id: w.id, arabic: w.arabic || '', turkish: w.turkish || '', box: 1, dueAt: 0 }));
+            __taSet({ quizSandik: cur.concat(add) }, add.length + ' kelime sandığa eklendi');
+        } catch (e) { Swal.fire({ icon: 'error', title: 'Eklenemedi', text: e.message }); }
+    };
+    window.taClearSandik = () => __taSet({ quizSandik: [] }, 'Sandık boşaltıldı');
+    window.taFriends = () => { const n = Math.max(1, Math.round(__taNum('taFriendN') || 1)); const pool = (window.adminUsersCache || []).filter(x => x.id !== __taUid && !x.hiddenFromRanking).map(x => x.id).sort(() => Math.random() - .5).slice(0, n); if (!pool.length) { Swal.fire('Kullanıcı listesi boş', 'Önce Kullanıcılar bölümünü bir kez açın.', 'info'); return; } __taSet({ following: pool }, pool.length + ' arkadaş atandı'); };
+    window.taClearFriends = () => __taSet({ following: [], followers: [] }, 'Arkadaşlar temizlendi');
+    window.taScenario = (k) => {
+        if (k === 1) __taSet({ gunlukSeri: 99, enUzunSeri: 99, lastStreakDate: __taDay(-1) }, 'Seri 99 (dün) — hesapla girince 100 olur');
+        else if (k === 2) __taSet({ totalWordsViewed: 4999 }, 'Kelime 4999 — bir kelime daha öğrenin');
+        else if (k === 3) { const arr = __taFakeExams(9, false); __taSet({ examsCompleted: arr, averageScore: __taAvgOf(arr) }, '9 sınav — bir sınav daha çözün'); }
+        else if (k === 4) __taSet({ mevcutSeviye: 49 }, 'Seviye 49 — bir ders sınavını geçin');
+    };
+    window.taReset = async () => {
+        const r = await Swal.fire({ icon: 'warning', title: 'Test hesabı sıfırlansın mı?', text: 'Puan, ilerleme, seri, sınav, sandık ve arkadaşlar silinir.', showCancelButton: true, confirmButtonText: 'Evet, sıfırla', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444' });
+        if (!r.isConfirmed) return;
+        __taSet({ totalWordsViewed: 0, examsCompleted: [], averageScore: 0, quizSandik: [], quizScore: 0, mevcutSeviye: 1, myWords: [], passedLessonIds: [], viewedWordsByLesson: {}, gunlukSeri: 0, enUzunSeri: 0, lastStreakDate: '', following: [], followers: [], reviewQueue: {}, dailyLog: {}, karmaStats: { total: 0, correct: 0, wrong: 0 }, seasonHistory: [], seasonBaselineScore: 0, unlockAll: false, tourCompleted: false }, 'Hesap sıfırlandı');
+    };
     // Oyuncu cihazlarındaki içerik önbelleği (kitap/ders/kelime/sınav) bu sürüm numarası değişince yenilenir.
     window.bumpContentVersion = async function () {
         try { await setDoc(doc(db, 'appConfig', 'announcement'), { contentVersion: Date.now() }, { merge: true }); }
@@ -2133,6 +2241,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('goSurveys').onclick = () => { showSection('surveys'); loadSurveys(); closeMenu(); };
     document.getElementById('goSupport').onclick = () => { showSection('support'); loadSupport(); closeMenu(); };
     document.getElementById('goLoginHelp').onclick = () => { showSection('loginHelp'); loadLoginHelp(); closeMenu(); };
+    document.getElementById('goTestAcct').onclick = () => { showSection('testAcct'); taLoad(); closeMenu(); };
     document.getElementById('goBugs').onclick = () => { showSection('bugs'); loadBugs(); closeMenu(); };
     document.querySelector('.logo').onclick = () => { showSection('dashboard'); closeMenu(); };
     
@@ -2166,6 +2275,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     document.getElementById('examsSection').classList.add('hidden');
     document.getElementById('usersSection').classList.add('hidden');
     document.getElementById('bugsSection').classList.add('hidden');
+    document.getElementById('testAcctSection').classList.add('hidden');
     document.getElementById('loginHelpSection').classList.add('hidden');
     document.getElementById('surveysSection').classList.add('hidden');
     document.getElementById('bulkUploadSection').classList.add('hidden');
@@ -2192,6 +2302,8 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         document.getElementById('surveysSection').classList.remove('hidden');
     } else if (section === 'loginHelp') {
         document.getElementById('loginHelpSection').classList.remove('hidden');
+    } else if (section === 'testAcct') {
+        document.getElementById('testAcctSection').classList.remove('hidden');
     } else if (section === 'bugs') {
         document.getElementById('bugsSection').classList.remove('hidden');
     } else if (section === 'bulkUpload') {

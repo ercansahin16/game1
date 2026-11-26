@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v108">
+    <meta name="app-build" content="saadetyolu-shell-v109">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4501,7 +4501,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.24.0 · 26 Kas 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.24.1 · 26 Kas 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -11246,6 +11246,7 @@ window.loadRanking = async function(force) {
 
         const currentSeasonId = getCurrentSeasonId();
         const mkEntry = (id, data) => {
+            if (data.hiddenFromRanking) return null;   // test hesabı sıralamada görünmez
             const s = computeTotalScoreFromUserData(data, toplamSeviye);
             // ===== 🏆 BU AY (SEZON) PUANI =====
             // Kullanıcı bu ay hiç giriş yapıp sezon kaydını güncellemediyse
@@ -11343,7 +11344,7 @@ window.__refreshOnline = async function (force) {
     try {
         const cutoff = Date.now() - window.__presenceOnlineThresholdMs;
         const snap = await getDocs(query(collection(db, 'users'), where('lastActive', '>', cutoff)));
-        const set = new Set(); const names = {}; snap.forEach(d => { set.add(d.id); names[d.id] = d.data().name || 'Oyuncu'; }); set.add(currentUser.uid); window.__onlineNames = names;
+        const set = new Set(); const names = {}; snap.forEach(d => { if (d.data().hiddenFromRanking) return; set.add(d.id); names[d.id] = d.data().name || 'Oyuncu'; }); set.add(currentUser.uid); window.__onlineNames = names;
         window.__onlineSet = set; __onlineAt = Date.now();
         document.querySelectorAll('#onlineChipCount').forEach(el => { el.textContent = set.size; });
         document.querySelectorAll('.lb-on-dot').forEach(el => { el.style.display = set.has(el.dataset.uid) ? 'block' : 'none'; });
