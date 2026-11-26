@@ -988,6 +988,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
     <div class="sidebar-item" id="goBulkUpload"><i class="fas fa-upload"></i> Toplu Kelime Yükleme</div>
     <div class="sidebar-item" id="goBulkExamUpload"><i class="fas fa-upload"></i> Toplu Soru Yükleme</div>
     <a href="../dokuman/SaadetYolu_Proje_Kilavuzu.pdf" target="_blank" rel="noopener" id="goGuide" class="sidebar-item" style="text-decoration:none; color:inherit; border:2px solid #f59e0b; background:rgba(245,158,11,.12); font-weight:700; margin:10px 10px 4px; box-shadow:0 2px 8px rgba(245,158,11,.25);"><i class="fas fa-book-open" style="color:#f59e0b;"></i> 📘 Proje Kılavuzu <i class="fas fa-arrow-up-right-from-square" style="margin-left:auto; font-size:11px; opacity:.7;"></i></a>
+    <div class="sidebar-item" id="goForceUpdate" onclick="adminForceUpdate()" style="border:2px solid #10b981; background:rgba(16,185,129,.12); font-weight:700;"><i class="fas fa-rotate"></i> Son sürümü güncelle</div>
     <div class="sidebar-footer" style="margin-top: auto; padding: 14px 0 10px; flex-shrink: 0;">
         <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
         <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
@@ -2198,6 +2199,30 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         const r = await Swal.fire({ icon: 'warning', title: 'Test hesabı sıfırlansın mı?', text: 'Puan, ilerleme, seri, sınav, sandık ve arkadaşlar silinir.', showCancelButton: true, confirmButtonText: 'Evet, sıfırla', cancelButtonText: 'Vazgeç', confirmButtonColor: '#ef4444' });
         if (!r.isConfirmed) return;
         __taSet({ totalWordsViewed: 0, examsCompleted: [], averageScore: 0, quizSandik: [], quizScore: 0, mevcutSeviye: 1, myWords: [], passedLessonIds: [], viewedWordsByLesson: {}, gunlukSeri: 0, enUzunSeri: 0, lastStreakDate: '', following: [], followers: [], reviewQueue: {}, dailyLog: {}, karmaStats: { total: 0, correct: 0, wrong: 0 }, seasonHistory: [], seasonBaselineScore: 0, unlockAll: false, tourCompleted: false }, 'Hesap sıfırlandı');
+    };
+
+    // ===== 🏠 Her bölümün üstüne "Ana Sayfaya Dön" bağlantısı =====
+    (function () {
+        const add = () => {
+            document.querySelectorAll('.section-card').forEach(sc => {
+                if (sc.id === 'dashboardSection' || sc.querySelector(':scope > .goHomeRow')) return;
+                const row = document.createElement('div'); row.className = 'goHomeRow';
+                row.style.cssText = 'display:flex;justify-content:flex-end;margin:0 0 10px;';
+                row.innerHTML = '<button type="button" class="btn btn-info" style="padding:6px 12px;font-size:12px;border:1.5px solid rgba(245,158,11,.7);background:rgba(245,158,11,.12);color:#f59e0b;"><i class="fas fa-house"></i> Ana Sayfaya Dön</button>';
+                row.firstChild.onclick = () => { showSection('dashboard'); closeMenu(); window.scrollTo(0, 0); };
+                sc.insertBefore(row, sc.firstChild);
+            });
+        };
+        add(); setTimeout(add, 500);
+    })();
+    // ===== 🔄 Yönetici sayfasını EN SON SÜRÜME güncelle: önbellek + servis çalışanı temizlenir, sayfa yeniden yüklenir =====
+    window.adminForceUpdate = async function () {
+        try {
+            Swal.fire({ title: 'Güncelleniyor…', text: 'En son sürüm indiriliyor.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            if (navigator.serviceWorker) { const regs = await navigator.serviceWorker.getRegistrations(); for (const r of regs) { try { await r.unregister(); } catch (e) {} } }
+            if (window.caches) { const ks = await caches.keys(); for (const k of ks) { try { await caches.delete(k); } catch (e) {} } }
+        } catch (e) {}
+        const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.replace(u.toString());
     };
     // Oyuncu cihazlarındaki içerik önbelleği (kitap/ders/kelime/sınav) bu sürüm numarası değişince yenilenir.
     window.bumpContentVersion = async function () {
