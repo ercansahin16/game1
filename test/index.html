@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v102">
+    <meta name="app-build" content="test-v103">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -10563,6 +10563,73 @@ document.getElementById('doLoginBtn').onclick = async () => {
         };
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') window.__checkReplies(false); });
         setInterval(() => { if (document.visibilityState === 'visible') window.__checkReplies(false); }, 300000);
+    })();
+
+
+    // ===== 🎖️ ROZET KUTLAMASI: yeni rozet kazanılınca, kursiyer çalışma/sınav/yarışma gibi bir ekrandayken BEKLER;
+    // ana sayfaya (Bahçeye çık) döndüğünde konfetili kutlama penceresi çıkar. Her rozet için bir kez. =====
+    (function () {
+        let away = true, busy = false, started = false;
+        const keyOf = () => 'sy_badges_seen_' + (currentUser ? currentUser.uid : '');
+        const readSeen = () => { try { const v = localStorage.getItem(keyOf()); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+        const writeSeen = (a) => { try { localStorage.setItem(keyOf(), JSON.stringify(a)); } catch (e) {} };
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const isHome = () => {
+            const m = document.getElementById('mainContent');
+            return !!(currentUser && m && m.style.display !== 'none' && !m.classList.contains('hidden') && m.offsetParent !== null);
+        };
+        const blocked = () => Swal.isVisible() || document.getElementById('supOv')?.style.display === 'flex' || document.getElementById('qaOverlay');
+        async function computeEarned() {
+            const snap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (!snap.exists()) return null;
+            const u = snap.data();
+            const mevcutSeviye = u.mevcutSeviye || 1, words = u.totalWordsViewed || 0, sandikCount = u.quizSandik?.length || 0;
+            const totalScore = Math.max(0, Math.round(((u.quizScore || 0) + (u.averageScore || 0) + (mevcutSeviye - 1) * 2 + words * 0.01 - sandikCount) * 100) / 100);
+            const keep = window.__badgeInfo;
+            await window.__profileExtrasHTML(u, currentUser.uid, { totalScore, mevcutSeviye, words, examCount: (u.examsCompleted || []).length, sandikCount });
+            const info = window.__badgeInfo || [];
+            window.__badgeInfo = keep;
+            return info.filter(b => b.ok);
+        }
+        async function celebrate(list) {
+            const one = list.length === 1;
+            const stars = (n) => '⭐'.repeat(n || 1);
+            const html = one
+                ? `<div style="font-size:64px;line-height:1.1;margin:6px 0;">${list[0].e}</div><div style="font-weight:800;font-size:18px;color:#f59e0b;">${esc(list[0].name)}</div><div style="font-size:12px;opacity:.7;margin:2px 0 8px;">${esc(list[0].cat)} · ${stars(list[0].tier)}</div><div style="font-size:13px;opacity:.85;line-height:1.5;">${esc(list[0].desc)}</div>`
+                : `<div style="font-size:13px;opacity:.8;margin-bottom:8px;">${list.length} yeni rozet kazandın!</div>` + list.map(b => `<div style="display:flex;gap:10px;align-items:center;text-align:left;padding:8px 10px;margin:6px 0;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);"><span style="font-size:30px;">${b.e}</span><span><b>${esc(b.name)}</b> <span style="font-size:11px;opacity:.7;">${stars(b.tier)}</span><br><span style="font-size:12px;opacity:.75;">${esc(b.desc)}</span></span></div>`).join('');
+            try { window.__launchConfetti && window.__launchConfetti(4000, 220); } catch (e) {}
+            const r = await Swal.fire({
+                title: one ? '🎉 Yeni Rozet Kazandın!' : '🎉 Yeni Rozetler!', html,
+                confirmButtonText: 'Rozetlerime Bak', confirmButtonColor: '#f59e0b',
+                showCancelButton: true, cancelButtonText: 'Harika!',
+                customClass: { popup: 'compact-swal themed-swal' }
+            });
+            if (r.isConfirmed) {
+                try { window.showProfile(); setTimeout(() => { document.querySelector('.tab-btn[data-tab="tab2"]')?.click(); }, 150); } catch (e) {}
+            }
+        }
+        window.__checkBadgeCelebration = async function () {
+            if (busy || !isHome() || blocked()) return;
+            busy = true;
+            try {
+                const earned = await computeEarned();
+                if (!earned) return;
+                const names = earned.map(b => b.name);
+                const seen = readSeen();
+                if (!seen) { writeSeen(names); return; }   // ilk açılış: mevcut rozetleri sessizce kaydet
+                const fresh = earned.filter(b => !seen.includes(b.name));
+                if (!fresh.length) return;
+                if (!isHome() || blocked()) return;           // bu arada başka ekrana geçtiyse sonra
+                writeSeen(names);
+                await celebrate(fresh);
+            } catch (e) { console.warn('rozet kontrol', e); } finally { busy = false; }
+        };
+        // Ana sayfadan ayrılıp geri dönüldüğünde (Bahçeye çık dahil) kontrol et
+        setInterval(() => {
+            if (!currentUser) { away = true; return; }
+            if (!isHome()) { away = true; return; }
+            if (away || !started) { away = false; started = true; setTimeout(() => window.__checkBadgeCelebration(), 1200); }
+        }, 1500);
     })();
 
     // Yardım / İletişim
