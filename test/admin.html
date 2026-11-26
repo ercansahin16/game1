@@ -1357,6 +1357,9 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <button id="refreshUsersBtn" class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="loadUsers()">
                         <i class="fas fa-sync"></i> Yenile
                     </button>
+                    <button class="btn btn-success" style="padding: 8px 16px; font-size: 13px;" onclick="adminCreateAccount()">
+                        <i class="fas fa-user-plus"></i> Yeni Hesap
+                    </button>
                     <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="showLoginList()">
                         <i class="fas fa-address-card"></i> Giriş Listesi
                     </button>
@@ -2045,6 +2048,47 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
         } catch (e) {
             const m = { 'auth/email-already-in-use': 'Bu e-posta adresi zaten kayıtlı.', 'auth/invalid-email': 'E-posta adresi geçersiz.', 'auth/weak-password': 'Şifre çok zayıf.' };
             Swal.fire('Taşınamadı', m[e.code] || ('Bir sorun oluştu: ' + (e.message || e)), 'error');
+        }
+    };
+
+    // ===== ➕ YENİ HESAP AÇ (admin): kursiyer uygulamasından çıkış yapmadan yeni hesap oluşturur =====
+    window.adminCreateAccount = async function () {
+        const r = await Swal.fire({
+            title: 'Yeni hesap aç',
+            html: '<input id="caName" class="swal2-input" placeholder="Ad Soyad" style="margin:6px 0; width:100%;">' +
+                  '<input id="caEmail" class="swal2-input" type="email" placeholder="E-posta adresi" style="margin:6px 0; width:100%;">' +
+                  '<input id="caPass" class="swal2-input" type="text" placeholder="Şifre (en az 6 karakter)" value="' + MOVE_DEFAULT_PASS + '" style="margin:6px 0; width:100%;">' +
+                  '<div style="text-align:left; font-size:12px; opacity:.75; margin-top:6px;">Hesap sıfır puanla, seviye 1\'den açılır. Şifre kutusunda görünen şifreyle giriş yapılır.</div>',
+            showCancelButton: true, confirmButtonText: 'Hesabı Aç', cancelButtonText: 'Vazgeç',
+            preConfirm: () => {
+                const name = (document.getElementById('caName').value || '').trim();
+                const email = (document.getElementById('caEmail').value || '').trim().toLowerCase();
+                const pass = (document.getElementById('caPass').value || '').trim();
+                if (name.length < 2) { Swal.showValidationMessage('Ad soyad yazın.'); return false; }
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { Swal.showValidationMessage('Geçerli bir e-posta yazın.'); return false; }
+                if (/[^\x21-\x7E]/.test(email)) { Swal.showValidationMessage('E-postada Türkçe karakter ya da boşluk olmamalı.'); return false; }
+                if (pass.length < 6) { Swal.showValidationMessage('Şifre en az 6 karakter olmalı.'); return false; }
+                return { name, email, pass };
+            }
+        });
+        if (!r.isConfirmed) return;
+        const { name, email, pass } = r.value;
+        Swal.fire({ title: 'Hesap açılıyor…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const secApp = initializeApp(firebaseConfig, 'creator' + Date.now());
+            const sa = getAuth(secApp);
+            const cred = await createUserWithEmailAndPassword(sa, email, pass);
+            const uid = cred.user.uid;
+            await __signOut(sa);
+            await setDoc(doc(db, 'users', uid), {
+                name, email, totalWordsViewed: 0, examsCompleted: [], averageScore: 0, quizSandik: [], quizScore: 0,
+                mevcutSeviye: 1, myWords: [], tourCompleted: false, createdAt: new Date().toISOString(), createdByAdmin: true
+            });
+            Swal.fire({ icon: 'success', title: 'Hesap açıldı ✅', html: '<b>' + escapeHtml(email) + '</b><br>Şifre: <b>' + escapeHtml(pass) + '</b>' });
+            try { await loadUsers(); } catch (e) {}
+        } catch (e) {
+            const m = { 'auth/email-already-in-use': 'Bu e-posta adresi zaten kayıtlı.', 'auth/invalid-email': 'E-posta adresi geçersiz.', 'auth/weak-password': 'Şifre çok zayıf.' };
+            Swal.fire('Hesap açılamadı', m[e.code] || ('Bir sorun oluştu: ' + (e.message || e)), 'error');
         }
     };
     // Oyuncu cihazlarındaki içerik önbelleği (kitap/ders/kelime/sınav) bu sürüm numarası değişince yenilenir.
