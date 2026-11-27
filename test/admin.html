@@ -1349,7 +1349,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                 <h2><i class="fas fa-flask"></i> Test Hesabı</h2>
                 <button class="btn btn-info" style="padding: 8px 16px; font-size: 13px;" onclick="taLoad()"><i class="fas fa-sync"></i> Yenile</button>
             </div>
-            <div id="testAcctBody"></div>
+            <div id="testAcctBody" style="max-width:100%;overflow-x:hidden;"></div>
         </div>
 
         <div id="loginHelpSection" class="section-card hidden">
@@ -2115,6 +2115,7 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             if (snap.empty) { box.innerHTML = '<div style="padding:16px;line-height:1.6;">⚠️ <b>' + TEST_EMAIL + '</b> hesabı bulunamadı.<br>Kullanıcılar bölümündeki <b>Yeni Hesap</b> butonuyla açın.</div>'; return; }
             __taUid = snap.docs[0].id; __taData = snap.docs[0].data();
             if (__taData.hiddenFromRanking === undefined) { await updateDoc(doc(db, 'users', __taUid), { hiddenFromRanking: true }); __taData.hiddenFromRanking = true; }
+            await __taLoadMedals();
             __taRender();
         } catch (e) { box.innerHTML = '<div style="padding:16px;color:#ef4444;">Yüklenemedi: ' + escapeHtml(e.message) + '</div>'; }
     }
@@ -2124,13 +2125,62 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             await updateDoc(doc(db, 'users', __taUid), fields);
             Object.assign(__taData, fields);
             __taRender();
-            const t = document.getElementById('taToast'); if (t) { t.textContent = '✅ ' + (msg || 'Uygulandı'); t.style.opacity = 1; setTimeout(() => { t.style.opacity = 0; }, 2200); }
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: msg || 'Uygulandı', showConfirmButton: false, timer: 2200, timerProgressBar: true });
         } catch (e) { Swal.fire({ icon: 'error', title: 'Uygulanamadı', text: e.message, confirmButtonText: 'Tamam' }); }
     }
     const __taNum = (id) => { const v = parseFloat(String(document.getElementById(id).value).replace(',', '.')); return isNaN(v) ? null : v; };
-    const __taRow = (title, inner, hint) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;margin-bottom:12px;"><div style="font-weight:800;color:#f59e0b;margin-bottom:8px;">${title}</div>${inner}${hint ? `<div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">${hint}</div>` : ''}</div>`;
+    const __taRow = (title, inner, hint) => `<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;margin-bottom:12px;box-sizing:border-box;max-width:100%;overflow:hidden;"><div style="font-weight:800;color:#f59e0b;margin-bottom:8px;">${title}</div>${inner}${hint ? `<div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">${hint}</div>` : ''}</div>`;
     const __taIn = (id, label, val) => `<label style="display:inline-block;margin:3px 6px 3px 0;font-size:12px;">${label}<br><input id="${id}" type="number" step="any" value="${val}" style="width:96px;padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,.1);color:inherit;font-size:15px;"></label>`;
     const __taBtn = (label, fn, cls) => `<button class="btn ${cls || 'btn-info'}" style="padding:8px 12px;font-size:13px;margin:3px 4px 3px 0;" onclick="${fn}">${label}</button>`;
+
+    // ===== 🎖️ Rozet durumu (kursiyer uygulamasındaki tanımların aynısı) =====
+    let __taMedals = [];
+    async function __taLoadMedals() {
+        try {
+            const sw = await getDocs(collection(db, 'seasonWinners')); __taMedals = [];
+            sw.forEach(x => { const w = x.data(); (w.winners || []).forEach((y, i) => { if (y.uid === __taUid) __taMedals.push({ seasonId: w.seasonId || x.id, place: i + 1 }); }); });
+        } catch (e) { __taMedals = []; }
+    }
+    function __taBadgeList(u) {
+        const exams = u.examsCompleted || [], words = u.totalWordsViewed || 0, lvl = u.mevcutSeviye || 1;
+        const best = Math.max(u.gunlukSeri || 0, u.enUzunSeri || 0);
+        const ageDays = u.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(u.createdAt).getTime()) / 86400000)) : 0;
+        const km = u.karmaStats || { total: 0, correct: 0, wrong: 0 }; const acc = km.total > 0 ? Math.round(km.correct / km.total * 100) : 0;
+        const kmProg = (n, a) => Math.min(100, Math.round(Math.min(km.total / n, acc / a) * 100));
+        const bestExam = exams.reduce((m, e) => (e.total >= 5 ? Math.max(m, Math.round((e.correct || 0) / e.total * 100)) : m), 0);
+        const bestPct10 = exams.reduce((m, e) => (e.total >= 10 ? Math.max(m, Math.round((e.correct || 0) / e.total * 100)) : m), 0);
+        const perfect = exams.filter(e => e.total >= 10 && e.correct === e.total).length;
+        const friends = (u.following || []).length, firsts = __taMedals.filter(m => m.place === 1).length;
+        const maxLevel = u.toplamSeviye || 87;
+        const B = (cat, e, name, cur, goal, unit) => ({ cat, e, name, cur, goal, unit, ok: cur >= goal });
+        const l = [
+            B('📖 Kelime', '🌱', 'Yeni Başlayan', words, 1, 'kelime'), B('📖 Kelime', '📚', 'Kelime Avcısı', words, 100, 'kelime'), B('📖 Kelime', '🧠', 'Kelime Ustası', words, 500, 'kelime'),
+            B('📖 Kelime', '🎓', 'Bin Kelime', words, 1000, 'kelime'), B('📖 Kelime', '🏛️', 'Kelime Âlimi', words, 2500, 'kelime'), B('📖 Kelime', '👑', 'Kelime Sultanı', words, 5000, 'kelime'), B('📖 Kelime', '🌌', 'Kelime Efsanesi', words, 10000, 'kelime'),
+            B('🔥 Seri', '🔥', '7 Gün Seri', best, 7, 'gün'), B('🔥 Seri', '🌋', '30 Gün Seri', best, 30, 'gün'), B('🔥 Seri', '☄️', '100 Gün Seri', best, 100, 'gün'), B('🔥 Seri', '🌞', 'Bir Yıl Seri', best, 365, 'gün'), B('🔥 Seri', '♾️', '1000 Gün Seri', best, 1000, 'gün'),
+            B('📝 Sınav', '📝', 'Sınav Çırağı', exams.length, 10, 'sınav'), B('📝 Sınav', '💯', 'Sınavda %90+', bestExam, 90, '% doğruluk'), B('📝 Sınav', '📜', 'Sınav Ustası', exams.length, 50, 'sınav'),
+            B('📝 Sınav', '✨', 'Kusursuz Sınav', bestPct10, 100, '% doğruluk'), B('📝 Sınav', '🏫', 'Sınav Kahramanı', exams.length, 200, 'sınav'), B('📝 Sınav', '💎', 'Mükemmeliyetçi', perfect, 10, 'kusursuz sınav'),
+            B('🎯 Yarışma', '🎯', 'Keskin Nişancı', kmProg(30, 70), 100, '% ilerleme'), B('🎯 Yarışma', '🏹', 'Usta Okçu', kmProg(500, 80), 100, '% ilerleme'), B('🎯 Yarışma', '🦅', 'Yarışma Kartalı', kmProg(2000, 85), 100, '% ilerleme'),
+            B('🏔️ Seviye', '🏔️', 'Seviye 5', lvl, 5, 'seviye'), B('🏔️ Seviye', '🧗', 'Seviye 20', lvl, 20, 'seviye'), B('🏔️ Seviye', '🚀', 'Seviye 50', lvl, 50, 'seviye'), B('🏔️ Seviye', '🌠', 'Zirve', lvl, maxLevel, 'seviye'),
+            B('👥 Sosyal', '👥', 'Sosyal', friends, 5, 'arkadaş'), B('👥 Sosyal', '🤝', 'Kalabalık Dost', friends, 15, 'arkadaş'), B('👥 Sosyal', '🌍', 'Kervan Başı', friends, 30, 'arkadaş'),
+            B('🏆 Şampiyonluk', '🏆', 'Ayın Şampiyonu', __taMedals.length, 1, 'şampiyonluk'), B('🏆 Şampiyonluk', '🥇', 'Ayın Birincisi', firsts, 1, 'birincilik'), B('🏆 Şampiyonluk', '🏅', 'Seri Şampiyon', __taMedals.length, 5, 'şampiyonluk'),
+            B('🕰️ Sadakat', '🌿', '6 Aylık Yol', ageDays, 180, 'gün'), B('🕰️ Sadakat', '🌳', '1 Yıllık Yol', ageDays, 365, 'gün'), B('🕰️ Sadakat', '🏺', '3 Yıllık Yol', ageDays, 1095, 'gün'), B('🕰️ Sadakat', '🗿', '5 Yıllık Yol', ageDays, 1825, 'gün'), B('🕰️ Sadakat', '🏯', '10 Yıllık Yol', ageDays, 3650, 'gün')
+        ];
+        l.push(B('🌟 Final', '🌟', 'Hepsini Topladın', l.filter(b => b.ok).length, l.length, 'rozet'));
+        return l;
+    }
+    function __taBadgeHTML(u) {
+        const l = __taBadgeList(u); const done = l.filter(b => b.ok).length; let cat = '', h = '';
+        l.forEach(b => {
+            if (b.cat !== cat) { cat = b.cat; h += `<div style="font-weight:700;font-size:12px;margin:10px 0 4px;opacity:.8;">${b.cat}</div>`; }
+            const pct = Math.min(100, Math.round(b.cur / b.goal * 100));
+            h += `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:4px;border-radius:9px;background:${b.ok ? 'rgba(16,185,129,.14)' : 'rgba(255,255,255,.05)'};">` +
+                `<span style="font-size:20px;${b.ok ? '' : 'filter:grayscale(1);opacity:.5;'}">${b.e}</span>` +
+                `<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;">${b.name} ${b.ok ? '✅' : ''}</div>` +
+                `<div style="height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin-top:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${b.ok ? '#10b981' : '#f59e0b'};"></div></div></div>` +
+                `<div style="font-size:11px;opacity:.8;white-space:nowrap;">${b.cur >= b.goal ? 'tamam' : (Math.round(b.cur * 100) / 100) + ' / ' + b.goal}<br>${b.unit}</div></div>`;
+        });
+        return __taRow('🎖️ Rozet durumu (' + done + ' / ' + l.length + ' kazanıldı)', h, 'Yeşil: kazanılmış. Çubuk: ilerleme. Ayarları buna bakarak yapabilirsin; değişiklik yapınca liste hemen güncellenir.');
+    }
     function __taRender() {
         const u = __taData, box = __taBox();
         const exams = u.examsCompleted || [];
@@ -2140,13 +2190,13 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
             🏆 Toplam puan: <b>${__taTotal(u)}</b> · Seviye: <b>${u.mevcutSeviye || 1}</b> · Kelime: <b>${u.totalWordsViewed || 0}</b> · Sınav: <b>${exams.length}</b><br>
             🔥 Seri: <b>${u.gunlukSeri || 0}</b> (en uzun ${u.enUzunSeri || 0}) · 📦 Sandık: <b>${(u.quizSandik || []).length}</b> · 👥 Arkadaş: <b>${(u.following || []).length}</b><br>
             🔓 Tüm kilitler: <b>${u.unlockAll ? 'AÇIK' : 'kapalı'}</b> · 🙈 Sıralamada: <b>${u.hiddenFromRanking ? 'gizli' : 'görünür'}</b>
-            <span id="taToast" style="float:right;opacity:0;transition:opacity .3s;color:#10b981;font-weight:700;"></span>
         </div>
+        ${__taBadgeHTML(u)}
         ${__taRow('🔓 Kilitler', __taBtn('🔓 Tüm kilitleri aç', "taUnlock(true)", 'btn-success') + __taBtn('🔒 Kilitleri normale döndür', "taUnlock(false)", 'btn-secondary'), 'Açıkken tüm derslerin kelime ekranı ve sınavları kilitsizdir. Yarışma seviyeleri için aşağıdaki seviyeyi yükseltin.')}
         ${__taRow('🏔️ Seviye', __taIn('taLevel', 'Seviye', u.mevcutSeviye || 1) + __taBtn('Uygula', 'taApplyLevel()') + __taBtn('Son seviye', 'taMaxLevel()') + __taBtn('Dersleri de "geçildi" say', 'taPassLessons()'), 'Yarışmada o seviyeye kadar sorular açılır. "Dersleri geçildi say": seviyeden küçük sıradaki tüm dersleri geçilmiş işaretler.')}
         ${__taRow('🏆 Puan', __taIn('taQuiz', 'Yarışma puanı', u.quizScore || 0) + __taIn('taAvg', 'Ortalama puan', u.averageScore || 0) + __taIn('taWords', 'Öğrenilen kelime', u.totalWordsViewed || 0) + '<br>' + __taBtn('Uygula', 'taApplyScore()') + __taIn('taTarget', 'Hedef toplam puan', __taTotal(u)) + __taBtn('Toplamı hedefe getir', 'taTargetTotal()'), 'Toplam puan = yarışma + ortalama + (seviye−1)×2 + kelime×0,01 − sandık sayısı. "Hedefe getir" yarışma puanını buna göre ayarlar.')}
         ${__taRow('📅 Bu ay ve geçmiş aylar', __taIn('taMonth', 'Bu ay puanı', Math.max(0, Math.round((__taTotal(u) - ((u.seasonId === __taSeason(0)) ? (u.seasonBaselineScore || 0) : __taTotal(u))) * 100) / 100)) + __taBtn('Uygula', 'taApplyMonth()') + '<br>' + __taIn('taHistScore', 'Geçen ay puanı', 50) + __taBtn('Geçmiş aya ekle', 'taAddHistory()') + __taBtn('Geçmişi temizle', 'taClearHistory()', 'btn-secondary'))}
-        ${__taRow('🔥 Seri', __taIn('taStreak', 'Günlük seri', u.gunlukSeri || 0) + __taIn('taBest', 'En uzun seri', u.enUzunSeri || 0) + '<br><label style="font-size:12px;">Son sayılan gün <select id="taStreakDay" style="padding:8px;border-radius:8px;background:rgba(255,255,255,.1);color:inherit;border:none;"><option value="0">Bugün (devam etmiş)</option><option value="-1" selected>Dün (girişte +1 olur)</option><option value="-3">3 gün önce (seri kopar)</option></select></label> ' + __taBtn('Uygula', 'taApplyStreak()'), 'Örn. seri 99 + "Dün" seçince hesapla ilk giriş yapıldığında seri 100 olur ve 100 gün rozeti denenir.')}
+        ${__taRow('🔥 Seri', __taIn('taStreak', 'Günlük seri', u.gunlukSeri || 0) + __taIn('taBest', 'En uzun seri', u.enUzunSeri || 0) + '<br><label style="font-size:12px;">Son sayılan gün <select id="taStreakDay" style="max-width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,.1);color:inherit;border:none;"><option value="0">Bugün (devam etmiş)</option><option value="-1" selected>Dün (girişte +1 olur)</option><option value="-3">3 gün önce (seri kopar)</option></select></label> ' + __taBtn('Uygula', 'taApplyStreak()'), 'Örn. seri 99 + "Dün" seçince hesapla ilk giriş yapıldığında seri 100 olur ve 100 gün rozeti denenir.')}
         ${__taRow('📝 Sınavlar', __taIn('taExamN', 'Adet', 5) + '<br>' + __taBtn('Normal sınav ekle (%80)', 'taAddExams(false)') + __taBtn('Kusursuz sınav ekle (10/10)', 'taAddExams(true)') + __taBtn('Sınav geçmişini temizle', 'taClearExams()', 'btn-danger'), 'Sınav sayısı, ortalama puan, en iyi sınav ve kusursuz sınav rozetleri buna bağlıdır.')}
         ${__taRow('📦 Sandık', __taIn('taSandikN', 'Kelime', 10) + __taBtn('Sandığa ekle', 'taAddSandik()') + __taBtn('Sandığı boşalt', 'taClearSandik()', 'btn-secondary'), 'Eklenen her kelime toplam puandan 1 düşürür.')}
         ${__taRow('👥 Arkadaşlar', __taIn('taFriendN', 'Adet', 5) + __taBtn('Arkadaş ata', 'taFriends()') + __taBtn('Arkadaşları temizle', 'taClearFriends()', 'btn-secondary'), 'Yalnızca bu hesabın listesine rastgele gerçek kursiyerler eklenir; onların listelerine dokunulmaz (sosyal rozetler içindir).')}
