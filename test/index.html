@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="test-v104">
+    <meta name="app-build" content="test-v105">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -7275,6 +7275,11 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             window.__annUnreadId = (userData.lastOpenedAnnouncementId !== annKey(ann)) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== annKey(ann));
+            // 🚨 "Uyarı olarak göster" işaretli duyuru: kursiyer girer girmez alert olarak çıkar (bir kez)
+            if (ann.popup && window.__annUnreadId === ann.id) {
+                const __showPop = (n) => { if (Swal.isVisible() && n < 10) { setTimeout(() => __showPop(n + 1), 1500); return; } if (window.__annUnreadId !== ann.id) return; openAnnouncementModal(ann); markAnnouncementRead(ann.id); };
+                setTimeout(() => __showPop(0), 900);
+            }
 
             // Bulut ipucu: SADECE bu kullanıcı bu duyuruyu hiç görmediyse, bir kez.
             // (Bulut ipucu kaldırıldı: üç noktayı kendiliğinden açıyordu. Yerine okunana
@@ -7433,8 +7438,8 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/\n/g, '<br>');
         Swal.fire({
-            icon: 'info',
-            title: a.title || '📢 Duyuru',
+            icon: a.popup ? 'warning' : 'info',
+            title: a.title || (a.popup ? '🚨 Uyarı' : '📢 Duyuru'),
             didOpen: () => {
                 const box = document.getElementById('annImgBox'); if (!box || !a.id) return;
                 __loadAnnImage(a.id, a.imageUrl).then((src) => {

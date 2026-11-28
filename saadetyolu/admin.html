@@ -1202,6 +1202,9 @@ body.light-theme .announcement-chip, body.light-theme .announcement-cloud-tip { 
                     <option value="qa">💬 Soru / Hata Bildir'e git</option>
                     <option value="help">❓ Yardım / İletişim'e git</option>
                 </select>
+                <label style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;padding:10px;border-radius:10px;border:1.5px solid rgba(239,68,68,.6);background:rgba(239,68,68,.08);font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="announcementPopupInput" style="width:20px;height:20px;"> <span><b>🚨 Uyarı olarak göster</b> — kursiyer uygulamaya girer girmez ekranda alert olarak çıkar (bir kez). İşaretlenmezse sadece duyurular bölümünde görünür.</span>
+                </label>
                 <label style="font-size: 12px; opacity: 0.8; display: block; margin: 10px 0 6px;">Resim (isteğe bağlı)</label>
                 <input type="file" id="announcementImageInput" accept="image/*" style="width:100%; padding:8px; border-radius:10px; background:rgba(255,255,255,0.06);">
                 <div id="announcementImagePreview" style="display:none; margin-top:8px; position:relative;">
@@ -2612,7 +2615,7 @@ async function publishAnnouncement() {
     const id = String(Date.now());
     const publishedAt = Date.now();
     const action = (document.getElementById('announcementActionInput') || {}).value || '';
-    const data = { id, title, message, publishedAt, action: action || null };
+    const data = { id, title, message, publishedAt, action: action || null, popup: !!(document.getElementById('announcementPopupInput') || {}).checked };
 
     try {
         const imgFile = (document.getElementById('announcementImageInput').files || [])[0];
@@ -2625,6 +2628,7 @@ async function publishAnnouncement() {
         titleInput.value = '';
         messageInput.value = '';
         const __ai = document.getElementById('announcementActionInput'); if (__ai) __ai.value = '';
+        const __pp = document.getElementById('announcementPopupInput'); if (__pp) __pp.checked = false;
         window.clearAnnouncementImage();
         Swal.fire({ icon: 'success', title: 'Duyuru yayınlandı!', text: 'Kullanıcılar bir sonraki girişlerinde bu duyuruyu görecek.', confirmButtonText: 'Tamam' });
         loadAnnouncements();

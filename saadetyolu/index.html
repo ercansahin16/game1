@@ -3,7 +3,7 @@
 <head>
 <script>/* Hata ayıklama günlüğü: kapalı. Açmak için konsolda window.__DEBUG=true veya adrese ?debug ekle */window.__DEBUG=/[?&]debug\b/.test(location.search);window.__dbg=function(){if(window.__DEBUG)console.log.apply(console,arguments)};</script>
     <meta charset="UTF-8">
-    <meta name="app-build" content="saadetyolu-shell-v109">
+    <meta name="app-build" content="saadetyolu-shell-v110">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SaadetYolu - Kelime Öğrenme</title>
 
@@ -4501,7 +4501,7 @@ setTimeout(function () { window.__hideBoot(); }, 10000); // güvenlik: en geç 1
     <div class="sidebar-item" id="goSupport"><i class="fas fa-headset"></i> 💬 Canlı Destek <span class="supDot" style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ef4444; color:#fff; font-size:11px; font-weight:800; margin-left:6px; align-items:center; justify-content:center;">1</span></div>
             <div class="sidebar-item" id="themeBtnSidebar"><i class="fas fa-moon"></i> Tema Değiştir</div>
             <div class="sidebar-item" id="logoutBtnSidebar"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
-            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.24.1 · 26 Kas 2026</div>
+            <div style="text-align:center; font-size:10px; opacity:.4; margin-top:6px;">Sürüm 2.24.2 · 28 Kas 2026</div>
             <div id="updStatus" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;"></div>
             <div id="svDiag" style="text-align:center; font-size:10px; opacity:.35; margin-top:2px;">anket: kontrol bekleniyor…</div>
         </div>
@@ -7274,6 +7274,11 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             window.__annUnreadId = (userData.lastOpenedAnnouncementId !== annKey(ann)) ? ann.id : null;
 
             setAnnouncementUnreadState(userData.lastOpenedAnnouncementId !== annKey(ann));
+            // 🚨 "Uyarı olarak göster" işaretli duyuru: kursiyer girer girmez alert olarak çıkar (bir kez)
+            if (ann.popup && window.__annUnreadId === ann.id) {
+                const __showPop = (n) => { if (Swal.isVisible() && n < 10) { setTimeout(() => __showPop(n + 1), 1500); return; } if (window.__annUnreadId !== ann.id) return; openAnnouncementModal(ann); markAnnouncementRead(ann.id); };
+                setTimeout(() => __showPop(0), 900);
+            }
 
             // Bulut ipucu: SADECE bu kullanıcı bu duyuruyu hiç görmediyse, bir kez.
             // (Bulut ipucu kaldırıldı: üç noktayı kendiliğinden açıyordu. Yerine okunana
@@ -7432,8 +7437,8 @@ document.getElementById('nextLessonMobileBtn')?.addEventListener('click', () => 
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/\n/g, '<br>');
         Swal.fire({
-            icon: 'info',
-            title: a.title || '📢 Duyuru',
+            icon: a.popup ? 'warning' : 'info',
+            title: a.title || (a.popup ? '🚨 Uyarı' : '📢 Duyuru'),
             didOpen: () => {
                 const box = document.getElementById('annImgBox'); if (!box || !a.id) return;
                 __loadAnnImage(a.id, a.imageUrl).then((src) => {
